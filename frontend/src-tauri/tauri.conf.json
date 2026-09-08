@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fyodor",
+  "version": "0.3.0",
+  "identifier": "ai.fyodor.desktop",
+  "build": {"beforeDevCommand":"npm run dev","devUrl":"http://localhost:5173","beforeBuildCommand":"npm run build","frontendDist":"../dist"},
+  "app": {
+    "windows": [{"title":"Fyodor","width":1280,"height":800,"minWidth":720,"minHeight":560,"center":true}],
+    "security": {"csp":"default-src 'self'; connect-src http://127.0.0.1:* https: http:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' asset: data:"}
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "resources": {"resources/backend/*":"backend/"},
+    "shortDescription": "AI workspace powered by the Fyodor engine",
+    "longDescription": "Workspace, chat, and prompt playground powered by the Fyodor C inference engine.",
+    "category": "Productivity",
+    "windows": {"nsis":{"installMode":"perMachine","displayLanguageSelector":true},"wix":{"language":["en-US"]}},
+    "macOS": {"minimumSystemVersion":"10.13"},
+    "linux": {"appimage":{"bundleMediaFramework":false}}
+  }
+}

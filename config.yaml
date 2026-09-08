@@ -1,0 +1,21 @@
+# Fyodor reads this file when launched from this directory.
+server:
+  # Use 0.0.0.0 only with allow_remote: true.
+  bind: 127.0.0.1
+  # Port zero asks the operating system to choose a free port.
+  port: 0
+  # Remote serving is an explicit opt-in because HTTP does not provide TLS.
+  allow_remote: false
+  # Leave empty for a random launch token, or name an environment variable.
+  auth_token_env: ""
+  # Bound resource settings keep slow or excessive clients contained.
+  request_timeout_ms: 5000
+  max_request_bytes: 1048576
+  max_output_bytes: 67108864
+  # Bound synchronous text generation independently from request input size.
+  max_generation_tokens: 256
+  backlog: 64
+  worker_threads: 4
+  queue_capacity: 128
+  # Add remote web origins as one comma-separated scalar when needed.
+  allowed_origins: "http://localhost:5173"
