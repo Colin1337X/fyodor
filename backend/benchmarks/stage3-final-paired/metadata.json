@@ -1,0 +1,147 @@
+{
+  "runs": [
+    {
+      "name": "stage2-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-stage2.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "0",
+      "started_unix": 1789135418.2749321,
+      "binary_sha256": "d8f96297d9a031bd17b9e3788f2409678f6b8793c5b17aaa4d335f302db93a75"
+    },
+    {
+      "name": "native-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "0",
+      "started_unix": 1789135436.782911,
+      "binary_sha256": "81bb4b422b3d640fcad6b5a1b07aaf0b5ee29d110b974a4f3422518e98d2e5cd"
+    },
+    {
+      "name": "blas-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "1",
+      "started_unix": 1789135454.7133474,
+      "binary_sha256": "81bb4b422b3d640fcad6b5a1b07aaf0b5ee29d110b974a4f3422518e98d2e5cd"
+    },
+    {
+      "name": "blas-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "1",
+      "started_unix": 1789135469.3033042,
+      "binary_sha256": "81bb4b422b3d640fcad6b5a1b07aaf0b5ee29d110b974a4f3422518e98d2e5cd"
+    },
+    {
+      "name": "native-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "0",
+      "started_unix": 1789135483.859068,
+      "binary_sha256": "81bb4b422b3d640fcad6b5a1b07aaf0b5ee29d110b974a4f3422518e98d2e5cd"
+    },
+    {
+      "name": "stage2-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-stage2.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "7",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "blas": "0",
+      "started_unix": 1789135501.6820612,
+      "binary_sha256": "d8f96297d9a031bd17b9e3788f2409678f6b8793c5b17aaa4d335f302db93a75"
+    }
+  ],
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "notes": [
+    "Serial reverse-order paired measurements; no test/build jobs concurrent.",
+    "F32 KV in every Fyodor run; no llama comparison here.",
+    "KoboldCpp and Roblox were independently observed on the same GPU during this run set, with about 8 GiB whole-device memory in use. Results are contended and excluded from clean acceptance claims."
+  ],
+  "external_gpu_contention": true
+}

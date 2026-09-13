@@ -1,4 +1,5 @@
 import { getBackendConnection } from "./platform.js";
+import {readCompletionStream} from './stream.js';
 
 // Local calls use the launcher's in-memory token. Tauri never proxies inference.
 async function request(path, options = {}) {
@@ -13,17 +14,20 @@ async function request(path, options = {}) {
   return data;
 }
 const post = (path, body) => request(path, { method: "POST", body: JSON.stringify(body) });
-async function external(provider, path, body) {
+async function external(provider, path, body, options={}) {
   const base = new URL(provider.endpoint);
   if (!["http:", "https:"].includes(base.protocol) || base.username || base.password || base.search || base.hash)
     throw new Error("Use an HTTP(S) base URL without credentials, query or fragment.");
   const headers = new Headers({ "Content-Type": "application/json" });
   if (provider.apiKey) headers.set("Authorization", `Bearer ${provider.apiKey}`);
   const response = await fetch(base.href.replace(/\/+$/, "") + path, {
-    method: body ? "POST" : "GET", headers, ...(body ? { body: JSON.stringify(body) } : {}),
+    method: body ? "POST" : "GET", headers, signal:options.signal, ...(body ? { body: JSON.stringify(body) } : {}),
   });
+  if (response.ok && options.onUpdate && response.body && response.headers.get('content-type')?.includes('text/event-stream'))
+    return readCompletionStream(response, options.onUpdate);
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) throw new Error(data?.error?.message || `Endpoint returned ${response.status}`);
+  if(options.onUpdate){const text=data.choices?.[0]?.message?.content;if(typeof text!=='string')throw new Error('Endpoint returned no assistant text.');options.onUpdate(text);return{text,tokens:data.usage?.completion_tokens||0};}
   return data;
 }
 export const backend = {
@@ -33,5 +37,5 @@ export const backend = {
   setCompute: (model_id, compute) => post("/api/v1/model/compute", { model_id, compute }),
   generate: payload => post("/api/v1/generate", payload),
   openaiModels: provider => external(provider, "/models"),
-  openaiChat: (provider, payload) => external(provider, "/chat/completions", payload),
+  openaiChat: (provider, payload, options) => external(provider, "/chat/completions", payload, options),
 };

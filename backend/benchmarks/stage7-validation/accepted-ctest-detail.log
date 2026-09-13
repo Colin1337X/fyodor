@@ -1,0 +1,826 @@
+Start testing: Sep 13 10:43 Korea Standard Time
+----------------------------------------------------------
+1/46 Testing: kv-precision
+1/46 Test: kv-precision
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-kv-precision.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"kv-precision" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"kv-precision" end time: Sep 13 10:43 Korea Standard Time
+"kv-precision" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/46 Testing: quant-kernels-cpu-dot
+2/46 Test: quant-kernels-cpu-dot
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-cpu-dot" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-cpu-dot" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-cpu-dot" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/46 Testing: quant-kernels-scalar
+3/46 Test: quant-kernels-scalar
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-scalar" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-scalar" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-scalar" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/46 Testing: attention-scalar
+4/46 Test: attention-scalar
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-attention.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"attention-scalar" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"attention-scalar" end time: Sep 13 10:43 Korea Standard Time
+"attention-scalar" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/46 Testing: quant-kernels-avx2
+5/46 Test: quant-kernels-avx2
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-avx2" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-avx2" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-avx2" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/46 Testing: attention-avx2
+6/46 Test: attention-avx2
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-attention.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"attention-avx2" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"attention-avx2" end time: Sep 13 10:43 Korea Standard Time
+"attention-avx2" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/46 Testing: quant-kernels-avx512
+7/46 Test: quant-kernels-avx512
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-avx512" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-avx512" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-avx512" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/46 Testing: attention-avx512
+8/46 Test: attention-avx512
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-attention.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"attention-avx512" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"attention-avx512" end time: Sep 13 10:43 Korea Standard Time
+"attention-avx512" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/46 Testing: train-export-decoder
+17/46 Test: train-export-decoder
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-pretraining.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"train-export-decoder" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+random-weight pretraining loss: 5.593439 -> 0.000670
+LoRA SFT loss: 8.645358 -> 0.000272
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"train-export-decoder" end time: Sep 13 10:43 Korea Standard Time
+"train-export-decoder" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/46 Testing: inference-session-parity
+9/46 Test: inference-session-parity
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "cpu-reference"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-session-parity" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 31: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 30: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+<end of output>
+Test time =   0.03 sec
+----------------------------------------------------------
+Test Passed.
+"inference-session-parity" end time: Sep 13 10:43 Korea Standard Time
+"inference-session-parity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/46 Testing: inference-cpu-optimized
+10/46 Test: inference-cpu-optimized
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "cpu-optimized"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cpu-optimized" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=9.53674316e-07 rms=4.26547576e-07 max_scaled=1.62681512e-07 worst_logit=1
+prefix 31: max_abs=9.53674316e-07 rms=3.00886145e-07 max_scaled=1.78440084e-07 worst_logit=136
+prefix 30: max_abs=9.53674316e-07 rms=3.73903844e-07 max_scaled=1.46061545e-07 worst_logit=7
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cpu-optimized" end time: Sep 13 10:43 Korea Standard Time
+"inference-cpu-optimized" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/46 Testing: generate-model-fixtures
+11/46 Test: generate-model-fixtures
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-make-test-models.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"generate-model-fixtures" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"generate-model-fixtures" end time: Sep 13 10:43 Korea Standard Time
+"generate-model-fixtures" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/46 Testing: validate-server-config
+12/46 Test: validate-server-config
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-config.exe" "C:/Users/Colin/fyodor/backend/../config.yaml" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/invalid-config.yaml"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-server-config" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"validate-server-config" end time: Sep 13 10:43 Korea Standard Time
+"validate-server-config" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/46 Testing: inspect-model-formats
+13/46 Test: inspect-model-formats
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-formats.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/minimal.gguf" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/minimal.safetensors" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/identity.onnx" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/invalid.gguf" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/invalid.safetensors" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/invalid.onnx"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inspect-model-formats" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"inspect-model-formats" end time: Sep 13 10:43 Korea Standard Time
+"inspect-model-formats" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/46 Testing: generate-native-gguf
+14/46 Test: generate-native-gguf
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-generation.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/tiny-llama.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"generate-native-gguf" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"generate-native-gguf" end time: Sep 13 10:43 Korea Standard Time
+"generate-native-gguf" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/46 Testing: validate-gemma-graphs
+15/46 Test: validate-gemma-graphs
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-architectures.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/tiny-gemma4.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-gemma-graphs" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Passed.
+"validate-gemma-graphs" end time: Sep 13 10:43 Korea Standard Time
+"validate-gemma-graphs" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/46 Testing: validate-training
+16/46 Test: validate-training
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-training.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-training" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+LoRA loss 0.948891 -> 0.000421
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"validate-training" end time: Sep 13 10:43 Korea Standard Time
+"validate-training" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/46 Testing: compatible-rest-apis
+18/46 Test: compatible-rest-apis
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-api.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"compatible-rest-apis" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+Compatible and native API checks passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"compatible-rest-apis" end time: Sep 13 10:43 Korea Standard Time
+"compatible-rest-apis" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/46 Testing: benchmark-cli
+19/46 Test: benchmark-cli
+Command: "C:/Users/Colin/fyodor/.tools/cmake/cmake/data/bin/cmake.exe" "-DBENCH=C:/Users/Colin/fyodor/build-cuda/fyodor-bench.exe" "-DMODEL=C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "-P" "C:/Users/Colin/fyodor/backend/tests/BenchCli.cmake"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"benchmark-cli" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark-cli" end time: Sep 13 10:43 Korea Standard Time
+"benchmark-cli" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/46 Testing: train-cli-workflows
+20/46 Test: train-cli-workflows
+Command: "C:/Users/Colin/fyodor/.tools/cmake/cmake/data/bin/cmake.exe" "-DTRAINER=C:/Users/Colin/fyodor/build-cuda/fyodor-train.exe" "-DFIXTURES=C:/Users/Colin/fyodor/build-cuda/backend/test_models" "-P" "C:/Users/Colin/fyodor/backend/tests/TrainCli.cmake"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"train-cli-workflows" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+-- step=1 loss=5.5928645 graph_bytes=82936
+step=10 loss=2.1709392 graph_bytes=73046
+step=20 loss=0.2151729 graph_bytes=73046
+step=30 loss=0.0161402 graph_bytes=73046
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/first.gguf
+
+-- step=31 loss=0.0128879 graph_bytes=82936
+step=40 loss=0.0033762 graph_bytes=73046
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/resumed.gguf
+
+-- step=1 loss=5.5928645 graph_bytes=82936
+step=10 loss=2.1709392 graph_bytes=73046
+step=20 loss=0.2151729 graph_bytes=73046
+step=30 loss=0.0161402 graph_bytes=73046
+step=40 loss=0.0033762 graph_bytes=73046
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/continuous.gguf
+
+-- step=1 loss=0.0128879 graph_bytes=82936
+step=4 loss=0.0118464 graph_bytes=73046
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/cpt.gguf
+
+-- step=1 loss=0.0130233 graph_bytes=96574
+step=4 loss=0.0129508 graph_bytes=96574
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/sft.gguf
+
+-- step=1 loss=0.6931472 graph_bytes=193132
+step=4 loss=0.6861237 graph_bytes=193132
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/dpo.gguf
+
+-- step=5 loss=0.6826248 graph_bytes=193132
+step=6 loss=0.6784949 graph_bytes=193132
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/dpo-resumed.gguf
+
+-- step=1 loss=0.6931472 graph_bytes=193132
+step=6 loss=0.6784949 graph_bytes=193132
+exported=C:/Users/Colin/fyodor/build-cuda/backend/test_models/train-cli-22f2accb5944/dpo-continuous.gguf
+
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"train-cli-workflows" end time: Sep 13 10:43 Korea Standard Time
+"train-cli-workflows" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/46 Testing: validate-http-protocol
+21/46 Test: validate-http-protocol
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-server.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-http-protocol" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+HTTP framing, JSON, deadlines, and worker shutdown checks passed.
+<end of output>
+Test time =   0.63 sec
+----------------------------------------------------------
+Test Passed.
+"validate-http-protocol" end time: Sep 13 10:43 Korea Standard Time
+"validate-http-protocol" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/46 Testing: validate-compute
+22/46 Test: validate-compute
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-compute.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-compute" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+compute: GPU executed reference comparisons and cached-weight reuse
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"validate-compute" end time: Sep 13 10:43 Korea Standard Time
+"validate-compute" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/46 Testing: validate-vulkan-compute
+23/46 Test: validate-vulkan-compute
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-compute.exe" "--vulkan"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-vulkan-compute" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+compute: GPU executed reference comparisons and cached-weight reuse
+<end of output>
+Test time =   0.33 sec
+----------------------------------------------------------
+Test Passed.
+"validate-vulkan-compute" end time: Sep 13 10:43 Korea Standard Time
+"validate-vulkan-compute" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/46 Testing: generate-native-gguf-vulkan
+24/46 Test: generate-native-gguf-vulkan
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-generation.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/tiny-llama-vulkan.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"generate-native-gguf-vulkan" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.90 sec
+----------------------------------------------------------
+Test Passed.
+"generate-native-gguf-vulkan" end time: Sep 13 10:43 Korea Standard Time
+"generate-native-gguf-vulkan" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/46 Testing: inference-vulkan-logits
+25/46 Test: inference-vulkan-logits
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "gpu-matvec"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-vulkan-logits" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=9.53674316e-07 rms=3.59559611e-07 max_scaled=3.66033402e-07 worst_logit=9
+prefix 31: max_abs=9.53674316e-07 rms=3.79800481e-07 max_scaled=3.18222114e-07 worst_logit=22
+prefix 30: max_abs=9.53674316e-07 rms=3.6895517e-07 max_scaled=1.46680227e-07 worst_logit=20
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"inference-vulkan-logits" end time: Sep 13 10:43 Korea Standard Time
+"inference-vulkan-logits" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/46 Testing: inference-cuda-attention-shapes
+26/46 Test: inference-cuda-attention-shapes
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "--attention-shapes" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/attention-shape"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-attention-shapes" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+attention width=32 window=0 shared=0
+prefix 65: max_abs=1.34110451e-07 rms=4.0635029e-08 max_scaled=1.12790387e-07 worst_logit=218
+prefix 64: max_abs=1.49011612e-07 rms=3.94742685e-08 max_scaled=1.11352814e-07 worst_logit=12
+prefix 63: max_abs=1.49011612e-07 rms=3.38505709e-08 max_scaled=1.2007268e-07 worst_logit=3
+one graph capture; 171 checked replays across reset and prefill
+attention width=64 window=0 shared=1
+prefix 1025: max_abs=2.83122063e-07 rms=9.5891836e-08 max_scaled=2.43777186e-07 worst_logit=195
+prefix 1024: max_abs=2.68220901e-07 rms=8.37772796e-08 max_scaled=2.21295984e-07 worst_logit=219
+prefix 1023: max_abs=3.27825546e-07 rms=9.25948368e-08 max_scaled=2.41286879e-07 worst_logit=7
+one graph capture; 3051 checked replays across reset and prefill
+attention width=64 window=1 shared=0
+prefix 65: max_abs=3.87430191e-07 rms=1.1246369e-07 max_scaled=2.65546382e-07 worst_logit=120
+prefix 64: max_abs=3.12924385e-07 rms=1.0624163e-07 max_scaled=2.93682873e-07 worst_logit=127
+prefix 63: max_abs=4.17232513e-07 rms=1.06085006e-07 max_scaled=2.75186168e-07 worst_logit=255
+one graph capture; 171 checked replays across reset and prefill
+attention width=128 window=0 shared=1
+prefix 65: max_abs=7.4505806e-07 rms=2.82002675e-07 max_scaled=6.1547847e-07 worst_logit=123
+prefix 64: max_abs=7.74860382e-07 rms=2.62417382e-07 max_scaled=7.35486937e-07 worst_logit=37
+prefix 63: max_abs=7.86501914e-07 rms=2.55868741e-07 max_scaled=7.82659984e-07 worst_logit=33
+one graph capture; 171 checked replays across reset and prefill
+attention width=128 window=17 shared=0
+prefix 65: max_abs=8.94069672e-07 rms=2.35878741e-07 max_scaled=5.42608966e-07 worst_logit=184
+prefix 64: max_abs=7.15255737e-07 rms=2.12010983e-07 max_scaled=4.69637137e-07 worst_logit=65
+prefix 63: max_abs=7.74860382e-07 rms=2.46196606e-07 max_scaled=5.40518698e-07 worst_logit=123
+one graph capture; 171 checked replays across reset and prefill
+attention width=130 window=17 shared=1
+prefix 65: max_abs=7.74860382e-07 rms=2.58115052e-07 max_scaled=5.19149902e-07 worst_logit=112
+prefix 64: max_abs=8.94069672e-07 rms=2.74957304e-07 max_scaled=6.28202188e-07 worst_logit=140
+prefix 63: max_abs=8.94069672e-07 rms=3.08783911e-07 max_scaled=6.88430411e-07 worst_logit=106
+one graph capture; 171 checked replays across reset and prefill
+attention width=256 window=0 shared=0
+prefix 65: max_abs=1.66147947e-06 rms=4.85746318e-07 max_scaled=1.52201602e-06 worst_logit=137
+prefix 64: max_abs=1.60932541e-06 rms=5.32482298e-07 max_scaled=1.12698561e-06 worst_logit=3
+prefix 63: max_abs=1.54972076e-06 rms=4.81572e-07 max_scaled=1.18754522e-06 worst_logit=89
+one graph capture; 171 checked replays across reset and prefill
+<end of output>
+Test time =   5.74 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-attention-shapes" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-attention-shapes" time elapsed: 00:00:05
+----------------------------------------------------------
+
+27/46 Testing: inference-cuda-graph-reuse
+27/46 Test: inference-cuda-graph-reuse
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-graph-reuse" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=5.41493743e-07 max_scaled=3.25363024e-07 worst_logit=97
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+one graph capture; 72 checked replays across reset and prefill
+<end of output>
+Test time =   0.32 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-graph-reuse" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-graph-reuse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/46 Testing: inference-cuda-graph-reference
+28/46 Test: inference-cuda-graph-reference
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-graph-reference" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=9.53674316e-07 rms=3.37906276e-07 max_scaled=1.49782217e-07 worst_logit=100
+prefix 31: max_abs=1.90734863e-06 rms=1.08364591e-06 max_scaled=3.56880168e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=5.34199706e-07 max_scaled=2.19523016e-07 worst_logit=42
+one graph capture; 72 checked replays across reset and prefill
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-graph-reference" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-graph-reference" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/46 Testing: inference-cuda-blas
+29/46 Test: inference-cuda-blas
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-blas" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=5.41493743e-07 max_scaled=3.25363024e-07 worst_logit=97
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.31 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-blas" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-blas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/46 Testing: quant-kernels-cuda-chunks
+30/46 Test: quant-kernels-cuda-chunks
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-cuda-chunks" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   2.24 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-cuda-chunks" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-cuda-chunks" time elapsed: 00:00:02
+----------------------------------------------------------
+
+31/46 Testing: inference-cuda-blas-unavailable
+31/46 Test: inference-cuda-blas-unavailable
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-blas-unavailable" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+CUDA optional cuBLAS library could not be loaded; retaining native kernels
+prefix 32: max_abs=1.43051147e-06 rms=6.19783852e-07 max_scaled=2.44022268e-07 worst_logit=139
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-blas-unavailable" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-blas-unavailable" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/46 Testing: inference-cuda-cutlass
+32/46 Test: inference-cuda-cutlass
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-cutlass" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=8.63959788e-07 max_scaled=8.13407559e-07 worst_logit=16
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-cutlass" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-cutlass" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/46 Testing: inference-cuda-cutlass-auto
+33/46 Test: inference-cuda-cutlass-auto
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-cutlass-auto" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=8.63959788e-07 max_scaled=8.13407559e-07 worst_logit=16
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-cutlass-auto" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-cutlass-auto" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/46 Testing: inference-cuda-cutlass-disabled
+34/46 Test: inference-cuda-cutlass-disabled
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-cutlass-disabled" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=6.19783852e-07 max_scaled=2.44022268e-07 worst_logit=139
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-cutlass-disabled" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-cutlass-disabled" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/46 Testing: quant-kernels-cuda-cutlass
+35/46 Test: quant-kernels-cuda-cutlass
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-cuda-cutlass" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   1.20 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-cuda-cutlass" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-cuda-cutlass" time elapsed: 00:00:01
+----------------------------------------------------------
+
+36/46 Testing: inference-cuda-cutlass-unavailable
+36/46 Test: inference-cuda-cutlass-unavailable
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-cutlass-unavailable" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+CUDA optional CUTLASS bridge unavailable or incompatible; retaining existing kernels
+prefix 32: max_abs=1.43051147e-06 rms=6.19783852e-07 max_scaled=2.44022268e-07 worst_logit=139
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-cutlass-unavailable" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-cutlass-unavailable" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/46 Testing: quant-kernels-cuda
+37/46 Test: quant-kernels-cuda
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-cuda" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   2.01 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-cuda" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-cuda" time elapsed: 00:00:02
+----------------------------------------------------------
+
+38/46 Testing: quant-kernels-cuda-reference
+38/46 Test: quant-kernels-cuda-reference
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-quant-kernels.exe"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"quant-kernels-cuda-reference" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   1.08 sec
+----------------------------------------------------------
+Test Passed.
+"quant-kernels-cuda-reference" end time: Sep 13 10:43 Korea Standard Time
+"quant-kernels-cuda-reference" time elapsed: 00:00:01
+----------------------------------------------------------
+
+39/46 Testing: inference-cuda-resident
+39/46 Test: inference-cuda-resident
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-resident" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=1.43051147e-06 rms=5.41493743e-07 max_scaled=3.25363024e-07 worst_logit=97
+prefix 31: max_abs=1.90734863e-06 rms=1.09728165e-06 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=1.43051147e-06 rms=6.67521061e-07 max_scaled=2.77482814e-07 worst_logit=20
+<end of output>
+Test time =   0.31 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-resident" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-resident" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/46 Testing: inference-cuda-memory-fallback
+40/46 Test: inference-cuda-memory-fallback
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "cpu-reference"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-memory-fallback" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 31: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 30: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-memory-fallback" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-memory-fallback" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/46 Testing: inference-cuda-partial-allocation
+41/46 Test: inference-cuda-partial-allocation
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "cpu-reference"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-partial-allocation" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 31: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 30: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-partial-allocation" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-partial-allocation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/46 Testing: inference-cuda-prefix-replay
+42/46 Test: inference-cuda-prefix-replay
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-prefix-replay" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 31: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+prefix 30: max_abs=0 rms=0 max_scaled=0 worst_logit=0
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-prefix-replay" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-prefix-replay" time elapsed: 00:00:00
+----------------------------------------------------------
+
+43/46 Testing: inference-cuda-without-graphs
+43/46 Test: inference-cuda-without-graphs
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-inference.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/pretraining.trained.gguf" "resident"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"inference-cuda-without-graphs" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+prefix 32: max_abs=9.53674316e-07 rms=4.56917244e-07 max_scaled=2.44022268e-07 worst_logit=27
+prefix 31: max_abs=1.90734863e-06 rms=9.42213834e-07 max_scaled=4.06811185e-07 worst_logit=1
+prefix 30: max_abs=9.53674316e-07 rms=3.49637343e-07 max_scaled=1.45859983e-07 worst_logit=100
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"inference-cuda-without-graphs" end time: Sep 13 10:43 Korea Standard Time
+"inference-cuda-without-graphs" time elapsed: 00:00:00
+----------------------------------------------------------
+
+44/46 Testing: validate-cuda-compute
+44/46 Test: validate-cuda-compute
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-compute.exe" "--cuda"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-cuda-compute" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+compute: GPU executed reference comparisons and cached-weight reuse
+<end of output>
+Test time =   0.71 sec
+----------------------------------------------------------
+Test Passed.
+"validate-cuda-compute" end time: Sep 13 10:43 Korea Standard Time
+"validate-cuda-compute" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/46 Testing: validate-cuda-gemma
+45/46 Test: validate-cuda-gemma
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-architectures.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/tiny-gemma4-cuda.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"validate-cuda-gemma" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   2.54 sec
+----------------------------------------------------------
+Test Passed.
+"validate-cuda-gemma" end time: Sep 13 10:43 Korea Standard Time
+"validate-cuda-gemma" time elapsed: 00:00:02
+----------------------------------------------------------
+
+46/46 Testing: generate-native-gguf-cuda
+46/46 Test: generate-native-gguf-cuda
+Command: "C:/Users/Colin/fyodor/build-cuda/nya-test-generation.exe" "C:/Users/Colin/fyodor/build-cuda/backend/test_models/tiny-llama-cuda.gguf"
+Directory: C:/Users/Colin/fyodor/build-cuda/backend
+"generate-native-gguf-cuda" start time: Sep 13 10:43 Korea Standard Time
+Output:
+----------------------------------------------------------
+CUDA resident execution failed at token position 1; CPU prefix replay required
+<end of output>
+Test time =   1.52 sec
+----------------------------------------------------------
+Test Passed.
+"generate-native-gguf-cuda" end time: Sep 13 10:43 Korea Standard Time
+"generate-native-gguf-cuda" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Sep 13 10:43 Korea Standard Time

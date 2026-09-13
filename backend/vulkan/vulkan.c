@@ -431,3 +431,19 @@ int nya_vulkan_matvec(nya_vulkan_context *context, const void *weights,
     memcpy(output, context->output.mapped, (size_t)output_bytes);
     return 0;
 }
+
+/* Vulkan currently implements synchronous F32 projections. Advertising only
+   that capability prevents a scheduler from assuming resident transformer ops. */
+#include "compute_backend.h"
+static void *vk_backend_create(void) { return nya_vulkan_create(); }
+static void vk_backend_free(void *p) { nya_vulkan_free(p); }
+static int vk_backend_active(const void *p) { return nya_vulkan_active(p); }
+static int vk_backend_matvec(void *p, const void *w, size_t r, size_t c,
+    unsigned t, const float *x, float *y)
+{ return t == 0 ? nya_vulkan_matvec(p, w, r, c, x, y) : -1; }
+const nya_backend_interface *nya_vulkan_backend(void)
+{
+    static const nya_backend_interface api = {NYA_BACKEND_VULKAN, "vulkan", NYA_COMPUTE_MATVEC,
+        vk_backend_create, vk_backend_free, vk_backend_active, vk_backend_matvec, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    return &api;
+}

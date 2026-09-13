@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <limits.h>
+#include "blas.h"
+#ifdef NYA_ENABLE_CUTLASS
+#include "cutlass/host.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -16,7 +21,6 @@
 #endif
 
 #define NYA_CUDA_WEIGHT_LIMIT 2048
-#define NYA_CUDA_CACHE_LIMIT (UINT64_C(8) * 1024 * 1024 * 1024)
 
 typedef struct nya_cuda_weight {
     const void *source;
@@ -33,6 +37,18 @@ typedef struct nya_cuda_context {
     CUcontext context;
     CUmodule module;
     CUfunction function;
+    CUfunction dot[31];
+    CUfunction gemm[31];
+    CUfunction gemm_large[31];
+    CUfunction expand[31];
+    nya_cuda_blas blas;
+#ifdef NYA_ENABLE_CUTLASS
+    nya_cuda_cutlass cutlass;
+#endif
+    CUdeviceptr blas_storage;
+    size_t blas_bytes;
+    unsigned gemm_tile;
+    int reference;
     CUstream stream;
     CUdeviceptr input, output;
     size_t input_bytes, output_bytes, cached_bytes, cache_limit, weight_count;
@@ -58,6 +74,16 @@ typedef struct nya_cuda_context {
     CUresult (CUDAAPI *stream_sync)(CUstream);
     CUresult (CUDAAPI *launch)(CUfunction, unsigned int, unsigned int, unsigned int,
         unsigned int, unsigned int, unsigned int, unsigned int, CUstream, void **, void **);
+    CUresult (CUDAAPI *capture_begin)(CUstream, CUstreamCaptureMode);
+    CUresult (CUDAAPI *capture_end)(CUstream, CUgraph *);
+    CUresult (CUDAAPI *graph_instantiate)(CUgraphExec *, CUgraph, unsigned long long);
+    CUresult (CUDAAPI *graph_launch)(CUgraphExec, CUstream);
+    CUresult (CUDAAPI *graph_free)(CUgraph);
+    CUresult (CUDAAPI *graph_exec_free)(CUgraphExec);
+    CUresult (CUDAAPI *event_create)(CUevent *, unsigned);
+    CUresult (CUDAAPI *event_record)(CUevent, CUstream);
+    CUresult (CUDAAPI *event_elapsed)(float *, CUevent, CUevent);
+    CUresult (CUDAAPI *event_free)(CUevent);
     nvrtcResult (*program_create)(nvrtcProgram *, const char *, const char *, int, const char *const *, const char *const *);
     nvrtcResult (*program_compile)(nvrtcProgram, int, const char *const *);
     nvrtcResult (*program_destroy)(nvrtcProgram *);
@@ -112,6 +138,11 @@ static int nya_cuda_symbol(void *library, const char *name, void *destination, s
     return 0;
 }
 
+#ifdef NYA_ENABLE_CUTLASS
+#include "cutlass/loader.inc"
+#endif
+#include "blas.inc"
+
 static void *nya_cuda_compiler(void)
 {
     const char *explicit_path = getenv("NYA_CUDA_NVRTC");
@@ -153,6 +184,11 @@ void nya_cuda_free(nya_cuda_context *c)
         if (c->push(c->context) == CUDA_SUCCESS) {
             CUcontext previous;
             if (c->stream != NULL) c->stream_sync(c->stream);
+            nya_blas_close(c);
+#ifdef NYA_ENABLE_CUTLASS
+            nya_cutlass_close(c);
+#endif
+            if (c->blas_storage) c->deallocate(c->blas_storage);
             for (size_t i = 0; i < c->weight_count; ++i) c->deallocate(c->weights[i].memory);
             if (c->input != 0) c->deallocate(c->input);
             if (c->output != 0) c->deallocate(c->output);
@@ -188,6 +224,11 @@ nya_cuda_context *nya_cuda_create(void)
     DRIVER(module_load, "cuModuleLoadData"); DRIVER(module_unload, "cuModuleUnload"); DRIVER(function_get, "cuModuleGetFunction");
     DRIVER(stream_create, "cuStreamCreate"); DRIVER(stream_destroy, "cuStreamDestroy_v2"); DRIVER(stream_sync, "cuStreamSynchronize");
     DRIVER(launch, "cuLaunchKernel");
+    DRIVER(capture_begin, "cuStreamBeginCapture_v2"); DRIVER(capture_end, "cuStreamEndCapture");
+    DRIVER(graph_instantiate, "cuGraphInstantiateWithFlags");
+    DRIVER(graph_launch, "cuGraphLaunch"); DRIVER(graph_free, "cuGraphDestroy"); DRIVER(graph_exec_free, "cuGraphExecDestroy");
+    DRIVER(event_create, "cuEventCreate"); DRIVER(event_record, "cuEventRecord");
+    DRIVER(event_elapsed, "cuEventElapsedTime"); DRIVER(event_free, "cuEventDestroy_v2");
     COMPILER(program_create, "nvrtcCreateProgram"); COMPILER(program_compile, "nvrtcCompileProgram"); COMPILER(program_destroy, "nvrtcDestroyProgram");
     COMPILER(ptx_size, "nvrtcGetPTXSize"); COMPILER(ptx_get, "nvrtcGetPTX");
     COMPILER(log_size, "nvrtcGetProgramLogSize"); COMPILER(log_get, "nvrtcGetProgramLog");
@@ -220,9 +261,11 @@ nya_cuda_context *nya_cuda_create(void)
     if (selected == 0) goto failure;
     char architecture[64];
     snprintf(architecture, sizeof(architecture), "--gpu-architecture=compute_%d", selected);
-    const char *options[] = {architecture, "--std=c++11", "--fmad=false"};
+    const char *reference = getenv("NYA_CUDA_REFERENCE");
+    c->reference = reference != NULL && strcmp(reference, "1") == 0;
+    const char *options[] = {architecture, "--std=c++11", c->reference ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
     if (c->program_create(&program, (const char *)nya_cuda_source, "fyodor_matvec.cu", 0, NULL, NULL) != NVRTC_SUCCESS) goto failure;
-    if (c->program_compile(program, 3, options) != NVRTC_SUCCESS) {
+    if (c->program_compile(program, 4, options) != NVRTC_SUCCESS) {
         if (getenv("NYA_CUDA_DEBUG") != NULL) {
             size_t log_bytes;
             if (c->log_size(program, &log_bytes) == NVRTC_SUCCESS && log_bytes > 0 && log_bytes < 65536) {
@@ -241,10 +284,38 @@ nya_cuda_context *nya_cuda_create(void)
     pushed = 1;
     if (c->module_load(&c->module, ptx) != CUDA_SUCCESS || c->function_get(&c->function, c->module, "nya_matvec") != CUDA_SUCCESS ||
         c->stream_create(&c->stream, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS || c->memory_info(&free_bytes, &total_bytes) != CUDA_SUCCESS) goto failure;
+    const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
+    for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
+        char name[32]; snprintf(name, sizeof(name), "nya_dot_%u", types[i]);
+        if (c->function_get(&c->dot[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+        const char *tile_mode = getenv("NYA_CUDA_GEMM_TILE");
+        c->gemm_tile = c->reference || (tile_mode && !strcmp(tile_mode,"32")) ? 32 : 64;
+        snprintf(name, sizeof(name), "nya_gemm_%u", types[i]);
+        if (c->function_get(&c->gemm[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+        snprintf(name, sizeof(name), "nya_gemm64_%u", types[i]);
+        if (c->function_get(&c->gemm_large[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+        snprintf(name, sizeof(name), "nya_expand_%u", types[i]);
+        if (c->function_get(&c->expand[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+    }
+    nya_blas_open(c);
+#ifdef NYA_ENABLE_CUTLASS
+    nya_cutlass_open(c);
+#endif
     /* Leave at least a quarter of currently free device memory for other work.
        This is a per-context upper bound, not a reservation or eviction policy. */
-    c->cache_limit = free_bytes - free_bytes / 4;
-    if ((uint64_t)c->cache_limit > NYA_CUDA_CACHE_LIMIT) c->cache_limit = (size_t)NYA_CUDA_CACHE_LIMIT;
+    size_t reserve = free_bytes / 10;
+    if (reserve < 256U * 1024U * 1024U) reserve = 256U * 1024U * 1024U;
+    c->cache_limit = free_bytes > reserve ? free_bytes - reserve : 0;
+    /* Optional upper bound for reproducible admission/OOM testing and sharing
+       a GPU. The resident planner also reserves its complete KV/scratch budget. */
+    const char *budget = getenv("NYA_CUDA_MEMORY_MIB");
+    if (budget != NULL) {
+        char *end;
+        unsigned long long mib = strtoull(budget, &end, 10);
+        if (budget[0] < '0' || budget[0] > '9' || *end || mib > SIZE_MAX / (1024U * 1024U)) goto failure;
+        size_t limit = (size_t)mib * 1024U * 1024U;
+        if (limit < c->cache_limit) c->cache_limit = limit;
+    }
     if (c->pop(&previous) != CUDA_SUCCESS) { pushed = 0; goto failure; }
     free(ptx);
     return c;
@@ -271,14 +342,17 @@ static int nya_cuda_grow(nya_cuda_context *c, CUdeviceptr *memory, size_t *capac
     return 0;
 }
 
-int nya_cuda_matvec_typed(nya_cuda_context *c, const void *weights, size_t rows, size_t columns,
-    unsigned int type, const float *input, float *output)
+/* Standalone host-buffer dispatch is also useful for numerical kernel tests.
+   Normal dense inference uses resident plans and never passes through here. */
+static int nya_cuda_matmul_typed(nya_cuda_context *c, const void *weights, size_t rows, size_t columns,
+    unsigned int type, const float *input, float *output, size_t batch)
 {
     size_t block = 1, block_bytes = 4, row_bytes, bytes, index;
     CUcontext previous;
     int result = -1;
     if (!nya_cuda_active(c) || weights == NULL || input == NULL || output == NULL || rows == 0 || columns == 0 ||
-        rows > (size_t)c->grid_limit || columns > SIZE_MAX / sizeof(float) || rows > SIZE_MAX / sizeof(float)) return -1;
+        batch == 0 || batch > 512 || rows > (size_t)c->grid_limit ||
+        columns > SIZE_MAX / sizeof(float) / batch || rows > SIZE_MAX / sizeof(float) / batch) return -1;
     switch (type) {
         case 0: break;
         case 1: case 30: block_bytes = 2; break;
@@ -306,14 +380,37 @@ int nya_cuda_matvec_typed(nya_cuda_context *c, const void *weights, size_t rows,
         ++c->weight_count; c->cached_bytes += bytes;
         if (c->upload(w->memory, weights, bytes) != CUDA_SUCCESS) goto done;
     }
-    if (nya_cuda_grow(c, &c->input, &c->input_bytes, columns * sizeof(float)) != 0 ||
-        nya_cuda_grow(c, &c->output, &c->output_bytes, rows * sizeof(float)) != 0 ||
-        c->upload(c->input, input, columns * sizeof(float)) != CUDA_SUCCESS) goto done;
+    if (nya_cuda_grow(c, &c->input, &c->input_bytes, columns * batch * sizeof(float)) != 0 ||
+        nya_cuda_grow(c, &c->output, &c->output_bytes, rows * batch * sizeof(float)) != 0 ||
+        c->upload(c->input, input, columns * batch * sizeof(float)) != CUDA_SUCCESS) goto done;
+    /* Pageable HtoD may return after staging, before DMA completes. Kernels
+       use a nonblocking stream, which does not implicitly wait on the legacy
+       copy stream. Finish that stream before consuming the uploaded buffers.
+       Resident inference performs this dependency once at plan creation. */
+    if (c->stream_sync(NULL) != CUDA_SUCCESS) goto done;
     unsigned long long cols = (unsigned long long)columns, stride = (unsigned long long)row_bytes;
     CUdeviceptr matrix = c->weights[index].memory;
     void *arguments[] = {&matrix, &c->input, &c->output, &cols, &stride, &type};
-    if (c->launch(c->function, (unsigned int)rows, 1, 1, 256, 1, 1, 0, c->stream, arguments, NULL) != CUDA_SUCCESS ||
-        c->stream_sync(c->stream) != CUDA_SUCCESS || c->download(output, c->output, rows * sizeof(float)) != CUDA_SUCCESS) goto done;
+    unsigned long long row_count = rows;
+    CUfunction function = c->reference ? c->function : c->dot[type];
+    unsigned blocks = (unsigned)(c->reference ? rows : (rows + 7) / 8);
+    if (!c->reference) arguments[5] = &row_count;
+    if (batch > 1) {
+        size_t expansion = nya_blas_bytes(c, rows, columns, batch);
+        if (expansion && expansion + NYA_BLAS_WORKSPACE <= c->cache_limit - c->cached_bytes &&
+            nya_cuda_grow(c, &c->blas_storage, &c->blas_bytes, expansion + NYA_BLAS_WORKSPACE) == 0) {
+            if (nya_blas_multiply(c, matrix, c->input, c->output, rows, columns, type, row_bytes,
+                batch, c->blas_storage + NYA_BLAS_WORKSPACE, expansion, c->blas_storage, NULL)) goto done;
+        } else {
+        unsigned r = (unsigned)rows, b = (unsigned)batch;
+        void *matrix_arguments[] = {&matrix, &c->input, &c->output, &cols, &stride, &r, &b};
+        unsigned tile = b >= 32 && r >= 32 ? c->gemm_tile : 32, bx = tile == 64 ? 16 : 32;
+        CUfunction kernel = tile == 64 ? c->gemm_large[type] : c->gemm[type];
+        if (c->launch(kernel, (r+tile-1)/tile, (b+tile-1)/tile, 1, bx, 256/bx, 1, 0, c->stream, matrix_arguments, NULL) != CUDA_SUCCESS) goto done;
+        }
+    } else if (c->launch(function, blocks, 1, 1, 256, 1, 1, 0, c->stream, arguments, NULL) != CUDA_SUCCESS) goto done;
+    if (c->stream_sync(c->stream) != CUDA_SUCCESS ||
+        c->download(output, c->output, rows * batch * sizeof(float)) != CUDA_SUCCESS) goto done;
     result = 0;
 done:
     if (c->pop(&previous) != CUDA_SUCCESS) result = -1;
@@ -323,8 +420,30 @@ done:
     return result;
 }
 
+int nya_cuda_matvec_typed(nya_cuda_context *c, const void *weights, size_t rows, size_t columns,
+    unsigned int type, const float *input, float *output)
+{ return nya_cuda_matmul_typed(c, weights, rows, columns, type, input, output, 1); }
+
 int nya_cuda_matvec(nya_cuda_context *c, const void *weights, size_t rows, size_t columns,
     const float *input, float *output)
 {
     return nya_cuda_matvec_typed(c, weights, rows, columns, 0, input, output);
+}
+
+#include "compute_backend.h"
+#include "resident.inc"
+static void *cuda_backend_create(void) { return nya_cuda_create(); }
+static void cuda_backend_free(void *p) { nya_cuda_free(p); }
+static int cuda_backend_active(const void *p) { return nya_cuda_active(p); }
+static int cuda_backend_matvec(void *p, const void *w, size_t r, size_t c,
+    unsigned t, const float *x, float *y)
+{ return nya_cuda_matvec_typed(p, w, r, c, t, x, y); }
+static int cuda_backend_matmul(void *p, const void *w, size_t r, size_t c,
+    unsigned t, const float *x, float *y, size_t batch)
+{ return nya_cuda_matmul_typed(p, w, r, c, t, x, y, batch); }
+const nya_backend_interface *nya_cuda_backend(void)
+{
+    static const nya_backend_interface api = {NYA_BACKEND_CUDA, "cuda", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED | NYA_COMPUTE_RESIDENT,
+        cuda_backend_create, cuda_backend_free, cuda_backend_active, cuda_backend_matvec, cuda_plan_create, cuda_plan_free, cuda_plan_token, cuda_plan_prefill, cuda_plan_stats, cuda_backend_matmul, NULL, cuda_plan_read_kv};
+    return &api;
 }

@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-09-08T23:14:11.515233+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "commands": {
+    "fyodor": [
+      "build-cuda/fyodor-bench.exe",
+      "-m",
+      ".tools/tinyllama-q4_k_m.gguf",
+      "-b",
+      "cuda",
+      "-p",
+      "512",
+      "-n",
+      "128",
+      "-r",
+      "3",
+      "--context",
+      "0",
+      "--warmup",
+      "1",
+      "--json"
+    ],
+    "llama": [
+      ".tools/llama-b10809-cuda/llama-bench.exe",
+      "-m",
+      ".tools/tinyllama-q4_k_m.gguf",
+      "-p",
+      "512",
+      "-n",
+      "128",
+      "-r",
+      "3",
+      "-d",
+      "0",
+      "-t",
+      "6",
+      "-b",
+      "512",
+      "-ub",
+      "512",
+      "-ngl",
+      "99",
+      "-ctk",
+      "f16",
+      "-ctv",
+      "f16",
+      "-fa",
+      "off",
+      "-o",
+      "json"
+    ]
+  },
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CPU_BATCH": "512"
+  },
+  "caveats": [
+    "Fyodor KV is F32; llama-bench b10809 rejects F32 KV, so it uses F16.",
+    "Both use synthetic token IDs, but their deterministic token sequences differ.",
+    "llama warmup policy differs; use enough repetitions and report variance.",
+    "Select a llama build containing the requested backend; inspect its reported backend."
+  ]
+}

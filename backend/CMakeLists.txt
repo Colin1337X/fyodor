@@ -43,8 +43,9 @@ if(NYA_ENABLE_IPO)
     endif()
 endif()
 
-# One policy covers production and tests. No fast-math or machine-specific
-# instructions: distributed binaries remain portable and retain NaN checks.
+# One policy covers production and tests. No global fast-math or ISA flags:
+# specialized CPU functions require runtime feature checks before dispatch.
+# Distributed binaries retain the scalar path and NaN validation.
 function(nya_target_policy target)
     set_target_properties(${target} PROPERTIES
         C_STANDARD ${NYA_C_STANDARD} C_STANDARD_REQUIRED YES C_EXTENSIONS NO
@@ -75,10 +76,12 @@ endfunction()
 # Compile the model engine once, independently from HTTP. The server and tests
 # reuse the same objects, so neither can drift into a different implementation.
 add_library(nya-engine STATIC
+    core/cpu_backend.c core/cpu_kernels.c core/llm_quant.c core/thread.c
     core/compute.c core/execution.c core/generation.c core/file.c core/format.c
     core/format_gguf.c core/format_onnx.c core/format_safetensors.c
     core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/pretraining.c)
 target_include_directories(nya-engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(nya-engine PUBLIC Threads::Threads)
 nya_target_policy(nya-engine)
 if(WIN32)
     target_link_libraries(nya-engine PUBLIC bcrypt)
@@ -103,7 +106,7 @@ if(NYA_ENABLE_CUDA)
     endif()
 endif()
 
-add_library(nya-server STATIC core/config.c core/server.c core/thread.c)
+add_library(nya-server STATIC core/config.c core/server.c)
 nya_target_policy(nya-server)
 target_link_libraries(nya-server PUBLIC nya-engine Threads::Threads)
 if(WIN32)
@@ -113,6 +116,9 @@ add_executable(fyodor-backend core/main.c)
 nya_target_policy(fyodor-backend)
 target_link_libraries(fyodor-backend PRIVATE nya-server)
 add_executable(fyodor-train core/train_main.c)
+add_executable(fyodor-bench core/bench_main.c)
+nya_target_policy(fyodor-bench)
+target_link_libraries(fyodor-bench PRIVATE nya-engine)
 nya_target_policy(fyodor-train)
 target_link_libraries(fyodor-train PRIVATE nya-engine)
 function(nya_copy_provider target)
@@ -141,6 +147,26 @@ add_custom_target(verify-without-cuda
         -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyWithoutCuda.cmake"
     USES_TERMINAL VERBATIM)
 
+if(NYA_CUDA_AVAILABLE)
+    add_custom_target(verify-without-cutlass
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNYA_SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "-DNYA_VERIFY_PARENT=${CMAKE_BINARY_DIR}"
+            "-DNYA_GENERATOR=${CMAKE_GENERATOR}"
+            "-DNYA_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+            "-DNYA_COMPILER=${CMAKE_C_COMPILER}"
+            "-DNYA_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+            "-DNYA_STANDARD=${NYA_C_STANDARD}"
+            "-DNYA_CUDA_INCLUDE=${NYA_CUDA_INCLUDE_DIR}"
+            "-DNYA_NVRTC_INCLUDE=${NYA_NVRTC_INCLUDE_DIR}"
+            "-DNYA_NVRTC_LIBRARY=${NYA_CUDA_NVRTC_LIBRARY}"
+            "-DNYA_VULKAN=${NYA_ENABLE_VULKAN}"
+            "-DNYA_VULKAN_INCLUDE=${Vulkan_INCLUDE_DIR}"
+            "-DNYA_VULKAN_LIBRARY=${Vulkan_LIBRARY}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyWithoutCutlass.cmake"
+        USES_TERMINAL VERBATIM)
+endif()
+
 if(BUILD_TESTING)
     set(nya_fixtures "${CMAKE_CURRENT_BINARY_DIR}/test_models")
     file(MAKE_DIRECTORY "${nya_fixtures}")
@@ -153,9 +179,38 @@ if(BUILD_TESTING)
     add_executable(nya-test-training tests/test_training.c)
     add_executable(nya-test-pretraining tests/test_pretraining.c)
     add_executable(nya-test-compute tests/test_compute.c)
+    add_executable(nya-test-inference tests/test_inference.c)
+    add_executable(nya-test-quant-kernels tests/test_quant_kernels.c)
+    add_executable(nya-test-attention tests/test_attention.c)
+    add_executable(nya-test-kv-precision tests/test_kv_precision.c)
+    nya_target_policy(nya-test-kv-precision)
+    target_link_libraries(nya-test-kv-precision PRIVATE nya-engine)
+    target_include_directories(nya-test-kv-precision PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/core")
+    add_test(NAME kv-precision COMMAND nya-test-kv-precision)
+    add_test(NAME quant-kernels-cpu-dot COMMAND nya-test-quant-kernels)
+    set_tests_properties(quant-kernels-cpu-dot PROPERTIES ENVIRONMENT "NYA_COMPUTE=cpu;NYA_CPU_GEMM=dot" TIMEOUT 60)
+    nya_target_policy(nya-test-attention)
+    target_include_directories(nya-test-attention PRIVATE core)
+    target_link_libraries(nya-test-attention PRIVATE nya-engine)
+    nya_target_policy(nya-test-quant-kernels)
+    target_include_directories(nya-test-quant-kernels PRIVATE core)
+    target_link_libraries(nya-test-quant-kernels PRIVATE nya-engine)
+    foreach(isa IN ITEMS scalar avx2 avx512)
+        add_test(NAME quant-kernels-${isa} COMMAND nya-test-quant-kernels)
+        add_test(NAME attention-${isa} COMMAND nya-test-attention)
+        set_tests_properties(attention-${isa} PROPERTIES ENVIRONMENT "NYA_CPU_ISA=${isa}" TIMEOUT 60)
+        set_tests_properties(quant-kernels-${isa} PROPERTIES ENVIRONMENT "NYA_COMPUTE=cpu;NYA_CPU_ISA=${isa}" TIMEOUT 60)
+    endforeach()
+    nya_target_policy(nya-test-inference)
+    target_include_directories(nya-test-inference PRIVATE core)
+    target_link_libraries(nya-test-inference PRIVATE nya-engine)
+    add_test(NAME inference-session-parity COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" cpu-reference)
+    set_tests_properties(inference-session-parity PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_INFERENCE_REFERENCE=1")
+    add_test(NAME inference-cpu-optimized COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" cpu-optimized)
+    set_tests_properties(inference-cpu-optimized PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cpu")
     # Parser tests include server.c to exercise private functions directly.
-    add_executable(nya-test-server tests/test_server.c core/config.c core/thread.c)
-    add_executable(nya-test-api tests/test_api.c core/config.c core/thread.c)
+    add_executable(nya-test-server tests/test_server.c core/config.c)
+    add_executable(nya-test-api tests/test_api.c core/config.c)
     foreach(target IN ITEMS nya-make-test-models nya-test-config nya-test-formats
             nya-test-execution nya-test-generation nya-test-architectures nya-test-training nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
         nya_target_policy(${target})
@@ -189,6 +244,9 @@ if(BUILD_TESTING)
     set_tests_properties(train-export-decoder PROPERTIES FIXTURES_SETUP trained_model)
     add_test(NAME compatible-rest-apis COMMAND nya-test-api "${nya_fixtures}/pretraining.trained.gguf")
     set_tests_properties(compatible-rest-apis PROPERTIES FIXTURES_REQUIRED trained_model TIMEOUT 60)
+    add_test(NAME benchmark-cli COMMAND "${CMAKE_COMMAND}" "-DBENCH=$<TARGET_FILE:fyodor-bench>"
+        "-DMODEL=${nya_fixtures}/pretraining.trained.gguf" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/BenchCli.cmake")
+    set_tests_properties(benchmark-cli PROPERTIES FIXTURES_REQUIRED trained_model TIMEOUT 60)
     add_test(NAME train-cli-workflows COMMAND "${CMAKE_COMMAND}" "-DTRAINER=$<TARGET_FILE:fyodor-train>"
         "-DFIXTURES=${nya_fixtures}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/TrainCli.cmake")
     set_tests_properties(train-cli-workflows PROPERTIES TIMEOUT 120)
@@ -200,15 +258,58 @@ if(BUILD_TESTING)
             ENVIRONMENT "NYA_COMPUTE=vulkan" SKIP_RETURN_CODE 77 TIMEOUT 60)
         add_test(NAME generate-native-gguf-vulkan COMMAND nya-test-generation "${nya_fixtures}/tiny-llama-vulkan.gguf")
         set_tests_properties(generate-native-gguf-vulkan PROPERTIES ENVIRONMENT "NYA_COMPUTE=vulkan" TIMEOUT 60)
+        add_test(NAME inference-vulkan-logits COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" gpu-matvec)
+        set_tests_properties(inference-vulkan-logits PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=vulkan" SKIP_RETURN_CODE 77 TIMEOUT 60)
     endif()
     if(NYA_CUDA_AVAILABLE)
+        add_test(NAME inference-cuda-attention-shapes COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-shape")
+        set_tests_properties(inference-cuda-attention-shapes PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1" SKIP_RETURN_CODE 77 TIMEOUT 180)
+        add_test(NAME inference-cuda-graph-reuse COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-graph-reuse PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        add_test(NAME inference-cuda-graph-reference COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-graph-reference PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_CUDA_REFERENCE=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        add_test(NAME inference-cuda-blas COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-blas PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_BLAS=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        add_test(NAME quant-kernels-cuda-chunks COMMAND nya-test-quant-kernels)
+        set_tests_properties(quant-kernels-cuda-chunks PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_BLAS_CHUNKS=1;NYA_CUDA_BLAS_SCRATCH_MIB=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        add_test(NAME inference-cuda-blas-unavailable COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-blas-unavailable PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_CUTLASS=0;NYA_TEST_NO_BLAS=1;NYA_CUDA_BLAS_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/deliberately-missing-blas.dll" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        if(NYA_ENABLE_CUTLASS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../CUDA/cutlass/CMakeLists.txt")
+            add_test(NAME inference-cuda-cutlass COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+            set_tests_properties(inference-cuda-cutlass PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_CUTLASS=1;NYA_CUDA_BLAS=0;NYA_TEST_CUTLASS=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+            add_test(NAME inference-cuda-cutlass-auto COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+            set_tests_properties(inference-cuda-cutlass-auto PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_BLAS=0;NYA_TEST_CUTLASS=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+            add_test(NAME inference-cuda-cutlass-disabled COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+            set_tests_properties(inference-cuda-cutlass-disabled PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_CUTLASS=0;NYA_CUDA_BLAS=0;NYA_TEST_NO_BLAS=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+            add_test(NAME quant-kernels-cuda-cutlass COMMAND nya-test-quant-kernels)
+            set_tests_properties(quant-kernels-cuda-cutlass PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_CUTLASS=1;NYA_CUDA_BLAS=0;NYA_TEST_CUTLASS=1;NYA_TEST_BLAS_CHUNKS=1;NYA_CUDA_BLAS_SCRATCH_MIB=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+            add_test(NAME inference-cuda-cutlass-unavailable COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+            set_tests_properties(inference-cuda-cutlass-unavailable PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_CUTLASS=1;NYA_CUDA_CUTLASS_LIBRARY=${CMAKE_CURRENT_BINARY_DIR}/deliberately-missing-cutlass.dll;NYA_CUDA_BLAS=0;NYA_TEST_NO_BLAS=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        endif()
+        add_test(NAME quant-kernels-cuda COMMAND nya-test-quant-kernels)
+        set_tests_properties(quant-kernels-cuda PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 60)
+        add_test(NAME quant-kernels-cuda-reference COMMAND nya-test-quant-kernels)
+        set_tests_properties(quant-kernels-cuda-reference PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_REFERENCE=1" TIMEOUT 60)
+        add_test(NAME inference-cuda-resident COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-resident PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 60)
+        add_test(NAME inference-cuda-memory-fallback COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" cpu-reference)
+        set_tests_properties(inference-cuda-memory-fallback PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_MEMORY_MIB=0" TIMEOUT 60)
+        add_test(NAME inference-cuda-partial-allocation COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" cpu-reference)
+        set_tests_properties(inference-cuda-partial-allocation PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_FAIL_ALLOCATION_AFTER=2" SKIP_RETURN_CODE 77 TIMEOUT 60)
+        add_test(NAME inference-cuda-prefix-replay COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-prefix-replay PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_FAIL_AFTER=3;NYA_TEST_DECODE=1" TIMEOUT 60)
+        add_test(NAME inference-cuda-without-graphs COMMAND nya-test-inference "${nya_fixtures}/pretraining.trained.gguf" resident)
+        set_tests_properties(inference-cuda-without-graphs PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_GRAPHS=0;NYA_TEST_DECODE=1" TIMEOUT 60)
         add_test(NAME validate-cuda-compute COMMAND nya-test-compute --cuda)
         set_tests_properties(validate-cuda-compute PROPERTIES
             ENVIRONMENT "NYA_COMPUTE=cuda" SKIP_RETURN_CODE 77 TIMEOUT 60)
         add_test(NAME validate-cuda-gemma COMMAND nya-test-architectures "${nya_fixtures}/tiny-gemma4-cuda.gguf")
-        set_tests_properties(validate-cuda-gemma PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 120)
+        set_tests_properties(validate-cuda-gemma PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1" TIMEOUT 120)
         add_test(NAME generate-native-gguf-cuda COMMAND nya-test-generation "${nya_fixtures}/tiny-llama-cuda.gguf")
         set_tests_properties(generate-native-gguf-cuda PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 60)
+        set_tests_properties(quant-kernels-cuda quant-kernels-cuda-reference inference-cuda-resident
+            inference-cuda-memory-fallback inference-cuda-prefix-replay inference-cuda-without-graphs
+            PROPERTIES SKIP_RETURN_CODE 77)
     endif()
     set_tests_properties(generate-native-gguf validate-http-protocol validate-compute PROPERTIES TIMEOUT 60)
     if(NYA_ENABLE_ONNXRUNTIME)

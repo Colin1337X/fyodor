@@ -1,0 +1,37 @@
+PASS: 36 live checks
+  readiness handshake
+  GET /health -> 401
+  GET /models -> 401
+  GET /health -> 200
+  GET /models -> 200
+  GET /health -> 200
+  GET /health -> 200
+  GET /health -> 403
+  GET /health -> 403
+  OPTIONS /model/load -> 204
+  GET /missing -> 404
+  PUT /models -> 405
+  POST /model/load -> 415
+  POST /model/load -> 200
+  POST /model/load -> 200
+  GET /models -> 200
+  POST /generate -> 409
+  POST /generate -> 409
+  POST /model/run -> 409
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 400
+  POST /model/load -> 404
+  POST /model/load -> 422
+  POST /model/unload -> 200
+  POST /model/unload -> 404
+  raw framing: extra field/duplicate/chunked/large header/large body rejected
+  slow-drip request ends at absolute 1s deadline with 408
+  POST /shutdown -> 200
+  authenticated shutdown with 3 partial clients exits in 0.297s
+  --help succeeds beside malformed explicit configuration

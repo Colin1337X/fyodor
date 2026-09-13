@@ -12,8 +12,8 @@
 static int check_matvec(nya_compute_context *context, size_t rows, size_t columns)
 {
     float *weights = malloc(rows * columns * sizeof(float));
-    float *input = malloc(columns * sizeof(float));
-    float *output = malloc(rows * sizeof(float));
+    float *input = malloc(columns * 33 * sizeof(float));
+    float *output = malloc(rows * 33 * sizeof(float));
     int result = -1;
     if (weights == NULL || input == NULL || output == NULL) goto done;
     for (size_t i = 0; i < rows * columns; ++i) weights[i] = (float)((int)(i % 23) - 11) / 17.0f;
@@ -30,6 +30,18 @@ static int check_matvec(nya_compute_context *context, size_t rows, size_t column
                 fprintf(stderr, "matvec mismatch row %zu: %.9g vs %.9g\n", row, (double)output[row], expected);
                 goto done;
             }
+        }
+    }
+    /* Non-quantized widths need not be block-aligned. Exercise K tails in
+       both the packed CPU microkernel and large CUDA GEMM, beyond quantized
+       fixtures whose widths are necessarily multiples of 32 or 256. */
+    if (strcmp(nya_compute_name(context),"vulkan")) {
+        for (size_t i = 0; i < columns*33; ++i) input[i] = (float)((int)((i*3+i/columns)%13)-6)/7;
+        if (nya_compute_matmul_typed(context,weights,rows,columns,0,input,output,33)) goto done;
+        for (size_t token = 0; token < 33; ++token) for (size_t row = 0; row < rows; ++row) {
+            double expected = 0;
+            for (size_t col = 0; col < columns; ++col) expected += (double)weights[row*columns+col]*input[token*columns+col];
+            if (!isfinite(output[token*rows+row]) || fabs(output[token*rows+row]-expected) > 0.0001*(1+fabs(expected))) goto done;
         }
     }
     result = 0;
@@ -82,7 +94,8 @@ int main(int argc, char **argv)
     }
     int is_vulkan = strcmp(nya_compute_name(context), "vulkan") == 0 && nya_compute_vulkan_compiled();
     int is_cuda = strcmp(nya_compute_name(context), "cuda") == 0 && nya_compute_cuda_compiled();
-    if ((!is_vulkan && !is_cuda) || (require_vulkan && !is_vulkan) || (require_cuda && !is_cuda) ||
+    int is_cpu = strcmp(nya_compute_name(context), "cpu") == 0;
+    if ((!is_vulkan && !is_cuda && !is_cpu) || (require_vulkan && !is_vulkan) || (require_cuda && !is_cuda) ||
         nya_compute_matvec(context, &value, SIZE_MAX, 2, &value, &value) != -1 ||
         nya_compute_matvec(context, &value, 0, 2, &value, &value) != -1 ||
         nya_compute_matvec(context, NULL, 1, 1, &value, &value) != -1) {

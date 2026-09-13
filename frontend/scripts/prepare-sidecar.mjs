@@ -20,6 +20,29 @@ for(const [stem,env] of [['fyodor-backend','FYODOR_BACKEND_BIN'],['fyodor-train'
 // Only remove known generated CUDA compiler resources in this exact bundle
 // directory. This prevents an old compiler surviving a subsequent CPU package.
 for(const name of await readdir(destination))if(/^nvrtc(?:64_|-builtins64_).*\.dll$/.test(name))await unlink(resolve(destination,name));
+// Optional BLAS is independent of CUDA's native kernels. Bundle only when
+// explicitly supplied; removing these DLLs preserves the custom CUDA path.
+for(const name of await readdir(destination))if(/^cublas(?:Lt)?64_\d+\.dll$/.test(name))await unlink(resolve(destination,name));
+if(process.platform==='win32'&&process.env.NYA_CUDA_BLAS_LIBRARY){
+  const library=resolve(process.env.NYA_CUDA_BLAS_LIBRARY),match=basename(library).match(/^cublas64_(\d+)\.dll$/);
+  if(!match||!await exists(library))throw new Error('NYA_CUDA_BLAS_LIBRARY must name an existing cublas64 DLL.');
+  const companion=resolve(dirname(library),`cublasLt64_${match[1]}.dll`);
+  if(!await exists(companion))throw new Error('Optional cuBLAS package is missing its matching cuBLASLt DLL.');
+  for(const file of [library,companion])await copyFile(file,resolve(destination,basename(file)));
+  console.log('Prepared optional cuBLAS and cuBLASLt (native CUDA remains available without them).');
+}
+// A standalone CUTLASS build exposes only a C ABI DLL. Its presence is optional,
+// and a subsequent package without the override must remove the generated copy.
+for(const name of ['fyodor-cutlass.dll','CUTLASS-LICENSE.txt'])if(await exists(resolve(destination,name)))await unlink(resolve(destination,name));
+if(process.platform==='win32'&&process.env.NYA_CUDA_CUTLASS_LIBRARY){
+  const library=resolve(process.env.NYA_CUDA_CUTLASS_LIBRARY);
+  if(basename(library)!=='fyodor-cutlass.dll'||!await exists(library))throw new Error('NYA_CUDA_CUTLASS_LIBRARY must name an existing fyodor-cutlass.dll.');
+  const license=resolve(dirname(library),'CUTLASS-LICENSE.txt');
+  if(!await exists(license))throw new Error('Optional CUTLASS package is missing CUTLASS-LICENSE.txt; reconfigure its standalone CMake build.');
+  await copyFile(library,resolve(destination,'fyodor-cutlass.dll'));
+  await copyFile(license,resolve(destination,'CUTLASS-LICENSE.txt'));
+  console.log('Prepared optional CUTLASS bridge and upstream license (cuBLAS retains priority).');
+}
 if(process.platform==='win32'){
   let runtime=process.env.NYA_CUDA_NVRTC;
   if(!runtime){

@@ -1,112 +1,108 @@
-#include "compute.h"
-
+#include "compute_backend.h"
 #include <stdlib.h>
 #include <string.h>
 
-/* One public handle wraps a typed provider pointer. CUDA and Vulkan private
-   structures never alias each other when both providers are compiled. */
-typedef struct nya_vulkan_context nya_vulkan_context;
-typedef struct nya_cuda_context nya_cuda_context;
-struct nya_compute_context {
-    int provider;
-    union { nya_vulkan_context *vulkan; nya_cuda_context *cuda; } state;
-};
-#ifdef NYA_ENABLE_VULKAN
-nya_vulkan_context *nya_vulkan_create(void);
-void nya_vulkan_free(nya_vulkan_context *context);
-int nya_vulkan_matvec(nya_vulkan_context *context, const void *weights,
-    size_t rows, size_t columns, const float *input, float *output);
-int nya_vulkan_active(const nya_vulkan_context *context);
-#endif
+struct nya_compute_context { const nya_backend_interface *api; void *state; };
+struct nya_compute_plan { const nya_backend_interface *api; void *state; };
 #ifdef NYA_ENABLE_CUDA
-nya_cuda_context *nya_cuda_create(void);
-void nya_cuda_free(nya_cuda_context *context);
-int nya_cuda_matvec(nya_cuda_context *context, const void *weights,
-    size_t rows, size_t columns, const float *input, float *output);
-int nya_cuda_active(const nya_cuda_context *context);
-int nya_cuda_matvec_typed(nya_cuda_context *context, const void *weights,
-    size_t rows, size_t columns, unsigned int type, const float *input, float *output);
+const nya_backend_interface *nya_cuda_backend(void);
 #endif
-
-nya_compute_context *nya_compute_create(void)
-{
-    return nya_compute_create_for(getenv("NYA_COMPUTE"));
-}
-
+#ifdef NYA_ENABLE_VULKAN
+const nya_backend_interface *nya_vulkan_backend(void);
+#endif
+/* Registration is the only platform-conditional list. Every operation uses
+   the selected vtable, so adding a backend never changes call-site dispatch. */
+typedef const nya_backend_interface *(*nya_backend_factory)(void);
+const nya_backend_interface *nya_cpu_backend(void);
+static const nya_backend_factory factories[] = {
+    nya_cpu_backend,
+#ifdef NYA_ENABLE_CUDA
+    nya_cuda_backend,
+#endif
+#ifdef NYA_ENABLE_VULKAN
+    nya_vulkan_backend,
+#endif
+    NULL
+};
+nya_compute_context *nya_compute_create(void) { return nya_compute_create_for(getenv("NYA_COMPUTE")); }
 nya_compute_context *nya_compute_create_for(const char *selection)
 {
-#if defined(NYA_ENABLE_VULKAN) || defined(NYA_ENABLE_CUDA)
-    if (selection == NULL) return NULL;
-    nya_compute_context *context = (nya_compute_context *)calloc(1, sizeof(*context));
-    if (context == NULL) return NULL;
-#ifdef NYA_ENABLE_VULKAN
-    if (strcmp(selection, "vulkan") == 0) {
-        context->state.vulkan = nya_vulkan_create();
-        if (context->state.vulkan != NULL) { context->provider = 1; return context; }
+    if (selection == NULL) selection = "cpu";
+    for (size_t i = 0; factories[i] != NULL; ++i) {
+        const nya_backend_interface *api = factories[i]();
+        if (strcmp(api->name, selection)) continue;
+        nya_compute_context *c = (nya_compute_context *)calloc(1, sizeof(*c));
+        if (c == NULL) return NULL;
+        c->api = api; c->state = api->create();
+        if (c->state != NULL) return c;
+        free(c); return NULL;
     }
-#endif
-#ifdef NYA_ENABLE_CUDA
-    if (strcmp(selection, "cuda") == 0) {
-        context->state.cuda = nya_cuda_create();
-        if (context->state.cuda != NULL) { context->provider = 2; return context; }
-    }
-#endif
-    free(context);
-#endif
-    (void)selection;
     return NULL;
 }
-
-void nya_compute_free(nya_compute_context *context)
+void nya_compute_free(nya_compute_context *c)
 {
-    if (context == NULL) return;
-#ifdef NYA_ENABLE_VULKAN
-    if (context->provider == 1) nya_vulkan_free(context->state.vulkan);
-#endif
-#ifdef NYA_ENABLE_CUDA
-    if (context->provider == 2) nya_cuda_free(context->state.cuda);
-#endif
-    free(context);
+    if (c != NULL) { c->api->destroy(c->state); free(c); }
 }
-
-int nya_compute_matvec(nya_compute_context *context, const void *weights,
-    size_t rows, size_t columns, const float *input, float *output)
+const char *nya_compute_name(const nya_compute_context *c)
 {
-#ifdef NYA_ENABLE_VULKAN
-    if (context != NULL && context->provider == 1)
-        return nya_vulkan_matvec(context->state.vulkan, weights, rows, columns, input, output);
-#endif
-#ifdef NYA_ENABLE_CUDA
-    if (context != NULL && context->provider == 2)
-        return nya_cuda_matvec(context->state.cuda, weights, rows, columns, input, output);
-#endif
-    (void)context; (void)weights; (void)rows; (void)columns; (void)input; (void)output;
-    return -1;
+    return c != NULL && c->api->active(c->state) ? c->api->name : "cpu";
 }
-
-const char *nya_compute_name(const nya_compute_context *context)
+unsigned nya_compute_capabilities(const nya_compute_context *c)
 {
-#ifdef NYA_ENABLE_VULKAN
-    if (context != NULL && context->provider == 1 && nya_vulkan_active(context->state.vulkan)) return "vulkan";
-#endif
-#ifdef NYA_ENABLE_CUDA
-    if (context != NULL && context->provider == 2 && nya_cuda_active(context->state.cuda)) return "cuda";
-#endif
-    (void)context;
-    return "cpu";
+    return c != NULL && c->api->active(c->state) ? c->api->capabilities : 0;
 }
-
-int nya_compute_matvec_typed(nya_compute_context *context, const void *weights,
-    size_t rows, size_t columns, unsigned int type, const float *input, float *output)
+int nya_compute_matvec_typed(nya_compute_context *c, const void *w, size_t rows,
+    size_t cols, unsigned type, const float *x, float *y)
 {
-#ifdef NYA_ENABLE_CUDA
-    if (context != NULL && context->provider == 2)
-        return nya_cuda_matvec_typed(context->state.cuda, weights, rows, columns, type, input, output);
-#endif
-    if (type == 0) return nya_compute_matvec(context, weights, rows, columns, input, output);
-    return -1;
+    return c != NULL && c->api->active(c->state) ? c->api->matvec(c->state, w, rows, cols, type, x, y) : -1;
 }
-
+int nya_compute_matvec(nya_compute_context *c, const void *w, size_t rows, size_t cols, const float *x, float *y)
+{
+    return nya_compute_matvec_typed(c, w, rows, cols, 0, x, y);
+}
+int nya_compute_matmul_typed(nya_compute_context *c, const void *w, size_t rows, size_t cols,
+    unsigned type, const float *x, float *y, size_t batch)
+{
+    return c != NULL && c->api->active(c->state) && c->api->matmul != NULL ?
+        c->api->matmul(c->state, w, rows, cols, type, x, y, batch) : -1;
+}
+int nya_compute_attention_f32(nya_compute_context *c, const nya_compute_attention *a)
+{
+    return c && c->api->active(c->state) && c->api->attention_f32 ? c->api->attention_f32(c->state,a) : -1;
+}
+nya_compute_plan *nya_compute_plan_create(nya_compute_context *c, const struct nya_llm_context *model, size_t capacity)
+{
+    if (c == NULL || !c->api->active(c->state) || c->api->plan_create == NULL) return NULL;
+    nya_compute_plan *p = (nya_compute_plan *)calloc(1, sizeof(*p));
+    if (p == NULL) return NULL;
+    p->api = c->api; p->state = c->api->plan_create(c->state, model, capacity);
+    if (p->state != NULL) return p;
+    free(p); return NULL;
+}
+void nya_compute_plan_free(nya_compute_plan *p)
+{
+    if (p != NULL) { p->api->plan_free(p->state); free(p); }
+}
+int nya_compute_plan_token(nya_compute_plan *p, unsigned int token, size_t position, int logits, float *output)
+{
+    return p != NULL ? p->api->plan_token(p->state, token, position, logits, output) : -1;
+}
+int nya_compute_plan_prefill(nya_compute_plan *p, const unsigned int *tokens, size_t count, size_t position, float *output)
+{
+    return p != NULL && p->api->plan_prefill != NULL ? p->api->plan_prefill(p->state, tokens, count, position, output) : -1;
+}
+void nya_compute_plan_stats(const nya_compute_plan *p, nya_compute_stats *stats)
+{
+    if (stats == NULL) return;
+    memset(stats, 0, sizeof(*stats));
+    if (p != NULL && p->api->plan_stats != NULL) p->api->plan_stats(p->state, stats);
+}
+/* Provider-owned indexing and validity checks prevent exposing raw pointers. */
+int nya_compute_plan_read_kv(nya_compute_plan *p, size_t layer, size_t position,
+    size_t count, float *keys, float *values, size_t elements)
+{
+    return p && p->api->plan_read_kv ? p->api->plan_read_kv(p->state,layer,position,count,keys,values,elements) : -1;
+}
 int nya_compute_vulkan_compiled(void)
 {
 #ifdef NYA_ENABLE_VULKAN
@@ -115,7 +111,6 @@ int nya_compute_vulkan_compiled(void)
     return 0;
 #endif
 }
-
 int nya_compute_cuda_compiled(void)
 {
 #ifdef NYA_ENABLE_CUDA

@@ -1,0 +1,7 @@
+# Preserve the exact bytes of measured results and diagnostic transcripts.
+# Long raw logs remain readable as files without producing noisy textual diffs.
+backend/benchmarks/**/*.json -text whitespace=cr-at-eol
+backend/benchmarks/**/*.log -text -diff
+backend/benchmarks/**/*.out -text -diff
+backend/benchmarks/**/*.patch -text -diff
+backend/benchmarks/stage*-validation/*.py -text whitespace=cr-at-eol,-blank-at-eof

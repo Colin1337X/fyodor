@@ -176,7 +176,24 @@ int nya_llm_load_projector(const char *path, uint64_t expected_size,
     nya_llm_context **output, char *error, size_t error_capacity);
 
 /* Shared byte-safe kernels are private to the native providers. */
+/* Explicit inference sessions separate model setup and KV allocation from timed
+   execution. A failed run invalidates the prefix until reset. Model ownership
+   stays with the caller and sessions must be destroyed before model unload. */
+typedef struct nya_llm_session nya_llm_session;
+nya_llm_session *nya_llm_session_create(const nya_llm_context *context, size_t capacity,
+    char *error, size_t error_capacity);
+void nya_llm_session_free(nya_llm_session *session);
+void nya_llm_session_reset(nya_llm_session *session);
+int nya_llm_session_run(nya_llm_session *session, const uint32_t *tokens, size_t count,
+    int logits_each_token);
+const float *nya_llm_session_logits(const nya_llm_session *session);
+const char *nya_llm_session_execution(const nya_llm_session *session);
+void nya_llm_session_stats(const nya_llm_session *session, nya_compute_stats *stats);
+int nya_llm_session_read_kv(nya_llm_session *session, size_t layer, size_t position,
+    size_t count, float *keys, float *values, size_t elements);
+
 float nya_llm_tensor_value(const nya_llm_tensor *tensor, size_t index);
+float nya_llm_round_f16(float value);
 void nya_llm_matvec(nya_compute_context *compute, float *output,
     const nya_llm_tensor *matrix, const float *input, size_t columns, size_t rows);
 

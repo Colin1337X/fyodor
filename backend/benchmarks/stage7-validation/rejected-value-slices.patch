@@ -1,0 +1,56 @@
+--- stage7-resident-before.cu
++++ stage7-resident-values-experiment.cu
+@@ -185,7 +185,7 @@
+     q += ((unsigned long long)blockIdx.y*heads+head)*width;
+     out += ((unsigned long long)blockIdx.y*heads+head)*width;
+     float *row = scores+((unsigned long long)blockIdx.y*heads+head)*capacity;
+-    __shared__ float partial[8][32];
++    __shared__ float partial[8][128];
+     __shared__ float maxima[8], maximum, denominator;
+     float local_max = -__int_as_float(0x7f800000);
+     for (unsigned t = first+warp; t <= end; t += 8) {
+@@ -210,18 +210,33 @@
+     sum = nya_sum(sum);
+     if (!threadIdx.x) denominator = sum;
+     __syncthreads();
+-    /* All lanes enter every tile, including partial head widths, so barriers
+-       cannot diverge. Only the final guarded store touches partial outputs. */
+-    for (unsigned base = 0; base < width; base += 32) {
+-        unsigned j = base+lane;
+-        float value = 0;
+-        if (j < width) for (unsigned t = first+warp; t <= end; t += 8)
+-            value += row[t]*values[(unsigned long long)t*stride+kh*width+j];
+-        partial[warp][lane] = value;
++    /* Reuse each softmax score for four contiguous warp-sized value slices.
++       The common 128-wide head now needs one context traversal and one pair of
++       barriers instead of four. Each component retains the original temporal
++       summation order, followed by the same eight-warp reduction. Constant
++       unrolled indices keep the four accumulators in registers. All threads
++       participate in barriers, including tails and heads wider than 128. */
++    for (unsigned base = 0; base < width; base += 128) {
++        float value[4] = {0, 0, 0, 0};
++        for (unsigned t = first+warp; t <= end; t += 8) {
++            float probability = row[t];
++            unsigned long long offset = (unsigned long long)t*stride+kh*width+base+lane;
++            #pragma unroll
++            for (unsigned i = 0; i < 4; ++i)
++                if (base+lane+i*32 < width) value[i] += probability*values[offset+i*32];
++        }
++        #pragma unroll
++        for (unsigned i = 0; i < 4; ++i) partial[warp][lane+i*32] = value[i];
+         __syncthreads();
+-        if (!warp && j < width) {
+-            for (unsigned i = 1; i < 8; ++i) value += partial[i][lane];
+-            out[j] = value/denominator;
++        if (!warp) {
++            #pragma unroll
++            for (unsigned i = 0; i < 4; ++i) {
++                unsigned j = base+lane+i*32;
++                if (j < width) {
++                    for (unsigned w = 1; w < 8; ++w) value[i] += partial[w][lane+i*32];
++                    out[j] = value[i]/denominator;
++                }
++            }
+         }
+         __syncthreads();
+     }

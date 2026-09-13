@@ -522,6 +522,19 @@ int main(int argc, char **argv)
                 }
             }
         }
+        if (s.device_plan && getenv("NYA_TEST_GRAPH")) {
+            nya_compute_stats stats;
+            nya_compute_plan_stats(s.device_plan, &stats);
+            if (stats.graph_captures != 1 || stats.graph_replays != 4) {
+                fprintf(stderr, "Gemma decode did not reuse one graph\n"); return 1;
+            }
+        }
+        {
+            nya_generation_request plain = {0};
+            if (nya_llm_prefill(c, &s, prompt, 4, &plain, error, sizeof(error))) return 1;
+            for (size_t j = 0; j < 8; ++j)
+                if (!isfinite(s.logits[j]) || fabs((double)s.logits[j] - gemma_reference[variant][3][j]) > 3e-5) return 1;
+        }
         {
             float embeddings[16];
             nya_generation_soft_tokens span = {1, 2, 8, embeddings, 16, 1};

@@ -1,0 +1,39 @@
+--- stage7-matvec-before.cu
++++ stage7-matvec-ilp-rejected.cu
+@@ -75,6 +75,12 @@
+     if (row >= rows) return;
+     const unsigned char *w = weights + row * row_bytes;
+     float sum = 0;
++    /* Four independent F32 accumulation chains allow the scheduler to overlap
++       dequantization and dependent multiply-adds. The unrolled group index is
++       constant, so these stay in registers rather than local-memory arrays.
++       Only the final addition order changes; scales, decoded weights and the
++       explicit reference kernel below retain their existing semantics. */
++    float partial[4] = {0, 0, 0, 0};
+     if (TYPE == 12) {
+         for (unsigned long long base = 0; base < columns; base += 256) {
+             const unsigned char *b = w + base / 256 * 144;
+@@ -85,7 +91,7 @@
+                 unsigned sc = g < 4 ? s[g] & 63U : (s[g+4] & 15U) | ((unsigned)(s[g-4] >> 6) << 4);
+                 unsigned mn = g < 4 ? s[g+4] & 63U : (s[g+4] >> 4) | ((unsigned)(s[g] >> 6) << 4);
+                 unsigned q = (b[16+g/2*32+lane] >> (g%2*4)) & 15U;
+-                sum += (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
++                partial[g & 3] += (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
+             }
+         }
+     } else if (TYPE == 14) {
+@@ -98,12 +104,13 @@
+                 unsigned lo = b[half*64+quarter%2*32+lane], hi = b[128+half*32+lane];
+                 int q = (int)(((lo >> (quarter/2*4)) & 15U) | (((hi >> (quarter*2)) & 3U) << 4)) - 32;
+                 int sc = ((const signed char *)(b+192))[g*2+lane/16];
+-                sum += d*(float)sc*(float)q * input[base+g*32+lane];
++                partial[g & 3] += d*(float)sc*(float)q * input[base+g*32+lane];
+             }
+         }
+     } else {
+         for (unsigned long long i = lane; i < columns; i += 32) sum += nya_weight(w, i, TYPE) * input[i];
+     }
++    if (TYPE == 12 || TYPE == 14) sum = (partial[0] + partial[1]) + (partial[2] + partial[3]);
+     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
+     if (!lane) output[row] = sum;
+ }

@@ -7,13 +7,55 @@
  * A context owns cached immutable weight copies and must be used by one thread
  * at a time. Its lifetime must end before the model's mapped weights are freed. */
 typedef struct nya_compute_context nya_compute_context;
+typedef enum nya_backend_type { NYA_BACKEND_CPU, NYA_BACKEND_CUDA, NYA_BACKEND_VULKAN } nya_backend_type;
+enum { NYA_COMPUTE_MATVEC = 1U, NYA_COMPUTE_QUANTIZED = 2U, NYA_COMPUTE_RESIDENT = 4U };
+typedef struct nya_compute_stats {
+    size_t weights_bytes, kv_bytes, scratch_bytes, prefill_batch;
+    size_t external_matmul_bytes; /* included in scratch_bytes, never additive */
+    unsigned long long kernel_launches, uploads, downloads, synchronizations;
+    unsigned long long external_matmul_calls; /* opaque library dispatches */
+    unsigned long long graph_captures, graph_replays; /* resident decode graph work */
+    unsigned external_matmul_kind; /* 0 native, 1 cuBLAS F32, 2 CUTLASS 3xTF32 with fallback */
+    unsigned long long cutlass_matmul_calls; /* subset of external_matmul_calls */
+    unsigned long long tiled_attention_calls; /* native query-tiled prefill */
+} nya_compute_stats;
+typedef struct nya_compute_plan nya_compute_plan;
+/* Host F32 attention view: query/output are [batch,heads,width], KV is
+   [capacity,kv_heads,width]. Only the causal prefix through position+batch is
+   read. A nonzero window bounds that prefix per query. Inputs/output must not
+   alias. The caller retains all buffers until synchronous dispatch returns. */
+typedef struct nya_compute_attention {
+    const float *query, *keys, *values;
+    float *output;
+    size_t batch, heads, kv_heads, width, capacity, position, window;
+    float scale;
+} nya_compute_attention;
+int nya_compute_attention_f32(nya_compute_context *context, const nya_compute_attention *attention);
+struct nya_llm_context;
+unsigned nya_compute_capabilities(const nya_compute_context *context);
+/* A plan is a request-local inference graph with persistent KV and scratch.
+   NULL means the graph cannot run resident; it is not a successful no-op. */
+nya_compute_plan *nya_compute_plan_create(nya_compute_context *context,
+    const struct nya_llm_context *model, size_t capacity);
+void nya_compute_plan_free(nya_compute_plan *plan);
+int nya_compute_plan_token(nya_compute_plan *plan, unsigned int token, size_t position,
+    int logits, float *output);
+int nya_compute_plan_prefill(nya_compute_plan *plan, const unsigned int *tokens,
+    size_t count, size_t position, float *output);
+void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *stats);
+/* Explicit synchronous diagnostic snapshot, expanded to F32. The two output
+   arrays each hold exactly elements values and must not overlap. Normal
+   inference never calls this readback. Only an already valid prefix is readable. */
+int nya_compute_plan_read_kv(nya_compute_plan *plan, size_t layer, size_t position,
+    size_t count, float *keys, float *values, size_t elements);
 
 /* Default is CPU. NYA_COMPUTE=vulkan or cuda selects a compiled provider.
  * Failure or unavailable hardware returns NULL, leaving CPU execution intact. */
 nya_compute_context *nya_compute_create(void);
 /* Explicit selection for applications with per-model controls. This does not
  * mutate the process environment or affect other loaded models. NULL denotes
- * CPU, unavailable hardware, or initialization failure; inspect name on return. */
+ * unavailable hardware or initialization failure. A CPU handle owns SIMD
+ * dispatch and a worker pool; NULL remains the scalar-reference fallback. */
 nya_compute_context *nya_compute_create_for(const char *provider);
 void nya_compute_free(nya_compute_context *context);
 
@@ -29,6 +71,10 @@ int nya_compute_matvec(nya_compute_context *context, const void *weights,
    unsupported types so the caller executes the native CPU kernel. */
 int nya_compute_matvec_typed(nya_compute_context *context, const void *weights,
     size_t rows, size_t columns, unsigned int type, const float *input, float *output);
+/* Batch-major activations/output; each batch entry is a contiguous vector.
+   Weights retain their GGUF row-major storage. */
+int nya_compute_matmul_typed(nya_compute_context *context, const void *weights,
+    size_t rows, size_t columns, unsigned type, const float *input, float *output, size_t batch);
 
 /* These report the actual active provider, not merely a compiled capability. */
 const char *nya_compute_name(const nya_compute_context *context);

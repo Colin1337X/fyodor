@@ -1,0 +1,73 @@
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.39
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+-- Looking for a CUDA compiler
+-- Looking for a CUDA compiler - C:/Users/Colin/fyodor/.tools/cuda-toolkit/bin/nvcc.exe
+-- The CUDA compiler identification is NVIDIA 13.1.115 with host compiler MSVC 19.44.35228.0
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: C:/Users/Colin/fyodor/.tools/cuda-toolkit/bin/nvcc.exe - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Optional CUTLASS bridge enabled; portable core remains C
+-- Configuring done (6.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: C:/Users/Colin/fyodor/build-cutlass
+[ 50%] Building CUDA object CMakeFiles/fyodor-cutlass.dir/gemm.cu.obj
+MSVC/cl.exe with traditional preprocessor is used. This may lead to unexpected compilation errors. Please switch to the standard conforming preprocessor by passing `/Zc:preprocessor` to cl.exe. You can define CCCL_IGNORE_MSVC_TRADITIONAL_PREPROCESSOR_WARNING to suppress this warning.
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(215): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        {std::get<0>(padding)[1], std::get<1>(padding)[1],
+         ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(215): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        {std::get<0>(padding)[1], std::get<1>(padding)[1],
+                                  ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(216): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+         std::get<0>(padding)[2], std::get<1>(padding)[2]},
+         ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(216): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+         std::get<0>(padding)[2], std::get<1>(padding)[2]},
+                                  ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(221): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+      pad_d(std::get<0>(padding)[0]), stride_d(stride[0]), dilation_d(dilation[0])
+            ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(224): warning #20013-D: calling a constexpr __host__ function("get") from a __host__ __device__ function("Conv3dProblemSize") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        Z = ((D + pad_d + std::get<1>(padding)[0] - T * dilation_d) / stride_d) + 1;
+                          ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(215): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        {std::get<0>(padding)[1], std::get<1>(padding)[1],
+                    ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(215): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        {std::get<0>(padding)[1], std::get<1>(padding)[1],
+                                             ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(216): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+         std::get<0>(padding)[2], std::get<1>(padding)[2]},
+                    ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(216): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+         std::get<0>(padding)[2], std::get<1>(padding)[2]},
+                                             ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(221): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+      pad_d(std::get<0>(padding)[0]), stride_d(stride[0]), dilation_d(dilation[0])
+                       ^
+
+C:/Users/Colin/fyodor/CUDA/cutlass/vendor/cutlass/include\cutlass/conv/conv3d_problem_size.h(224): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this.
+        Z = ((D + pad_d + std::get<1>(padding)[0] - T * dilation_d) / stride_d) + 1;
+                                     ^
+
+gemm.cu
+tmpxft_00001184_00000000-7_gemm.cudafe1.cpp
+[100%] Linking CUDA shared library fyodor-cutlass.dll
+[100%] Built target fyodor-cutlass

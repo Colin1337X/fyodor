@@ -1,0 +1,107 @@
+{
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CPU_BATCH": "32",
+    "NYA_CUDA_BATCH": "512"
+  },
+  "order": "CPU before, CPU after, CUDA before, CUDA after; serial",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "records": [
+    {
+      "record": "stage2-paired-before-cpu.json",
+      "record_sha256": "928d6009277613866c55551ff964aaed81eb91220bbb299439882f9ec0fb4596",
+      "record_modified_utc": "2026-09-10T13:08:32.454722+00:00",
+      "binary": ".tools/fyodor-bench-stage1.exe",
+      "binary_sha256": "ad59dcf886e0fe59b8d7fdbe899a69248c25c1207baad8577f0112ee5cdde41b",
+      "command": [
+        ".tools/fyodor-bench-stage1.exe",
+        "-m",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "-b",
+        "cpu",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ]
+    },
+    {
+      "record": "stage2-paired-after-cpu.json",
+      "record_sha256": "22fcbc0fd01d9d31f65a50869d901841df8d8542d230912981b8750610567a70",
+      "record_modified_utc": "2026-09-10T13:08:54.833902+00:00",
+      "binary": "build-cuda/fyodor-bench.exe",
+      "binary_sha256": "d8f96297d9a031bd17b9e3788f2409678f6b8793c5b17aaa4d335f302db93a75",
+      "command": [
+        "build-cuda/fyodor-bench.exe",
+        "-m",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "-b",
+        "cpu",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ]
+    },
+    {
+      "record": "stage2-paired-before-cuda.json",
+      "record_sha256": "9cc237f56c523fa15a15124677e84f8a4a6e33c6508084430947f3958576a577",
+      "record_modified_utc": "2026-09-10T13:09:01.331223+00:00",
+      "binary": ".tools/fyodor-bench-stage1.exe",
+      "binary_sha256": "ad59dcf886e0fe59b8d7fdbe899a69248c25c1207baad8577f0112ee5cdde41b",
+      "command": [
+        ".tools/fyodor-bench-stage1.exe",
+        "-m",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ]
+    },
+    {
+      "record": "stage2-paired-after-cuda.json",
+      "record_sha256": "b3d553e0ef12ad4727d138ba10f3b7347f23ae78650935aed535c0c3f925a78f",
+      "record_modified_utc": "2026-09-10T13:09:05.831687+00:00",
+      "binary": "build-cuda/fyodor-bench.exe",
+      "binary_sha256": "d8f96297d9a031bd17b9e3788f2409678f6b8793c5b17aaa4d335f302db93a75",
+      "command": [
+        "build-cuda/fyodor-bench.exe",
+        "-m",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ]
+    }
+  ],
+  "caveats": [
+    "Shared desktop, no exclusive device reservation.",
+    "Explicit device allocation accounting is in each result. Baseline process RAM telemetry was not collected."
+  ]
+}
