@@ -41,6 +41,7 @@ typedef struct nya_cuda_context {
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
+    CUfunction expand_transposed[31];
     nya_cuda_blas blas;
 #ifdef NYA_ENABLE_CUTLASS
     nya_cuda_cutlass cutlass;
@@ -296,6 +297,8 @@ nya_cuda_context *nya_cuda_create(void)
         if (c->function_get(&c->gemm_large[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
         snprintf(name, sizeof(name), "nya_expand_%u", types[i]);
         if (c->function_get(&c->expand[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+        snprintf(name, sizeof(name), "nya_expand_t_%u", types[i]);
+        if (c->function_get(&c->expand_transposed[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
     }
     nya_blas_open(c);
 #ifdef NYA_ENABLE_CUTLASS

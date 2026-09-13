@@ -11,6 +11,8 @@ static void nya_blas_open(nya_cuda_context *c)
 {
     const char *mode = getenv("NYA_CUDA_BLAS");
     c->blas.expansion_limit = NYA_BLAS_EXPANSION_MAX;
+    const char *transpose = getenv("NYA_CUDA_BLAS_TRANSPOSE");
+    c->blas.transpose = !transpose || strcmp(transpose,"0");
     if (c->reference) return;
     const char *scratch = getenv("NYA_CUDA_BLAS_SCRATCH_MIB");
     if (scratch) {
@@ -101,10 +103,11 @@ static size_t nya_blas_bytes(nya_cuda_context *c, size_t rows, size_t columns, s
     return rows * columns * sizeof(float);
 }
 
-/* All operands and scratch are device addresses. W is row-major [R,K], X is
-   row-major [B,K], and Y is row-major [B,R]. BLAS sees transposed W and column
-   major X/Y, so no activation transpose/copy is necessary. Chunking W only
-   changes the output row range, never a dot-product reduction or precision. */
+/* All operands and scratch are device addresses. Stored W is row-major [R,K],
+   X is row-major [B,K], and Y is row-major [B,R]. Quantized BLAS chunks decode
+   directly to column-major [chunk_rows,K], selecting NN GEMM. F32 weights and
+   CUTLASS retain their original layout. No activation transpose is needed.
+   Chunking changes the output row range, never reduction precision. */
 static int nya_blas_multiply(nya_cuda_context *c, CUdeviceptr matrix, CUdeviceptr input,
     CUdeviceptr output, size_t rows, size_t columns, unsigned type, size_t stride,
     size_t batch, CUdeviceptr expanded, size_t expanded_bytes, CUdeviceptr workspace,
@@ -120,6 +123,10 @@ static int nya_blas_multiply(nya_cuda_context *c, CUdeviceptr matrix, CUdevicept
 #endif
     if (!chunk_rows) return -1;
     const float alpha = 1, beta = 0;
+    int transpose = c->blas.transpose && type != 0;
+#ifdef NYA_ENABLE_CUTLASS
+    if (cutlass) transpose = 0;
+#endif
     for (size_t first = 0; first < rows; first += chunk_rows) {
         size_t count = rows - first;
         if (count > chunk_rows) count = chunk_rows;
@@ -128,7 +135,10 @@ static int nya_blas_multiply(nya_cuda_context *c, CUdeviceptr matrix, CUdevicept
         CUdeviceptr operand = source;
         if (type != 0) {
             void *args[] = {&source, &expanded, &k, &pitch, &elements};
-            if (c->launch(c->expand[type], (unsigned)((elements + 255)/256), 1, 1, 256, 1, 1, 0, c->stream, args, NULL) != CUDA_SUCCESS) return -1;
+            size_t blocks = transpose ? ((columns+31)/32)*((count+31)/32) : (elements+255)/256;
+            if (blocks > (size_t)c->grid_limit) return -1;
+            CUfunction expand = transpose ? c->expand_transposed[type] : c->expand[type];
+            if (c->launch(expand, (unsigned)blocks, 1, 1, 256, 1, 1, 0, c->stream, args, NULL) != CUDA_SUCCESS) return -1;
             operand = expanded;
         }
 #ifdef NYA_ENABLE_CUTLASS
@@ -145,8 +155,8 @@ static int nya_blas_multiply(nya_cuda_context *c, CUdeviceptr matrix, CUdevicept
         }
 #endif
         if (!c->blas.handle) return -1;
-        nya_blas_status status = c->blas.sgemm(c->blas.handle, NYA_BLAS_T, NYA_BLAS_N,
-            (int)count, (int)batch, (int)columns, &alpha, (const float *)(uintptr_t)operand, (int)columns,
+        nya_blas_status status = c->blas.sgemm(c->blas.handle, transpose ? NYA_BLAS_N : NYA_BLAS_T, NYA_BLAS_N,
+            (int)count, (int)batch, (int)columns, &alpha, (const float *)(uintptr_t)operand, (int)(transpose ? count : columns),
             (const float *)(uintptr_t)input, (int)columns, &beta,
             (float *)(uintptr_t)(output + first*sizeof(float)), (int)rows);
         if (status != NYA_BLAS_SUCCESS) {

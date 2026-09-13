@@ -55,16 +55,42 @@ static int chunked_matrix(void)
     const size_t rows=getenv("NYA_TEST_CUTLASS") ? 68U : 65U, columns=8192, batch=33;
     float *w=malloc(rows*columns*sizeof(float)), *x=malloc(batch*columns*sizeof(float));
     float *y=malloc((rows*batch+2)*sizeof(float));
-    nya_compute_context *c=nya_compute_create();
+    nya_compute_context *c=NULL;
     int failed=1;
-    if (!w || !x || !y || !c) goto done;
-    for (size_t r=0; r<rows; ++r) for (size_t k=0; k<columns; ++k) w[r*columns+k]=(float)(r+1)/128;
+    if (!w || !x || !y) goto done;
     for (size_t b=0; b<batch; ++b) for (size_t k=0; k<columns; ++k) x[b*columns+k]=(float)(b+1)/64;
+    /* Compressed fixtures also exercise the fused transpose and a final one-row
+       (or four-row CUTLASS) chunk. Recreate the context between formats because
+       its immutable-weight cache keys allocations by their source address. */
+    const unsigned types[] = {0,30,8};
+    for (size_t t=0; t<sizeof(types)/sizeof(types[0]); ++t) {
+    c=nya_compute_create();
+    if (!c) goto done;
+    for (size_t r=0; r<rows; ++r) {
+        float value=(float)(r+1)/128;
+        if (types[t]==0) for (size_t k=0; k<columns; ++k) w[r*columns+k]=value;
+        else if (types[t]==30) {
+            uint32_t bits; memcpy(&bits,&value,sizeof(bits));
+            unsigned char *p=(unsigned char *)w+r*columns*2;
+            for (size_t k=0; k<columns; ++k) { p[k*2]=(unsigned char)(bits>>16); p[k*2+1]=(unsigned char)(bits>>24); }
+        } else {
+            unsigned char *p=(unsigned char *)w+r*(columns/32)*34;
+            for (size_t k=0; k<columns/32; ++k) {
+                p[k*34]=0; p[k*34+1]=0x20; /* F16 scale 1/128. */
+                memset(p+k*34+2,(int)(r+1),32);
+            }
+        }
+    }
     y[0]=y[rows*batch+1]=12345;
-    if (nya_compute_matmul_typed(c,w,rows,columns,0,x,y+1,batch)) goto done;
+    if (nya_compute_matmul_typed(c,w,rows,columns,types[t],x,y+1,batch)) goto done;
     for (size_t b=0; b<batch; ++b) for (size_t r=0; r<rows; ++r)
-        if (y[1+b*rows+r] != (float)((r+1)*(b+1))) goto done;
+        if (y[1+b*rows+r] != (float)((r+1)*(b+1))) {
+            fprintf(stderr,"chunk type %u token %zu row %zu: %.9g expected %zu\n",types[t],b,r,(double)y[1+b*rows+r],(r+1)*(b+1));
+            goto done;
+        }
     if (y[0]!=12345 || y[rows*batch+1]!=12345) goto done;
+    nya_compute_free(c); c=NULL;
+    }
     failed=0;
 done:
     free(w);free(x);free(y);nya_compute_free(c);
@@ -72,9 +98,43 @@ done:
     return failed;
 }
 
+/* BF16 storage permits arbitrary column counts. Cover both dimensions of the
+   32x32 transpose tile, including an output stride that is not vector aligned.
+   The constant binary fractions have an exact independently computed result. */
+static int transpose_edges(void)
+{
+    const size_t widths[] = {33,65,257}, heights[] = {5,31,33}, batch=33;
+    for (size_t test=0; test<3; ++test) {
+        size_t columns=widths[test], rows=heights[test];
+        unsigned char *w=malloc(rows*columns*2);
+        float *x=malloc(batch*columns*sizeof(float)), *y=malloc((batch*rows+2)*sizeof(float));
+        nya_compute_context *c=nya_compute_create();
+        int failed=1;
+        if (!w || !x || !y || !c) goto done;
+        for (size_t r=0; r<rows; ++r) {
+            float value=(float)(r+1)/64; uint32_t bits; memcpy(&bits,&value,sizeof(bits));
+            for (size_t k=0; k<columns; ++k) {
+                w[(r*columns+k)*2]=(unsigned char)(bits>>16);
+                w[(r*columns+k)*2+1]=(unsigned char)(bits>>24);
+            }
+        }
+        for (size_t b=0; b<batch; ++b) for (size_t k=0; k<columns; ++k) x[b*columns+k]=(float)(b+1)/64;
+        y[0]=y[batch*rows+1]=12345;
+        if (nya_compute_matmul_typed(c,w,rows,columns,30,x,y+1,batch)) goto done;
+        for (size_t b=0; b<batch; ++b) for (size_t r=0; r<rows; ++r)
+            if (y[1+b*rows+r] != (float)(columns*(r+1)*(b+1))/4096) goto done;
+        if (y[0]!=12345 || y[batch*rows+1]!=12345) goto done;
+        failed=0;
+done:
+        free(w);free(x);free(y);nya_compute_free(c);
+        if (failed) { fprintf(stderr,"transpose edge %zux%zu failed\n",rows,columns); return 1; }
+    }
+    return 0;
+}
+
 int main(void)
 {
-    if (getenv("NYA_TEST_BLAS_CHUNKS") && chunked_matrix()) return 1;
+    if (getenv("NYA_TEST_BLAS_CHUNKS") && (chunked_matrix() || transpose_edges())) return 1;
     const unsigned types[] = {0, 1, 30, 2, 8, 12, 14};
     const size_t strides[] = {4096, 2048, 2048, 576, 1088, 576, 840};
     const size_t rows = getenv("NYA_TEST_CUTLASS") ? 64U : 65U, columns = 1024;

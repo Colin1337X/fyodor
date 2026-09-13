@@ -41,6 +41,10 @@ cmake -S CUDA/cutlass -B build-cutlass -DCMAKE_BUILD_TYPE=Release
 cmake --build build-cutlass --config Release
 ```
 
+Debug configurations use NVCC `-O0`, preserving the host compiler's runtime
+checks; other configurations use `-O3`. In particular, MSVC Debug's `/RTC1`
+must not be combined with an unconditional optimized host compilation.
+
 On Windows run this in an x64 Visual Studio developer terminal; use `-G "NMake
 Makefiles"` or Ninja. This compiler builds only the optional bridge. Fyodor's
 GCC/MinGW core build remains separate. CMake's MinGW/MSYS generators do not

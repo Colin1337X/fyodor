@@ -12,6 +12,7 @@ typedef struct nya_cuda_blas {
     void *library;
     nya_blas_handle handle;
     size_t expansion_limit;
+    int transpose;
     nya_blas_status (CUDAAPI *create)(nya_blas_handle *);
     nya_blas_status (CUDAAPI *destroy)(nya_blas_handle);
     nya_blas_status (CUDAAPI *set_stream)(nya_blas_handle, CUstream);

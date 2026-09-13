@@ -5,7 +5,8 @@ September 12 continuation: [persistent decode graphs and validation](benchmarks/
 Latest pass: [F32 fusion, cache diagnostics and a rejected F16 experiment](benchmarks/STAGE5.md).
 Optional C++ extension: [removable CUTLASS prefill adapter](../CUDA/cutlass/README.md).
 Previous measurements: [CUTLASS validation and matched F32 llama.cpp comparison](benchmarks/STAGE6.md).
-Current measurements: [query-tiled prefill attention and validation](benchmarks/STAGE7.md).
+Previous measurements: [query-tiled prefill attention and validation](benchmarks/STAGE7.md).
+Current pass: [fused weight decode/transpose and validation](benchmarks/STAGE8.md).
 The performance goal remains open; current measurements do not establish a win
 over llama.cpp under equivalent workloads.
 
@@ -19,6 +20,11 @@ Fyodor's own resident transformer execution, not another model engine. Compresse
 weights expand into one bounded, reused matrix scratch buffer on device; model
 weights, KV and activations remain resident. Small batches, missing libraries
 and insufficient optional scratch retain Fyodor's native quantized kernels.
+For cuBLAS, compressed weights decode directly into column-major scratch using
+a padded shared-memory transpose tile. This selects non-transposed GEMM without
+an additional pass, allocation, or host transfer. F32 weights bypass expansion;
+CUTLASS retains its original operand layout. `NYA_CUDA_BLAS_TRANSPOSE=0` restores
+the earlier row-major expansion for comparison or device-specific tuning.
 Training/autograd is independent and unchanged. No cuBLAS SDK headers/import
 library, C++ host compiler, or mandatory vendor math dependency is introduced.
 

@@ -1,0 +1,77 @@
+/* Optional experimental warp adapter. CUTLASS retains ownership of iterators,
+ * operand packing and tensor-core instructions; this adapter supplies corrected
+ * F32 decomposition and six products. No CUDA/C++ type leaves this directory. */
+#pragma once
+#include "cutlass/gemm/warp/default_mma_tensor_op.h"
+
+namespace fyodor_cutlass {
+struct Bf16SixProduct {};
+
+template<class Base> struct SixProductWarp : Base {
+    using FragmentA = typename Base::FragmentA;
+    using FragmentB = typename Base::FragmentB;
+    using FragmentC = typename Base::FragmentC;
+    using MathOperator = Bf16SixProduct;
+    struct TransformedFragmentA { typename Base::TransformedFragmentA part[3]; };
+    struct TransformedFragmentB { typename Base::TransformedFragmentB part[3]; };
+
+    CUTLASS_DEVICE static float component(float value) {
+        cutlass::NumericConverter<cutlass::bfloat16_t,float,cutlass::FloatRoundStyle::round_to_nearest> nearest;
+        cutlass::NumericConverter<cutlass::bfloat16_t,float,cutlass::FloatRoundStyle::round_toward_zero> truncate;
+        float rounded = float(nearest(value));
+        // Rounding a finite F32 maximum must not create an infinite component.
+        // This rare overflow boundary uses truncation; normal components use RN.
+        if (isfinite(value) && !isfinite(rounded)) rounded = float(truncate(value));
+        return rounded;
+    }
+
+    CUTLASS_DEVICE void transform(TransformedFragmentA &a, TransformedFragmentB &b,
+                                 FragmentA const &input_a, FragmentB const &input_b) const {
+        FragmentA residual_a = input_a;
+        FragmentB residual_b = input_b;
+        #pragma unroll
+        for (int part = 0; part < 3; ++part) {
+            FragmentA high_a;
+            FragmentB high_b;
+            #pragma unroll
+            for (int i = 0; i < FragmentA::kElements; ++i) {
+                high_a[i] = component(residual_a[i]);
+                residual_a[i] -= high_a[i];
+            }
+            #pragma unroll
+            for (int i = 0; i < FragmentB::kElements; ++i) {
+                high_b[i] = component(residual_b[i]);
+                residual_b[i] -= high_b[i];
+            }
+            // Use the upstream transform even though each value already fits
+            // BF16: it also permutes registers into the instruction's layout.
+            Base::transform(a.part[part],b.part[part],high_a,high_b);
+        }
+    }
+
+    CUTLASS_DEVICE void operator()(FragmentC &d, TransformedFragmentA const &a,
+                                  TransformedFragmentB const &b, FragmentC const &c) const {
+        // Keep terms with component indices summing to at most two. The three
+        // omitted terms have third-/fourth-order rounding magnitude. Accumulate
+        // the smaller corrections before the leading product, always in F32.
+        Base::operator()(d,a.part[2],b.part[0],c);
+        Base::operator()(d,a.part[1],b.part[1],d);
+        Base::operator()(d,a.part[0],b.part[2],d);
+        Base::operator()(d,a.part[1],b.part[0],d);
+        Base::operator()(d,a.part[0],b.part[1],d);
+        Base::operator()(d,a.part[0],b.part[0],d);
+    }
+};
+}
+
+namespace cutlass { namespace gemm { namespace warp {
+template<class Shape, class LayoutA, class LayoutB, class LayoutC, int PartitionsK, bool RowMajor>
+struct DefaultMmaTensorOp<Shape,GemmShape<16,8,16>,float,LayoutA,float,LayoutB,
+                         float,LayoutC,fyodor_cutlass::Bf16SixProduct,PartitionsK,RowMajor> {
+    using Policy = MmaTensorOpPolicy<arch::Mma<GemmShape<16,8,16>,32,
+        bfloat16_t,layout::RowMajor,bfloat16_t,layout::ColumnMajor,float,layout::RowMajor,
+        arch::OpMultiplyAdd>,MatrixShape<1,1>>;
+    using Base = MmaTensorOp<Shape,float,LayoutA,float,LayoutB,float,LayoutC,Policy,PartitionsK,RowMajor>;
+    using Type = fyodor_cutlass::SixProductWarp<Base>;
+};
+}}}

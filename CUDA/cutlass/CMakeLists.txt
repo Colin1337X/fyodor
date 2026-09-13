@@ -60,7 +60,13 @@ if(NOT DEFINED NYA_CUTLASS_ARCHITECTURES)
     set(NYA_CUTLASS_ARCHITECTURES "80-real;80-virtual" CACHE STRING "CUTLASS CUDA architectures")
 endif()
 set_property(TARGET fyodor-cutlass PROPERTY CUDA_ARCHITECTURES "${NYA_CUTLASS_ARCHITECTURES}")
-target_compile_options(fyodor-cutlass PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-O3;--expt-relaxed-constexpr>)
+# NVCC forwards its optimization level to the host compiler. An unconditional
+# -O3 therefore conflicts with MSVC Debug's /RTC1 runtime checks. Keep those
+# checks usable while retaining optimized kernels in non-Debug configurations.
+target_compile_options(fyodor-cutlass PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+    $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<CONFIG:Debug>>:-O0>
+    $<$<AND:$<COMPILE_LANGUAGE:CUDA>,$<NOT:$<CONFIG:Debug>>>:-O3>)
 if(CMAKE_CUDA_SIMULATE_ID STREQUAL "MSVC")
     target_compile_options(fyodor-cutlass PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>)
     set_property(TARGET fyodor-cutlass PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

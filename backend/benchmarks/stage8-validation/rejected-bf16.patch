@@ -1,0 +1,47 @@
+diff --git a/CUDA/cutlass/CMakeLists.txt b/CUDA/cutlass/CMakeLists.txt
+index 3dccb40..0357ba8 100644
+--- a/CUDA/cutlass/CMakeLists.txt
++++ b/CUDA/cutlass/CMakeLists.txt
+@@ -31,6 +31,10 @@ endif()
+ enable_language(CUDA)
+ add_library(fyodor-cutlass SHARED gemm.cu)
+ target_compile_definitions(fyodor-cutlass PRIVATE NYA_CUTLASS_IMPLEMENTATION=1)
++option(NYA_CUTLASS_BF16X6 "Experimental six-product BF16 correction (validation required)" OFF)
++if(NYA_CUTLASS_BF16X6)
++    target_compile_definitions(fyodor-cutlass PRIVATE NYA_CUTLASS_BF16X6=1)
++endif()
+ set(NYA_CUTLASS_TILE "64x64x32" CACHE STRING "CUTLASS threadblock tuning shape")
+ set_property(CACHE NYA_CUTLASS_TILE PROPERTY STRINGS 128x64x16 64x64x32 64x128x32 128x64x32)
+ if(NYA_CUTLASS_TILE STREQUAL "128x64x16")
+diff --git a/CUDA/cutlass/gemm.cu b/CUDA/cutlass/gemm.cu
+index d3fcf2f..44c01b4 100644
+--- a/CUDA/cutlass/gemm.cu
++++ b/CUDA/cutlass/gemm.cu
+@@ -8,6 +8,14 @@
+ #include <cuda_runtime.h>
+ #include "cutlass/cutlass.h"
+ #include "cutlass/gemm/device/gemm.h"
++#ifdef NYA_CUTLASS_BF16X6
++#include "bf16_six_product.h"
++using MathOperator = fyodor_cutlass::Bf16SixProduct;
++using InstructionShape = cutlass::gemm::GemmShape<16,8,16>;
++#else
++using MathOperator = cutlass::arch::OpMultiplyAddFastF32;
++using InstructionShape = cutlass::gemm::GemmShape<16,8,8>;
++#endif
+ 
+ using Gemm = cutlass::gemm::device::Gemm<
+     float, cutlass::layout::RowMajor,
+@@ -16,10 +24,10 @@ using Gemm = cutlass::gemm::device::Gemm<
+     cutlass::arch::OpClassTensorOp, cutlass::arch::Sm80,
+     cutlass::gemm::GemmShape<NYA_TILE_M,NYA_TILE_N,NYA_TILE_K>,
+     cutlass::gemm::GemmShape<NYA_TILE_M/2,NYA_TILE_N/2,NYA_TILE_K>,
+-    cutlass::gemm::GemmShape<16,8,8>,
++    InstructionShape,
+     cutlass::epilogue::thread::LinearCombination<float,4,float,float>,
+     cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>,
+-    3,4,4,false,cutlass::arch::OpMultiplyAddFastF32>;
++    3,4,4,false,MathOperator>;
+ 
+ unsigned nya_cutlass_abi_version(void) { return 1; }
+ 

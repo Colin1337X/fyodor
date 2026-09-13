@@ -99,3 +99,33 @@ __device__ __forceinline__ void nya_expand(const unsigned char *w, float *out,
 #define NYA_EXPAND(TYPE) extern "C" __global__ void nya_expand_##TYPE(const unsigned char *w, float *out, unsigned long long k, unsigned long long s, unsigned long long n) { nya_expand(w,out,k,s,n,TYPE); }
 NYA_EXPAND(0) NYA_EXPAND(1) NYA_EXPAND(2) NYA_EXPAND(8) NYA_EXPAND(12) NYA_EXPAND(14) NYA_EXPAND(30)
 #undef NYA_EXPAND
+
+/* Decode and transpose one bounded matrix chunk in the same pass. The padded
+   shared tile turns coalesced reads along quantized rows into coalesced F32
+   writes along the output's rows. BLAS can then consume column-major weights
+   without its transposed-A path. Both edge dimensions are independently masked;
+   every value read after the barrier was written by a corresponding load. */
+__device__ __forceinline__ void nya_expand_transposed(const unsigned char *w, float *out,
+    unsigned long long columns, unsigned long long stride, unsigned long long count, unsigned type)
+{
+    __shared__ float tile[32][33];
+    unsigned long long rows = count / columns, tiles = (columns+31)/32;
+    unsigned long long row_base = (blockIdx.x/tiles)*32, col_base = (blockIdx.x%tiles)*32;
+    unsigned lane = threadIdx.x%32, group = threadIdx.x/32;
+    #pragma unroll
+    for (unsigned i=0; i<4; ++i) {
+        unsigned r = group+i*8;
+        tile[r][lane] = row_base+r < rows && col_base+lane < columns ?
+            nya_weight(w+(row_base+r)*stride,col_base+lane,type) : 0;
+    }
+    __syncthreads();
+    #pragma unroll
+    for (unsigned i=0; i<4; ++i) {
+        unsigned col = group+i*8;
+        if (row_base+lane < rows && col_base+col < columns)
+            out[(col_base+col)*rows+row_base+lane] = tile[lane][col];
+    }
+}
+#define NYA_EXPAND_T(TYPE) extern "C" __global__ void nya_expand_t_##TYPE(const unsigned char *w, float *out, unsigned long long k, unsigned long long s, unsigned long long n) { nya_expand_transposed(w,out,k,s,n,TYPE); }
+NYA_EXPAND_T(0) NYA_EXPAND_T(1) NYA_EXPAND_T(2) NYA_EXPAND_T(8) NYA_EXPAND_T(12) NYA_EXPAND_T(14) NYA_EXPAND_T(30)
+#undef NYA_EXPAND_T

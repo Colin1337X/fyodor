@@ -1,0 +1,27 @@
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.14.39
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+[vcvarsall.bat] Environment initialized for: 'x64'
+-- Looking for a CUDA compiler
+-- Looking for a CUDA compiler - C:/Users/Colin/fyodor/.tools/cuda-toolkit/bin/nvcc.exe
+-- The CUDA compiler identification is NVIDIA 13.1.115 with host compiler MSVC 19.44.35228.0
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: C:/Users/Colin/fyodor/.tools/cuda-toolkit/bin/nvcc.exe - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Optional CUTLASS bridge enabled; portable core remains C
+-- Configuring done (7.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: C:/Users/Colin/fyodor/build-cutlass-bf16x6
+[ 50%] Building CUDA object CMakeFiles/fyodor-cutlass.dir/gemm.cu.obj
+cl : Command line warning D9025 : overriding '/Od' with '/O2'
+cl : Command line error D8016 : '/RTC1' and '/O2' command-line options are incompatible
+gemm.cu
+NMAKE : fatal error U1077: 'C:\Users\Colin\fyodor\.tools\cuda-toolkit\bin\nvcc.exe -forward-unknown-to-host-compiler -DNYA_CUTLASS_BF16X6=1 -DNYA_CUTLASS_IMPLEMENTATION=1 -DNYA_TILE_K=32 -DNYA_TILE_M=64 -DNYA_TILE_N=64 -Dfyodor_cutlass_EXPORTS --options-file CMakeFiles/fyodor-cutlass.dir/includes_CUDA.rsp -D_WINDOWS -Xcompiler=" /EHsc" -Xcompiler=" -Ob0 -Od /RTC1" -std=c++17 "--generate-code=arch=compute_120,code=[compute_120,sm_120]" -Xcompiler=-MTd -Xcompiler=-Zi -O3 --expt-relaxed-constexpr -Xcompiler=/Zc:preprocessor -MD -MT CMakeFiles\fyodor-cutlass.dir\gemm.cu.obj -MF CMakeFiles\fyodor-cutlass.dir\gemm.cu.obj.d -x cu -c C:\Users\Colin\fyodor\CUDA\cutlass\gemm.cu -o CMakeFiles\fyodor-cutlass.dir\gemm.cu.obj -Xcompiler=-FdCMakeFiles\fyodor-cutlass.dir\,-FS' : return code '0x2'
+Stop.
+NMAKE : fatal error U1077: 'C:\BuildTools\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\nmake.exe -s -f CMakeFiles\fyodor-cutlass.dir\build.make /nologo -SL                 CMakeFiles\fyodor-cutlass.dir\build' : return code '0x2'
+Stop.
+NMAKE : fatal error U1077: 'C:\BuildTools\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64\nmake.exe -s -f CMakeFiles\Makefile2 /nologo -LS                 all' : return code '0x2'
+Stop.
