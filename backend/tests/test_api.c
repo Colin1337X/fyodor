@@ -64,6 +64,7 @@ int main(int argc, char **argv)
     CHECK(call(&server,"GET","/anthropic/v1/models",NULL,2,200) == 0 && strstr(response_text,"\"has_more\":false") != NULL);
     CHECK(call(&server,"GET","/api/v1/capabilities",NULL,1,200) == 0 && strstr(response_text,"\"streaming\":false") != NULL);
     CHECK(call(&server,"GET","/api/v1/runtime",NULL,1,200) == 0 && strstr(response_text,"\"training_compute\":\"cpu\"") != NULL);
+    CHECK(strstr(response_text,"\"rocm\":") && strstr(response_text,"\"mlx\":"));
     CHECK(call(&server,"POST","/api/v1/model/info","{\"model_id\":1}",1,200) == 0 && strstr(response_text,"\"vocabulary_size\":259") != NULL);
     CHECK(call(&server,"POST","/api/v1/model/info","{\"model_id\":999}",1,404) == 0);
     CHECK(call(&server,"POST","/api/v1/generate","{\"model_id\":1,\"prompt\":\"a\",\"max_output_bytes\":0}",1,400) == 0);
@@ -71,6 +72,17 @@ int main(int argc, char **argv)
     CHECK(call(&server,"POST","/api/v1/model/compute","{\"model_id\":999,\"compute\":\"cpu\"}",1,404) == 0);
     CHECK(call(&server,"POST","/api/v1/model/compute","{\"model_id\":1,\"compute\":\"invalid\"}",1,400) == 0);
     if (!nya_compute_cuda_compiled()) CHECK(call(&server,"POST","/api/v1/model/compute","{\"model_id\":1,\"compute\":\"cuda\"}",1,409) == 0);
+    const char *optional=getenv("NYA_TEST_OPTIONAL_API");
+    if (optional) {
+        char body[96];
+        CHECK(nya_compute_backend_known(optional));
+        (void)snprintf(body,sizeof(body),"{\"model_id\":1,\"compute\":\"%s\"}",optional);
+        CHECK(call(&server,"POST","/api/v1/model/compute",body,1,getenv("NYA_TEST_OPTIONAL_UNAVAILABLE") ? 409 : 200)==0);
+        CHECK(call(&server,"GET","/api/v1/runtime",NULL,1,200)==0);
+        char selected[48]; (void)snprintf(selected,sizeof(selected),"\"compute\":\"%s\"",getenv("NYA_TEST_OPTIONAL_UNAVAILABLE") ? "cpu" : optional);
+        CHECK(strstr(response_text,selected));
+        CHECK(call(&server,"POST","/api/v1/model/compute","{\"model_id\":1,\"compute\":\"cpu\"}",1,200)==0);
+    }
     CHECK(call(&server,"GET","/api/v1/model/compute",NULL,1,405) == 0);
     CHECK(call(&server,"POST","/api/v1/tokenize","{\"model_id\":1,\"text\":\"a\"}",1,200) == 0 && strstr(response_text,"[1,100]") != NULL);
     CHECK(call(&server,"POST","/api/v1/tokenize","{\"model_id\":999,\"text\":\"a\"}",1,422) == 0 && strstr(response_text,"tokenization_failed") != NULL);

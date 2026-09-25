@@ -1,0 +1,216 @@
+{
+  "source_sha256": {
+    "backend/core/train_main.c": "7b9d33c66f70244fba26bc1999a78e8084324b21859b4a4864b00f7c308275c4",
+    "backend/tests/test_train_runner.c": "a5bea79b7cb878df2b6eda3fe3cb289302333c161c5fd72d757ee48304dc0401"
+  },
+  "runs": [
+    {
+      "name": "build-cpu",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cpu",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda-c23",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda-c23",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda-c23",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda-c23",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-ort",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-ort",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-ort",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-ort",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-sanitize",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-sanitize",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-sanitize",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-sanitize",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-optcpp",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-optcpp-f43649678858\\build",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-optcpp",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-optcpp-f43649678858\\build",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cuda",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-cuda-3f3b16f17062\\build",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cuda",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-cuda-3f3b16f17062\\build",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cutlass",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\without-cutlass-98e248f2b4c9\\build",
+        "--target",
+        "fyodor-train",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cutlass",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\without-cutlass-98e248f2b4c9\\build",
+        "-R",
+        "train-accumulation|train-cli-workflows|train-stop-workflows|train-unicode-paths",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

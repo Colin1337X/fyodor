@@ -10,10 +10,15 @@ set(check_root "${NYA_VERIFY_PARENT}/without-cutlass-${suffix}")
 file(MAKE_DIRECTORY "${check_root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/CMakeLists.txt" "${NYA_SOURCE_ROOT}/config.yaml" DESTINATION "${check_root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/backend" "${NYA_SOURCE_ROOT}/CUDA" DESTINATION "${check_root}/source"
-    PATTERN cutlass EXCLUDE PATTERN vendor EXCLUDE PATTERN "build*" EXCLUDE)
+    PATTERN cutlass EXCLUDE PATTERN vendor EXCLUDE PATTERN "build*" EXCLUDE PATTERN benchmarks EXCLUDE)
 if(EXISTS "${check_root}/source/CUDA/cutlass" OR NOT EXISTS "${check_root}/source/CUDA/cuda.c")
     message(FATAL_ERROR "Verification source does not have CUDA-without-CUTLASS layout")
 endif()
+foreach(provider IN ITEMS rocm mlx)
+    if(EXISTS "${NYA_SOURCE_ROOT}/${provider}")
+        file(COPY "${NYA_SOURCE_ROOT}/${provider}" DESTINATION "${check_root}/source" PATTERN "build*" EXCLUDE)
+    endif()
+endforeach()
 set(options -G "${NYA_GENERATOR}" "-DCMAKE_C_COMPILER=${NYA_COMPILER}"
     -DCMAKE_BUILD_TYPE=Release "-DNYA_C_STANDARD=${NYA_STANDARD}"
     -DNYA_ENABLE_ONNXRUNTIME=OFF -DNYA_WARNINGS_AS_ERRORS=ON

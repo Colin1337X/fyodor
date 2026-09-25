@@ -53,7 +53,7 @@ static int number(const char *s, size_t *out)
 
 static void usage(void)
 {
-    puts("fyodor-bench -m MODEL [-b cpu|cuda|vulkan] [-p 512] [-n 128]\n"
+    puts("fyodor-bench -m MODEL [-b cpu|cuda|vulkan|rocm|mlx] [-p 512] [-n 128]\n"
          "             [-r 5] [--warmup 1] [--context 0] [--json]\n"
          "-p: prefill tokens; -n: decode steps; 0 disables either measurement.\n"
          "--context: untimed prefix for decode (0 starts with an empty KV cache).\n"
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
         }
     }
     if (path == NULL || (!pp && !tg) || reps == 0 || reps > 1000 || warmup > 1000 ||
-        (strcmp(backend, "cpu") && strcmp(backend, "cuda") && strcmp(backend, "vulkan"))) { usage(); return 2; }
+        !nya_compute_backend_known(backend)) { usage(); return 2; }
     uint64_t file_bytes;
     FILE *f = nya_file_open_read(path);
     if (f == NULL) { fprintf(stderr, "Cannot open model\n"); return 1; }
@@ -124,8 +124,11 @@ int main(int argc, char **argv)
         printf(",\"execution\":"); json_string(nya_llm_session_execution(s));
         printf(",\"device_weights_bytes\":%zu,\"device_kv_bytes\":%zu,\"device_scratch_bytes\":%zu,\"prefill_batch\":%zu",
             memory.weights_bytes, memory.kv_bytes, memory.scratch_bytes, memory.prefill_batch);
+        const char *implementations[]={"native","cublas-f32","cutlass-3xtf32","rocblas-f32","mlx-f32"};
+        const char *implementation=memory.external_matmul_kind<sizeof(implementations)/sizeof(implementations[0]) ?
+            implementations[memory.external_matmul_kind] : "unknown";
         printf(",\"kv_type\":\"f32\",\"prefill_implementation\":\"%s\",\"external_matmul_bytes\":%zu",
-            memory.external_matmul_kind == 2 ? "cutlass-3xtf32" : memory.external_matmul_bytes ? "cublas-f32" : "native", memory.external_matmul_bytes);
+            implementation, memory.external_matmul_bytes);
         printf(",\"model_bytes\":%llu,\"architecture\":\"%s\",\"layers\":%u,\"embedding\":%u,\"quant_tensor_counts\":{",
             (unsigned long long)file_bytes, c->is_gemma ? "gemma4" : "llama", c->block_count, c->embedding_length);
         int comma = 0;
@@ -175,7 +178,13 @@ int main(int argc, char **argv)
         else printf("%s%-7zu %12.3f %12.3f %12.3f %12.3f\n", mode ? "tg" : "pp", count, rates, sd, sum * 1000 / (double)reps, sum * 1000 / (double)(reps * count));
         fflush(stdout);
     }
-    if (json) puts("]}");
+    if (json) {
+        nya_compute_stats final_memory; nya_llm_session_stats(s,&final_memory);
+        /* Assisted providers can populate their weight caches during warmup.
+           Preserve admission-time fields and add an explicit final snapshot. */
+        printf("],\"device_memory_after\":{\"weights_bytes\":%zu,\"kv_bytes\":%zu,\"scratch_bytes\":%zu}}\n",
+            final_memory.weights_bytes,final_memory.kv_bytes,final_memory.scratch_bytes);
+    }
     status = 0;
     goto cleanup;
 run_failure:

@@ -444,6 +444,6 @@ static int vk_backend_matvec(void *p, const void *w, size_t r, size_t c,
 const nya_backend_interface *nya_vulkan_backend(void)
 {
     static const nya_backend_interface api = {NYA_BACKEND_VULKAN, "vulkan", NYA_COMPUTE_MATVEC,
-        vk_backend_create, vk_backend_free, vk_backend_active, vk_backend_matvec, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+        vk_backend_create, vk_backend_free, vk_backend_active, vk_backend_matvec, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     return &api;
 }

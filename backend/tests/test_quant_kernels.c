@@ -143,7 +143,7 @@ int main(void)
         unsigned char *data = malloc(strides[k] * rows);
         nya_compute_context *compute = nya_compute_create();
         const char *requested = getenv("NYA_COMPUTE");
-        if (requested && !strcmp(requested, "cuda") && strcmp(nya_compute_name(compute), "cuda")) {
+        if (requested && strcmp(nya_compute_name(compute), requested)) {
             free(data); nya_compute_free(compute); return 77;
         }
         if (!data || !compute) { free(data); nya_compute_free(compute); return 1; }
@@ -180,7 +180,7 @@ int main(void)
         /* Cross both 32/64 CUDA tile boundaries and CPU SIMD widths, including
            partial final tiles. Reuse one context across differently sized jobs
            to cover persistent scratch growth, shrink/reuse and worker tails. */
-        if (!strcmp(nya_compute_name(compute), "cpu") || !strcmp(nya_compute_name(compute), "cuda")) {
+        if (nya_compute_capabilities(compute) & NYA_COMPUTE_MATMUL) {
             const size_t batches[] = {3, 17, 65, 32, 8};
             float *inputs = malloc(65*columns*sizeof(float)), *outputs = malloc((65*rows+2)*sizeof(float));
             if (!inputs || !outputs) { free(inputs); free(outputs); free(data); nya_compute_free(compute); return 1; }

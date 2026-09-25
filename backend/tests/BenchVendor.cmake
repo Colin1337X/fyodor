@@ -1,0 +1,21 @@
+# This is a schema/dispatch smoke test against an explicit mock, never a GPU
+# performance measurement. Require real adapter calls rather than CPU fallback.
+execute_process(COMMAND "${BENCH}" -m "${MODEL}" -b "${PROVIDER}" -p 8 -n 8 -r 2 --warmup 1 --json
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE errors)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Adapter benchmark smoke failed: ${errors}")
+endif()
+string(JSON backend GET "${output}" backend)
+string(JSON execution GET "${output}" execution)
+string(JSON weights GET "${output}" device_memory_after weights_bytes)
+if(NOT backend STREQUAL PROVIDER OR NOT execution STREQUAL "gpu-assisted" OR NOT weights GREATER 0)
+    message(FATAL_ERROR "Incorrect adapter resource/dispatch metadata")
+endif()
+foreach(i RANGE 0 1)
+    string(JSON calls GET "${output}" results ${i} external_matmul_calls)
+    string(JSON uploads GET "${output}" results ${i} uploads)
+    string(JSON downloads GET "${output}" results ${i} downloads)
+    if(NOT calls GREATER 0 OR NOT uploads GREATER 0 OR NOT downloads GREATER 0)
+        message(FATAL_ERROR "Adapter did not report actual operations")
+    endif()
+endforeach()

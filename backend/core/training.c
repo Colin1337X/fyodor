@@ -1,5 +1,8 @@
 #include "training.h"
 #include "training_internal.h"
+#include "train_clock.h"
+#include "train_executor.h"
+#include "cpu_kernels.h"
 
 #include <float.h>
 #include <math.h>
@@ -25,6 +28,7 @@ struct nya_train_tensor {
     uint32_t *indices;
     unsigned char *mask;
     float *saved;
+    double *scratch;
     size_t dimensions[4];
     const nya_llm_tensor *mapped;
     double scalar;
@@ -32,9 +36,14 @@ struct nya_train_tensor {
 };
 
 struct nya_train_graph {
+    nya_train_executor *executor;
     nya_train_tensor *last;
     size_t used, limit;
-    int backward;
+    int backward, profile;
+    size_t allocations;
+    size_t mapped_columns;
+    float *mapped_scratch;
+    double forward_linear, forward_mapped, backward_seconds[TR_SLICE + 1];
     char error[160];
 };
 
@@ -57,6 +66,7 @@ static void *tr_alloc(nya_train_graph *g, size_t count, size_t width)
     void *p = calloc(count, width);
     if (p == NULL) { tr_error(g, "training graph allocation failed"); return NULL; }
     g->used += count * width;
+    ++g->allocations;
     return p;
 }
 
@@ -86,24 +96,54 @@ static nya_train_tensor *tr_finite(nya_train_tensor *t)
     return t;
 }
 
-nya_train_graph *nya_train_graph_create(size_t limit)
+nya_train_graph *nya_train_graph_create_with_executor(size_t limit, nya_train_executor *executor)
 {
     if (limit < sizeof(nya_train_graph)) return NULL;
     nya_train_graph *g = (nya_train_graph *)calloc(1, sizeof(*g));
-    if (g != NULL) { g->limit = limit; g->used = sizeof(*g); }
+    if (g != NULL) {
+        g->limit = limit; g->used = sizeof(*g); g->executor = executor;
+        const char *profile = getenv("NYA_TRAIN_PROFILE");
+        g->profile = profile != NULL && strcmp(profile,"1") == 0;
+    }
     return g;
+}
+
+nya_train_graph *nya_train_graph_create(size_t limit)
+{
+    return nya_train_graph_create_with_executor(limit,NULL);
+}
+
+/* Avoid worker wakeups for small operations. Compare the product without
+   overflowing, even for shape descriptors close to SIZE_MAX. */
+static int tr_parallel_work(size_t rows, size_t columns, size_t tokens)
+{
+    const size_t threshold = 1024*1024;
+    if (!rows || !columns || !tokens) return 0;
+    if (rows > threshold/columns) return 1;
+    size_t matrix = rows*columns;
+    return tokens >= threshold/matrix+(threshold%matrix != 0);
 }
 
 void nya_train_graph_free(nya_train_graph *g)
 {
     if (g == NULL) return;
+    if (g->profile) {
+        static const char *names[] = {"input","leaf","add","mul","scale","linear",
+            "gelu","silu","rms","embed","logp","dpo","reshape","rope","attention",
+            "mapped_linear","softcap","slice"};
+        fprintf(stderr,"train_profile graph_bytes=%zu allocations=%zu forward_linear_ms=%.6f forward_mapped_ms=%.6f",
+            g->used,g->allocations,g->forward_linear*1000,g->forward_mapped*1000);
+        for (size_t i = 0; i <= TR_SLICE; ++i)
+            if (g->backward_seconds[i] > 0) fprintf(stderr," backward_%s_ms=%.6f",names[i],g->backward_seconds[i]*1000);
+        fputc('\n',stderr);
+    }
     nya_train_tensor *t = g->last;
     while (t != NULL) {
         nya_train_tensor *previous = t->previous;
         if (!t->borrowed) { free(t->data); free(t->gradient); }
-        free(t->indices); free(t->mask); free(t->saved); free(t); t = previous;
+        free(t->indices); free(t->mask); free(t->saved); free(t->scratch); free(t); t = previous;
     }
-    free(g);
+    free(g->mapped_scratch); free(g);
 }
 
 const char *nya_train_error(const nya_train_graph *g) { return g == NULL ? "missing training graph" : g->error; }
@@ -222,6 +262,37 @@ nya_train_tensor *nya_train_slice_columns(nya_train_tensor *a, size_t first, siz
     return t;
 }
 
+static void tr_linear_forward(void *argument, size_t worker, size_t workers)
+{
+    nya_train_tensor *t = argument, *x = t->a, *w = t->b;
+    size_t begin, end;
+    nya_train_partition(w->rows,worker,workers,&begin,&end);
+    /* Four independent token accumulators reuse each weight load and expose
+       SIMD without reassociating any dot product. Keep the original ascending
+       double reduction and F32 store, including the scalar token tail. */
+    size_t n = 0;
+    for (; x->rows-n >= 4; n += 4) for (size_t o = begin; o < end; ++o) {
+        double s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+        const float *a = x->data+n*x->columns, *b = w->data+o*w->columns;
+        for (size_t i = 0; i < x->columns; ++i) {
+            double v = b[i];
+            s0 += (double)a[i]*v;
+            s1 += (double)a[x->columns+i]*v;
+            s2 += (double)a[2*x->columns+i]*v;
+            s3 += (double)a[3*x->columns+i]*v;
+        }
+        t->data[n*w->rows+o] = (float)s0;
+        t->data[(n+1)*w->rows+o] = (float)s1;
+        t->data[(n+2)*w->rows+o] = (float)s2;
+        t->data[(n+3)*w->rows+o] = (float)s3;
+    }
+    for (; n < x->rows; ++n) for (size_t o = begin; o < end; ++o) {
+        double sum = 0.0;
+        for (size_t i = 0; i < x->columns; ++i) sum += (double)x->data[n * x->columns + i] * w->data[o * w->columns + i];
+        t->data[n * w->rows + o] = (float)sum;
+    }
+}
+
 nya_train_tensor *nya_train_linear(nya_train_tensor *x, nya_train_tensor *w)
 {
     if (x == NULL || w == NULL) return NULL;
@@ -229,12 +300,57 @@ nya_train_tensor *nya_train_linear(nya_train_tensor *x, nya_train_tensor *w)
     nya_train_tensor *t = tr_node(x->graph, x->rows, w->rows, x->gradient != NULL || w->gradient != NULL, 0);
     if (t == NULL) return NULL;
     t->a = x; t->b = w; t->operation = TR_LINEAR;
-    for (size_t n = 0; n < x->rows; ++n) for (size_t o = 0; o < w->rows; ++o) {
-        double sum = 0.0;
-        for (size_t i = 0; i < x->columns; ++i) sum += (double)x->data[n * x->columns + i] * w->data[o * w->columns + i];
-        t->data[n * w->rows + o] = (float)sum;
-    }
+    double start = t->graph->profile ? tr_seconds() : 0;
+    nya_train_execute(t->graph->executor,tr_linear_forward,t,
+        w->rows > 1 && tr_parallel_work(w->rows,x->columns,x->rows));
+    if (t->graph->profile) t->graph->forward_linear += tr_seconds()-start;
     return tr_finite(t);
+}
+
+/* Reuse a bounded decoded tile across four tokens. Quantized accumulators keep
+   the mapped reference's F32 addition order, including Q4_0's interleaved
+   low/high nibbles. F32 weights use the dense trainer's double accumulation.
+   There is no whole-weight expansion or graph allocation. */
+typedef struct tr_mapped_job {
+    nya_train_tensor *tensor;
+    size_t block, block_bytes;
+    nya_cpu_decode_function decode;
+} tr_mapped_job;
+
+static void tr_mapped_forward(void *argument, size_t worker, size_t workers)
+{
+    const tr_mapped_job *job = argument;
+    nya_train_tensor *t = job->tensor;
+    const nya_llm_tensor *w = t->mapped;
+    float *output = t->data; const float *input = t->a->data;
+    size_t tokens = t->rows, columns = t->a->columns, rows = t->columns;
+    size_t block = job->block, block_bytes = job->block_bytes, begin, end;
+    nya_cpu_decode_function decode = job->decode;
+    nya_train_partition(rows,worker,workers,&begin,&end);
+    if (begin == end) return;
+    size_t n = 0, row_bytes = columns/block*block_bytes;
+    if (decode != NULL) for (; tokens-n >= 4; n += 4) for (size_t o = begin; o < end; ++o) {
+        float sums[4] = {0}, decoded[256]; double precise[4] = {0};
+        for (size_t first = 0; first < columns;) {
+            size_t count = columns-first < 256 ? columns-first : 256;
+            decode(w->data+o*row_bytes+first/block*block_bytes,decoded,count,w->type);
+            if (w->type == NYA_LLM_TENSOR_F32) for (size_t j = 0; j < count; ++j) {
+                for (size_t lane = 0; lane < 4; ++lane)
+                    precise[lane] += (double)decoded[j]*input[(n+lane)*columns+first+j];
+            }
+            else for (size_t j = 0; j < count; ++j) {
+                size_t i = w->type == NYA_LLM_TENSOR_Q4_0 ? (j/32)*32+(j%32)/2+(j%2)*16 : j;
+                for (size_t lane = 0; lane < 4; ++lane)
+                    sums[lane] += decoded[i]*input[(n+lane)*columns+first+i];
+            }
+            first += count;
+        }
+        for (size_t lane = 0; lane < 4; ++lane)
+            output[(n+lane)*rows+o] = w->type == NYA_LLM_TENSOR_F32 ? (float)precise[lane] : sums[lane];
+    }
+    nya_llm_tensor tail = *w;
+    tail.data += begin*row_bytes; tail.data_size = (end-begin)*row_bytes; tail.dimensions[1] = end-begin;
+    for (; n < tokens; ++n) nya_llm_matvec(NULL,output+n*rows+begin,&tail,input+n*columns,columns,end-begin);
 }
 
 nya_train_tensor *nya_train_linear_mapped(nya_train_tensor *x, const nya_llm_tensor *w)
@@ -265,7 +381,12 @@ nya_train_tensor *nya_train_linear_mapped(nya_train_tensor *x, const nya_llm_ten
     nya_train_tensor *t = tr_node(x->graph, x->rows, rows, x->gradient != NULL, 0);
     if (t == NULL) return NULL;
     t->a = x; t->mapped = w; t->operation = TR_MAPPED_LINEAR;
-    for (size_t n = 0; n < x->rows; ++n) nya_llm_matvec(NULL, t->data + n * rows, w, x->data + n * x->columns, x->columns, rows);
+    if (x->gradient != NULL && x->columns > x->graph->mapped_columns) x->graph->mapped_columns = x->columns;
+    double start = t->graph->profile ? tr_seconds() : 0;
+    tr_mapped_job job = {t,block,block_bytes,x->rows >= 4 ? nya_cpu_select_decode() : NULL};
+    nya_train_execute(t->graph->executor,tr_mapped_forward,&job,
+        rows > 1 && tr_parallel_work(rows,x->columns,x->rows));
+    if (t->graph->profile) t->graph->forward_mapped += tr_seconds()-start;
     return tr_finite(t);
 }
 
@@ -387,14 +508,20 @@ nya_train_tensor *nya_train_attention(nya_train_tensor *q, nya_train_tensor *k,
     size_t n = q->rows;
     t->saved = (float *)tr_alloc(q->graph, n * n * heads, sizeof(float));
     if (t->saved == NULL) return NULL;
+    if (t->gradient != NULL) {
+        t->scratch = (double *)tr_alloc(q->graph,n,sizeof(double));
+        if (t->scratch == NULL) return NULL;
+    }
+    t->dimensions[3] = window == 0 || groups == NULL;
     /* Keep one probability matrix per query head for the softmax Jacobian.
        Masked entries remain exactly zero. The graph budget bounds N^2 storage. */
     for (size_t row = 0; row < n; ++row) for (size_t head = 0; head < heads; ++head) {
         float *probability = t->saved + (head * n + row) * n;
         size_t first = window != 0 && row >= window ? row - window + 1 : 0;
+        size_t end = t->dimensions[3] ? row+1 : n;
         size_t kh = head / (heads / kv_heads);
         double maximum = -INFINITY, mass = 0.0;
-        for (size_t col = first; col < n; ++col) {
+        for (size_t col = first; col < end; ++col) {
             if (col > row && !(window != 0 && groups != NULL && groups[row] != 0 && groups[row] == groups[col])) continue;
             double score = 0.0;
             for (size_t j = 0; j < dimension; ++j) score +=
@@ -404,16 +531,28 @@ nya_train_tensor *nya_train_attention(nya_train_tensor *q, nya_train_tensor *k,
             probability[col] = (float)score;
             if (probability[col] > maximum) maximum = probability[col];
         }
-        for (size_t col = 0; col < n; ++col) {
+        for (size_t col = first; col < end; ++col) {
             if (col < first || (col > row && !(window != 0 && groups != NULL && groups[row] != 0 && groups[row] == groups[col]))) {
                 probability[col] = 0.0f; continue;
             }
             probability[col] = (float)exp((double)probability[col] - maximum); mass += probability[col];
         }
-        for (size_t col = first; col < n; ++col) probability[col] = (float)(probability[col] / mass);
-        for (size_t j = 0; j < dimension; ++j) {
+        for (size_t col = first; col < end; ++col) probability[col] = (float)(probability[col] / mass);
+        /* Adjacent value lanes keep their independent double reduction order.
+           Causal future positions are known zero and need no value reads. */
+        size_t j = 0;
+        for (; dimension-j >= 4; j += 4) {
+            double sums[4] = {0};
+            for (size_t col = first; col < end; ++col) {
+                const float *value = v->data+col*v->columns+kh*dimension+j;
+                for (size_t lane = 0; lane < 4; ++lane) sums[lane] += (double)probability[col]*value[lane];
+            }
+            for (size_t lane = 0; lane < 4; ++lane)
+                t->data[row*t->columns+head*dimension+j+lane] = (float)sums[lane];
+        }
+        for (; j < dimension; ++j) {
             double sum = 0.0;
-            for (size_t col = first; col < n; ++col) sum += (double)probability[col] * v->data[col * v->columns + kh * dimension + j];
+            for (size_t col = first; col < end; ++col) sum += (double)probability[col] * v->data[col * v->columns + kh * dimension + j];
             t->data[row * t->columns + head * dimension + j] = (float)sum;
         }
     }
@@ -475,6 +614,66 @@ nya_train_tensor *nya_train_dpo(nya_train_tensor *chosen, nya_train_tensor *reje
     return tr_finite(t);
 }
 
+/* The two linear adjoints have different cache-friendly iteration orders.
+   Each destination retains its original F32 addition order. No shared weight
+   gradients are written concurrently, and no allocation or packing is needed. */
+static void tr_linear_input_gradient(float *restrict dx, const float *restrict dy,
+    const float *restrict w, size_t tokens, size_t inputs, size_t outputs)
+{
+    for (size_t n = 0; n < tokens; ++n) for (size_t o = 0; o < outputs; ++o) {
+        float scale = dy[n*outputs+o];
+        for (size_t i = 0; i < inputs; ++i) dx[n*inputs+i] += scale*w[o*inputs+i];
+    }
+}
+
+static void tr_linear_weight_gradient(float *restrict dw, const float *restrict dy,
+    const float *restrict x, size_t tokens, size_t inputs, size_t outputs, size_t begin, size_t end)
+{
+    for (size_t o = begin; o < end; ++o) for (size_t n = 0; n < tokens; ++n) {
+        float scale = dy[n*outputs+o];
+        for (size_t i = 0; i < inputs; ++i) dw[o*inputs+i] += scale*x[n*inputs+i];
+    }
+}
+
+static void tr_linear_dx(void *argument, size_t worker, size_t workers)
+{
+    nya_train_tensor *t = argument, *a = t->a, *b = t->b;
+    size_t begin, end; nya_train_partition(a->rows,worker,workers,&begin,&end);
+    tr_linear_input_gradient(a->gradient+begin*a->columns,t->gradient+begin*t->columns,
+        b->data,end-begin,a->columns,b->rows);
+}
+
+static void tr_linear_dw(void *argument, size_t worker, size_t workers)
+{
+    nya_train_tensor *t = argument, *a = t->a, *b = t->b;
+    size_t begin, end; nya_train_partition(b->rows,worker,workers,&begin,&end);
+    tr_linear_weight_gradient(b->gradient,t->gradient,a->data,a->rows,a->columns,b->rows,begin,end);
+}
+
+static void tr_add_scaled(float *restrict destination, const float *restrict source, float scale, size_t count)
+{
+    for (size_t i = 0; i < count; ++i) destination[i] += scale*source[i];
+}
+
+static void tr_mapped_backward(void *argument, size_t worker, size_t workers)
+{
+    const tr_mapped_job *job = argument;
+    nya_train_tensor *t = job->tensor, *a = t->a;
+    size_t begin, end, row_bytes = t->mapped->data_size/t->columns;
+    nya_train_partition(a->columns/job->block,worker,workers,&begin,&end);
+    begin *= job->block; end *= job->block;
+    if (begin == end) return;
+    float *scratch = t->graph->mapped_scratch+begin;
+    for (size_t o = 0; o < t->columns; ++o) {
+        if (job->decode) job->decode(t->mapped->data+o*row_bytes+begin/job->block*job->block_bytes,
+                                    scratch,end-begin,t->mapped->type);
+        else for (size_t i = begin; i < end; ++i)
+            scratch[i-begin] = nya_llm_tensor_value(t->mapped,o*a->columns+i);
+        for (size_t n = 0; n < a->rows; ++n)
+            tr_add_scaled(a->gradient+n*a->columns+begin,scratch,t->gradient[n*t->columns+o],end-begin);
+    }
+}
+
 int nya_train_backward(nya_train_tensor *loss)
 {
     if (loss == NULL) return -1;
@@ -483,11 +682,23 @@ int nya_train_backward(nya_train_tensor *loss)
         tr_error(g, "backward requires an unused graph and a differentiable scalar loss"); return -1;
     }
     g->backward = 1; loss->gradient[0] += 1.0f;
+    /* One reusable decoded row for the whole graph, allocated only after graph
+       construction. If the budget has no room or malloc fails, retain the
+       allocation-free scalar backward path instead of rejecting a valid graph. */
+    nya_cpu_decode_function decode = NULL;
+    if (g->mapped_columns && g->mapped_columns <= (g->limit-g->used)/sizeof(float)) {
+        g->mapped_scratch = (float *)malloc(g->mapped_columns*sizeof(float));
+        if (g->mapped_scratch != NULL) {
+            g->used += g->mapped_columns*sizeof(float); ++g->allocations;
+            decode = nya_cpu_select_decode();
+        }
+    }
     /* Construction order is a topological ordering: an operation can only
        reference existing nodes. Reverse traversal therefore handles branches
        and shared parameters without recursion or an extra sorting allocation. */
     for (nya_train_tensor *t = g->last; t != NULL; t = t->previous) {
         if (t->gradient == NULL) continue;
+        double start = g->profile ? tr_seconds() : 0;
         for (size_t i = 0; i < t->count; ++i) if (!isfinite(t->gradient[i])) { tr_error(g, "non-finite training gradient"); return -1; }
         nya_train_tensor *a = t->a, *b = t->b;
         switch (t->operation) {
@@ -518,15 +729,16 @@ int nya_train_backward(nya_train_tensor *loss)
                 size_t kh = head / (heads / kv_heads);
                 const float *probability = t->saved + (head * n + row) * n;
                 const float *dy = t->gradient + row * t->columns + head * dimension;
+                size_t end = t->dimensions[3] ? row+1 : n;
                 double average = 0.0;
-                for (size_t col = 0; col < n; ++col) if (probability[col] != 0.0f) {
+                for (size_t col = 0; col < end; ++col) if (probability[col] != 0.0f) {
                     double dp = 0.0;
                     for (size_t j = 0; j < dimension; ++j) dp += (double)dy[j] * v->data[col * v->columns + kh * dimension + j];
+                    t->scratch[col] = dp;
                     average += probability[col] * dp;
                 }
-                for (size_t col = 0; col < n; ++col) if (probability[col] != 0.0f) {
-                    double dp = 0.0;
-                    for (size_t j = 0; j < dimension; ++j) dp += (double)dy[j] * v->data[col * v->columns + kh * dimension + j];
+                for (size_t col = 0; col < end; ++col) if (probability[col] != 0.0f) {
+                    double dp = t->scratch[col];
                     double ds = probability[col] * (dp - average) * t->scalar;
                     for (size_t j = 0; j < dimension; ++j) {
                         size_t qi = row * a->columns + head * dimension + j, ki = col * b->columns + kh * dimension + j;
@@ -564,6 +776,14 @@ int nya_train_backward(nya_train_tensor *loss)
             }
             break;
         case TR_LINEAR:
+            if (a->gradient == NULL || a->gradient != b->gradient) {
+                int parallel = tr_parallel_work(b->rows,a->columns,a->rows);
+                if (a->gradient != NULL) nya_train_execute(g->executor,tr_linear_dx,t,parallel && a->rows > 1);
+                if (b->gradient != NULL) nya_train_execute(g->executor,tr_linear_dw,t,parallel && b->rows > 1);
+                break;
+            }
+            /* Distinct leaves can borrow the same parameter. Preserve the
+               interleaved accumulation order for this aliasing corner case. */
             for (size_t n = 0; n < a->rows; ++n) for (size_t o = 0; o < b->rows; ++o) {
                 float dy = t->gradient[n * b->rows + o];
                 for (size_t i = 0; i < a->columns; ++i) {
@@ -573,6 +793,16 @@ int nya_train_backward(nya_train_tensor *loss)
             }
             break;
         case TR_MAPPED_LINEAR:
+            if (a->gradient != NULL && g->mapped_scratch != NULL) {
+                uint32_t type = t->mapped->type;
+                size_t block = type == NYA_LLM_TENSOR_Q4_0 || type == NYA_LLM_TENSOR_Q8_0 ? 32 :
+                    type == NYA_LLM_TENSOR_Q4_K || type == NYA_LLM_TENSOR_Q6_K ? 256 : 1;
+                size_t block_bytes = t->mapped->data_size/t->columns/(a->columns/block);
+                tr_mapped_job job = {t,block,block_bytes,decode};
+                nya_train_execute(g->executor,tr_mapped_backward,&job,
+                    a->columns/block > 1 && tr_parallel_work(t->columns,a->columns,a->rows));
+                break;
+            }
             /* Backward multiplies by W, not W^T. Decode a scalar only as it is
                used; no dense copy or gradient of the frozen base is allocated. */
             if (a->gradient != NULL) for (size_t o = 0; o < t->columns; ++o) for (size_t i = 0; i < a->columns; ++i) {
@@ -618,6 +848,7 @@ int nya_train_backward(nya_train_tensor *loss)
             if (b->gradient != NULL) b->gradient[0] -= (float)((double)t->gradient[0] * t->scalar);
             break;
         }
+        if (g->profile) g->backward_seconds[t->operation] += tr_seconds()-start;
     }
     return 0;
 }

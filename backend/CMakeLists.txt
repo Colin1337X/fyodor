@@ -11,6 +11,8 @@ if(NOT NYA_C_STANDARD MATCHES "^(17|23)$")
 endif()
 option(NYA_ENABLE_VULKAN "Enable independent Vulkan compute acceleration" OFF)
 option(NYA_ENABLE_CUDA "Enable optional CUDA driver/NVRTC provider when its directory and headers exist" OFF)
+option(NYA_ENABLE_ROCM "Enable detachable ROCm C adapter (optional runtime libraries)" ON)
+option(NYA_ENABLE_MLX "Enable detachable MLX C adapter (optional runtime library)" ON)
 option(NYA_ENABLE_ONNXRUNTIME "Enable the optional external ONNX Runtime C API adapter" OFF)
 option(NYA_FETCH_ONNXRUNTIME "Download the pinned optional ONNX Runtime SDK" OFF)
 option(NYA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
@@ -76,10 +78,10 @@ endfunction()
 # Compile the model engine once, independently from HTTP. The server and tests
 # reuse the same objects, so neither can drift into a different implementation.
 add_library(nya-engine STATIC
-    core/cpu_backend.c core/cpu_kernels.c core/llm_quant.c core/thread.c
+    core/cpu_backend.c core/cpu_kernels.c core/llm_quant.c core/thread.c core/vendor.c
     core/compute.c core/execution.c core/generation.c core/file.c core/format.c
     core/format_gguf.c core/format_onnx.c core/format_safetensors.c
-    core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/pretraining.c)
+    core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/train_executor.c core/pretraining.c)
 target_include_directories(nya-engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(nya-engine PUBLIC Threads::Threads)
 nya_target_policy(nya-engine)
@@ -98,6 +100,17 @@ endif()
 if(NYA_ENABLE_ONNXRUNTIME)
     include(cmake/OnnxRuntime.cmake)
 endif()
+foreach(provider IN ITEMS rocm mlx)
+    string(TOUPPER "${provider}" upper)
+    if(NYA_ENABLE_${upper})
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../${provider}/CMakeLists.txt" AND
+           EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../${provider}/${provider}.c")
+            add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../${provider}" "${CMAKE_CURRENT_BINARY_DIR}/${provider}-provider")
+        else()
+            message(STATUS "${provider} directory absent: retaining independent providers")
+        endif()
+    endif()
+endforeach()
 if(NYA_ENABLE_CUDA)
     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../CUDA/CMakeLists.txt")
         add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../CUDA" "${CMAKE_CURRENT_BINARY_DIR}/cuda-provider")
@@ -121,6 +134,10 @@ nya_target_policy(fyodor-bench)
 target_link_libraries(fyodor-bench PRIVATE nya-engine)
 nya_target_policy(fyodor-train)
 target_link_libraries(fyodor-train PRIVATE nya-engine)
+if(MINGW)
+    # Use the UTF-16 CRT entry point, then convert arguments to internal UTF-8.
+    target_link_options(fyodor-train PRIVATE -municode)
+endif()
 function(nya_copy_provider target)
     if(NYA_ENABLE_ONNXRUNTIME)
         add_custom_command(TARGET ${target} POST_BUILD
@@ -131,6 +148,32 @@ function(nya_copy_provider target)
 endfunction()
 nya_copy_provider(fyodor-backend)
 nya_copy_provider(fyodor-train)
+
+set(NYA_VERIFY_MODEL "" CACHE FILEPATH "Optional real GGUF for physical-removal benchmark comparison")
+foreach(optional IN ITEMS rocm mlx optcpp)
+    add_custom_target(verify-without-${optional}
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNYA_EXCLUDE=${optional}"
+            "-DNYA_SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "-DNYA_VERIFY_PARENT=${CMAKE_BINARY_DIR}"
+            "-DNYA_GENERATOR=${CMAKE_GENERATOR}"
+            "-DNYA_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+            "-DNYA_COMPILER=${CMAKE_C_COMPILER}"
+            "-DNYA_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+            "-DNYA_STANDARD=${NYA_C_STANDARD}"
+            "-DNYA_CUDA=${NYA_ENABLE_CUDA}"
+            "-DNYA_CUDA_INCLUDE=${NYA_CUDA_INCLUDE_DIR}"
+            "-DNYA_NVRTC_INCLUDE=${NYA_NVRTC_INCLUDE_DIR}"
+            "-DNYA_NVRTC_LIBRARY=${NYA_CUDA_NVRTC_LIBRARY}"
+            "-DNYA_VULKAN=${NYA_ENABLE_VULKAN}"
+            "-DNYA_VULKAN_INCLUDE=${Vulkan_INCLUDE_DIR}"
+            "-DNYA_VULKAN_LIBRARY=${Vulkan_LIBRARY}"
+            "-DNYA_BASELINE_BENCH=$<TARGET_FILE:fyodor-bench>"
+            "-DNYA_VERIFY_MODEL=${NYA_VERIFY_MODEL}"
+            "-DNYA_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyWithoutOptional.cmake"
+        DEPENDS fyodor-bench USES_TERMINAL VERBATIM)
+endforeach()
 
 add_custom_target(verify-without-cuda
     COMMAND "${CMAKE_COMMAND}"
@@ -168,6 +211,60 @@ if(NYA_CUDA_AVAILABLE)
 endif()
 
 if(BUILD_TESTING)
+    if(NYA_ROCM_AVAILABLE OR NYA_MLX_AVAILABLE)
+        # Explicit test library path only; this is never installed alongside
+        # the application and cannot masquerade as a production GPU runtime.
+        add_library(nya-mock-vendor SHARED tests/mock_vendor.c)
+        nya_target_policy(nya-mock-vendor)
+        add_library(nya-mock-missing-vendor SHARED tests/mock_vendor.c)
+        nya_target_policy(nya-mock-missing-vendor)
+        target_compile_definitions(nya-mock-missing-vendor PRIVATE hipInit=nya_mock_unused_init mlx_set_error_handler=nya_mock_unused_handler)
+        add_executable(nya-test-vendor tests/test_vendor.c)
+        nya_target_policy(nya-test-vendor)
+        target_include_directories(nya-test-vendor PRIVATE core)
+        target_link_libraries(nya-test-vendor PRIVATE nya-engine)
+        foreach(provider IN ITEMS rocm mlx)
+            string(TOUPPER "${provider}" upper)
+            if(NYA_${upper}_AVAILABLE)
+                set(mock_env "NYA_COMPUTE=${provider};NYA_ROCM_HIP_LIBRARY=$<TARGET_FILE:nya-mock-vendor>;NYA_ROCM_BLAS_LIBRARY=$<TARGET_FILE:nya-mock-vendor>;NYA_MLX_LIBRARY=$<TARGET_FILE:nya-mock-vendor>")
+                add_test(NAME vendor-${provider}-failures COMMAND nya-test-vendor "${provider}" "$<TARGET_FILE:nya-mock-vendor>")
+                set_tests_properties(vendor-${provider}-failures PROPERTIES ENVIRONMENT "${mock_env};NYA_ROCM_CACHE_MIB=1;NYA_MLX_CACHE_MIB=1" TIMEOUT 60)
+                add_test(NAME vendor-${provider}-quant COMMAND nya-test-quant-kernels)
+                set_tests_properties(vendor-${provider}-quant PROPERTIES ENVIRONMENT "${mock_env}" TIMEOUT 120)
+                add_test(NAME vendor-${provider}-inference COMMAND nya-test-inference "${CMAKE_CURRENT_BINARY_DIR}/test_models/pretraining.trained.gguf" gpu-assisted)
+                set_tests_properties(vendor-${provider}-inference PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "${mock_env}" TIMEOUT 120)
+                add_test(NAME vendor-${provider}-gemma COMMAND nya-test-architectures "${CMAKE_CURRENT_BINARY_DIR}/test_models/tiny-gemma4-${provider}.gguf")
+                set_tests_properties(vendor-${provider}-gemma PROPERTIES ENVIRONMENT "${mock_env}" TIMEOUT 120)
+                add_test(NAME vendor-${provider}-api COMMAND nya-test-api "${CMAKE_CURRENT_BINARY_DIR}/test_models/pretraining.trained.gguf")
+                set_tests_properties(vendor-${provider}-api PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "${mock_env};NYA_COMPUTE=cpu;NYA_TEST_OPTIONAL_API=${provider}" TIMEOUT 120)
+                foreach(failure IN ITEMS missing-library missing-symbol invalid-budget)
+                    set(failure_env "${mock_env}")
+                    if(failure STREQUAL "invalid-budget")
+                        string(APPEND failure_env ";NYA_ROCM_CACHE_MIB=-1;NYA_MLX_CACHE_MIB=-1")
+                    else()
+                        set(library "${CMAKE_CURRENT_BINARY_DIR}/nonexistent-vendor-library")
+                        if(failure STREQUAL "missing-symbol")
+                            set(library "$<TARGET_FILE:nya-mock-missing-vendor>")
+                        endif()
+                        set(failure_env "NYA_COMPUTE=${provider};NYA_ROCM_HIP_LIBRARY=${library};NYA_ROCM_BLAS_LIBRARY=${library};NYA_MLX_LIBRARY=${library}")
+                    endif()
+                    add_test(NAME vendor-${provider}-${failure} COMMAND nya-test-vendor --unavailable)
+                    set_tests_properties(vendor-${provider}-${failure} PROPERTIES ENVIRONMENT "${failure_env}" TIMEOUT 30)
+                    if(failure STREQUAL "missing-symbol")
+                        add_test(NAME vendor-${provider}-api-fallback COMMAND nya-test-api "${CMAKE_CURRENT_BINARY_DIR}/test_models/pretraining.trained.gguf")
+                        set_tests_properties(vendor-${provider}-api-fallback PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "${failure_env};NYA_COMPUTE=cpu;NYA_TEST_OPTIONAL_API=${provider};NYA_TEST_OPTIONAL_UNAVAILABLE=1" TIMEOUT 120)
+                    endif()
+                endforeach()
+                add_test(NAME hardware-${provider}-quant COMMAND nya-test-quant-kernels)
+                set_tests_properties(hardware-${provider}-quant PROPERTIES ENVIRONMENT "NYA_COMPUTE=${provider}" SKIP_RETURN_CODE 77 TIMEOUT 120)
+                add_test(NAME hardware-${provider}-inference COMMAND nya-test-inference "${CMAKE_CURRENT_BINARY_DIR}/test_models/pretraining.trained.gguf" gpu-assisted)
+                set_tests_properties(hardware-${provider}-inference PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=${provider}" SKIP_RETURN_CODE 77 TIMEOUT 120)
+                add_test(NAME vendor-${provider}-bench COMMAND "${CMAKE_COMMAND}" "-DBENCH=$<TARGET_FILE:fyodor-bench>"
+                    "-DMODEL=${CMAKE_CURRENT_BINARY_DIR}/test_models/pretraining.trained.gguf" "-DPROVIDER=${provider}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/BenchVendor.cmake")
+                set_tests_properties(vendor-${provider}-bench PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "${mock_env}" TIMEOUT 120)
+            endif()
+        endforeach()
+    endif()
     set(nya_fixtures "${CMAKE_CURRENT_BINARY_DIR}/test_models")
     file(MAKE_DIRECTORY "${nya_fixtures}")
     add_executable(nya-make-test-models tests/make_test_models.c)
@@ -177,6 +274,7 @@ if(BUILD_TESTING)
     add_executable(nya-test-generation tests/test_generation.c)
     add_executable(nya-test-architectures tests/test_architectures.c)
     add_executable(nya-test-training tests/test_training.c)
+    add_executable(nya-test-train-runner tests/test_train_runner.c)
     add_executable(nya-test-pretraining tests/test_pretraining.c)
     add_executable(nya-test-compute tests/test_compute.c)
     add_executable(nya-test-inference tests/test_inference.c)
@@ -212,11 +310,11 @@ if(BUILD_TESTING)
     add_executable(nya-test-server tests/test_server.c core/config.c)
     add_executable(nya-test-api tests/test_api.c core/config.c)
     foreach(target IN ITEMS nya-make-test-models nya-test-config nya-test-formats
-            nya-test-execution nya-test-generation nya-test-architectures nya-test-training nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
+            nya-test-execution nya-test-generation nya-test-architectures nya-test-training nya-test-train-runner nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
         nya_target_policy(${target})
     endforeach()
     foreach(target IN ITEMS nya-test-formats nya-test-execution nya-test-generation
-            nya-test-architectures nya-test-training nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
+            nya-test-architectures nya-test-training nya-test-train-runner nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
         target_link_libraries(${target} PRIVATE nya-engine)
         target_include_directories(${target} PRIVATE core)
     endforeach()
@@ -239,6 +337,9 @@ if(BUILD_TESTING)
     add_test(NAME generate-native-gguf COMMAND nya-test-generation "${nya_fixtures}/tiny-llama.gguf")
     add_test(NAME validate-gemma-graphs COMMAND nya-test-architectures "${nya_fixtures}/tiny-gemma4.gguf")
     add_test(NAME validate-training COMMAND nya-test-training)
+    add_test(NAME train-accumulation COMMAND nya-test-train-runner)
+    add_test(NAME validate-training-scalar COMMAND nya-test-training)
+    set_tests_properties(validate-training-scalar PROPERTIES ENVIRONMENT "NYA_CPU_ISA=scalar")
     add_test(NAME train-export-decoder COMMAND nya-test-pretraining "${nya_fixtures}/pretraining")
     set_tests_properties(train-export-decoder PROPERTIES TIMEOUT 120)
     set_tests_properties(train-export-decoder PROPERTIES FIXTURES_SETUP trained_model)
@@ -250,6 +351,17 @@ if(BUILD_TESTING)
     add_test(NAME train-cli-workflows COMMAND "${CMAKE_COMMAND}" "-DTRAINER=$<TARGET_FILE:fyodor-train>"
         "-DFIXTURES=${nya_fixtures}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/TrainCli.cmake")
     set_tests_properties(train-cli-workflows PROPERTIES TIMEOUT 120)
+    # Python drives real child-process interruption; never a runtime dependency.
+    # Native control-pipe checks also run in train-accumulation without Python.
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME train-stop-workflows COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_stop.py" "$<TARGET_FILE:fyodor-train>")
+        set_tests_properties(train-stop-workflows PROPERTIES TIMEOUT 120)
+        add_test(NAME train-unicode-paths COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_paths.py" "$<TARGET_FILE:fyodor-train>")
+        set_tests_properties(train-unicode-paths PROPERTIES TIMEOUT 120)
+    endif()
     add_test(NAME validate-http-protocol COMMAND nya-test-server)
     add_test(NAME validate-compute COMMAND nya-test-compute)
     if(NYA_ENABLE_VULKAN)

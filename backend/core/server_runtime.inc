@@ -15,8 +15,9 @@ static int nya_handle_runtime(nya_socket client, nya_server *server, const char 
     char body[8192]; nya_text_builder b; nya_builder_init(&b,body,sizeof(body));
     if (nya_server_execution_lock(server) != 0) return -1;
     nya_server_models_lock(server);
-    nya_builder_append(&b,"{\"version\":1,\"ok\":true,\"compiled\":{\"cpu\":true,\"cuda\":%s,\"vulkan\":%s},\"training_compute\":\"cpu\",\"verbose\":%s,\"limits\":{\"request_bytes\":%zu,\"output_bytes\":%zu,\"generation_tokens\":%u},\"models\":[",
+    nya_builder_append(&b,"{\"version\":1,\"ok\":true,\"compiled\":{\"cpu\":true,\"cuda\":%s,\"vulkan\":%s,\"rocm\":%s,\"mlx\":%s},\"training_compute\":\"cpu\",\"verbose\":%s,\"limits\":{\"request_bytes\":%zu,\"output_bytes\":%zu,\"generation_tokens\":%u},\"models\":[",
         nya_compute_cuda_compiled() ? "true" : "false", nya_compute_vulkan_compiled() ? "true" : "false",
+        nya_compute_backend_compiled("rocm") ? "true" : "false", nya_compute_backend_compiled("mlx") ? "true" : "false",
         server->config.verbose ? "true" : "false",server->config.settings->max_request_bytes,server->config.settings->max_output_bytes,server->config.settings->max_generation_tokens);
     for (size_t i = 0; i < server->config.models->count; ++i) {
         const nya_model *model = &server->config.models->models[i];
@@ -40,8 +41,8 @@ static int nya_handle_model_compute(nya_socket client, nya_server *server, const
     if (nya_compat_keys(r->body,r->body_length,keys,2) != 0 ||
         nya_json_u64(r->body,r->body_length,"model_id",&id) != 0 || id == 0 ||
         nya_json_string(r->body,r->body_length,"compute",provider,sizeof(provider)) != 0 ||
-        (strcmp(provider,"cpu") != 0 && strcmp(provider,"cuda") != 0 && strcmp(provider,"vulkan") != 0))
-        return nya_http_send_error(server,client,400,"Bad Request","invalid_compute","Supply model_id and compute: cpu, cuda, or vulkan.",origin);
+        !nya_compute_backend_known(provider))
+        return nya_http_send_error(server,client,400,"Bad Request","invalid_compute","Supply model_id and compute: cpu, cuda, vulkan, rocm, or mlx.",origin);
     if (nya_server_execution_lock(server) != 0) return -1;
     nya_server_models_lock(server);
     const nya_model *model = nya_model_find(server->config.models,id);
@@ -53,13 +54,17 @@ static int nya_handle_model_compute(nya_socket client, nya_server *server, const
         return nya_http_send_error(server,client,found ? 409 : 404,found ? "Conflict" : "Not Found",
             "compute_unavailable","Select a loaded native text model, MTP assistant, or Unified projector.",origin);
     }
-    if (strcmp(nya_compute_name(context->compute),provider) != 0) {
+    /* A failed accelerator reports CPU fallback, but still owns its cache.
+       An explicit CPU selection must replace that failed context and release
+       its resources rather than treating the fallback name as an active CPU. */
+    if (strcmp(nya_compute_name(context->compute),provider) != 0 ||
+        (context->compute && !nya_compute_capabilities(context->compute))) {
         nya_compute_context *next = nya_compute_create_for(provider);
         if (strcmp(nya_compute_name(next),provider) != 0) {
             nya_compute_free(next);
             nya_server_execution_unlock(server);
             return nya_http_send_error(server,client,409,"Conflict","compute_unavailable",
-                "Provider initialization failed. Check compiled support, GPU driver and CUDA NVRTC runtime. The current provider was retained.",origin);
+                "Provider initialization failed. Check compiled support, GPU driver and optional runtime libraries. The current provider was retained.",origin);
         }
         nya_compute_context *previous = context->compute;
         context->compute = next;

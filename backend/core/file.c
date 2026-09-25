@@ -1,6 +1,7 @@
 #include "file.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 
@@ -9,6 +10,21 @@
 #include <io.h>
 #else
 #include <unistd.h>
+#endif
+
+#ifdef _WIN32
+static wchar_t *file_wide_path(const char *path)
+{
+    if (path == NULL) { errno = EINVAL; return NULL; }
+    int count = MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,NULL,0);
+    if (count <= 0 || (size_t)count > SIZE_MAX/sizeof(wchar_t)) { errno = EINVAL; return NULL; }
+    wchar_t *wide = malloc((size_t)count*sizeof(*wide));
+    if (wide == NULL) { errno = ENOMEM; return NULL; }
+    if (MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wide,count) != count) {
+        free(wide); errno = EINVAL; return NULL;
+    }
+    return wide;
+}
 #endif
 
 /* Windows narrow fopen interprets its argument through the active code page,
@@ -20,21 +36,48 @@ FILE *nya_file_open_read(const char *path)
     if (path == NULL) { errno = EINVAL; return NULL; }
 #ifdef _WIN32
     {
-        int count = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
-        wchar_t *wide;
-        FILE *file;
-        if (count <= 0 || (size_t)count > SIZE_MAX / sizeof(*wide)) { errno = EINVAL; return NULL; }
-        wide = malloc((size_t)count * sizeof(*wide));
-        if (wide == NULL) { errno = ENOMEM; return NULL; }
-        if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, count) != count) {
-            free(wide); errno = EINVAL; return NULL;
-        }
-        file = _wfopen(wide, L"rb");
+        wchar_t *wide = file_wide_path(path);
+        if (wide == NULL) return NULL;
+        FILE *file = _wfopen(wide, L"rb");
         free(wide);
         return file;
     }
 #else
     return fopen(path, "rb");
+#endif
+}
+
+FILE *nya_file_create_exclusive(const char *path)
+{
+    if (path == NULL) { errno = EINVAL; return NULL; }
+#ifdef _WIN32
+    wchar_t *wide = file_wide_path(path);
+    if (wide == NULL) return NULL;
+    int fd = _wopen(wide,_O_WRONLY|_O_CREAT|_O_EXCL|_O_BINARY|_O_NOINHERIT,_S_IREAD|_S_IWRITE);
+    if (fd < 0) { free(wide); return NULL; }
+    FILE *file = _fdopen(fd,"wb");
+    if (file == NULL) { _close(fd); _wremove(wide); }
+    free(wide);
+#else
+    int fd = open(path,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC,0600);
+    if (fd < 0) return NULL;
+    FILE *file = fdopen(fd,"wb");
+    if (file == NULL) { close(fd); remove(path); }
+#endif
+    return file;
+}
+
+int nya_file_remove(const char *path)
+{
+    if (path == NULL) { errno = EINVAL; return -1; }
+#ifdef _WIN32
+    wchar_t *wide = file_wide_path(path);
+    if (wide == NULL) return -1;
+    int result = _wremove(wide);
+    free(wide);
+    return result;
+#else
+    return remove(path);
 #endif
 }
 

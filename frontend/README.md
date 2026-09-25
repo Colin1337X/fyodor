@@ -25,13 +25,27 @@ the [removable adapter documentation](../CUDA/cutlass/README.md).
 
 `npm run desktop:build` produces formats supported by the current host: NSIS/MSI on Windows, DMG/app on macOS, and AppImage/deb/rpm on Linux. Build on each target platform with its matching C executable.
 
-On Windows, the backend and trainer are supervised child processes with `CREATE_NO_WINDOW`; they do not open separate console windows. Launch the desktop with `--verbose` or `FYODOR_VERBOSE=1` to capture detailed backend diagnostics in the Logs view. The child readiness line and authentication token are consumed internally. Closing the desktop terminates its children.
+On Windows, the backend and trainer are supervised child processes with `CREATE_NO_WINDOW`; they do not open separate console windows. Launch the desktop with `--verbose` or `FYODOR_VERBOSE=1` to capture detailed backend diagnostics in the Logs view. The child readiness line and authentication token are consumed internally. Closing the desktop requests a safe training stop, waits for checkpoint/model saving, then shuts down the inference sidecar. A failed training save keeps the window open with the error log.
 
 ## Workspace
 
 The workspace shows loaded models, runtime capabilities, and explicit CPU/CUDA/Vulkan controls. Provider selection is validated by the backend. Dense CUDA inference can use resident plans; selecting CUDA alone does not guarantee every architecture is accelerated. The API panel links the native, OpenAI-compatible and Anthropic-compatible routes. See [the backend API documentation](../backend/README.md#http-api-version-1) for request examples and compatibility limits.
 
-Chat preserves conversation history and supports bounded JSON import/export. Playground exposes sampling and speculative-decoding settings. Training runs the native CLI for random-init pretraining, CPT, SFT and DPO, with full weights or LoRA as appropriate; dataset/output paths refer to local files. Training currently executes on CPU.
+Chat preserves conversation history and supports bounded JSON import/export. Playground exposes sampling and speculative-decoding settings. Training runs the native CLI for random-init pretraining, CPT, SFT and DPO, with full weights or LoRA as appropriate; dataset/output paths refer to local files. Training currently executes on CPU. The native trainer accepts Unicode paths for datasets, base models, checkpoints, resume files and output models on Windows, including Korean and emoji filenames.
+
+“Sequences / pairs per update” controls gradient accumulation (1–1024, default
+1). Graph memory holds one sequence, or a chosen/rejected DPO pair, while
+gradients accumulate before one optimizer update. Unequal sequences are weighted
+by supervised token count; DPO averages pairs. Resume requires the same setting.
+The loss trace reports the group objective, and live throughput includes all
+processed input tokens. **Stop & save** finishes the current complete optimizer
+update, writes the optional checkpoint and output GGUF, and exits. The UI shows
+SAVING / STOPPING and disables repeat requests while the child remains alive.
+Closing the window waits for the same save; a failed save leaves the app open.
+Supply a new checkpoint path to preserve optimizer state for exact resume.
+Without it, stopping still exports the model but cannot preserve AdamW moments.
+Large merged exports may take time; there is no automatic timeout that kills
+the trainer. OS force termination and power loss are not graceful stops.
 
 An optional OpenAI-compatible remote endpoint supports agent tool calls for local runtime information. Remote API keys remain in memory unless the user enables remembering the key. Local API compatibility does not yet implement tool calling or streaming.
 
@@ -59,6 +73,12 @@ Stream updates touch one output node per animation frame and respect manual
 scrolling. The **local C API still returns completed responses**; no local Stop
 or fake streaming control is shown. Agent tools use their existing complete
 response path, not streaming tool-call fragments.
+
+Training's CPU threads setting accepts 0 for automatic selection or 1–64 for
+an explicit limit. Large matrix operations share persistent native C workers;
+the live thread count reports configured capacity, not measured utilization.
+The setting can change when resuming a checkpoint. Training remains CPU-only.
+See the [execution and correctness report](../backend/benchmarks/TRAINING_EXECUTION_20260925.md).
 
 Training shows actual trainer log lines and a loss trace from reported
 `step=... loss=...` values. Status polling updates telemetry without replacing

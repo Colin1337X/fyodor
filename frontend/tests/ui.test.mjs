@@ -4,6 +4,19 @@ import {readCompletionStream} from '../src/stream.js';
 import {messageBody} from '../src/message.js';
 import {parseBenchmark, benchmarkMarkup} from '../src/benchmark.js';
 import {formatConversation, normalizeChat, generationOptions} from '../src/session.js';
+import {parseTrainingMetric} from '../src/training-metrics.js';
+
+test('Training telemetry preserves missing measurements and rejects invalid numbers',()=>{
+  assert.deepEqual(parseTrainingMetric('[trainer] step=10 loss=2.5 graph_bytes=1048576 tokens_per_second=12.25'),
+    {step:10,loss:2.5,graphBytes:1048576,tokensPerSecond:12.25,cpuThreads:null});
+  assert.deepEqual(parseTrainingMetric('step=1 loss=3.0'),{step:1,loss:3,graphBytes:null,tokensPerSecond:null,cpuThreads:null});
+  assert.equal(parseTrainingMetric('step=1 loss=1e999'),null);
+  assert.equal(parseTrainingMetric('step=999999999999999999 loss=1'),null);
+  assert.equal(parseTrainingMetric('step=1 loss=1 tokens_per_second=-3').tokensPerSecond,null);
+  assert.equal(parseTrainingMetric('exported=model.gguf'),null);
+  assert.equal(parseTrainingMetric('step=1 loss=2 cpu_threads=6').cpuThreads,6);
+  for(const value of [0,65,1.5,-1])assert.equal(parseTrainingMetric(`step=1 loss=2 cpu_threads=${value}`).cpuThreads,null);
+});
 
 test('Benchmark resources identify CUTLASS and avoid counting library scratch twice',()=>{
   const record={schema_version:1,backend:'cuda',model:'model.gguf',prefill_implementation:'cutlass-3xtf32',
@@ -45,6 +58,17 @@ test('Benchmark parser accepts measured results and rejects invalid data',()=>{
   assert.equal(parseBenchmark(JSON.stringify(record)).results[0].tokens_per_second,100);
   assert(!benchmarkMarkup([record]).includes('<img>'));
   for(const value of [{...record,backend:'fake'},{...record,results:[{...record.results[0],stddev:-1}]},null])assert.throws(()=>parseBenchmark(JSON.stringify(value)));
+});
+
+test('Optional providers expose final cache accounting in imported benchmarks',()=>{
+  for(const backend of ['rocm','mlx']) {
+    const record={schema_version:1,backend,model:'model.gguf',prefill_implementation:backend==='rocm'?'rocblas-f32':'mlx-f32',
+      device_memory_after:{weights_bytes:2097152,kv_bytes:0,scratch_bytes:1048576},results:[]};
+    const html=benchmarkMarkup([parseBenchmark(JSON.stringify(record))]);
+    assert.match(html,/weights 2\.0 MiB · KV 0\.0 MiB · scratch 1\.0 MiB/);
+    assert.match(html,backend==='rocm'?/rocBLAS F32/:/MLX F32/);
+    assert.throws(()=>parseBenchmark(JSON.stringify({...record,device_memory_after:{weights_bytes:-1}})),/memory/);
+  }
 });
 test('Conversation validation and inference controls remain bounded',()=>{
   assert.throws(()=>normalizeChat({messages:[{role:'system',text:'bad'}]},'id'));

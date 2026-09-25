@@ -5,7 +5,7 @@ use std::{
     net::TcpStream,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
-    sync::{Arc, Mutex},
+    sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex},
     time::Duration,
 };
 use tauri::{Manager, RunEvent};
@@ -39,9 +39,15 @@ struct Backend {
 
 struct Trainer {
     executable: PathBuf,
-    child: Mutex<Option<Child>>,
+    child: Mutex<Option<TrainingProcess>>,
     last_exit: Mutex<Option<i32>>,
+    exit_waiter: AtomicBool,
     logs: Logs,
+}
+
+struct TrainingProcess {
+    child: Child,
+    stopping: bool,
 }
 
 #[derive(Deserialize)]
@@ -54,6 +60,10 @@ struct TrainArgs {
     checkpoint: Option<String>,
     resume: Option<String>,
     steps: u32,
+    #[serde(default = "default_accumulation")]
+    accumulate: u32,
+    #[serde(default)]
+    threads: u32,
     learning_rate: f32,
     rank: u32,
     beta: f32,
@@ -71,7 +81,109 @@ struct TrainArgs {
 #[serde(rename_all = "camelCase")]
 struct TrainStatus {
     running: bool,
+    stopping: bool,
     exit_code: Option<i32>,
+}
+
+fn default_accumulation() -> u32 {
+    1
+}
+
+#[cfg(test)]
+mod training_tests {
+    use super::*;
+
+    #[test]
+    fn trainer_safe_stop_and_failed_save() {
+        let Some(executable) = std::env::var_os("FYODOR_TEST_TRAINER") else {
+            eprintln!("Native process integration requires FYODOR_TEST_TRAINER");
+            return;
+        };
+        let root = std::env::temp_dir().join(format!("fyodor-stop-test-\u{d55c}\u{ae00}-\u{1f43e}-{}-{}", std::process::id(),
+            std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir(&root).unwrap();
+        let data = root.join("corpus.txt");
+        std::fs::write(&data, "abcabcabcabc").unwrap();
+        for fail in [false, true] {
+            let output = root.join(if fail { "existing.gguf" } else { "new.gguf" });
+            let checkpoint = root.join(if fail { "failed-save.ckpt" } else { "saved.ckpt" });
+            if fail { std::fs::write(&output, b"keep me").unwrap(); }
+            let child = background_command(Path::new(&executable))
+                .args(["--control-stdin", "1", "--steps", "100000", "--dimension", "16",
+                    "--ff", "32", "--layers", "1", "--heads", "2", "--kv-heads", "1",
+                    "--context", "16", "--accumulate", "3", "--data"])
+                .arg(&data).arg("--output").arg(&output).arg("--checkpoint").arg(&checkpoint)
+                .stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap();
+            let trainer = Trainer {
+                executable: PathBuf::from(&executable), child: Mutex::new(Some(TrainingProcess { child, stopping: false })),
+                last_exit: Mutex::new(None), exit_waiter: AtomicBool::new(false),
+                logs: Arc::new(Mutex::new(VecDeque::new())),
+            };
+            assert!(request_training_stop(&trainer).unwrap());
+            request_training_stop(&trainer).unwrap(); // Duplicate requests never kill the child.
+            let deadline = std::time::Instant::now() + Duration::from_secs(20);
+            let status = loop {
+                let status = collect_training_status(&trainer);
+                if !status.running { break status; }
+                assert!(status.stopping);
+                if std::time::Instant::now() >= deadline {
+                    if let Some(process) = trainer.child.lock().unwrap().as_mut() {
+                        let _ = process.child.kill(); let _ = process.child.wait();
+                    }
+                    panic!("safe stop timed out");
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            };
+            assert_eq!(status.exit_code, Some(if fail { 1 } else { 0 }));
+            assert!(!status.stopping);
+            assert!(!request_training_stop(&trainer).unwrap());
+            assert!(std::fs::metadata(&checkpoint).unwrap().len() > 16);
+            if fail { assert_eq!(std::fs::read(&output).unwrap(), b"keep me"); }
+            else { assert!(std::fs::metadata(&output).unwrap().len() > 100); }
+        }
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn accumulation_deserialization_and_cli_boundary() {
+        // Existing saved/UI arguments omit accumulation. Keep their meaning.
+        let mut input = serde_json::json!({
+            "mode":"pretrain", "data":"corpus.txt", "output":"model.gguf",
+            "steps":10, "learningRate":0.001, "rank":0, "beta":0.1,
+            "context":16, "dimension":16, "feedForward":32, "layers":1,
+            "heads":2, "kvHeads":1, "seed":42, "memoryMib":32
+        });
+        let old: TrainArgs = serde_json::from_value(input.clone()).unwrap();
+        assert_eq!(old.accumulate, 1);
+        assert_eq!(old.threads, 0);
+        for count in [1, 7, 1024] {
+            input["accumulate"] = count.into();
+            let args = checked_training_args(serde_json::from_value(input.clone()).unwrap()).unwrap();
+            let flag = args.iter().position(|s| s == "--accumulate").unwrap();
+            assert_eq!(args[flag + 1], count.to_string());
+            let control = args.iter().position(|s| s == "--control-stdin").unwrap();
+            assert_eq!(args[control + 1], "1");
+        }
+        for count in [0, 1025] {
+            input["accumulate"] = count.into();
+            assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
+        }
+        for invalid in [serde_json::json!(-1), serde_json::json!(1.5)] {
+            input["accumulate"] = invalid;
+            assert!(serde_json::from_value::<TrainArgs>(input.clone()).is_err());
+        }
+        input["accumulate"] = 1.into();
+        for threads in [0,1,6,64] {
+            input["threads"] = threads.into();
+            let args = checked_training_args(serde_json::from_value(input.clone()).unwrap()).unwrap();
+            let flag = args.iter().position(|s| s == "--threads").unwrap();
+            assert_eq!(args[flag+1],threads.to_string());
+        }
+        input["threads"] = 65.into();
+        assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
+        input["threads"] = serde_json::json!(-1);
+        assert!(serde_json::from_value::<TrainArgs>(input).is_err());
+    }
 }
 
 fn executable_name(stem: &str) -> String {
@@ -256,6 +368,8 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         return Err("This training mode requires a base model".into());
     }
     if input.steps == 0
+        || !(1..=1024).contains(&input.accumulate)
+        || input.threads > 64
         || input.rank > 256
         || input.memory_mib == 0
         || !input.learning_rate.is_finite()
@@ -266,6 +380,8 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         return Err("Training configuration is outside supported limits".into());
     }
     let mut args = vec![
+        "--control-stdin".into(),
+        "1".into(),
         "--mode".into(),
         input.mode,
         "--data".into(),
@@ -274,6 +390,10 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         input.output,
         "--steps".into(),
         input.steps.to_string(),
+        "--accumulate".into(),
+        input.accumulate.to_string(),
+        "--threads".into(),
+        input.threads.to_string(),
         "--lr".into(),
         input.learning_rate.to_string(),
         "--rank".into(),
@@ -318,9 +438,12 @@ fn start_training(state: tauri::State<'_, Trainer>, args: TrainArgs) -> Result<(
         .map_err(|_| "Training state is unavailable")?;
     if slot
         .as_mut()
-        .is_some_and(|child| child.try_wait().ok().flatten().is_none())
+        .is_some_and(|process| process.child.try_wait().ok().flatten().is_none())
     {
         return Err("A training run is already active".into());
+    }
+    if state.exit_waiter.load(Ordering::SeqCst) {
+        return Err("The app is waiting for training to save before closing".into());
     }
     append_log(
         &state.logs,
@@ -328,7 +451,7 @@ fn start_training(state: tauri::State<'_, Trainer>, args: TrainArgs) -> Result<(
     );
     let mut child = background_command(&state.executable)
         .args(&args)
-        .stdin(Stdio::null())
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -343,17 +466,22 @@ fn start_training(state: tauri::State<'_, Trainer>, args: TrainArgs) -> Result<(
         .last_exit
         .lock()
         .map_err(|_| "Training state is unavailable")? = None;
-    *slot = Some(child);
+    *slot = Some(TrainingProcess { child, stopping: false });
     Ok(())
 }
 
 #[tauri::command]
 fn training_status(state: tauri::State<'_, Trainer>) -> TrainStatus {
+    collect_training_status(&state)
+}
+
+fn collect_training_status(state: &Trainer) -> TrainStatus {
     let mut running = false;
+    let mut stopping = false;
     if let Ok(mut slot) = state.child.lock() {
-        if let Some(child) = slot.as_mut() {
-            match child.try_wait() {
-                Ok(None) => running = true,
+        if let Some(process) = slot.as_mut() {
+            match process.child.try_wait() {
+                Ok(None) => { running = true; stopping = process.stopping; },
                 Ok(Some(status)) => {
                     let code = status.code().unwrap_or(-1);
                     if let Ok(mut exit) = state.last_exit.lock() {
@@ -362,33 +490,49 @@ fn training_status(state: tauri::State<'_, Trainer>) -> TrainStatus {
                     append_log(&state.logs, format!("[trainer] exited with code {code}"));
                     *slot = None;
                 }
-                Err(error) => append_log(&state.logs, format!("[trainer] status error: {error}")),
+                Err(error) => {
+                    // A failed observation does not prove the child exited.
+                    running = true;
+                    stopping = process.stopping;
+                    append_log(&state.logs, format!("[trainer] status error: {error}"));
+                },
             }
         }
+    } else {
+        // Poisoned ownership is not evidence that it is safe to exit.
+        running = true;
     }
     let exit_code = state.last_exit.lock().ok().and_then(|value| *value);
-    TrainStatus { running, exit_code }
+    TrainStatus { running, stopping, exit_code }
 }
 
 #[tauri::command]
 fn stop_training(state: tauri::State<'_, Trainer>) -> Result<(), String> {
+    request_training_stop(&state).map(|_| ())
+}
+
+fn request_training_stop(state: &Trainer) -> Result<bool, String> {
     let mut slot = state
         .child
         .lock()
         .map_err(|_| "Training state is unavailable")?;
-    let Some(child) = slot.as_mut() else {
-        return Ok(());
+    let Some(process) = slot.as_mut() else {
+        return Ok(false);
     };
-    child
-        .kill()
-        .map_err(|e| format!("Could not stop trainer: {e}"))?;
-    let _ = child.wait();
-    *slot = None;
-    if let Ok(mut exit) = state.last_exit.lock() {
-        *exit = Some(-1);
+    if process.child.try_wait().map_err(|e| format!("Could not inspect trainer: {e}"))?.is_some() {
+        return Ok(false);
     }
-    append_log(&state.logs, "[trainer] stopped");
-    Ok(())
+    if !process.stopping {
+        let pipe = process.child.stdin.as_mut().ok_or("Trainer control pipe is unavailable")?;
+        if let Err(error) = pipe.write_all(b"S") {
+            // The child may finish between try_wait and the write.
+            if process.child.try_wait().ok().flatten().is_some() { return Ok(false); }
+            return Err(format!("Could not request a safe stop: {error}"));
+        }
+        process.stopping = true;
+        append_log(&state.logs, "[trainer] stop requested; finishing the update and saving outputs");
+    }
+    Ok(true)
 }
 
 fn stop_backend(backend: &Backend) {
@@ -424,6 +568,19 @@ pub fn run() {
             training_status,
             stop_training
         ])
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if let Some(trainer) = window.app_handle().try_state::<Trainer>() {
+                    if collect_training_status(&trainer).running {
+                        // Keep the window and logs available during saving,
+                        // including when saving fails. ExitRequested owns the
+                        // single asynchronous waiter for the whole app.
+                        api.prevent_close();
+                        window.app_handle().exit(0);
+                    }
+                }
+            }
+        })
         .setup(|app| {
             let logs = Arc::new(Mutex::new(VecDeque::new()));
             let trainer = packaged_executable(app, "fyodor-train")
@@ -437,6 +594,7 @@ pub fn run() {
                 executable: trainer,
                 child: Mutex::new(None),
                 last_exit: Mutex::new(None),
+                exit_waiter: AtomicBool::new(false),
                 logs,
             });
             Ok(())
@@ -444,10 +602,38 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building Fyodor");
     app.run(|handle, event| {
-        if matches!(event, RunEvent::Exit) {
+        if let RunEvent::ExitRequested { api, .. } = &event {
             if let Some(trainer) = handle.try_state::<Trainer>() {
-                let _ = stop_training(trainer);
+                match request_training_stop(&trainer) {
+                    Ok(true) => {
+                        api.prevent_exit();
+                        if !trainer.exit_waiter.swap(true, Ordering::SeqCst) {
+                            let handle = handle.clone();
+                            std::thread::spawn(move || {
+                                let trainer = handle.state::<Trainer>();
+                                let status = loop {
+                                    let status = collect_training_status(&trainer);
+                                    if !status.running { break status; }
+                                    std::thread::sleep(Duration::from_millis(50));
+                                };
+                                if status.exit_code == Some(0) {
+                                    handle.exit(0);
+                                } else {
+                                    trainer.exit_waiter.store(false, Ordering::SeqCst);
+                                    append_log(&trainer.logs, "[trainer] app remains open because training/save failed; inspect the log");
+                                }
+                            });
+                        }
+                    },
+                    Err(error) => {
+                        api.prevent_exit();
+                        append_log(&trainer.logs, format!("[trainer] close delayed: {error}"));
+                    },
+                    Ok(false) => {},
+                }
             }
+        }
+        if matches!(event, RunEvent::Exit) {
             if let Some(backend) = handle.try_state::<Backend>() {
                 stop_backend(&backend);
             }

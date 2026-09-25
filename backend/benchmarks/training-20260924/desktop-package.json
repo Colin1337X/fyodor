@@ -1,0 +1,70 @@
+{
+  "installer": "C:\\Users\\Colin\\fyodor\\frontend\\src-tauri\\target\\release\\bundle\\nsis\\Fyodor_0.3.0_x64-setup.exe",
+  "bytes": 406280154,
+  "sha256": "a055133056c00e8a8ec6810044922628e39560414b8216dcda3843f615602833",
+  "verified_contents_sha256": {
+    "backend/fyodor-train.exe": "944ac196dcab52ab99184ded6f02908b23632999266b449dae2236a5673770bb",
+    "backend/fyodor-backend.exe": "9e55c7b0974fe24b382af88aea2a5d875aa053492e3da7c15e35f3222a20aa8f",
+    "backend/CUDA-LICENSE.txt": "72c22161fc1ebf242443d45158a7dd382d68597b00eeb7a7f539be5c6114be33",
+    "backend/CUTLASS-LICENSE.txt": "10e174914fb737aec2d32762bd2e45861acb5ebf1656bee6cf575a6019a08cf0",
+    "fyodor-desktop.exe": "098860bd654df00dbc0a080fd9144ba57f2ae9e191d3428a196b920c7b6f9e19"
+  },
+  "desktop_comparison": "Exactly identical after the expected single UNK -> NSS Tauri bundle marker replacement; only three bytes differ. Confirmed by tauri-utils 2.9.3 src/platform.rs lines 349-360 and the bundle build log. Sidecars and notices match byte-for-byte without changes.",
+  "smoke_command": [
+    "C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\backend\\fyodor-train.exe",
+    "--data",
+    "C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\corpus.txt",
+    "--output",
+    "C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\trained.gguf",
+    "--checkpoint",
+    "C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\trained.ckpt",
+    "--metrics",
+    "C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\metrics.csv",
+    "--steps",
+    "2",
+    "--accumulate",
+    "3",
+    "--dimension",
+    "16",
+    "--ff",
+    "32",
+    "--layers",
+    "1",
+    "--heads",
+    "2",
+    "--kv-heads",
+    "1",
+    "--context",
+    "16"
+  ],
+  "smoke_stdout": "step=1 loss=5.5959252 graph_bytes=83688 tokens_per_second=57320.277 microbatches=3\nstep=2 loss=5.5512906 graph_bytes=83688 tokens_per_second=61893.375 microbatches=3\nexported=C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-accumulation-check\\trained.gguf\n",
+  "metrics": [
+    {
+      "step": "1",
+      "loss": "5.59592517",
+      "tokens": "48",
+      "forward_ms": "0.326200",
+      "backward_ms": "0.382300",
+      "optimizer_ms": "0.096000",
+      "step_ms": "0.837400",
+      "tokens_per_second": "57320.276867",
+      "graph_bytes": "83688",
+      "microbatches": "3",
+      "loss_units": "48"
+    },
+    {
+      "step": "2",
+      "loss": "5.55129064",
+      "tokens": "44",
+      "forward_ms": "0.254500",
+      "backward_ms": "0.335900",
+      "optimizer_ms": "0.094200",
+      "step_ms": "0.710900",
+      "tokens_per_second": "61893.374610",
+      "graph_bytes": "83688",
+      "microbatches": "3",
+      "loss_units": "44"
+    }
+  ],
+  "installed": false
+}

@@ -7,15 +7,16 @@
  * A context owns cached immutable weight copies and must be used by one thread
  * at a time. Its lifetime must end before the model's mapped weights are freed. */
 typedef struct nya_compute_context nya_compute_context;
-typedef enum nya_backend_type { NYA_BACKEND_CPU, NYA_BACKEND_CUDA, NYA_BACKEND_VULKAN } nya_backend_type;
-enum { NYA_COMPUTE_MATVEC = 1U, NYA_COMPUTE_QUANTIZED = 2U, NYA_COMPUTE_RESIDENT = 4U };
+typedef enum nya_backend_type { NYA_BACKEND_CPU, NYA_BACKEND_CUDA, NYA_BACKEND_VULKAN, NYA_BACKEND_ROCM, NYA_BACKEND_MLX } nya_backend_type;
+enum { NYA_COMPUTE_MATVEC = 1U, NYA_COMPUTE_QUANTIZED = 2U, NYA_COMPUTE_RESIDENT = 4U,
+       NYA_COMPUTE_MATMUL = 8U };
 typedef struct nya_compute_stats {
     size_t weights_bytes, kv_bytes, scratch_bytes, prefill_batch;
     size_t external_matmul_bytes; /* included in scratch_bytes, never additive */
     unsigned long long kernel_launches, uploads, downloads, synchronizations;
     unsigned long long external_matmul_calls; /* opaque library dispatches */
     unsigned long long graph_captures, graph_replays; /* resident decode graph work */
-    unsigned external_matmul_kind; /* 0 native, 1 cuBLAS F32, 2 CUTLASS 3xTF32 with fallback */
+    unsigned external_matmul_kind; /* 0 native, 1 cuBLAS, 2 CUTLASS 3xTF32, 3 rocBLAS F32, 4 MLX F32 */
     unsigned long long cutlass_matmul_calls; /* subset of external_matmul_calls */
     unsigned long long tiled_attention_calls; /* native query-tiled prefill */
 } nya_compute_stats;
@@ -49,7 +50,7 @@ void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *sta
 int nya_compute_plan_read_kv(nya_compute_plan *plan, size_t layer, size_t position,
     size_t count, float *keys, float *values, size_t elements);
 
-/* Default is CPU. NYA_COMPUTE=vulkan or cuda selects a compiled provider.
+/* Default is CPU. NYA_COMPUTE selects cpu, vulkan, cuda, rocm or mlx.
  * Failure or unavailable hardware returns NULL, leaving CPU execution intact. */
 nya_compute_context *nya_compute_create(void);
 /* Explicit selection for applications with per-model controls. This does not
@@ -57,6 +58,11 @@ nya_compute_context *nya_compute_create(void);
  * unavailable hardware or initialization failure. A CPU handle owns SIMD
  * dispatch and a worker pool; NULL remains the scalar-reference fallback. */
 nya_compute_context *nya_compute_create_for(const char *provider);
+int nya_compute_backend_known(const char *provider);
+int nya_compute_backend_compiled(const char *provider);
+/* Assisted providers own a context cache rather than a resident transformer
+   plan. This snapshot reports their actual retained resources and dispatches. */
+void nya_compute_context_stats(const nya_compute_context *context, nya_compute_stats *stats);
 void nya_compute_free(nya_compute_context *context);
 
 /* Try row-major F32 matrix-vector multiplication. Zero means output is ready;

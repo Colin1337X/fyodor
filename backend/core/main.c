@@ -246,8 +246,8 @@ int main(int argument_count, char **arguments)
     server_config.models = &models;
     server_config.external_stop_requested = &nya_stop_signal;
     server_config.verbose = verbose;
-    if (verbose) fprintf(stderr,"[runtime] compiled cpu=1 cuda=%d vulkan=%d workers=%u queue=%u request_limit=%zu output_limit=%zu generation_limit=%u timeout_ms=%u\n",
-        nya_compute_cuda_compiled(),nya_compute_vulkan_compiled(),configuration.worker_threads,
+    if (verbose) fprintf(stderr,"[runtime] compiled cpu=1 cuda=%d vulkan=%d rocm=%d mlx=%d workers=%u queue=%u request_limit=%zu output_limit=%zu generation_limit=%u timeout_ms=%u\n",
+        nya_compute_cuda_compiled(),nya_compute_vulkan_compiled(),nya_compute_backend_compiled("rocm"),nya_compute_backend_compiled("mlx"),configuration.worker_threads,
         configuration.queue_capacity,configuration.max_request_bytes,configuration.max_output_bytes,
         configuration.max_generation_tokens,configuration.request_timeout_ms);
 

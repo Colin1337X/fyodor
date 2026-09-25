@@ -253,7 +253,7 @@ static int cpu_matvec(void *p, const void *w, size_t r, size_t c, unsigned t, co
 { return cpu_matmul(p, w, r, c, t, x, y, 1); }
 const nya_backend_interface *nya_cpu_backend(void)
 {
-    static const nya_backend_interface api = {NYA_BACKEND_CPU, "cpu", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED,
-        cpu_create, cpu_destroy, cpu_active, cpu_matvec, NULL, NULL, NULL, NULL, NULL, cpu_matmul, cpu_attention, NULL};
+    static const nya_backend_interface api = {NYA_BACKEND_CPU, "cpu", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED | NYA_COMPUTE_MATMUL,
+        cpu_create, cpu_destroy, cpu_active, cpu_matvec, NULL, NULL, NULL, NULL, NULL, cpu_matmul, cpu_attention, NULL, NULL};
     return &api;
 }

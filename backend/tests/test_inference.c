@@ -104,7 +104,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
     /* A configured accelerator without a usable device is a skipped hardware
        test. Never let transparent CPU fallback masquerade as GPU coverage. */
     const char *requested = getenv("NYA_COMPUTE");
-    if (requested && (!strcmp(requested, "cuda") || !strcmp(requested, "vulkan")) &&
+    if (requested && strcmp(requested,"cpu") && nya_compute_backend_known(requested) &&
         strcmp(requested, nya_compute_name(m->compute))) { result = 77; goto done; }
     nya_llm_context view = *m;
     /* Diagnostic prefix-of-layers run localizes numerical drift without
