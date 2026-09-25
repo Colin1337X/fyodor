@@ -11,6 +11,19 @@
 typedef struct nya_train_graph nya_train_graph;
 typedef struct nya_train_tensor nya_train_tensor;
 typedef struct nya_train_parameter nya_train_parameter;
+typedef struct nya_train_executor nya_train_executor;
+
+/* Persistent CPU workers, including the calling thread. Zero selects host
+   cores (capped at 64); 1 is serial. Creation is all-or-nothing. Independent
+   executors may run concurrently. One controlling thread owns each executor:
+   do not operate concurrently on graphs sharing it or free it before graphs
+   and operations finish. Worker stacks/metadata are outside graph budgets. */
+nya_train_executor *nya_train_executor_create(size_t threads);
+void nya_train_executor_free(nya_train_executor *executor);
+size_t nya_train_executor_threads(const nya_train_executor *executor);
+/* Borrows an executor; NULL retains serial execution. The original create
+   function remains serial and does not create threads. */
+nya_train_graph *nya_train_graph_create_with_executor(size_t memory_limit, nya_train_executor *executor);
 
 nya_train_graph *nya_train_graph_create(size_t memory_limit);
 void nya_train_graph_free(nya_train_graph *graph);

@@ -68,6 +68,12 @@ static int fit(nya_train_decoder *decoder, const uint32_t *target, size_t steps,
 int main(int argc, char **argv)
 {
     char error[256] = {0}, path[1200]; float first, last;
+    /* Finite activations must not normalize to zero when their F32 squares
+       overflow. Equal magnitudes have an independently known unit RMS. */
+    const float large[] = {1e20f,-1e20f,1e20f,-1e20f}; float normalized[4];
+    nya_llm_rms_norm(normalized,large,NULL,4,1e-6f);
+    for (size_t i = 0; i < 4; ++i)
+        REQUIRE(fabsf(normalized[i]-(i%2 ? -1.0f : 1.0f)) < 0.0000002f);
     REQUIRE(argc == 2 && strlen(argv[1]) < 1100);
     nya_train_decoder_config config; nya_train_decoder_defaults(&config);
     config.embedding_length = 16; config.feed_forward_length = 32;

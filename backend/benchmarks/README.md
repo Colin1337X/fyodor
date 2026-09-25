@@ -1,6 +1,11 @@
 # Runtime benchmark evidence
 
-**Latest pass:** [September 10 optimizations, measurements and validation](STAGE2.md).
+**Training:** [September 24 Unicode paths and recovery validation](TRAINING_PATHS_20260924.md),
+[September 24 safe stop and recovery](TRAINING_RECOVERY_20260924.md),
+[September 24 gradient accumulation and validation](TRAINING_20260924.md),
+following the [September 23 audit and CPU optimizations](TRAINING_20260923.md).
+**Inference history:** [Stage 8](STAGE8.md) is the latest numbered report;
+[Stage 2](STAGE2.md) retains the September 10 measurements.
 The tables below retain the September 8–9 milestone as historical evidence.
 
 Measured September 8–9, 2026 on Windows, AMD Ryzen 5 9600X (6 physical/logical processors reported), RTX 5060 Ti 16 GiB, NVIDIA driver 610.88. Fyodor: GCC 16.2, Release C17, AVX-512 CPU dispatch with six threads including the caller. No llama.cpp/ggml code or library is linked into Fyodor.
@@ -71,6 +76,14 @@ python backend/benchmarks/compare.py --fyodor build-cuda/fyodor-bench.exe --llam
 For the CPU comparison add `--backend cpu --batch 32` and use the CPU llama binary. The helper creates a new directory, runs both engines serially, sets six threads and identical configured batch limits, preserves commands/hash/environment/outputs, and samples resources. Python is development tooling only; the C engine and benchmark do not require it. Resource sampling adds small supervisory overhead. Select a reference executable containing the requested backend and inspect its reported backend. See the official [llama-bench documentation](https://github.com/ggml-org/llama.cpp/tree/master/tools/llama-bench).
 
 Useful controls: `NYA_CPU_ISA=scalar|avx2|avx512`, `NYA_CPU_THREADS=1..64`, `NYA_CPU_BATCH=1..512` (default 32), `NYA_CUDA_BATCH=1..512` (default 512, reduced on budget pressure), `NYA_CUDA_GRAPHS=0|1`, `NYA_CUDA_REFERENCE=1`. Keep thread count fixed when isolating ISA effects. Reference CUDA uses generic decode matvec, original attention reductions and disabled FMA; fast mode permits FMA, with no unsafe fast-math.
+
+## Native training execution update
+
+The [September 25 training execution report](TRAINING_EXECUTION_20260925.md)
+records deterministic native C matrix parallelism, exact cross-worker resume,
+and paired CPU measurements: 1.72× medium dense, 1.36× long dense and 2.58×
+TinyLlama rank-2/context-8 CPT. Small-model results remain variable; all samples
+are retained. These are training results, separate from the inference tables.
 
 ## Profile and remaining bottlenecks
 

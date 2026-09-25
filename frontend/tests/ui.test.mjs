@@ -4,6 +4,19 @@ import {readCompletionStream} from '../src/stream.js';
 import {messageBody} from '../src/message.js';
 import {parseBenchmark, benchmarkMarkup} from '../src/benchmark.js';
 import {formatConversation, normalizeChat, generationOptions} from '../src/session.js';
+import {parseTrainingMetric} from '../src/training-metrics.js';
+
+test('Training telemetry preserves missing measurements and rejects invalid numbers',()=>{
+  assert.deepEqual(parseTrainingMetric('[trainer] step=10 loss=2.5 graph_bytes=1048576 tokens_per_second=12.25'),
+    {step:10,loss:2.5,graphBytes:1048576,tokensPerSecond:12.25,cpuThreads:null});
+  assert.deepEqual(parseTrainingMetric('step=1 loss=3.0'),{step:1,loss:3,graphBytes:null,tokensPerSecond:null,cpuThreads:null});
+  assert.equal(parseTrainingMetric('step=1 loss=1e999'),null);
+  assert.equal(parseTrainingMetric('step=999999999999999999 loss=1'),null);
+  assert.equal(parseTrainingMetric('step=1 loss=1 tokens_per_second=-3').tokensPerSecond,null);
+  assert.equal(parseTrainingMetric('exported=model.gguf'),null);
+  assert.equal(parseTrainingMetric('step=1 loss=2 cpu_threads=6').cpuThreads,6);
+  for(const value of [0,65,1.5,-1])assert.equal(parseTrainingMetric(`step=1 loss=2 cpu_threads=${value}`).cpuThreads,null);
+});
 
 test('Benchmark resources identify CUTLASS and avoid counting library scratch twice',()=>{
   const record={schema_version:1,backend:'cuda',model:'model.gguf',prefill_implementation:'cutlass-3xtf32',

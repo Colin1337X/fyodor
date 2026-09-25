@@ -431,6 +431,34 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
+The CLI uses persistent native C CPU workers for sufficiently large dense and
+mapped matrix operations. `--threads 0` (default) chooses host cores, capped at
+64; `--threads 1` is serial, and explicit counts 1–64 are supported. Windows
+auto selection counts physical cores; POSIX uses online processors. Thread
+count may change on resume without changing the training trajectory. Small
+matrices, attention, normalization and AdamW still execute serially. On the
+measured six-core host this increased TinyLlama rank-2/context-8 CPT throughput
+from 4.54 to 11.69 tokens/sec, with identical losses, checkpoints and exports;
+small-model throughput did not improve consistently. See the
+[execution report](benchmarks/TRAINING_EXECUTION_20260925.md) for workloads,
+variation, limitations and reproduction commands.
+
+Library graphs created with `nya_train_graph_create` remain serial. Create an
+opaque `nya_train_executor` and borrow it with
+`nya_train_graph_create_with_executor` to opt into workers. One controlling
+thread must serialize operations sharing an executor; independent executors
+may run concurrently. Destroy borrowing graphs before freeing their executor.
+Worker stacks and executor metadata are outside graph memory budgets. Progress
+and CSV metrics report `cpu_threads` as configured capacity, not utilization.
+
+Exported F32 models use double accumulation in scalar CPU projection/RMS
+references. Native CUDA F32 prefill uses two shorter F32 accumulation chains;
+quantized kernels retain their original reductions. The trained TinyLlama export
+passes CPU and native CUDA parity without changing tolerances. This accuracy fix
+costs roughly 4–10% native F32 prefill throughput on the measured shapes; see the
+[training and export report](benchmarks/TRAINING_20260923.md) for raw evidence,
+rejected variants and the separate quantized inference baseline.
+
 | Workflow | Starting point | Implemented behavior |
 |---|---|---|
 | LoRA | Frozen supported GGUF, including quantized tensors | Train `Wx + (alpha/r) B(Ax)` on attention/MLP/output matrices; B starts at zero; export merges into a complete GGUF |
@@ -455,7 +483,40 @@ Resume with the same configuration and data, writing **new output paths**:
 build-cpu/fyodor-train --mode pretrain --data corpus.txt --output resumed.gguf --checkpoint resumed.ckpt --resume trained.ckpt --steps 1000 --dimension 64 --ff 128 --layers 2 --heads 4 --kv-heads 2 --context 128
 ```
 
-`--steps` counts additional updates. Checkpoints restore AdamW settings, including the learning rate, so a resumed `--lr` does not override the saved setting. Resume chooses the next record/window from the saved update count. Checkpoints contain ordered parameter shapes and state, **not** model configuration, tokenizer, frozen base weights, dataset or objective. Supply the same configuration/base/data/objective; matching shapes alone cannot detect a different base model. For DPO, the original base is reloaded to reconstruct the frozen reference before restoring the trainable policy. Exact resumed-versus-uninterrupted GGUF/checkpoint equality is covered by tests.
+`--steps` counts additional updates. Checkpoints restore AdamW settings, including the learning rate, so a resumed `--lr` does not override the saved setting. Resume chooses the next record/window from the saved update count and accumulation setting. CLI checkpoints prepend a `NYARUN` v1 identity header to the native optimizer checkpoint. It fingerprints the exact dataset bytes, objective, effective context, architecture settings, seed for random initialization, adapter rank, DPO beta, accumulation setting, and complete imported base file (including its tokenizer and frozen weights). Mismatches are rejected before applying optimizer state. Supply the same inputs when resuming; the fingerprint is not a copy of those inputs or a security/authentication mechanism. Existing single-sequence `NYARUN` v1 checkpoints remain compatible with the default `--accumulate 1`. Earlier headerless CLI checkpoints are rejected because their run identity cannot be verified; the low-level C checkpoint reader remains compatible with its original format. For DPO, the original base is reloaded to reconstruct the frozen reference before restoring the trainable policy. Exact resumed-versus-uninterrupted GGUF/checkpoint equality is covered by tests.
+
+`--accumulate N` (1–1024, default 1) processes N consecutive corpus windows,
+SFT records, or DPO pairs before one AdamW update. Each sequence keeps its own
+attention context. The runner frees each graph after backward and accumulates
+parameter gradients; graph memory holds one sequence, or one chosen/rejected
+pair for DPO. Pretraining/CPT/SFT loss is the mean over all supervised tokens in
+the group, including uneven windows and masked completions. DPO loss averages
+pairs. Clipping, weight decay, moments and the step counter advance once per
+group. Groups wrap at the dataset end in file order, so a group larger than the
+dataset revisits examples. A failed microbatch clears partial gradients and
+does not apply an optimizer update. The desktop exposes the same setting as
+“sequences / pairs per update.” Accumulation changes the effective batch and
+optimization trajectory; it does not promise the same convergence per update
+as a single sequence. See the [accumulation report](benchmarks/TRAINING_20260924.md).
+
+`--control-stdin 1` enables the desktop's native control protocol. Stdin must be
+a pipe; writing the single byte `S`, or closing its write end, requests a stop.
+The trainer checks between complete optimizer updates, then writes the optional
+checkpoint and required output GGUF using the usual exclusive-path rules. It
+exits successfully only if saving succeeds. Stop before the first update saves
+the initialized/resumed state. Graph execution, accumulation, clipping and AdamW
+are never interrupted midway. Startup/tokenization and export must finish;
+latency can include an entire accumulation group plus checkpoint/export I/O.
+Progress output becomes best-effort in pipe-control mode so a disconnected
+controller cannot lose the checkpoint merely by closing its log pipe. Metrics
+file write errors remain errors. Control does not change checkpoint identity.
+The desktop's **Stop & save** and normal window close use this protocol; save
+failure keeps the window open. Supply `--checkpoint` for exact optimizer resume;
+a GGUF alone contains no AdamW moments. CLI Ctrl+C, forced process termination,
+OS shutdown and power loss are not covered by this protocol. Periodic/atomic
+checkpoint publication is still pending. See the [recovery report](benchmarks/TRAINING_RECOVERY_20260924.md).
+
+Add `--metrics run.csv` to create a per-update CSV containing loss, actual processed input tokens, forward/backward/optimizer/whole-step milliseconds, tokens/sec and graph bytes. The appended `microbatches` and `loss_units` columns give sequences/pairs processed and the averaging denominator (supervised tokens, or DPO pairs). Forward/backward times sum all microbatches; graph bytes are their maximum, not their sum. Whole-step time includes zeroing, graph creation/destruction and optimizer work; it excludes dataset preparation, checkpoint/export and logging. Forward includes the loss. DPO tokens count both branches; masked prompt tokens still count as processed work. Timings are monotonic elapsed measurements, not GPU utilization or peak process memory. Progress is flushed through pipes for live desktop telemetry; the UI shows the latest logged tokens/sec and graph MiB. Older trainers leave missing measurements blank. `NYA_TRAIN_PROFILE=1` additionally prints per-graph linear-forward and per-operation backward timings plus graph allocation counts to stderr; diagnostic timing includes instrumentation overhead and is excluded from accepted throughput comparisons. See the [training performance report](benchmarks/TRAINING_20260923.md) and `benchmarks/train_compare.py` for controlled comparisons and limitations.
 
 For full-weight continued pretraining use rank zero. Positive rank selects LoRA; the CLI defaults to rank 8 and `alpha=2*rank`:
 
@@ -468,6 +529,14 @@ build-cpu/fyodor-train --mode dpo --base trained.gguf --rank 8 --data preference
 SFT input has one `prompt<TAB>completion` record per line. DPO has `prompt<TAB>chosen<TAB>rejected`. Use literal tab separators; embedded tabs and multiline fields are not supported. Include desired spacing, chat markers and end-of-turn text in the fields. The tokenizer processes each concatenated prompt/response once. The common token prefix with the prompt is masked; a subword crossing that boundary is supervised. No template or EOS marker is invented for a record. Records exceeding context are rejected rather than truncated. Corpora use consecutive next-token windows and include the final short window. The simple loader accepts at most 64 MiB of text and 100,000 structured records; it visits records in file order and does not shuffle or split validation data.
 
 `--memory-mib` defaults to 256 for **each** of persistent parameter state and graph intermediates. Parameter state uses F32 weights, gradients and two Adam moments. AdamW additionally stages three F32 arrays for a transactional update; checkpoint loading stages four. Dataset tokens, metadata and mapped base weights are separate. These are component budgets, not a hard process-memory ceiling. Full-weight import expands quantized values to F32. LoRA keeps base weights mapped and propagates gradients through them without creating base-weight gradients; LLaMA output GGUFs stream F32 weights. Gemma exports convert updated tensors to F32 and preserve frozen tensors in their original representation. They preserve tokenizer/architecture metadata and omit the stale optional `general.file_type` summary; the tensor directory describes actual types. Merged files can be much larger than quantized inputs. A single forward/backward/AdamW LoRA step was exercised on the supplied 12B Q4_K_M Gemma (656 trainable adapter tensors, about 110.4 MiB of graph intermediates). This is a smoke test, not evidence of large-model convergence or practical training throughput.
+
+Training file paths use UTF-8 internally. On Windows the CLI receives UTF-16
+arguments through `wmain` and converts them before option parsing. Dataset/base,
+checkpoint/resume, metrics and exported model paths support non-ASCII names,
+including supplementary-plane characters such as emoji. Exclusive creation and
+failure cleanup use the same Unicode path conversion as reads; an existing file
+is still never overwritten. POSIX filenames retain their byte-string behavior.
+See [Unicode path validation](benchmarks/TRAINING_PATHS_20260924.md).
 
 Output paths must not already exist. The runner creates files exclusively so neither a base model nor an earlier checkpoint can be overwritten. A detected write failure removes its newly created partial file; an interrupted process can leave an incomplete file that must be discarded. A successful checkpoint is retained if a later GGUF export fails. There is no HTTP training endpoint yet.
 
@@ -597,18 +666,23 @@ The benchmark times synthetic token-ID transformer execution. Model load, tokeni
 
 JSON includes GGUF storage-type counts, model size/shape, selected backend, actual execution mode, device weight/KV/scratch bytes, and resident-plan kernel/transfer/fence counts summed across measured repetitions. Zero device counters on CPU or legacy Vulkan mean uninstrumented/nonresident execution, not a claim of zero physical transfers. Token IDs passed as kernel parameters are not counted as buffer uploads. Weight upload and RoPE setup occur outside timing. Driver context/module overhead, GPU utilization and process RSS are not currently sampled by this executable.
 
-`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. It disables executable graphs and adds timing overhead; profile results must not be presented as normal throughput. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. Use the latest raw records, controls, memory details and comparison procedure in [benchmarks/STAGE2.md](benchmarks/STAGE2.md); [benchmarks/README.md](benchmarks/README.md) retains the earlier milestone.
+`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. It disables executable graphs and adds timing overhead; profile results must not be presented as normal throughput. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. The [benchmark index](benchmarks/README.md) links the historical stages and the latest [training/export validation and matched inference baseline](benchmarks/TRAINING_20260923.md).
 
-### Measured performance and current verification
+### Historical Stage 2 performance and verification
+
+The measurements and test counts below describe the Stage 2 snapshot. Later
+inference work is recorded through [Stage 8](benchmarks/STAGE8.md); the September
+23–24 [training report](benchmarks/TRAINING_20260923.md) contains the current
+validation matrix and a fresh comparison using matched F32 KV/token workloads.
 
 TinyLlama 1.1B Q4_K_M, Ryzen 5 9600X / RTX 5060 Ti, three measured repetitions with one warmup. Rates are tokens/second. The original baseline was captured before replacing per-matvec GPU transfers; intermediate and final raw records are preserved.
 
 | Engine | pp512 | tg128 |
 |---|---:|---:|
 | Original Fyodor CPU scalar | 2.04 | 1.99 |
-| Current Fyodor CPU, AVX-512 / 6 threads | 165.10 | 50.13 |
+| Stage 2 Fyodor CPU, AVX-512 / 6 threads | 165.10 | 50.13 |
 | Original Fyodor CUDA | 26.70 | 29.59 |
-| Current Fyodor CUDA resident | 1374.38 | 205.48 |
+| Stage 2 Fyodor CUDA resident | 1374.38 | 205.48 |
 | Same-hardware llama-bench CPU | 539.26 | 68.29 |
 | Same-hardware llama-bench CUDA | 10157.38 | 289.81 |
 

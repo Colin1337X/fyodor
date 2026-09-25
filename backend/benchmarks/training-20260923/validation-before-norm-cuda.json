@@ -1,0 +1,174 @@
+[
+  {
+    "name": "build-cpu-build",
+    "log": "build-cpu-build-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cpu-tests",
+    "log": "build-cpu-tests-1.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cpu",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-build",
+    "log": "build-cuda-build-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-tests",
+    "log": "build-cuda-tests-1.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-c23-build",
+    "log": "build-cuda-c23-build-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda-c23",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-c23-tests",
+    "log": "build-cuda-c23-tests-1.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda-c23",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-ort-build",
+    "log": "build-ort-build-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-ort",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-ort-tests",
+    "log": "build-ort-tests-1.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-ort",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-sanitize-build",
+    "log": "build-sanitize-build-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-sanitize",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-sanitize-tests",
+    "log": "build-sanitize-tests-1.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-sanitize",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "verify-without-optcpp",
+    "log": "verify-without-optcpp-1.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--target",
+      "verify-without-optcpp"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "verify-without-cuda",
+    "log": "verify-without-cuda.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--target",
+      "verify-without-cuda"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "verify-without-cutlass",
+    "log": "verify-without-cutlass.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "verify-without-cutlass"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "frontend-tests",
+    "log": "frontend-tests.log",
+    "command": [
+      "C:/Program Files/nodejs/node.exe",
+      "--test",
+      "frontend/tests/ui.test.mjs",
+      "frontend/tests/sidecar.test.mjs"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "frontend-build",
+    "log": "frontend-build.log",
+    "command": [
+      "C:/Program Files/nodejs/node.exe",
+      "node_modules/vite/bin/vite.js",
+      "build"
+    ],
+    "exit_code": 0
+  }
+]

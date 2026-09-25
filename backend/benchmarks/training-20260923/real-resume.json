@@ -1,0 +1,56 @@
+[
+  {
+    "phase": "first",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cpu\\fyodor-train.exe",
+      "--mode",
+      "cpt",
+      "--base",
+      "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+      "--rank",
+      "2",
+      "--data",
+      "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\tinyllama-corpus.txt",
+      "--output",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\real-resume\\first.gguf",
+      "--checkpoint",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\real-resume\\first.ckpt",
+      "--context",
+      "8",
+      "--steps",
+      "1",
+      "--memory-mib",
+      "512"
+    ],
+    "model_sha256": "ddae1cc8acfadec178d76bd54cb0e7e05dc20dff6b54915ce68549bcba9a21d3",
+    "checkpoint_sha256": "01413d589713bca827431b8a7a84c8f7a83c94e5f9207c96743ccdae9a060531"
+  },
+  {
+    "phase": "resumed",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cpu\\fyodor-train.exe",
+      "--mode",
+      "cpt",
+      "--base",
+      "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+      "--rank",
+      "2",
+      "--data",
+      "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\tinyllama-corpus.txt",
+      "--output",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\real-resume\\resumed.gguf",
+      "--checkpoint",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\real-resume\\resumed.ckpt",
+      "--context",
+      "8",
+      "--steps",
+      "1",
+      "--memory-mib",
+      "512",
+      "--resume",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\real-resume\\first.ckpt"
+    ],
+    "model_sha256": "ab6ceecda108e7070b5af188c2362049ebee9fa87b3680f93ea2dd48876afac8",
+    "checkpoint_sha256": "d8488ae23794f58e0694a39d24f103e19f53e7b8a2e686d8889c38228e094007"
+  }
+]

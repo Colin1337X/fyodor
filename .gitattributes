@@ -5,3 +5,8 @@ backend/benchmarks/**/*.log -text -diff
 backend/benchmarks/**/*.out -text -diff
 backend/benchmarks/**/*.patch -text -diff
 backend/benchmarks/stage*-validation/*.py -text whitespace=cr-at-eol,-blank-at-eof
+# Benchmark corpora and profiler output are byte-exact evidence, including
+# intentional terminal spaces. Do not rewrite their recorded input hashes.
+backend/benchmarks/training-*/**/corpus.txt -text whitespace=-blank-at-eol
+backend/benchmarks/training-*/corpus.txt -text whitespace=-blank-at-eol
+backend/benchmarks/training-20260923/before-gprof.txt -text -diff

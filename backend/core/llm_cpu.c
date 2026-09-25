@@ -89,12 +89,14 @@ static void nya_llm_rms_norm(
 )
 {
     size_t index;
-    float sum;
+    double sum;
     float scale;
 
     sum = 0.0f;
-    for (index = 0; index < length; ++index) sum += input[index] * input[index];
-    scale = 1.0f / sqrtf(sum / (float)length + epsilon);
+    /* Match the training reduction and avoid both long-vector rounding drift
+       and overflow of F32 squares for otherwise finite activations. */
+    for (index = 0; index < length; ++index) sum += (double)input[index] * input[index];
+    scale = (float)(1.0 / sqrt(sum / (double)length + epsilon));
     for (index = 0; index < length; ++index) {
         output[index] = input[index] * scale * (weight == NULL ? 1.0f : nya_llm_tensor_value(weight, index));
     }

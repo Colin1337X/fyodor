@@ -162,7 +162,7 @@ void nya_llm_matvec(
         for (row = 0; row < rows; ++row) {
             const unsigned char *row_weights;
             size_t column;
-            float sum;
+            double sum;
 
             row_weights = matrix->data + row * columns * sizeof(float);
             sum = 0.0f;
@@ -171,9 +171,12 @@ void nya_llm_matvec(
             for (column = 0; column < columns; ++column) {
                 float weight;
                 memcpy(&weight, row_weights + column * sizeof(float), sizeof(weight));
-                sum += weight * input[column];
+                /* F32 exports can have thousands of terms with cancellation.
+                   Keep the portable reference accurate enough to validate the
+                   optimized paths, consistent with dense training projections. */
+                sum += (double)weight * input[column];
             }
-            output[row] = sum;
+            output[row] = (float)sum;
         }
         return;
     }

@@ -1,0 +1,245 @@
+{
+  "utc": "2026-09-23T04:41:28.895995+00:00",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 26 Model 68 Stepping 0, AuthenticAMD",
+  "logical_cpus": 6,
+  "corpus_sha256": "dd53561f9822070cff94b5ccef49a841a5749a483ea7177365de18c5e6b0df6c",
+  "executables": {
+    "before": {
+      "path": "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-train-20260923-linear.exe",
+      "sha256": "2fd9648e61a3a13092d0cfafa887d4c190cc25278b1566fec2995f3781739144"
+    },
+    "after": {
+      "path": "C:\\Users\\Colin\\fyodor\\build-cpu\\fyodor-train.exe",
+      "sha256": "1f35fde2234172ec554c59a3010088cefd205433189c4ff5dcd66141e6e629e3"
+    }
+  },
+  "warmup_updates": 1,
+  "steps": 3,
+  "environment": {
+    "NYA_COMPUTE": "cpu"
+  },
+  "limitations": "Shared desktop, CPU only; no thermal isolation or peak RAM sampling. Graph bytes exclude parameters, optimizer staging and process overhead.",
+  "runs": [
+    {
+      "name": "real-lora-0-before",
+      "workload": "real-lora",
+      "version": "before",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-train-20260923-linear.exe",
+        "--data",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\corpus.txt",
+        "--output",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-before.gguf",
+        "--checkpoint",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-before.ckpt",
+        "--metrics",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-before.csv",
+        "--steps",
+        "3",
+        "--memory-mib",
+        "512",
+        "--seed",
+        "42",
+        "--mode",
+        "cpt",
+        "--base",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "--rank",
+        "2",
+        "--context",
+        "8"
+      ],
+      "wall_seconds_including_startup_checkpoint_export": 91.30558419999943,
+      "model_sha256": "3629076f933ea2fa75b5a1cf865d137dc763922c0dec552ed13bba20b4654ef8",
+      "checkpoint_sha256": "07d71066806ec698aa924a910537f28580605eac6773acba183387cffa742598",
+      "graph_bytes": 143486600,
+      "first_loss": 4.92900372,
+      "last_loss": 5.10650301,
+      "forward_ms": 3774.13375,
+      "backward_ms": 6515.984850000001,
+      "optimizer_ms": 18.051900000000003,
+      "step_ms": 10316.4519,
+      "tokens_per_second": 0.7754604080497869
+    },
+    {
+      "name": "real-lora-0-after",
+      "workload": "real-lora",
+      "version": "after",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\fyodor-train.exe",
+        "--data",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\corpus.txt",
+        "--output",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-after.gguf",
+        "--checkpoint",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-after.ckpt",
+        "--metrics",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-0-after.csv",
+        "--steps",
+        "3",
+        "--memory-mib",
+        "512",
+        "--seed",
+        "42",
+        "--mode",
+        "cpt",
+        "--base",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "--rank",
+        "2",
+        "--context",
+        "8"
+      ],
+      "wall_seconds_including_startup_checkpoint_export": 45.23122040000089,
+      "model_sha256": "3629076f933ea2fa75b5a1cf865d137dc763922c0dec552ed13bba20b4654ef8",
+      "checkpoint_sha256": "07d71066806ec698aa924a910537f28580605eac6773acba183387cffa742598",
+      "graph_bytes": 143521200,
+      "first_loss": 4.92900372,
+      "last_loss": 5.10650301,
+      "forward_ms": 3803.6099,
+      "backward_ms": 647.1117999999999,
+      "optimizer_ms": 17.2361,
+      "step_ms": 4477.505300000001,
+      "tokens_per_second": 1.7867092195290084
+    },
+    {
+      "name": "real-lora-1-after",
+      "workload": "real-lora",
+      "version": "after",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\fyodor-train.exe",
+        "--data",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\corpus.txt",
+        "--output",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-after.gguf",
+        "--checkpoint",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-after.ckpt",
+        "--metrics",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-after.csv",
+        "--steps",
+        "3",
+        "--memory-mib",
+        "512",
+        "--seed",
+        "42",
+        "--mode",
+        "cpt",
+        "--base",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "--rank",
+        "2",
+        "--context",
+        "8"
+      ],
+      "wall_seconds_including_startup_checkpoint_export": 41.93407049999951,
+      "model_sha256": "3629076f933ea2fa75b5a1cf865d137dc763922c0dec552ed13bba20b4654ef8",
+      "checkpoint_sha256": "07d71066806ec698aa924a910537f28580605eac6773acba183387cffa742598",
+      "graph_bytes": 143521200,
+      "first_loss": 4.92900372,
+      "last_loss": 5.10650301,
+      "forward_ms": 3832.25745,
+      "backward_ms": 647.0516,
+      "optimizer_ms": 17.668750000000003,
+      "step_ms": 4506.9516,
+      "tokens_per_second": 1.7750357026243637
+    },
+    {
+      "name": "real-lora-1-before",
+      "workload": "real-lora",
+      "version": "before",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-train-20260923-linear.exe",
+        "--data",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\corpus.txt",
+        "--output",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-before.gguf",
+        "--checkpoint",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-before.ckpt",
+        "--metrics",
+        "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-20260923\\real-paired\\real-lora-1-before.csv",
+        "--steps",
+        "3",
+        "--memory-mib",
+        "512",
+        "--seed",
+        "42",
+        "--mode",
+        "cpt",
+        "--base",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "--rank",
+        "2",
+        "--context",
+        "8"
+      ],
+      "wall_seconds_including_startup_checkpoint_export": 59.55592080000133,
+      "model_sha256": "3629076f933ea2fa75b5a1cf865d137dc763922c0dec552ed13bba20b4654ef8",
+      "checkpoint_sha256": "07d71066806ec698aa924a910537f28580605eac6773acba183387cffa742598",
+      "graph_bytes": 143486600,
+      "first_loss": 4.92900372,
+      "last_loss": 5.10650301,
+      "forward_ms": 3879.77225,
+      "backward_ms": 6515.974,
+      "optimizer_ms": 21.89025,
+      "step_ms": 10427.4048,
+      "tokens_per_second": 0.7672091141987697
+    }
+  ],
+  "summary": [
+    {
+      "workload": "real-lora",
+      "version": "before",
+      "repetitions": 2,
+      "tokens_per_second": {
+        "mean": 0.7713347611242782,
+        "sample_sd": 0.00583454583561712
+      },
+      "forward_ms": {
+        "mean": 3826.953,
+        "sample_sd": 74.69769970437511
+      },
+      "backward_ms": {
+        "mean": 6515.979425,
+        "sample_sd": 0.007672108576279457
+      },
+      "optimizer_ms": {
+        "mean": 19.971075000000003,
+        "sample_sd": 2.7141233135673835
+      },
+      "step_ms": {
+        "mean": 10371.92835,
+        "sample_sd": 78.45554798231305
+      }
+    },
+    {
+      "workload": "real-lora",
+      "version": "after",
+      "repetitions": 2,
+      "tokens_per_second": {
+        "mean": 1.7808724610766862,
+        "sample_sd": 0.008254422963570054
+      },
+      "forward_ms": {
+        "mean": 3817.933675,
+        "sample_sd": 20.256876869380775
+      },
+      "backward_ms": {
+        "mean": 647.0817,
+        "sample_sd": 0.04256782822735607
+      },
+      "optimizer_ms": {
+        "mean": 17.452425,
+        "sample_sd": 0.3059297488803615
+      },
+      "step_ms": {
+        "mean": 4492.2284500000005,
+        "sample_sd": 20.82167841085316
+      }
+    }
+  ],
+  "base_model": {
+    "path": "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "test_sha256": "da8a3f3fcb307df5e11e547cff08139ad0d46362d262281da297c1916bd581d1",
+  "runs": [
+    {
+      "name": "build-cpu",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cpu",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda-c23",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda-c23",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-cuda-c23",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda-c23",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-ort",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-ort",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-ort",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-ort",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-sanitize",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-sanitize",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "build-sanitize",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-sanitize",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-optcpp",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-optcpp-deea01c1147d\\build",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-optcpp",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-optcpp-deea01c1147d\\build",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cuda",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-cuda-29ec65eae545\\build",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cuda",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cpu\\without-cuda-29ec65eae545\\build",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cutlass",
+      "command": [
+        "cmake",
+        "--build",
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\without-cutlass-fc74b76b7cdf\\build",
+        "--target",
+        "nya-test-train-runner",
+        "--parallel",
+        "4"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "verify-without-cutlass",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\without-cutlass-fc74b76b7cdf\\build",
+        "-R",
+        "^train-accumulation$",
+        "--output-on-failure"
+      ],
+      "exit_code": 0
+    }
+  ]
+}

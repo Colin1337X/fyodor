@@ -1,0 +1,37 @@
+[
+  {
+    "name": "build-cpu-build",
+    "log": "build-cpu-build-2.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cpu-tests",
+    "log": "build-cpu-tests-2.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cpu",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-build",
+    "log": "build-cuda-build-2.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 2
+  }
+]

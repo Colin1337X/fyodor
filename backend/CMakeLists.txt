@@ -79,7 +79,7 @@ add_library(nya-engine STATIC
     core/cpu_backend.c core/cpu_kernels.c core/llm_quant.c core/thread.c
     core/compute.c core/execution.c core/generation.c core/file.c core/format.c
     core/format_gguf.c core/format_onnx.c core/format_safetensors.c
-    core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/pretraining.c)
+    core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/train_executor.c core/pretraining.c)
 target_include_directories(nya-engine PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(nya-engine PUBLIC Threads::Threads)
 nya_target_policy(nya-engine)
@@ -121,6 +121,10 @@ nya_target_policy(fyodor-bench)
 target_link_libraries(fyodor-bench PRIVATE nya-engine)
 nya_target_policy(fyodor-train)
 target_link_libraries(fyodor-train PRIVATE nya-engine)
+if(MINGW)
+    # Use the UTF-16 CRT entry point, then convert arguments to internal UTF-8.
+    target_link_options(fyodor-train PRIVATE -municode)
+endif()
 function(nya_copy_provider target)
     if(NYA_ENABLE_ONNXRUNTIME)
         add_custom_command(TARGET ${target} POST_BUILD
@@ -131,6 +135,32 @@ function(nya_copy_provider target)
 endfunction()
 nya_copy_provider(fyodor-backend)
 nya_copy_provider(fyodor-train)
+
+set(NYA_VERIFY_MODEL "" CACHE FILEPATH "Optional real GGUF for physical-removal benchmark comparison")
+foreach(optional IN ITEMS optcpp)
+    add_custom_target(verify-without-${optional}
+        COMMAND "${CMAKE_COMMAND}"
+            "-DNYA_EXCLUDE=${optional}"
+            "-DNYA_SOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/.."
+            "-DNYA_VERIFY_PARENT=${CMAKE_BINARY_DIR}"
+            "-DNYA_GENERATOR=${CMAKE_GENERATOR}"
+            "-DNYA_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+            "-DNYA_COMPILER=${CMAKE_C_COMPILER}"
+            "-DNYA_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+            "-DNYA_STANDARD=${NYA_C_STANDARD}"
+            "-DNYA_CUDA=${NYA_ENABLE_CUDA}"
+            "-DNYA_CUDA_INCLUDE=${NYA_CUDA_INCLUDE_DIR}"
+            "-DNYA_NVRTC_INCLUDE=${NYA_NVRTC_INCLUDE_DIR}"
+            "-DNYA_NVRTC_LIBRARY=${NYA_CUDA_NVRTC_LIBRARY}"
+            "-DNYA_VULKAN=${NYA_ENABLE_VULKAN}"
+            "-DNYA_VULKAN_INCLUDE=${Vulkan_INCLUDE_DIR}"
+            "-DNYA_VULKAN_LIBRARY=${Vulkan_LIBRARY}"
+            "-DNYA_BASELINE_BENCH=$<TARGET_FILE:fyodor-bench>"
+            "-DNYA_VERIFY_MODEL=${NYA_VERIFY_MODEL}"
+            "-DNYA_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/VerifyWithoutOptional.cmake"
+        DEPENDS fyodor-bench USES_TERMINAL VERBATIM)
+endforeach()
 
 add_custom_target(verify-without-cuda
     COMMAND "${CMAKE_COMMAND}"
@@ -177,6 +207,7 @@ if(BUILD_TESTING)
     add_executable(nya-test-generation tests/test_generation.c)
     add_executable(nya-test-architectures tests/test_architectures.c)
     add_executable(nya-test-training tests/test_training.c)
+    add_executable(nya-test-train-runner tests/test_train_runner.c)
     add_executable(nya-test-pretraining tests/test_pretraining.c)
     add_executable(nya-test-compute tests/test_compute.c)
     add_executable(nya-test-inference tests/test_inference.c)
@@ -212,11 +243,11 @@ if(BUILD_TESTING)
     add_executable(nya-test-server tests/test_server.c core/config.c)
     add_executable(nya-test-api tests/test_api.c core/config.c)
     foreach(target IN ITEMS nya-make-test-models nya-test-config nya-test-formats
-            nya-test-execution nya-test-generation nya-test-architectures nya-test-training nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
+            nya-test-execution nya-test-generation nya-test-architectures nya-test-training nya-test-train-runner nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
         nya_target_policy(${target})
     endforeach()
     foreach(target IN ITEMS nya-test-formats nya-test-execution nya-test-generation
-            nya-test-architectures nya-test-training nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
+            nya-test-architectures nya-test-training nya-test-train-runner nya-test-pretraining nya-test-compute nya-test-server nya-test-api)
         target_link_libraries(${target} PRIVATE nya-engine)
         target_include_directories(${target} PRIVATE core)
     endforeach()
@@ -239,6 +270,9 @@ if(BUILD_TESTING)
     add_test(NAME generate-native-gguf COMMAND nya-test-generation "${nya_fixtures}/tiny-llama.gguf")
     add_test(NAME validate-gemma-graphs COMMAND nya-test-architectures "${nya_fixtures}/tiny-gemma4.gguf")
     add_test(NAME validate-training COMMAND nya-test-training)
+    add_test(NAME train-accumulation COMMAND nya-test-train-runner)
+    add_test(NAME validate-training-scalar COMMAND nya-test-training)
+    set_tests_properties(validate-training-scalar PROPERTIES ENVIRONMENT "NYA_CPU_ISA=scalar")
     add_test(NAME train-export-decoder COMMAND nya-test-pretraining "${nya_fixtures}/pretraining")
     set_tests_properties(train-export-decoder PROPERTIES TIMEOUT 120)
     set_tests_properties(train-export-decoder PROPERTIES FIXTURES_SETUP trained_model)
@@ -250,6 +284,17 @@ if(BUILD_TESTING)
     add_test(NAME train-cli-workflows COMMAND "${CMAKE_COMMAND}" "-DTRAINER=$<TARGET_FILE:fyodor-train>"
         "-DFIXTURES=${nya_fixtures}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/TrainCli.cmake")
     set_tests_properties(train-cli-workflows PROPERTIES TIMEOUT 120)
+    # Python drives real child-process interruption; never a runtime dependency.
+    # Native control-pipe checks also run in train-accumulation without Python.
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME train-stop-workflows COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_stop.py" "$<TARGET_FILE:fyodor-train>")
+        set_tests_properties(train-stop-workflows PROPERTIES TIMEOUT 120)
+        add_test(NAME train-unicode-paths COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_paths.py" "$<TARGET_FILE:fyodor-train>")
+        set_tests_properties(train-unicode-paths PROPERTIES TIMEOUT 120)
+    endif()
     add_test(NAME validate-http-protocol COMMAND nya-test-server)
     add_test(NAME validate-compute COMMAND nya-test-compute)
     if(NYA_ENABLE_VULKAN)
