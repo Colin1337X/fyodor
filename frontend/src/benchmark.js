@@ -1,11 +1,11 @@
 import { escapeHtml as esc } from './message.js';
-const providerNames=new Map([['native','Native'],['cublas-f32','cuBLAS F32'],['cutlass-3xtf32','CUTLASS 3×TF32']]);
+const providerNames=new Map([['native','Native'],['cublas-f32','cuBLAS F32'],['cutlass-3xtf32','CUTLASS 3×TF32'],['rocblas-f32','rocBLAS F32'],['mlx-f32','MLX F32']]);
 // Import actual fyodor-bench output, never generate sample performance numbers.
 // Bounded input and explicit schema checks keep untrusted files out of markup.
 export function parseBenchmark(text) {
   if (text.length > 1024*1024) throw new Error('Benchmark files are limited to 1 MiB.');
   const data = JSON.parse(text);
-  if (data?.schema_version !== 1 || !['cpu','cuda','vulkan'].includes(data.backend) ||
+  if (data?.schema_version !== 1 || !['cpu','cuda','vulkan','rocm','mlx'].includes(data.backend) ||
       typeof data.model !== 'string' || !Array.isArray(data.results) || data.results.length > 32) throw new Error('Expected fyodor-bench JSON schema 1.');
   for (const r of data.results) {
     if (typeof r.test !== 'string' || !Number.isFinite(r.tokens_per_second) || r.tokens_per_second < 0 ||
@@ -17,12 +17,16 @@ export function parseBenchmark(text) {
     if (data[key] !== undefined && (!Number.isSafeInteger(data[key]) || data[key] < 0)) throw new Error('Invalid benchmark resource metadata.');
   for (const key of ['engine','machine','execution','prefill_implementation','kv_type'])
     if (data[key] !== undefined && typeof data[key] !== 'string') throw new Error('Invalid benchmark description.');
+  if (data.device_memory_after !== undefined) {
+    if (!data.device_memory_after || !['weights_bytes','kv_bytes','scratch_bytes'].every(key=>Number.isSafeInteger(data.device_memory_after[key]) && data.device_memory_after[key]>=0)) throw new Error('Invalid final device memory.');
+  }
   return data;
 }
 function providerLabel(d) {
   return providerNames.get(d.prefill_implementation) || d.engine || 'Provider not reported';
 }
 function memoryLabel(d) {
+  if (d.device_memory_after) d={...d,device_weights_bytes:d.device_memory_after.weights_bytes,device_kv_bytes:d.device_memory_after.kv_bytes,device_scratch_bytes:d.device_memory_after.scratch_bytes};
   const fields=[['device_weights_bytes','weights'],['device_kv_bytes','KV'],['device_scratch_bytes','scratch']];
   if (!fields.every(([key])=>Number.isSafeInteger(d[key]))) return '';
   // External-library scratch is already included; do not double-count it.

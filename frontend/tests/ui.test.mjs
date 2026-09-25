@@ -59,6 +59,17 @@ test('Benchmark parser accepts measured results and rejects invalid data',()=>{
   assert(!benchmarkMarkup([record]).includes('<img>'));
   for(const value of [{...record,backend:'fake'},{...record,results:[{...record.results[0],stddev:-1}]},null])assert.throws(()=>parseBenchmark(JSON.stringify(value)));
 });
+
+test('Optional providers expose final cache accounting in imported benchmarks',()=>{
+  for(const backend of ['rocm','mlx']) {
+    const record={schema_version:1,backend,model:'model.gguf',prefill_implementation:backend==='rocm'?'rocblas-f32':'mlx-f32',
+      device_memory_after:{weights_bytes:2097152,kv_bytes:0,scratch_bytes:1048576},results:[]};
+    const html=benchmarkMarkup([parseBenchmark(JSON.stringify(record))]);
+    assert.match(html,/weights 2\.0 MiB · KV 0\.0 MiB · scratch 1\.0 MiB/);
+    assert.match(html,backend==='rocm'?/rocBLAS F32/:/MLX F32/);
+    assert.throws(()=>parseBenchmark(JSON.stringify({...record,device_memory_after:{weights_bytes:-1}})),/memory/);
+  }
+});
 test('Conversation validation and inference controls remain bounded',()=>{
   assert.throws(()=>normalizeChat({messages:[{role:'system',text:'bad'}]},'id'));
   assert.throws(()=>generationOptions({temperature:8,top_p:1,top_k:1,max_tokens:4,seed:''}));

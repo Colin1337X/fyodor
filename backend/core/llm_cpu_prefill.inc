@@ -1,4 +1,4 @@
-/* Optimized dense CPU prefill. The transformer equations remain the same, but
+/* Optimized dense host-graph prefill. The transformer equations remain the same, but
    execution visits layers before tokens so each projection can reuse weight
    rows across a prompt tile. This code never enters the autograd graph. */
 static void nya_llm_batch_projection(const nya_llm_context *c, float *out,
@@ -11,7 +11,7 @@ static void nya_llm_batch_projection(const nya_llm_context *c, float *out,
 static int nya_llm_cpu_prefill(const nya_llm_context *c, nya_llm_run_state *s,
     const uint32_t *tokens, size_t count, size_t position)
 {
-    if (!c->compute || s->reference_only || strcmp(nya_compute_name(c->compute), "cpu") ||
+    if (!c->compute || s->reference_only || s->device_plan ||
         c->is_assistant || c->expert_count || c->per_layer_embedding_length || count < 2 || !s->prefill_batch) return 1;
     const char *profile_setting = getenv("NYA_CPU_PROFILE");
     int profile = profile_setting && !strcmp(profile_setting,"1");

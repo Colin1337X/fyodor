@@ -6,6 +6,8 @@
 following the [September 23 audit and CPU optimizations](TRAINING_20260923.md).
 **Inference history:** [Stage 8](STAGE8.md) is the latest numbered report;
 [Stage 2](STAGE2.md) retains the September 10 measurements.
+The [September 25 optional inference provider report](INFERENCE_PROVIDERS_20260925.md)
+records the separate ROCm/MLX commit and its validation scope.
 The tables below retain the September 8–9 milestone as historical evidence.
 
 Measured September 8–9, 2026 on Windows, AMD Ryzen 5 9600X (6 physical/logical processors reported), RTX 5060 Ti 16 GiB, NVIDIA driver 610.88. Fyodor: GCC 16.2, Release C17, AVX-512 CPU dispatch with six threads including the caller. No llama.cpp/ggml code or library is linked into Fyodor.

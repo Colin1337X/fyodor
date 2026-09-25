@@ -56,8 +56,86 @@ Benchmark JSON now records `kv_type`, `prefill_implementation`,
 `external_matmul_calls`. `kernel_launches` counts Fyodor's explicit launches;
 opaque library calls are reported separately because one call can launch
 multiple vendor kernels. F32 KV remains the only implemented cache precision.
-ROCm and MLX execution remain unimplemented; their absence is a normal build
-configuration, not evidence of tested AMD or Apple acceleration.
+Optional [ROCm](../rocm/README.md) and [MLX](../mlx/README.md) C adapters now
+provide matrix-vector and batched matrix multiplication. These are initial
+**host-graph assisted** providers, reported as `gpu-assisted`, with persistent
+F32 weight caches. They do not yet provide CUDA-style resident transformers.
+Their C ABI, numerical layout, failure and fallback tests use explicit test
+libraries on the current NVIDIA Windows machine. AMD/Apple hardware tests skip
+when unavailable; no ROCm/MLX hardware throughput or parity claim is made.
+
+### Optional ROCm and MLX providers
+
+`NYA_ENABLE_ROCM=ON` and `NYA_ENABLE_MLX=ON` compile the C loaders when `/rocm`
+and `/mlx` exist (default ON). No vendor headers, import libraries, C++ compiler
+or GPU runtime is needed to build or run CPU/CUDA/Vulkan. Deleting either
+directory disables only that provider. A missing runtime or failed 2x2 matrix
+probe declines selection before the native API changes the active provider.
+Runtime errors log to stderr, deactivate the failed adapter and let the caller
+recompute the failed matrix with the portable CPU path.
+
+| Provider | Runtime library | Selection | Implementation |
+|---|---|---|---|
+| ROCm | HIP + rocBLAS | `NYA_COMPUTE=rocm` / `-b rocm` | F32 SGEMM, explicit stream, persistent X/Y buffers |
+| MLX | MLX C (`mlxc`) with a GPU backend | `NYA_COMPUTE=mlx` / `-b mlx` | F32 arrays, explicit GPU matmul and CPU result copy |
+
+Both accept F32, F16, BF16, Q4_0, Q8_0, Q4_K and Q6_K. Quantized weights are
+expanded using Fyodor's C decoder on a cache miss; this uses more accelerator
+memory than compressed CUDA weights. An LRU cache is bounded by available
+memory minus a reserve (10%, at least 256 MiB), optionally capped with
+`NYA_ROCM_CACHE_MIB` or `NYA_MLX_CACHE_MIB`. The budget admits scratch before
+weights. A matrix larger than the budget deactivates the adapter and selects
+CPU fallback; there is no layer-offload planner for these providers yet.
+
+Dense LLaMA/Gemma prefill uses the existing host graph in tiles (default 32,
+`NYA_CPU_BATCH=1..512` also controls this shared host path). Each projection
+dispatches a real matrix-matrix operation. Norm, RoPE, attention, residuals,
+activations, logits control and KV remain on the host; every projection returns
+a synchronized host result. Decode uses the same adapter with batch one.
+Shared KV and speculative state remain owned by Fyodor; training/autograd
+continues independently on CPU. Future residency must replace these transfers
+at graph level before either provider can claim CUDA-like performance.
+
+Benchmark and native API examples (use an available GPU runtime):
+
+```sh
+fyodor-bench -m model.gguf -b rocm -p 512 -n 128 -r 5 --warmup 2 --json
+fyodor-bench -m model.gguf -b mlx -p 512 -n 128 -r 5 --warmup 2 --json
+curl -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"model_id":1,"compute":"rocm"}' http://127.0.0.1:PORT/api/v1/model/compute
+```
+
+`GET /api/v1/runtime` includes `compiled.rocm` and `compiled.mlx`; these describe
+compiled loaders, not detected hardware. The frontend exposes both choices and
+shows initialization errors from the API. Benchmark `prefill_implementation`
+identifies `rocblas-f32` / `mlx-f32`. `device_memory_after` reports retained
+resources after measured work; warmup may populate these caches. Transfer
+counters are logical API uploads/downloads, not physical PCIe transactions
+(especially on unified memory). Vendor allocator/workspace overhead and MLX
+temporary array memory are not fully captured; use device telemetry for totals.
+
+### C++ policy and directory independence
+
+[CPP.MD](CPP.MD) governs optional C++. The core, providers' public interfaces,
+dispatch and fallback remain C17/C23. These ROCm/MLX adapters introduce no C++
+source. General optional C++ belongs only in `backend/optcpp`, CUDA C++ only
+in `/CUDA`. There is currently no `optcpp` implementation or dependency.
+
+```sh
+cmake --build build --target verify-without-rocm
+cmake --build build --target verify-without-mlx
+cmake --build build --target verify-without-optcpp
+cmake --build build --target verify-without-cuda
+cmake --build build --target verify-without-cutlass
+```
+
+These targets create fresh source copies; they never move the live checkout's
+directories. Other providers are retained. The new removal targets build with
+warnings as errors and run the applicable complete CTest suite. They also
+record CPU pp8/tg8 before/after JSON; the default tiny generated model is a smoke
+benchmark. Set `-DNYA_VERIFY_MODEL=/absolute/model.gguf` for a real model. With
+no optcpp implementation, the comparison establishes the native C baseline;
+it is not evidence of an optional C++ speedup. UI/package checks are separate.
 
 `CUDA/cutlass` is a separately removable exception to the C-only host core: its
 C++/CUDA code builds an optional shared library behind a C ABI. Ordinary builds

@@ -239,7 +239,8 @@ static int nya_llm_state_create(
             state->device_plan = nya_compute_plan_create(context->compute, context, sequence_capacity);
         if (state->device_plan == NULL) state->reference_only = 1;
     }
-    if (!state->reference_only && context->compute && !strcmp(nya_compute_name(context->compute), "cpu") &&
+    if (!state->reference_only && !state->device_plan &&
+        (nya_compute_capabilities(context->compute) & NYA_COMPUTE_MATMUL) &&
         !context->is_assistant && !context->expert_count && !context->per_layer_embedding_length) {
         size_t batch = 32;
         const char *setting = getenv("NYA_CPU_BATCH");
@@ -764,13 +765,17 @@ const char *nya_llm_session_execution(const nya_llm_session *s)
 {
     if (s == NULL) return "unavailable";
     if (s->state.device_plan) return "resident";
-    if (s->state.reference_only || s->context->compute == NULL) return "cpu-reference";
-    return !strcmp(nya_compute_name(s->context->compute), "cpu") ? "cpu-optimized" : "gpu-matvec";
+    if (s->state.reference_only || !nya_compute_capabilities(s->context->compute)) return "cpu-reference";
+    if (!strcmp(nya_compute_name(s->context->compute), "cpu")) return "cpu-optimized";
+    return nya_compute_capabilities(s->context->compute) & NYA_COMPUTE_MATMUL ? "gpu-assisted" : "gpu-matvec";
 }
 void nya_llm_session_stats(const nya_llm_session *s, nya_compute_stats *stats)
 {
     nya_compute_plan_stats(s == NULL ? NULL : s->state.device_plan, stats);
-    if (s != NULL && stats != NULL && s->state.device_plan == NULL) stats->prefill_batch = s->state.prefill_batch;
+    if (s != NULL && stats != NULL && s->state.device_plan == NULL) {
+        nya_compute_context_stats(s->context->compute,stats);
+        stats->prefill_batch = s->state.prefill_batch;
+    }
 }
 
 int nya_llm_session_read_kv(nya_llm_session *s, size_t layer, size_t position,

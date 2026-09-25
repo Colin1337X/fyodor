@@ -25,5 +25,6 @@ typedef struct nya_backend_interface {
     int (*matmul)(void *, const void *, size_t, size_t, unsigned, const float *, float *, size_t);
     int (*attention_f32)(void *, const nya_compute_attention *);
     int (*plan_read_kv)(void *, size_t, size_t, size_t, float *, float *, size_t);
+    void (*context_stats)(const void *, nya_compute_stats *);
 } nya_backend_interface;
 #endif

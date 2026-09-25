@@ -446,7 +446,7 @@ static int cuda_backend_matmul(void *p, const void *w, size_t r, size_t c,
 { return nya_cuda_matmul_typed(p, w, r, c, t, x, y, batch); }
 const nya_backend_interface *nya_cuda_backend(void)
 {
-    static const nya_backend_interface api = {NYA_BACKEND_CUDA, "cuda", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED | NYA_COMPUTE_RESIDENT,
-        cuda_backend_create, cuda_backend_free, cuda_backend_active, cuda_backend_matvec, cuda_plan_create, cuda_plan_free, cuda_plan_token, cuda_plan_prefill, cuda_plan_stats, cuda_backend_matmul, NULL, cuda_plan_read_kv};
+    static const nya_backend_interface api = {NYA_BACKEND_CUDA, "cuda", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED | NYA_COMPUTE_RESIDENT | NYA_COMPUTE_MATMUL,
+        cuda_backend_create, cuda_backend_free, cuda_backend_active, cuda_backend_matvec, cuda_plan_create, cuda_plan_free, cuda_plan_token, cuda_plan_prefill, cuda_plan_stats, cuda_backend_matmul, NULL, cuda_plan_read_kv, NULL};
     return &api;
 }
