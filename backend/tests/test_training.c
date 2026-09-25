@@ -44,6 +44,14 @@ static int gradients(void)
         nya_train_tensor *loss = objective(g, p, mode);
         REQUIRE(loss != NULL && nya_train_backward(loss) == 0);
         for (size_t k = 0; k < 4; ++k) memcpy(expected[k], nya_train_parameter_gradient(p[k]), rows[k] * cols[k] * sizeof(float));
+        nya_train_graph *eval = nya_train_graph_create_for_evaluation(1024*1024,NULL);
+        nya_train_tensor *evaluated = objective(eval,p,mode);
+        REQUIRE(evaluated && memcmp(nya_train_data(loss),nya_train_data(evaluated),sizeof(float)) == 0);
+        REQUIRE(nya_train_memory_used(eval) < nya_train_memory_used(g));
+        REQUIRE(nya_train_backward(evaluated) != 0);
+        for (size_t k = 0; k < 4; ++k)
+            REQUIRE(memcmp(expected[k],nya_train_parameter_gradient(p[k]),rows[k]*cols[k]*sizeof(float)) == 0);
+        nya_train_graph_free(eval);
         REQUIRE(nya_train_backward(loss) != 0);
         nya_train_graph_free(g);
         for (size_t k = 0; k < 4; ++k) for (size_t i = 0; i < rows[k] * cols[k]; ++i) {
@@ -125,6 +133,14 @@ static int attention_gradients(void)
         nya_train_tensor *loss = attention_loss(g,p,mode);
         REQUIRE(loss != NULL && nya_train_backward(loss) == 0);
         for (size_t k = 0; k < 3; ++k) memcpy(expected[k],nya_train_parameter_gradient(p[k]),counts[k]*sizeof(float));
+        nya_train_graph *eval = nya_train_graph_create_for_evaluation(1024*1024,NULL);
+        nya_train_tensor *value = attention_loss(eval,p,mode);
+        REQUIRE(value && memcmp(nya_train_data(value),nya_train_data(loss),sizeof(float)) == 0);
+        REQUIRE(nya_train_memory_used(eval) < nya_train_memory_used(g));
+        REQUIRE(nya_train_backward(value) != 0);
+        for (size_t k = 0; k < 3; ++k)
+            REQUIRE(memcmp(expected[k],nya_train_parameter_gradient(p[k]),counts[k]*sizeof(float)) == 0);
+        nya_train_graph_free(eval);
         nya_train_graph_free(g);
         for (size_t k = 0; k < 3; ++k) for (size_t i = 0; i < counts[k]; ++i) {
             float *v = nya_train_parameter_data(p[k]), original = v[i], plus, minus;

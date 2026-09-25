@@ -1,0 +1,47 @@
+[ 32%] Built target nya-engine
+[ 35%] Built target nya-mock-vendor
+[ 37%] Built target nya-mock-missing-vendor
+[ 40%] Built target nya-make-test-models
+[ 44%] Built target nya-test-config
+[ 47%] Built target nya-test-formats
+[ 50%] Built target nya-test-execution
+[ 52%] Built target nya-test-generation
+[ 55%] Built target nya-test-architectures
+[ 58%] Built target nya-test-training
+[ 59%] Building C object backend/CMakeFiles/nya-test-train-runner.dir/tests/test_train_runner.c.obj
+[ 62%] Built target nya-test-pretraining
+[ 64%] Built target nya-test-compute
+[ 67%] Built target nya-test-inference
+[ 70%] Built target nya-test-quant-kernels
+[ 72%] Built target nya-test-attention
+[ 75%] Built target nya-test-kv-precision
+[ 79%] Built target nya-test-server
+[ 83%] Built target nya-test-api
+[ 87%] Built target nya-server
+[ 89%] Building C object backend/CMakeFiles/fyodor-train.dir/core/train_main.c.obj
+In file included from C:\Users\Colin\fyodor\backend\tests\test_train_runner.c:6:
+C:/Users/Colin/fyodor/backend/core/train_main.c: In function 'train_main':
+C:/Users/Colin/fyodor/backend/core/train_main.c:517:64: error: conversion from 'size_t' {aka 'long long unsigned int'} to 'int' may change value [-Werror=conversion]
+  517 |         else if (report_evaluation(optimizer.step,&evaluation,o.control_stdin)) {
+      |                                                               ~^~~~~~~~~~~~~~
+C:/Users/Colin/fyodor/backend/core/train_main.c:532:68: error: conversion from 'size_t' {aka 'long long unsigned int'} to 'int' may change value [-Werror=conversion]
+  532 |             else if (report_evaluation(optimizer.step,&evaluation,o.control_stdin)) {
+      |                                                                   ~^~~~~~~~~~~~~~
+[ 91%] Built target fyodor-bench
+[ 94%] Built target nya-test-vendor
+[ 97%] Built target fyodor-backend
+cc1.exe: all warnings being treated as errors
+make[2]: *** [backend\CMakeFiles\nya-test-train-runner.dir\build.make:79: backend/CMakeFiles/nya-test-train-runner.dir/tests/test_train_runner.c.obj] Error 1
+make[1]: *** [CMakeFiles\Makefile2:1756: backend/CMakeFiles/nya-test-train-runner.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+C:\Users\Colin\fyodor\backend\core\train_main.c: In function 'train_main':
+C:\Users\Colin\fyodor\backend\core\train_main.c:517:64: error: conversion from 'size_t' {aka 'long long unsigned int'} to 'int' may change value [-Werror=conversion]
+  517 |         else if (report_evaluation(optimizer.step,&evaluation,o.control_stdin)) {
+      |                                                               ~^~~~~~~~~~~~~~
+C:\Users\Colin\fyodor\backend\core\train_main.c:532:68: error: conversion from 'size_t' {aka 'long long unsigned int'} to 'int' may change value [-Werror=conversion]
+  532 |             else if (report_evaluation(optimizer.step,&evaluation,o.control_stdin)) {
+      |                                                                   ~^~~~~~~~~~~~~~
+cc1.exe: all warnings being treated as errors
+make[2]: *** [backend\CMakeFiles\fyodor-train.dir\build.make:79: backend/CMakeFiles/fyodor-train.dir/core/train_main.c.obj] Error 1
+make[1]: *** [CMakeFiles\Makefile2:1244: backend/CMakeFiles/fyodor-train.dir/all] Error 2
+make: *** [Makefile:100: all] Error 2

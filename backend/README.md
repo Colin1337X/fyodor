@@ -529,6 +529,19 @@ may run concurrently. Destroy borrowing graphs before freeing their executor.
 Worker stacks and executor metadata are outside graph memory budgets. Progress
 and CSV metrics report `cpu_threads` as configured capacity, not utilization.
 
+Add `--eval-data validation.txt --eval-every 10` for held-out loss before training,
+at global optimizer-step intervals and after the final requested update. Data
+uses the same mode-specific format and masks. `--eval-records N` selects a fixed
+prefix; 0 (default) evaluates all records/windows. CE averages supervised tokens;
+DPO averages pairs against the original reference policy. Evaluation does not
+change gradients, parameters, moments or checkpoint identity, and can be changed
+on resume. Stop discards an incomplete validation pass and saves the last update.
+Completed validation has separate log/CSV telemetry; training throughput excludes
+its elapsed time. The C API's `nya_train_graph_create_for_evaluation` omits
+gradients and backward-only metadata, rejects backward and reuses one attention
+probability row. See the [evaluation report](benchmarks/TRAINING_EVALUATION_20260925.md)
+for limits, interruption behavior, exact-state checks and real-model evidence.
+
 Exported F32 models use double accumulation in scalar CPU projection/RMS
 references. Native CUDA F32 prefill uses two shorter F32 accumulation chains;
 quantized kernels retain their original reductions. The trained TinyLlama export

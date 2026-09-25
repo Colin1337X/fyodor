@@ -39,7 +39,7 @@ struct nya_train_graph {
     nya_train_executor *executor;
     nya_train_tensor *last;
     size_t used, limit;
-    int backward, profile;
+    int backward, profile, evaluation;
     size_t allocations;
     size_t mapped_columns;
     float *mapped_scratch;
@@ -73,6 +73,7 @@ static void *tr_alloc(nya_train_graph *g, size_t count, size_t width)
 static nya_train_tensor *tr_node(nya_train_graph *g, size_t rows, size_t columns, int gradient, int borrowed)
 {
     if (g == NULL) return NULL;
+    if (g->evaluation) gradient = 0;
     if (g->backward || rows == 0 || columns == 0 || rows > SIZE_MAX / columns) {
         tr_error(g, "invalid tensor shape or graph already used for backward"); return NULL;
     }
@@ -111,6 +112,13 @@ nya_train_graph *nya_train_graph_create_with_executor(size_t limit, nya_train_ex
 nya_train_graph *nya_train_graph_create(size_t limit)
 {
     return nya_train_graph_create_with_executor(limit,NULL);
+}
+
+nya_train_graph *nya_train_graph_create_for_evaluation(size_t limit, nya_train_executor *executor)
+{
+    nya_train_graph *g = nya_train_graph_create_with_executor(limit,executor);
+    if (g != NULL) g->evaluation = 1;
+    return g;
 }
 
 /* Avoid worker wakeups for small operations. Compare the product without
@@ -189,7 +197,7 @@ nya_train_tensor *nya_train_leaf(nya_train_graph *g, nya_train_parameter *p)
     if (p == NULL) { tr_error(g, "missing training parameter"); return NULL; }
     nya_train_tensor *t = tr_node(g, p->rows, p->columns, 1, 1);
     if (t == NULL) return NULL;
-    t->operation = TR_LEAF; t->data = p->data; t->gradient = p->gradient;
+    t->operation = TR_LEAF; t->data = p->data; t->gradient = g->evaluation ? NULL : p->gradient;
     return tr_finite(t);
 }
 const float *nya_train_data(const nya_train_tensor *t) { return t == NULL ? NULL : t->data; }
@@ -441,9 +449,11 @@ nya_train_tensor *nya_train_embedding(nya_train_tensor *table, const uint32_t *i
     nya_train_tensor *t = tr_node(table->graph, count, table->columns, table->gradient != NULL, 0);
     if (t == NULL) return NULL;
     t->a = table; t->operation = TR_EMBED;
-    t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
-    if (t->indices == NULL) return NULL;
-    memcpy(t->indices, ids, count * sizeof(uint32_t));
+    if (!t->graph->evaluation) {
+        t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
+        if (t->indices == NULL) return NULL;
+        memcpy(t->indices, ids, count * sizeof(uint32_t));
+    }
     for (size_t i = 0; i < count; ++i) memcpy(t->data + i * t->columns, table->data + (size_t)ids[i] * t->columns, t->columns * sizeof(float));
     return tr_finite(t);
 }
@@ -476,9 +486,11 @@ nya_train_tensor *nya_train_rope(nya_train_tensor *x, size_t heads, size_t dimen
     if (t == NULL) return NULL;
     t->a = x; t->operation = TR_ROPE; t->dimensions[0] = heads;
     t->dimensions[1] = dimension; t->dimensions[2] = (size_t)split_half;
-    t->saved = (float *)tr_alloc(x->graph, dimension / 2, sizeof(float));
-    if (t->saved == NULL) return NULL;
-    memcpy(t->saved, frequencies, dimension / 2 * sizeof(float));
+    if (!t->graph->evaluation) {
+        t->saved = (float *)tr_alloc(x->graph, dimension / 2, sizeof(float));
+        if (t->saved == NULL) return NULL;
+        memcpy(t->saved, frequencies, dimension / 2 * sizeof(float));
+    }
     for (size_t n = 0; n < x->rows; ++n) for (size_t h = 0; h < heads; ++h) for (size_t j = 0; j < dimension / 2; ++j) {
         size_t i = n * x->columns + h * dimension + (split_half ? j : 2 * j);
         size_t k = i + (split_half ? dimension / 2 : 1);
@@ -506,17 +518,18 @@ nya_train_tensor *nya_train_attention(nya_train_tensor *q, nya_train_tensor *k,
     t->a = q; t->b = k; t->c = v; t->operation = TR_ATTENTION; t->scalar = scale;
     t->dimensions[0] = heads; t->dimensions[1] = kv_heads; t->dimensions[2] = dimension;
     size_t n = q->rows;
-    t->saved = (float *)tr_alloc(q->graph, n * n * heads, sizeof(float));
+    t->saved = (float *)tr_alloc(q->graph, q->graph->evaluation ? n : n * n * heads, sizeof(float));
     if (t->saved == NULL) return NULL;
     if (t->gradient != NULL) {
         t->scratch = (double *)tr_alloc(q->graph,n,sizeof(double));
         if (t->scratch == NULL) return NULL;
     }
     t->dimensions[3] = window == 0 || groups == NULL;
-    /* Keep one probability matrix per query head for the softmax Jacobian.
-       Masked entries remain exactly zero. The graph budget bounds N^2 storage. */
+    /* Backward retains each probability matrix. Evaluation reuses one row;
+       both modes retain the exact same score/softmax/value reduction order. */
     for (size_t row = 0; row < n; ++row) for (size_t head = 0; head < heads; ++head) {
-        float *probability = t->saved + (head * n + row) * n;
+        float *probability = t->saved + (q->graph->evaluation ? 0 : (head * n + row) * n);
+        if (q->graph->evaluation) memset(probability,0,n*sizeof(float));
         size_t first = window != 0 && row >= window ? row - window + 1 : 0;
         size_t end = t->dimensions[3] ? row+1 : n;
         size_t kh = head / (heads / kv_heads);
@@ -573,14 +586,17 @@ static nya_train_tensor *tr_logprob(nya_train_tensor *x, const uint32_t *labels,
     nya_train_tensor *t = tr_node(x->graph, 1, 1, x->gradient != NULL, 0);
     if (t == NULL) return NULL;
     t->a = x; t->operation = TR_LOGP; t->scalar = mean_loss ? -1.0 / (double)active : 1.0;
-    t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
-    t->mask = (unsigned char *)tr_alloc(t->graph, count, 1);
-    if (t->indices == NULL || t->mask == NULL) return NULL;
-    memcpy(t->indices, labels, count * sizeof(uint32_t));
+    if (!t->graph->evaluation) {
+        t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
+        t->mask = (unsigned char *)tr_alloc(t->graph, count, 1);
+        if (t->indices == NULL || t->mask == NULL) return NULL;
+        memcpy(t->indices, labels, count * sizeof(uint32_t));
+    }
     double total = 0.0;
     for (size_t n = 0; n < count; ++n) {
-        t->mask[n] = mask == NULL || mask[n];
-        if (!t->mask[n]) continue;
+        int active_row = mask == NULL || mask[n];
+        if (t->mask != NULL) t->mask[n] = (unsigned char)active_row;
+        if (!active_row) continue;
         const float *row = x->data + n * x->columns;
         double maximum = row[0], sum = 0.0;
         for (size_t j = 1; j < x->columns; ++j) if (row[j] > maximum) maximum = row[j];

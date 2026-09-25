@@ -24,6 +24,10 @@ size_t nya_train_executor_threads(const nya_train_executor *executor);
 /* Borrows an executor; NULL retains serial execution. The original create
    function remains serial and does not create threads. */
 nya_train_graph *nya_train_graph_create_with_executor(size_t memory_limit, nya_train_executor *executor);
+/* Forward-only graph: parameter leaves borrow values but never gradients.
+   Backward is rejected. The executor is borrowed under the same lifetime and
+   serialization rules. This mode is graph-local, not a global/thread setting. */
+nya_train_graph *nya_train_graph_create_for_evaluation(size_t memory_limit, nya_train_executor *executor);
 
 nya_train_graph *nya_train_graph_create(size_t memory_limit);
 void nya_train_graph_free(nya_train_graph *graph);

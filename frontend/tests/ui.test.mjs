@@ -4,7 +4,20 @@ import {readCompletionStream} from '../src/stream.js';
 import {messageBody} from '../src/message.js';
 import {parseBenchmark, benchmarkMarkup} from '../src/benchmark.js';
 import {formatConversation, normalizeChat, generationOptions} from '../src/session.js';
-import {parseTrainingMetric} from '../src/training-metrics.js';
+import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from '../src/training-metrics.js';
+
+test('Evaluation telemetry stays distinct from training and rejects invalid values',()=>{
+  const line='[trainer] eval_step=4 validation_loss=1.234 eval_tokens=20 eval_units=15 eval_records=3 eval_ms=5';
+  assert.equal(parseTrainingMetric(line),null);
+  assert.deepEqual(parseEvaluationMetric(line),{step:4,loss:1.234,records:3});
+  assert.equal(parseEvaluationMetric('step=4 loss=2'),null);
+  assert.equal(parseEvaluationMetric('evaluation_start step=4'),null);
+  assert.equal(parseEvaluationMetric('eval_step=4 validation_loss=1e999'),null);
+  assert.equal(parseEvaluationMetric('eval_step=999999999999999999 validation_loss=1'),null);
+  assert.equal(parseEvaluationMetric('eval_step=0 validation_loss=1 eval_records=0'),null);
+  const old='[trainer] eval_step=5 validation_loss=1', start='[trainer] starting --mode pretrain';
+  assert.deepEqual(currentTrainingLines([old,'[backend] ready',start,'[trainer] step=1 loss=2']),[start,'[trainer] step=1 loss=2']);
+});
 
 test('Training telemetry preserves missing measurements and rejects invalid numbers',()=>{
   assert.deepEqual(parseTrainingMetric('[trainer] step=10 loss=2.5 graph_bytes=1048576 tokens_per_second=12.25'),

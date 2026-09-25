@@ -64,6 +64,12 @@ struct TrainArgs {
     accumulate: u32,
     #[serde(default)]
     threads: u32,
+    #[serde(default)]
+    eval_data: Option<String>,
+    #[serde(default = "default_eval_interval")]
+    eval_every: u32,
+    #[serde(default)]
+    eval_records: u32,
     learning_rate: f32,
     rank: u32,
     beta: f32,
@@ -88,6 +94,8 @@ struct TrainStatus {
 fn default_accumulation() -> u32 {
     1
 }
+
+fn default_eval_interval() -> u32 { 10 }
 
 #[cfg(test)]
 mod training_tests {
@@ -182,6 +190,20 @@ mod training_tests {
         input["threads"] = 65.into();
         assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
         input["threads"] = serde_json::json!(-1);
+        assert!(serde_json::from_value::<TrainArgs>(input.clone()).is_err());
+        input["threads"] = 0.into();
+        let old: TrainArgs = serde_json::from_value(input.clone()).unwrap();
+        assert_eq!(old.eval_every,10); assert_eq!(old.eval_records,0); assert!(old.eval_data.is_none());
+        assert!(!checked_training_args(old).unwrap().contains(&"--eval-data".into()));
+        input["evalData"] = "validation data.tsv".into();
+        input["evalEvery"] = 2.into(); input["evalRecords"] = 3.into();
+        let args = checked_training_args(serde_json::from_value(input.clone()).unwrap()).unwrap();
+        for (flag,value) in [("--eval-data","validation data.tsv"),("--eval-every","2"),("--eval-records","3")] {
+            let i = args.iter().position(|s| s == flag).unwrap(); assert_eq!(args[i+1],value);
+        }
+        input["evalEvery"] = 0.into();
+        assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
+        input["evalEvery"] = serde_json::json!(-1);
         assert!(serde_json::from_value::<TrainArgs>(input).is_err());
     }
 }
@@ -370,6 +392,7 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
     if input.steps == 0
         || !(1..=1024).contains(&input.accumulate)
         || input.threads > 64
+        || input.eval_every == 0
         || input.rank > 256
         || input.memory_mib == 0
         || !input.learning_rate.is_finite()
@@ -425,6 +448,10 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         if let Some(value) = value.filter(|v| !v.trim().is_empty()) {
             args.extend([flag.into(), value]);
         }
+    }
+    if let Some(path) = input.eval_data.filter(|v| !v.trim().is_empty()) {
+        args.extend(["--eval-data".into(), path, "--eval-every".into(), input.eval_every.to_string(),
+                     "--eval-records".into(), input.eval_records.to_string()]);
     }
     Ok(args)
 }

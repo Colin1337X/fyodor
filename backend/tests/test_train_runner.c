@@ -105,6 +105,34 @@ static int objective(int dpo)
         REQUIRE(metrics.tokens == (dpo ? 18U : 10U) && metrics.units == (dpo ? 2U : 6U));
         REQUIRE(metrics.graph_bytes == o.memory && metrics.graph_bytes < combined_bytes);
         REQUIRE(compare(actual,expected,0) == 0);
+        size_t actual_count;
+        nya_train_parameter *const *actual_parameters = nya_train_decoder_parameters(actual,&actual_count);
+        FILE *before = tmpfile(), *after = tmpfile(); REQUIRE(before && after);
+        REQUIRE(nya_train_checkpoint_write(before,&actual_opt,actual_parameters,actual_count) == 0);
+        train_evaluation evaluated;
+        REQUIRE(evaluate(actual,&data,&o,&evaluated,error,sizeof(error)) == 0);
+        REQUIRE(evaluated.records == 2 && evaluated.units == (dpo ? 2U : 6U));
+        REQUIRE(evaluated.tokens == (dpo ? 18U : 10U) && evaluated.graph_bytes < o.memory);
+        g = nya_train_graph_create(1024*1024);
+        left = reference_loss(actual,g,&records[0],dpo);
+        right = reference_loss(actual,g,&records[1],dpo);
+        REQUIRE(left && right);
+        double independent = dpo ? ((double)nya_train_data(left)[0]+nya_train_data(right)[0])/2 :
+            ((double)nya_train_data(left)[0]*2+(double)nya_train_data(right)[0]*4)/6;
+        REQUIRE(evaluated.loss == independent);
+        o.eval_records = 1;
+        REQUIRE(evaluate(actual,&data,&o,&evaluated,error,sizeof(error)) == 0);
+        REQUIRE(evaluated.records == 1 && evaluated.loss == nya_train_data(left)[0]);
+        o.eval_records = 0;
+        size_t saved_budget = o.memory; o.memory = 1;
+        REQUIRE(evaluate(actual,&data,&o,&evaluated,error,sizeof(error)) == -1);
+        o.memory = saved_budget; error[0] = '\0';
+        REQUIRE(nya_train_checkpoint_write(after,&actual_opt,actual_parameters,actual_count) == 0);
+        rewind(before); rewind(after);
+        int before_byte, after_byte;
+        do { before_byte = fgetc(before); after_byte = fgetc(after); REQUIRE(before_byte == after_byte); } while (before_byte != EOF);
+        REQUIRE(!ferror(before) && !ferror(after)); fclose(before); fclose(after);
+        nya_train_graph_free(g);
     }
     if (!dpo) {
         /* Microbatch one fits; two fails. No partial Adam update, no stale
