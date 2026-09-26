@@ -2,11 +2,12 @@
 
 September 11 optimization checkpoint: [F32 matrix dispatch and validation](benchmarks/STAGE3.md).
 September 12 continuation: [persistent decode graphs and validation](benchmarks/STAGE4.md).
-Latest pass: [F32 fusion, cache diagnostics and a rejected F16 experiment](benchmarks/STAGE5.md).
+Previous pass: [F32 fusion, cache diagnostics and a rejected F16 experiment](benchmarks/STAGE5.md).
 Optional C++ extension: [removable CUTLASS prefill adapter](../CUDA/cutlass/README.md).
 Previous measurements: [CUTLASS validation and matched F32 llama.cpp comparison](benchmarks/STAGE6.md).
 Previous measurements: [query-tiled prefill attention and validation](benchmarks/STAGE7.md).
-Current pass: [fused weight decode/transpose and validation](benchmarks/STAGE8.md).
+Previous pass: [fused weight decode/transpose and validation](benchmarks/STAGE8.md).
+Current pass: [partitioned CUDA decode attention and validation](benchmarks/STAGE9.md).
 The performance goal remains open; current measurements do not establish a win
 over llama.cpp under equivalent workloads.
 
@@ -252,12 +253,20 @@ Headers are found through `CUDA_PATH`/`CUDA_HOME` or explicit `NYA_CUDA_INCLUDE_
 
 CUDA supports F32, F16, BF16, Q4_0, Q8_0, Q4_K and Q6_K projections. Dense LLaMA and dense Gemma 4 (including shared KV) now use persistent device execution plans: compressed weights, activations, Q/K/V, attention/FFN scratch, KV and logits remain on the GPU. Prefill uses custom F32 64×64 tiled GEMM (32×32 for small shapes) in chunks of up to 512 tokens (`NYA_CUDA_BATCH=1..512`, reduced when the memory budget requires it); decode uses format-specialized warp reductions and reusable CUDA executable graphs. Only final logits return to the CPU. `NYA_CUDA_REFERENCE=1` selects the generic matvec kernel and disables fused multiply-add; normal mode permits FMA without enabling unsafe fast-math. `NYA_CUDA_GRAPHS=0` disables graph submission for diagnosis.
 
-Decode captures one graph per resident session and replays it without recapturing
-on each token. A stream-ordered device packet supplies token ID and position;
+Decode retains at most two graphs per resident session and replays them without
+recapturing on each token. For 64/128-wide heads after 256 cached tokens,
+four blocks divide each head's context and a second kernel combines their F32
+softmax numerators and denominators. Windows of at most 256 tokens retain the
+ordinary kernel. `NYA_CUDA_SPLIT_ATTENTION=0` retains ordinary attention at every
+length. The extra persistent buffer is `4 * heads * (head_width + 2)` floats
+for the largest eligible layer (33 KiB for TinyLlama), included in scratch
+accounting and admission. Prefill and other head widths retain their existing
+kernels. A stream-ordered device packet supplies token ID and position;
 key RoPE also writes the indexed K/V cache. Reset and batched prefill preserve
-the executable graph while replacing the valid prefix. Each request owns two
+both executable graphs while replacing the valid prefix. Each request owns two
 temporary K/V vectors plus eight bytes of metadata. Benchmark JSON reports
-`graph_captures` and `graph_replays`; warmed decode should have zero captures.
+`graph_captures` and `graph_replays`; warmed decode should have zero captures
+unless it crosses into a topology that has not yet been captured.
 For single-token states of at most 256 elements, residual addition and the
 following FFN RMSNorm share one F32 kernel; larger states and prefill retain
 the separate kernels following paired measurements. An explicit

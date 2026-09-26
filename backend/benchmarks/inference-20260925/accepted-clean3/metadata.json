@@ -1,0 +1,918 @@
+{
+  "timestamp_utc": "2026-09-26T03:28:25.160668+00:00",
+  "revision": "aa298f679e7d3f2554e1bcfb880d984d77a8ddb6",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "llama_commit": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+  "harness_sha256": "568d4a1de30aa236381429341de75beb691e410f162ad8504833da62491fa20c",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CPU_BATCH": "512",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "source_sha256": {
+    "CUDA\\resident.cu": "29d16e02acd2311f5c24ed5d4a1911cdc98803075f05e980427f43e720a91f34",
+    "CUDA\\resident.inc": "6a6444a86519569a44d283445a01d3354a8f420cdcc0d9848acca25204c7aecb",
+    "CUDA\\cuda.c": "f777194be9ad1a59b6b19c17e586dedb9da5589a11d3a18da411c9f48a10a1b8"
+  },
+  "binary_sha256": {
+    "before": "67c4226e91fab55de12e3958db3638e6998699ff015bc1ad931767d3fd76a73d",
+    "after": "b49a6567092bebf94a7cfd48d0499347e8c93c10b284d2e137fc4d1f9b03db78",
+    "llama": "641e4186f3a55bbbfa819399596d75e281037fc54fcc23e288d265d07a50e92e"
+  },
+  "dependency_sha256": {
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    ".tools\\llama-b10809-cuda\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cuda\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    ".tools\\llama-b10809-cuda\\ggml-cuda.dll": "d860635f2be8faf7590103851225afdf3f0b2e5e26012815017b0a0a087d4441"
+  },
+  "caveats": [
+    "Windows interactive desktop; GPU counters identified DWM and ChatGPT as active at idle. Other apps remain open. Not a headless measurement.",
+    "Require two consecutive 7..12% whole-GPU utilization readings before and after each process. Preserve failure, never discard individual timed samples.",
+    "F32 KV, deterministic identical tokens, 512 batch/ubatch, six threads, FA off in llama C API harness; intermediate math differs.",
+    "Model loading, tokenization, sampling, prefix preparation are untimed. Host logits read every decoded token.",
+    "Resource sampling includes startup and model load; whole-device readings include other apps. Driver graph storage is not in explicit tensor byte totals."
+  ],
+  "runs": [
+    {
+      "name": "0-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "0 %, 2032 MiB, P0, 210 MHz, 14001 MHz, 15.73 W, 35",
+        "11 %, 2123 MiB, P0, 975 MHz, 14001 MHz, 18.48 W, 36",
+        "9 %, 2123 MiB, P0, 1522 MHz, 14001 MHz, 22.62 W, 36"
+      ],
+      "exit_code": 0,
+      "gpu_after": "28 %, 1814 MiB, P0, 2805 MHz, 14001 MHz, 123.08 W, 48",
+      "gpu_idle_after": [
+        "9 %, 1814 MiB, P0, 1830 MHz, 14001 MHz, 29.50 W, 40",
+        "9 %, 1835 MiB, P0, 1725 MHz, 14001 MHz, 23.59 W, 39"
+      ]
+    },
+    {
+      "name": "0-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "7 %, 1659 MiB, P0, 2295 MHz, 14001 MHz, 33.58 W, 39",
+        "11 %, 1585 MiB, P0, 1987 MHz, 14001 MHz, 21.80 W, 39"
+      ],
+      "exit_code": 0,
+      "gpu_after": "9 %, 1588 MiB, P0, 2805 MHz, 14001 MHz, 119.24 W, 48",
+      "gpu_idle_after": [
+        "9 %, 1586 MiB, P0, 1882 MHz, 14001 MHz, 28.42 W, 41",
+        "9 %, 1620 MiB, P0, 2167 MHz, 14001 MHz, 26.13 W, 41"
+      ]
+    },
+    {
+      "name": "0-llama-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1620 MiB, P0, 1717 MHz, 14001 MHz, 24.53 W, 40",
+        "8 %, 1649 MiB, P0, 1642 MHz, 14001 MHz, 22.82 W, 40"
+      ],
+      "exit_code": 0,
+      "gpu_after": "75 %, 1636 MiB, P0, 2812 MHz, 14001 MHz, 113.76 W, 55",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 2167 MHz, 14001 MHz, 29.68 W, 42",
+        "9 %, 1585 MiB, P0, 1695 MHz, 14001 MHz, 23.20 W, 41"
+      ]
+    },
+    {
+      "name": "0-llama-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1590 MHz, 14001 MHz, 22.99 W, 40",
+        "9 %, 1585 MiB, P0, 1567 MHz, 14001 MHz, 22.90 W, 40"
+      ],
+      "exit_code": 0,
+      "gpu_after": "9 %, 1585 MiB, P0, 2812 MHz, 14001 MHz, 105.32 W, 48",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 2182 MHz, 14001 MHz, 29.55 W, 42",
+        "9 %, 1585 MiB, P0, 1702 MHz, 14001 MHz, 23.22 W, 41"
+      ]
+    },
+    {
+      "name": "0-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "8 %, 1585 MiB, P0, 1590 MHz, 14001 MHz, 22.92 W, 41",
+        "9 %, 1585 MiB, P0, 1567 MHz, 14001 MHz, 22.85 W, 40"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 1585 MiB, P0, 2790 MHz, 14001 MHz, 132.17 W, 60",
+      "gpu_idle_after": [
+        "8 %, 1593 MiB, P0, 2842 MHz, 14001 MHz, 31.55 W, 44",
+        "9 %, 1590 MiB, P0, 1725 MHz, 14001 MHz, 23.60 W, 42"
+      ]
+    },
+    {
+      "name": "0-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1567 MHz, 14001 MHz, 23.07 W, 41",
+        "9 %, 1585 MiB, P0, 1545 MHz, 14001 MHz, 22.98 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "66 %, 1586 MiB, P0, 2790 MHz, 14001 MHz, 129.69 W, 57",
+      "gpu_idle_after": [
+        "9 %, 1586 MiB, P0, 1875 MHz, 14001 MHz, 29.53 W, 43",
+        "9 %, 1586 MiB, P0, 1747 MHz, 14001 MHz, 23.72 W, 42"
+      ]
+    },
+    {
+      "name": "256-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "256",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1597 MHz, 14001 MHz, 23.33 W, 42",
+        "8 %, 1585 MiB, P0, 1560 MHz, 14001 MHz, 23.20 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 1585 MiB, P0, 2790 MHz, 14001 MHz, 126.00 W, 59",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1815 MHz, 14001 MHz, 28.82 W, 43",
+        "9 %, 1585 MiB, P0, 1702 MHz, 14001 MHz, 23.60 W, 42"
+      ]
+    },
+    {
+      "name": "256-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "256",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1590 MHz, 14001 MHz, 23.25 W, 41",
+        "9 %, 1585 MiB, P0, 1560 MHz, 14001 MHz, 23.24 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "27 %, 1585 MiB, P0, 2797 MHz, 14001 MHz, 127.90 W, 52",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1807 MHz, 14001 MHz, 29.44 W, 43",
+        "9 %, 1585 MiB, P0, 1710 MHz, 14001 MHz, 23.61 W, 42"
+      ]
+    },
+    {
+      "name": "256-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "256",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1590 MHz, 14001 MHz, 23.38 W, 41",
+        "9 %, 1585 MiB, P0, 1552 MHz, 14001 MHz, 23.28 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 1593 MiB, P0, 2767 MHz, 14001 MHz, 134.73 W, 61",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 2235 MHz, 14001 MHz, 30.24 W, 43",
+        "9 %, 1585 MiB, P0, 1747 MHz, 14001 MHz, 23.74 W, 42"
+      ]
+    },
+    {
+      "name": "256-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "256",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1575 MHz, 14001 MHz, 23.35 W, 41",
+        "9 %, 1585 MiB, P0, 1560 MHz, 14001 MHz, 23.27 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "11 %, 1585 MiB, P0, 2790 MHz, 14001 MHz, 117.18 W, 50",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1785 MHz, 14001 MHz, 29.26 W, 43",
+        "9 %, 1585 MiB, P0, 1695 MHz, 14001 MHz, 23.64 W, 42"
+      ]
+    },
+    {
+      "name": "512-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "512",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1582 MHz, 14001 MHz, 23.37 W, 41",
+        "9 %, 1585 MiB, P0, 1552 MHz, 14001 MHz, 23.26 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "77 %, 1593 MiB, P0, 2805 MHz, 14001 MHz, 119.52 W, 58",
+      "gpu_idle_after": [
+        "9 %, 1593 MiB, P0, 2580 MHz, 14001 MHz, 30.87 W, 43",
+        "9 %, 1593 MiB, P0, 1710 MHz, 14001 MHz, 23.79 W, 42"
+      ]
+    },
+    {
+      "name": "512-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "512",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1593 MiB, P0, 1590 MHz, 14001 MHz, 23.45 W, 41",
+        "9 %, 1593 MiB, P0, 1560 MHz, 14001 MHz, 23.51 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 1593 MiB, P0, 2760 MHz, 14001 MHz, 136.53 W, 61",
+      "gpu_idle_after": [
+        "9 %, 1593 MiB, P0, 2842 MHz, 14001 MHz, 31.59 W, 44",
+        "9 %, 1593 MiB, P0, 1717 MHz, 14001 MHz, 23.82 W, 42"
+      ]
+    },
+    {
+      "name": "512-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "512",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "8 %, 1593 MiB, P0, 1567 MHz, 14001 MHz, 23.50 W, 41",
+        "9 %, 1593 MiB, P0, 1545 MHz, 14001 MHz, 23.40 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 1593 MiB, P0, 2790 MHz, 14001 MHz, 136.61 W, 61",
+      "gpu_idle_after": [
+        "10 %, 1593 MiB, P0, 1860 MHz, 14001 MHz, 28.65 W, 43",
+        "8 %, 1593 MiB, P0, 1717 MHz, 14001 MHz, 23.82 W, 42"
+      ]
+    },
+    {
+      "name": "512-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "512",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1594 MiB, P0, 1597 MHz, 14001 MHz, 23.45 W, 41",
+        "9 %, 1594 MiB, P0, 1560 MHz, 14001 MHz, 23.36 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 1585 MiB, P0, 2797 MHz, 14001 MHz, 121.06 W, 58",
+      "gpu_idle_after": [
+        "9 %, 1597 MiB, P0, 2182 MHz, 14001 MHz, 30.08 W, 43",
+        "9 %, 1594 MiB, P0, 1710 MHz, 14001 MHz, 23.80 W, 42"
+      ]
+    },
+    {
+      "name": "1024-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1586 MiB, P0, 1605 MHz, 14001 MHz, 23.50 W, 41",
+        "9 %, 1586 MiB, P0, 1567 MHz, 14001 MHz, 23.42 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 1584 MiB, P0, 2797 MHz, 14001 MHz, 115.16 W, 56",
+      "gpu_idle_after": [
+        "8 %, 1584 MiB, P0, 2842 MHz, 14001 MHz, 31.64 W, 44",
+        "9 %, 1584 MiB, P0, 1717 MHz, 14001 MHz, 23.88 W, 42"
+      ]
+    },
+    {
+      "name": "1024-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "8 %, 1584 MiB, P0, 1560 MHz, 14001 MHz, 23.48 W, 41",
+        "9 %, 1584 MiB, P0, 1552 MHz, 14001 MHz, 23.46 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 1584 MiB, P0, 2790 MHz, 14001 MHz, 136.68 W, 62",
+      "gpu_idle_after": [
+        "8 %, 1584 MiB, P0, 2842 MHz, 14001 MHz, 31.93 W, 45",
+        "9 %, 1584 MiB, P0, 1717 MHz, 14001 MHz, 25.42 W, 43"
+      ]
+    },
+    {
+      "name": "1024-llama-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1584 MiB, P0, 1575 MHz, 14001 MHz, 23.57 W, 42",
+        "9 %, 1584 MiB, P0, 1552 MHz, 14001 MHz, 23.52 W, 42"
+      ],
+      "exit_code": 0,
+      "gpu_after": "95 %, 1586 MiB, P0, 2820 MHz, 14001 MHz, 110.32 W, 56",
+      "gpu_idle_after": [
+        "8 %, 1586 MiB, P0, 2842 MHz, 14001 MHz, 31.64 W, 44",
+        "9 %, 1586 MiB, P0, 1680 MHz, 14001 MHz, 23.60 W, 42"
+      ]
+    },
+    {
+      "name": "1024-llama-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1586 MiB, P0, 1582 MHz, 14001 MHz, 23.45 W, 41",
+        "9 %, 1586 MiB, P0, 1552 MHz, 14001 MHz, 23.33 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "95 %, 1585 MiB, P0, 2820 MHz, 14001 MHz, 111.40 W, 56",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 2842 MHz, 14001 MHz, 31.62 W, 43",
+        "9 %, 1585 MiB, P0, 1680 MHz, 14001 MHz, 23.62 W, 41"
+      ]
+    },
+    {
+      "name": "1024-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1575 MHz, 14001 MHz, 23.40 W, 41",
+        "9 %, 1585 MiB, P0, 1567 MHz, 14001 MHz, 23.35 W, 40"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 1585 MiB, P0, 2790 MHz, 14001 MHz, 137.08 W, 61",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 2842 MHz, 14001 MHz, 31.88 W, 44",
+        "9 %, 1585 MiB, P0, 1687 MHz, 14001 MHz, 23.82 W, 42"
+      ]
+    },
+    {
+      "name": "1024-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1582 MHz, 14001 MHz, 23.55 W, 42",
+        "9 %, 1585 MiB, P0, 1545 MHz, 14001 MHz, 23.50 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "8 %, 1585 MiB, P0, 2805 MHz, 14001 MHz, 98.71 W, 49",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1777 MHz, 14001 MHz, 29.35 W, 43",
+        "9 %, 1585 MiB, P0, 1695 MHz, 14001 MHz, 23.82 W, 42"
+      ]
+    },
+    {
+      "name": "1536-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1536",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "8 %, 1585 MiB, P0, 1575 MHz, 14001 MHz, 23.40 W, 41",
+        "9 %, 1585 MiB, P0, 1545 MHz, 14001 MHz, 23.39 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "8 %, 1585 MiB, P0, 2812 MHz, 14001 MHz, 92.64 W, 49",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1777 MHz, 14001 MHz, 29.42 W, 43",
+        "9 %, 1585 MiB, P0, 1680 MHz, 14001 MHz, 23.81 W, 42"
+      ]
+    },
+    {
+      "name": "1536-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1536",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1585 MiB, P0, 1575 MHz, 14001 MHz, 23.51 W, 42",
+        "9 %, 1585 MiB, P0, 1545 MHz, 14001 MHz, 23.42 W, 41"
+      ],
+      "exit_code": 0,
+      "gpu_after": "32 %, 1585 MiB, P0, 2797 MHz, 14001 MHz, 126.24 W, 53",
+      "gpu_idle_after": [
+        "9 %, 1585 MiB, P0, 1822 MHz, 14001 MHz, 30.05 W, 44",
+        "9 %, 1584 MiB, P0, 1710 MHz, 14001 MHz, 24.13 W, 43"
+      ]
+    },
+    {
+      "name": "1536-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1536",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1584 MiB, P0, 1582 MHz, 14001 MHz, 23.69 W, 42",
+        "9 %, 1584 MiB, P0, 1552 MHz, 14001 MHz, 23.51 W, 42"
+      ],
+      "exit_code": 0,
+      "gpu_after": "90 %, 1585 MiB, P0, 2790 MHz, 14001 MHz, 133.31 W, 62",
+      "gpu_idle_after": [
+        "9 %, 1627 MiB, P0, 2580 MHz, 14001 MHz, 31.80 W, 45",
+        "9 %, 1612 MiB, P0, 1717 MHz, 14001 MHz, 24.08 W, 44"
+      ]
+    },
+    {
+      "name": "1536-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1536",
+        "-r",
+        "9",
+        "--warmup",
+        "3",
+        "--json"
+      ],
+      "gpu_idle_before": [
+        "9 %, 1606 MiB, P0, 1590 MHz, 14001 MHz, 23.69 W, 43",
+        "9 %, 1601 MiB, P0, 1560 MHz, 14001 MHz, 23.62 W, 42"
+      ],
+      "exit_code": 0,
+      "gpu_after": "8 %, 1581 MiB, P0, 2805 MHz, 14001 MHz, 86.53 W, 48",
+      "gpu_idle_after": [
+        "9 %, 1581 MiB, P0, 1777 MHz, 14001 MHz, 29.64 W, 44",
+        "9 %, 1581 MiB, P0, 1680 MHz, 14001 MHz, 23.80 W, 43"
+      ]
+    }
+  ],
+  "observed_desktop_processes": [
+    {
+      "pid": "1920",
+      "type": "C+G",
+      "name": ""
+    },
+    {
+      "pid": "2428",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+    },
+    {
+      "pid": "3048",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+    },
+    {
+      "pid": "3524",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+    },
+    {
+      "pid": "3552",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+    },
+    {
+      "pid": "5112",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.917.6896.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": "6048",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+    },
+    {
+      "pid": "7404",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+    },
+    {
+      "pid": "8416",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\wallpaper_engine\\wallpaper64.exe"
+    },
+    {
+      "pid": "8552",
+      "type": "C+G",
+      "name": "C:\\Windows\\explorer.exe"
+    },
+    {
+      "pid": "10308",
+      "type": "C+G",
+      "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+    },
+    {
+      "pid": "11048",
+      "type": "C+G",
+      "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+    },
+    {
+      "pid": "11164",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe"
+    },
+    {
+      "pid": "11220",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe"
+    },
+    {
+      "pid": "12908",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": "14252",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+    },
+    {
+      "pid": "14912",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+    },
+    {
+      "pid": "15580",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+    },
+    {
+      "pid": "16976",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Roaming\\Spotify\\Spotify.exe"
+    },
+    {
+      "pid": "17144",
+      "type": "C+G",
+      "name": "C:\\Windows\\System32\\ShellHost.exe"
+    },
+    {
+      "pid": "17332",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+    },
+    {
+      "pid": "18352",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.917.6896.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": "18920",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\f53823cd54b14f45\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+    }
+  ]
+}

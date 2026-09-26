@@ -6,7 +6,8 @@
 [September 24 safe stop and recovery](TRAINING_RECOVERY_20260924.md),
 [September 24 gradient accumulation and validation](TRAINING_20260924.md),
 following the [September 23 audit and CPU optimizations](TRAINING_20260923.md).
-**Inference history:** [Stage 8](STAGE8.md) is the latest numbered report;
+**Inference history:** [Stage 9: partitioned CUDA decode attention](STAGE9.md)
+is the latest numbered report; [Stage 8](STAGE8.md) covers prefill layout;
 [Stage 2](STAGE2.md) retains the September 10 measurements.
 The [September 25 optional inference provider report](INFERENCE_PROVIDERS_20260925.md)
 records the separate ROCm/MLX commit and its validation scope.

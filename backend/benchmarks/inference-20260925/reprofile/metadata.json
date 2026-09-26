@@ -1,0 +1,105 @@
+{
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_PROFILE": "1",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "caveat": "CUDA events disable graphs, include warmup and prefix preparation, and may include host submission gaps. Not normal throughput.",
+  "runs": [
+    {
+      "name": "0-before",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "binary_sha256": "67c4226e91fab55de12e3958db3638e6998699ff015bc1ad931767d3fd76a73d",
+      "exit_code": 0
+    },
+    {
+      "name": "0-after",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "binary_sha256": "b49a6567092bebf94a7cfd48d0499347e8c93c10b284d2e137fc4d1f9b03db78",
+      "exit_code": 0
+    },
+    {
+      "name": "1024-before",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-split-attention.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "binary_sha256": "67c4226e91fab55de12e3958db3638e6998699ff015bc1ad931767d3fd76a73d",
+      "exit_code": 0
+    },
+    {
+      "name": "1024-after",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "binary_sha256": "b49a6567092bebf94a7cfd48d0499347e8c93c10b284d2e137fc4d1f9b03db78",
+      "exit_code": 0
+    }
+  ]
+}

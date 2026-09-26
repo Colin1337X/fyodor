@@ -1,0 +1,184 @@
+{
+  "installer": "C:\\Users\\Colin\\fyodor\\frontend\\src-tauri\\target\\release\\bundle\\nsis\\Fyodor_0.3.0_x64-setup.exe",
+  "bytes": 406256270,
+  "sha256": "7184320764b588ce3c3d5a28dedafedf8904e2cbc4a7df6c58d67ba2b677469a",
+  "extraction_command": [
+    "C:/Program Files/7-Zip/7z.exe",
+    "x",
+    "C:\\Users\\Colin\\fyodor\\frontend\\src-tauri\\target\\release\\bundle\\nsis\\Fyodor_0.3.0_x64-setup.exe",
+    "-oC:\\Users\\Colin\\fyodor\\build-train-profile\\installer-split-attention-verified",
+    "-y"
+  ],
+  "verified_contents_sha256": {
+    "backend/cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    "backend/cublasLt64_13.dll": "b592cd016d7673e9cb97716a22b27c4010ee635377a3ba28f37070a9bdb76a68",
+    "backend/CUDA-LICENSE.txt": "72c22161fc1ebf242443d45158a7dd382d68597b00eeb7a7f539be5c6114be33",
+    "backend/CUTLASS-LICENSE.txt": "10e174914fb737aec2d32762bd2e45861acb5ebf1656bee6cf575a6019a08cf0",
+    "backend/fyodor-backend.exe": "c64b7ebd220e3bdadf1ff82049f5bdd858b629087ff977c0e59896f71992228a",
+    "backend/fyodor-cutlass.dll": "21cebb262893695de7e7a1620c453eae15cc7533a92ed9ad682edb357f32affa",
+    "backend/fyodor-train.exe": "669215c670995d5bc2a5ab9fd03b23edc113a484d0cf0f5592213b2fe419b87e",
+    "backend/nvrtc-builtins64_131.dll": "7869f703c1b22c41b21d9865105ea973b7d2c144c0c79364d3eb2ec051d4d8bc",
+    "backend/nvrtc64_130_0.dll": "3e2371db636d41af6ae4bfe73cd315b8415190b6129ce6d3416909e22802b4e7",
+    "fyodor-desktop.exe": "fc9c196cad666e2ee170cf22006fd2787fdc26c00ccdbd5ed4eddcf16ea91586"
+  },
+  "desktop_comparison": "Identical after the one expected Tauri UNK -> NSS bundle marker replacement.",
+  "cli_command": [
+    "C:\\Users\\Colin\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+    "-DTRAINER=C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-split-attention-verified\\backend\\fyodor-train.exe",
+    "-DFIXTURES=C:\\Users\\Colin\\fyodor\\build-train-profile\\installer-split-attention-verified",
+    "-P",
+    "C:\\Users\\Colin\\fyodor\\backend\\tests\\TrainCli.cmake"
+  ],
+  "cli_exit_code": 0,
+  "http_calls": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 401,
+      "response": {
+        "version": 1,
+        "ok": false,
+        "error": {
+          "code": "unauthorized",
+          "message": "Use the local Fyodor token as the bearer token (or Anthropic x-api-key)."
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "status": "ready",
+        "engine_version": "0.3.0",
+        "uptime_seconds": 0,
+        "bind": "127.0.0.1",
+        "port": 2319,
+        "worker_threads": 2,
+        "remote_enabled": false
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/load",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model": {
+          "id": 1,
+          "path": "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+          "file_size": 668788096,
+          "format": "gguf",
+          "format_version": 3,
+          "tensor_count": 201,
+          "metadata_count": 23,
+          "data_offset": 1709440,
+          "architecture": "llama",
+          "producer": null,
+          "inference_supported": false,
+          "generation_supported": true,
+          "draft_supported": true,
+          "capabilities": [
+            "inspect",
+            "generation",
+            "draft"
+          ],
+          "execution_error": "backend was built without ONNX Runtime",
+          "generation_error": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/compute",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "compute": "cuda"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/generate",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "text": " beside the river opens each morning. The",
+        "prompt_tokens": 725,
+        "generated_tokens": 8,
+        "seed": 123,
+        "stop_reason": "length",
+        "draft_tokens": 0,
+        "accepted_draft_tokens": 0,
+        "target_steps": 732
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/generate",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "text": " beside the river opens each morning. The",
+        "prompt_tokens": 725,
+        "generated_tokens": 8,
+        "seed": 123,
+        "stop_reason": "length",
+        "draft_tokens": 0,
+        "accepted_draft_tokens": 0,
+        "target_steps": 732
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/runtime",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "compiled": {
+          "cpu": true,
+          "cuda": true,
+          "vulkan": true,
+          "rocm": true,
+          "mlx": true
+        },
+        "training_compute": "cpu",
+        "verbose": false,
+        "limits": {
+          "request_bytes": 1048576,
+          "output_bytes": 67108864,
+          "generation_tokens": 256
+        },
+        "models": [
+          {
+            "model_id": 1,
+            "selectable": true,
+            "compute": "cuda"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/unload",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "unloaded_model_id": 1
+      }
+    }
+  ],
+  "installed": false,
+  "interactive_ui_checked": false
+}

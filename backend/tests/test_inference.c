@@ -67,10 +67,22 @@ static int check_graph_reuse(nya_llm_session *candidate, nya_llm_session *refere
     }
     nya_compute_stats end;
     nya_llm_session_stats(candidate, &end);
+    /* Long decode can retain one short-context graph and one partitioned
+       attention graph. Both must survive repeated reset and prefill, including
+       crossing the threshold in each direction; never recapture per token. */
+    unsigned long long expected_captures = 1;
+    const char *split = getenv("NYA_CUDA_SPLIT_ATTENTION"), *reference_math = getenv("NYA_CUDA_REFERENCE");
+    if (capacity > 256 && (!split || strcmp(split,"0")) && (!reference_math || strcmp(reference_math,"1")))
+        for (size_t i = 0; i < model->block_count; ++i)
+            if ((model->layers[i].head_dimension == 64 || model->layers[i].head_dimension == 128) &&
+                (!model->layers[i].sliding_window || model->layers[i].sliding_window > 256)) expected_captures = 2;
+    const char *graphs = getenv("NYA_CUDA_GRAPHS");
+    unsigned long long checked_decodes = expected_replays;
+    if (graphs && !strcmp(graphs,"0")) { expected_captures = 0; expected_replays = 0; }
     /* A CPU fallback or recapture on every token must not pass as reuse. */
-    if (strcmp(nya_llm_session_execution(candidate), "resident") || end.graph_captures != 1 ||
+    if (strcmp(nya_llm_session_execution(candidate), "resident") || end.graph_captures != expected_captures ||
         end.graph_replays-start.graph_replays != expected_replays) return -1;
-    fprintf(stderr, "one graph capture; %llu checked replays across reset and prefill\n", expected_replays);
+    fprintf(stderr, "%llu graph captures; %llu checked decodes across reset and prefill\n", expected_captures,checked_decodes);
     return 0;
 }
 
@@ -86,6 +98,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
     fclose(f);
     if (result) return 1;
     nya_llm_context *m = NULL;
+    nya_compute_context *cpu_compute = NULL;
     nya_llm_session *reference = NULL, *candidate = NULL;
     uint32_t *tokens = NULL;
     char error[512] = {0};
@@ -116,6 +129,15 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
         view.block_count = (uint32_t)n;
     }
     nya_llm_context cpu = view; cpu.compute = NULL;
+    /* Optional long real-model cross-check. Default tests retain the scalar
+       double-reduction oracle; this selects the separately tested native CPU
+       kernels to make thousand-token checks practical without changing bounds. */
+    if (getenv("NYA_TEST_CPU_OPTIMIZED")) {
+        cpu_compute = nya_compute_create_for("cpu");
+        if (!cpu_compute || strcmp(nya_compute_name(cpu_compute),"cpu")) goto done;
+        cpu.compute = cpu_compute;
+        fprintf(stderr,"Numerical comparison uses optimized native CPU kernels\n");
+    }
     size_t capacity = m->context_length < 128 || getenv("NYA_TEST_ATTENTION_TILES") ? m->context_length : 128;
     if (argc > 3) { char *end; unsigned long n = strtoul(argv[3], &end, 10);
         if (*end || n < 3 || n > m->context_length || n > 4096) goto done;
@@ -204,7 +226,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
 done:
     if (result == 77) fprintf(stderr, "Requested accelerator is unavailable\n");
     else if (result) fprintf(stderr, "inference session validation failed: %s\n", error);
-    nya_llm_session_free(reference); nya_llm_session_free(candidate); nya_llm_free(m); free(tokens);
+    nya_llm_session_free(reference); nya_llm_session_free(candidate); nya_compute_free(cpu_compute); nya_llm_free(m); free(tokens);
     return result;
 }
 
@@ -212,15 +234,16 @@ int main(int argc, char **argv)
 {
     if (argc < 2 || strcmp(argv[1], "--attention-shapes")) return validate_model(argc,argv,0,0);
     if (argc != 3 || strlen(argv[2]) > 1000) return 2;
-    const unsigned widths[] = {32,64,64,128,128,130,256};
-    const unsigned windows[] = {0,0,1,0,17,17,0};
+    const unsigned widths[] = {32,64,64,128,128,130,256,64,128};
+    const unsigned windows[] = {0,0,1,0,17,17,0,257,513};
+    const unsigned contexts[] = {65,1025,273,273,273,65,65,289,577};
     for (size_t i = 0; i < sizeof(widths)/sizeof(widths[0]); ++i) {
         nya_train_decoder_config config; nya_train_decoder_defaults(&config);
         config.embedding_length = widths[i]*2; config.feed_forward_length = widths[i]*4;
         config.head_count = 2; config.kv_head_count = 1; config.block_count = 2;
         /* The first tiled shape crosses two full 512-token prefill chunks,
            then checks decode/reset reuse with more than 1024 cached tokens. */
-        config.context_length = i == 1 ? 1025 : 65; config.seed = 123+i;
+        config.context_length = contexts[i]; config.seed = 123+i;
         char error[512] = {0}, path[1100];
         snprintf(path,sizeof(path),"%s-%zu.gguf",argv[2],i);
         nya_train_decoder *decoder = nya_train_decoder_create(&config,error,sizeof(error));

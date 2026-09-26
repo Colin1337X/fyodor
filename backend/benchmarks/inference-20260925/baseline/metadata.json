@@ -1,0 +1,160 @@
+{
+  "timestamp": "2026-09-25T10:28:34.000944+00:00",
+  "revision": "aa298f679e7d3f2554e1bcfb880d984d77a8ddb6",
+  "exe_sha256": "67c4226e91fab55de12e3958db3638e6998699ff015bc1ad931767d3fd76a73d",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "caveat": "Diagnostic desktop runs. Other apps remain open; no performance acceptance from these measurements. CUDA event profiling disables graphs and includes host submission gaps.",
+  "runs": [
+    {
+      "name": "normal-prefill",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 2002 MiB, P0, 1530 MHz, 14001 MHz, 23.93 W, 48",
+      "exit_code": 0,
+      "gpu_after": "98 %, 1988 MiB, P0, 2715 MHz, 14001 MHz, 83.36 W, 68"
+    },
+    {
+      "name": "normal-short",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 2007 MiB, P0, 2842 MHz, 14001 MHz, 32.93 W, 50",
+      "exit_code": 0,
+      "gpu_after": "98 %, 2000 MiB, P0, 2790 MHz, 14001 MHz, 134.93 W, 67"
+    },
+    {
+      "name": "normal-long",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 2007 MiB, P0, 2827 MHz, 14001 MHz, 34.13 W, 50",
+      "exit_code": 0,
+      "gpu_after": "68 %, 1997 MiB, P0, 2782 MHz, 14001 MHz, 107.26 W, 58"
+    },
+    {
+      "name": "profile-prefill",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 2009 MiB, P0, 2400 MHz, 14001 MHz, 32.37 W, 47",
+      "exit_code": 0,
+      "gpu_after": "98 %, 2008 MiB, P0, 2722 MHz, 14001 MHz, 72.49 W, 65"
+    },
+    {
+      "name": "profile-short",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 2007 MiB, P0, 2842 MHz, 14001 MHz, 33.42 W, 47",
+      "exit_code": 0,
+      "gpu_after": "56 %, 2003 MiB, P0, 2782 MHz, 14001 MHz, 110.43 W, 55"
+    },
+    {
+      "name": "profile-long",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "3",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "8 %, 1998 MiB, P0, 2392 MHz, 14001 MHz, 31.60 W, 45",
+      "exit_code": 0,
+      "gpu_after": "90 %, 2003 MiB, P0, 2797 MHz, 14001 MHz, 109.53 W, 56"
+    }
+  ]
+}
