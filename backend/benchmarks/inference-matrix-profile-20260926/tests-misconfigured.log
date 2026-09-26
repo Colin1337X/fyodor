@@ -1,0 +1,55 @@
+Test project C:/Users/Colin/fyodor/build-cuda
+    Start 43: train-export-decoder
+1/6 Test #43: train-export-decoder ................   Passed    0.17 sec
+    Start 59: inference-cuda-graph-reference
+2/6 Test #59: inference-cuda-graph-reference ......***Failed    0.21 sec
+prefix 32: max_abs=9.53674316e-07 rms=4.26290232e-07 max_scaled=3.25363077e-07 worst_logit=32
+prefix 31: max_abs=1.90734863e-06 rms=1.27416947e-06 max_scaled=3.62329868e-07 worst_logit=60
+prefix 30: max_abs=4.76837158e-07 rms=3.3010328e-07 max_scaled=7.51717882e-08 worst_logit=3
+inference session validation failed: 
+CUDA kernel GPU milliseconds: matmul=3.771 norm=0.827 rope=0.511 vector=0.575 attention=0.491 gather=0.225 (profiling disables graphs)
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=32 calls=2 milliseconds=0.012128
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=32 calls=2 milliseconds=0.006656
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=32 calls=2 milliseconds=0.007008
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=32 calls=1 milliseconds=0.003520
+CUDA matrix profile: path=reference type=0 rows=259 columns=16 batch=1 calls=79 milliseconds=0.307072
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=31 calls=2 milliseconds=0.105888
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=31 calls=2 milliseconds=0.007040
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=31 calls=2 milliseconds=0.007040
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=31 calls=1 milliseconds=0.003520
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=30 calls=2 milliseconds=0.116096
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=30 calls=2 milliseconds=0.006656
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=30 calls=2 milliseconds=0.006688
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=30 calls=1 milliseconds=0.003488
+CUDA matrix profile: path=reference type=0 rows=16 columns=16 batch=1 calls=144 milliseconds=0.497024
+CUDA matrix profile: path=reference type=0 rows=8 columns=16 batch=1 calls=144 milliseconds=0.509792
+CUDA matrix profile: path=reference type=0 rows=32 columns=16 batch=1 calls=144 milliseconds=1.799680
+CUDA matrix profile: path=reference type=0 rows=16 columns=32 batch=1 calls=72 milliseconds=0.251392
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=3 calls=4 milliseconds=0.023872
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=3 calls=4 milliseconds=0.014016
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=3 calls=4 milliseconds=0.013984
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=3 calls=2 milliseconds=0.007008
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=9 calls=4 milliseconds=0.026368
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=9 calls=4 milliseconds=0.014560
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=9 calls=4 milliseconds=0.013984
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=9 calls=2 milliseconds=0.006976
+
+    Start 60: inference-cuda-blas
+3/6 Test #60: inference-cuda-blas .................***Skipped   0.14 sec
+    Start 71: inference-cuda-resident
+4/6 Test #71: inference-cuda-resident .............   Passed    0.15 sec
+    Start 73: inference-cuda-partial-allocation
+5/6 Test #73: inference-cuda-partial-allocation ...   Passed    0.14 sec
+    Start 74: inference-cuda-prefix-replay
+6/6 Test #74: inference-cuda-prefix-replay ........   Passed    0.14 sec
+
+83% tests passed, 1 tests failed out of 6
+
+Total Test time (real) =   0.95 sec
+
+The following tests did not run:
+	 60 - inference-cuda-blas (Skipped)
+
+The following tests FAILED:
+	 59 - inference-cuda-graph-reference (Failed)
+Errors while running CTest

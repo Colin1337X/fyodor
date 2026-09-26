@@ -1,0 +1,68 @@
+Test project C:/Users/Colin/fyodor/build-cuda
+      Start 43: train-export-decoder
+ 1/25 Test #43: train-export-decoder .................   Passed    0.16 sec
+      Start 55: inference-cuda-attention-shapes
+ 2/25 Test #55: inference-cuda-attention-shapes ......   Passed   10.82 sec
+      Start 56: inference-cuda-attention-unsplit
+ 3/25 Test #56: inference-cuda-attention-unsplit .....   Passed   10.93 sec
+      Start 57: inference-cuda-attention-no-graphs
+ 4/25 Test #57: inference-cuda-attention-no-graphs ...   Passed   11.42 sec
+      Start 58: inference-cuda-graph-reuse
+ 5/25 Test #58: inference-cuda-graph-reuse ...........   Passed    0.28 sec
+      Start 59: inference-cuda-graph-reference
+ 6/25 Test #59: inference-cuda-graph-reference .......   Passed    0.15 sec
+      Start 60: inference-cuda-blas
+ 7/25 Test #60: inference-cuda-blas ..................   Passed    0.26 sec
+      Start 61: quant-kernels-cuda-chunks
+ 8/25 Test #61: quant-kernels-cuda-chunks ............   Passed    2.96 sec
+      Start 62: quant-kernels-cuda-legacy-layout
+ 9/25 Test #62: quant-kernels-cuda-legacy-layout .....   Passed    3.15 sec
+      Start 63: inference-cuda-blas-unavailable
+10/25 Test #63: inference-cuda-blas-unavailable ......   Passed    0.15 sec
+      Start 64: inference-cuda-cutlass
+11/25 Test #64: inference-cuda-cutlass ...............***Skipped   0.15 sec
+      Start 65: inference-cuda-cutlass-auto
+12/25 Test #65: inference-cuda-cutlass-auto ..........***Skipped   0.16 sec
+      Start 66: inference-cuda-cutlass-disabled
+13/25 Test #66: inference-cuda-cutlass-disabled ......   Passed    0.15 sec
+      Start 67: quant-kernels-cuda-cutlass
+14/25 Test #67: quant-kernels-cuda-cutlass ...........***Failed    0.24 sec
+CUDA optional CUTLASS bridge unavailable or incompatible; retaining existing kernels
+CUDA optional CUTLASS bridge unavailable or incompatible; retaining existing kernels
+chunk type 30 token 30 row 66: 2076.98633 expected 2077
+chunked matrix/leading-dimension validation failed
+
+      Start 68: inference-cuda-cutlass-unavailable
+15/25 Test #68: inference-cuda-cutlass-unavailable ...   Passed    0.15 sec
+      Start 69: quant-kernels-cuda
+16/25 Test #69: quant-kernels-cuda ...................   Passed    1.81 sec
+      Start 70: quant-kernels-cuda-reference
+17/25 Test #70: quant-kernels-cuda-reference .........   Passed    0.85 sec
+      Start 71: inference-cuda-resident
+18/25 Test #71: inference-cuda-resident ..............   Passed    0.25 sec
+      Start 72: inference-cuda-memory-fallback
+19/25 Test #72: inference-cuda-memory-fallback .......   Passed    0.21 sec
+      Start 73: inference-cuda-partial-allocation
+20/25 Test #73: inference-cuda-partial-allocation ....   Passed    0.21 sec
+      Start 74: inference-cuda-prefix-replay
+21/25 Test #74: inference-cuda-prefix-replay .........   Passed    0.21 sec
+      Start 75: inference-cuda-without-graphs
+22/25 Test #75: inference-cuda-without-graphs ........   Passed    0.22 sec
+      Start 76: validate-cuda-compute
+23/25 Test #76: validate-cuda-compute ................   Passed    0.65 sec
+      Start 77: validate-cuda-gemma
+24/25 Test #77: validate-cuda-gemma ..................   Passed    2.40 sec
+      Start 78: generate-native-gguf-cuda
+25/25 Test #78: generate-native-gguf-cuda ............   Passed    1.38 sec
+
+96% tests passed, 1 tests failed out of 25
+
+Total Test time (real) =  49.38 sec
+
+The following tests did not run:
+	 64 - inference-cuda-cutlass (Skipped)
+	 65 - inference-cuda-cutlass-auto (Skipped)
+
+The following tests FAILED:
+	 67 - quant-kernels-cuda-cutlass (Failed)
+Errors while running CTest
