@@ -9,6 +9,8 @@ following the [September 23 audit and CPU optimizations](TRAINING_20260923.md).
 **Inference history:** [Stage 9: partitioned CUDA decode attention](STAGE9.md)
 is the latest numbered report; [Stage 8](STAGE8.md) covers prefill layout;
 [Stage 2](STAGE2.md) retains the September 10 measurements.
+The [September 26 dot-product probe](INFERENCE_DOT_PROBE_20260926.md) records
+a rejected two-chain accumulation experiment and restores the Stage 9 kernels.
 The [September 25 optional inference provider report](INFERENCE_PROVIDERS_20260925.md)
 records the separate ROCm/MLX commit and its validation scope.
 The tables below retain the September 8–9 milestone as historical evidence.
