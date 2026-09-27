@@ -14,6 +14,9 @@ foreach(directory IN ITEMS backend CUDA rocm mlx)
             PATTERN benchmarks EXCLUDE)
     endif()
 endforeach()
+# Benchmark evidence is large; retain the source harness required by CMake.
+file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
+    DESTINATION "${root}/source/backend/benchmarks")
 if(EXISTS "${root}/source/${NYA_EXCLUDE}" OR EXISTS "${root}/source/backend/${NYA_EXCLUDE}")
     message(FATAL_ERROR "Excluded directory exists in verification copy")
 endif()

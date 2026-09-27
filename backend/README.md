@@ -161,7 +161,7 @@ pinned source, standalone build, precision policy and fallback behavior.
 | Ordinary draft and Gemma 4 MTP speculative decoding | Target verification and rejection sampling | Same; verification currently uses scalar steps |
 | Gemma 4 Unified image/audio projection | Native `gemma4uv` / `gemma4ua` GGUF projectors | Optional F32 matrix-vector acceleration |
 | Projected multimodal prompt embeddings | C generation API; local image-block attention | Same; HTTP generation integration pending |
-| Autograd, LoRA/full-weight SFT/CPT/DPO, random-weight pretraining | C library and `fyodor-train`; dense LLaMA/Gemma 4 training | CPU training; GPU backward kernels pending |
+| Autograd, LoRA/full-weight SFT/CPT/DPO, random-weight pretraining | C library and `fyodor-train`; dense LLaMA/Gemma 4 training | CPU training; resident GPU training integration pending |
 | Generic ONNX graph execution | Optional external adapter, disabled by default | Same independent option |
 | Native REST plus OpenAI/Anthropic text compatibility | Model management, generation, tokenization; documented non-streaming subset | Same |
 
@@ -276,7 +276,7 @@ existing real-model parity bounds and was removed, with its evidence archived.
 
 The old 8 GiB ceiling is removed. A plan checks all weights plus complete KV/scratch against available VRAM, retaining a reserve of at least 256 MiB or 10% of free memory. `NYA_CUDA_MEMORY_MIB` sets an additional upper bound. A graph is admitted as a whole. If it cannot fit, the request uses CPU reference execution; automatic layer offload is not implemented. The 2048 cached-tensor entry limit remains. Failed execution invalidates the device prefix and replays accepted token IDs into the CPU cache before continuing. `NYA_CUDA_FAIL_AFTER=N` injects a failure for recovery tests.
 
-Resident lowering currently excludes PLE, routed experts, MTP's borrowed target KV, and multimodal attention overlays. These features retain their existing implementations. Vulkan still accelerates only F32 matvec. GPU training/backward remains separate and unimplemented.
+Resident lowering currently excludes PLE, routed experts, MTP's borrowed target KV, and multimodal attention overlays. These features retain their existing implementations. Vulkan still accelerates only F32 matvec. GPU training remains unintegrated; private resident matrix primitives are available for backend development.
 
 CUDA and Vulkan can be compiled together and selected independently. CUDA uses its own stream and balances primary-context retain/release and push/pop calls; it does not reset another user's device context. All CUDA headers, dynamic loading, device allocation, source embedding and kernels are confined to `/CUDA`. The backend retains only the optional generic dispatch boundary.
 
@@ -516,7 +516,13 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 
 ## Training
 
-`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
+The [resident CUDA matrix foundation](benchmarks/TRAINING_DEVICE_20260927.md)
+provides private persistent buffers and matrix forward/input-gradient/weight-gradient
+kernels. It is not yet connected to the training graph; the CLI and UI still use
+CPU training. Complete resident loss, backward, optimizer and recovery semantics
+remain under development.
+
+`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
 The CLI uses persistent native C CPU workers for sufficiently large dense and
 mapped matrix operations. `--threads 0` (default) chooses host cores, capped at
