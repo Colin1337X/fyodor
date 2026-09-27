@@ -1,0 +1,344 @@
+{
+  "timestamp_utc": "2026-09-27T01:20:41.320410+00:00",
+  "revision": "de7208ae0204496a03e93ab5b4f2356cb3b7e8c6",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "llama_commit": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+  "harness_sha256": "568d4a1de30aa236381429341de75beb691e410f162ad8504833da62491fa20c",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CPU_BATCH": "512",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "source_sha256": {
+    "CUDA\\gemm.cu": "a051d20fe333b286f81c05597b5985cd5b13d29bfe4660e15235276167000144",
+    "CUDA\\matvec.cu": "07957cc6919f33feee62cf971331d5a20419e6ae91c5937d917710f72eae7227",
+    "CUDA\\resident.cu": "29d16e02acd2311f5c24ed5d4a1911cdc98803075f05e980427f43e720a91f34",
+    "CUDA\\resident.inc": "5bad0a5809ee292040ac089e8ebeaefab44de58c592d2fb6f15ac4aa93d977c6",
+    "CUDA\\cuda.c": "f777194be9ad1a59b6b19c17e586dedb9da5589a11d3a18da411c9f48a10a1b8"
+  },
+  "binary_sha256": {
+    "before": "8ae5d94d10f5aebcc6ea63d63e46ca35419c3535cbb9c90b5e81d48ec063069a",
+    "after": "04fda880a9a1a049c39391cddd391b41b97c5a461de8550c3a99848cac99bd86",
+    "llama": "641e4186f3a55bbbfa819399596d75e281037fc54fcc23e288d265d07a50e92e"
+  },
+  "dependency_sha256": {
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    ".tools\\llama-b10809-cuda\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cuda\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    ".tools\\llama-b10809-cuda\\ggml-cuda.dll": "d860635f2be8faf7590103851225afdf3f0b2e5e26012815017b0a0a087d4441"
+  },
+  "caveats": [
+    "Windows interactive desktop; GPU counters identified DWM and ChatGPT as active at idle. Other apps remain open. Not a headless measurement.",
+    "Require two consecutive 7..12% whole-GPU utilization readings before and after each process. Preserve failure, never discard individual timed samples.",
+    "F32 KV, deterministic identical tokens, 512 batch/ubatch, six threads, FA off in llama C API harness; intermediate math differs.",
+    "Model loading, tokenization, sampling, prefix preparation are untimed. Host logits read every decoded token.",
+    "Resource sampling includes startup and model load; whole-device readings include other apps. Driver graph storage is not in explicit tensor byte totals."
+  ],
+  "runs": [
+    {
+      "name": "native-0-before-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-long-dot.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "9 %, 2777 MiB, P3, 1762 MHz, 7001 MHz, 23.07 W, 50",
+        "10 %, 2770 MiB, P3, 1672 MHz, 7001 MHz, 21.78 W, 50"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 3022 MiB, P0, 2767 MHz, 14001 MHz, 136.82 W, 67",
+      "gpu_idle_after": [
+        "15 %, 2937 MiB, P0, 2827 MHz, 14001 MHz, 35.51 W, 53",
+        "8 %, 2935 MiB, P0, 1777 MHz, 14001 MHz, 28.60 W, 51",
+        "9 %, 2873 MiB, P0, 1627 MHz, 14001 MHz, 25.59 W, 50"
+      ]
+    },
+    {
+      "name": "native-0-after-a",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "8 %, 2874 MiB, P0, 1575 MHz, 14001 MHz, 25.04 W, 49",
+        "8 %, 2825 MiB, P0, 1492 MHz, 14001 MHz, 24.59 W, 48"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 2804 MiB, P0, 2790 MHz, 14001 MHz, 138.16 W, 67",
+      "gpu_idle_after": [
+        "8 %, 2860 MiB, P0, 1860 MHz, 14001 MHz, 30.73 W, 48",
+        "8 %, 2855 MiB, P0, 1717 MHz, 14001 MHz, 24.84 W, 48"
+      ]
+    },
+    {
+      "name": "native-0-after-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "9 %, 2849 MiB, P0, 1605 MHz, 14001 MHz, 24.52 W, 47",
+        "9 %, 2849 MiB, P0, 1537 MHz, 14001 MHz, 24.27 W, 46"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 2803 MiB, P0, 2790 MHz, 14001 MHz, 137.15 W, 65",
+      "gpu_idle_after": [
+        "15 %, 2857 MiB, P0, 2842 MHz, 14001 MHz, 33.55 W, 48",
+        "9 %, 2845 MiB, P0, 1785 MHz, 14001 MHz, 26.12 W, 46",
+        "9 %, 2836 MiB, P0, 1620 MHz, 14001 MHz, 24.15 W, 46"
+      ]
+    },
+    {
+      "name": "native-0-before-b",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-bench-before-long-dot.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "8 %, 2837 MiB, P0, 1605 MHz, 14001 MHz, 23.99 W, 45",
+        "9 %, 2796 MiB, P0, 1507 MHz, 14001 MHz, 23.60 W, 45"
+      ],
+      "exit_code": 0,
+      "gpu_after": "97 %, 2870 MiB, P0, 2790 MHz, 14001 MHz, 130.07 W, 63",
+      "contaminated": true
+    }
+  ],
+  "observed_desktop_processes": [
+    {
+      "pid": "1920",
+      "type": "C+G",
+      "name": ""
+    },
+    {
+      "pid": "2428",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+    },
+    {
+      "pid": "2752",
+      "type": "C+G",
+      "name": "C:\\Windows\\System32\\ShellHost.exe"
+    },
+    {
+      "pid": "3048",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+    },
+    {
+      "pid": "3128",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+    },
+    {
+      "pid": "3232",
+      "type": "C+G",
+      "name": "D:\\thorium\\BIN\\thorium.exe"
+    },
+    {
+      "pid": "3524",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+    },
+    {
+      "pid": "5112",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.917.6896.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": "5456",
+      "type": "C+G",
+      "name": ""
+    },
+    {
+      "pid": "6048",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+    },
+    {
+      "pid": "8416",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\wallpaper_engine\\wallpaper64.exe"
+    },
+    {
+      "pid": "8552",
+      "type": "C+G",
+      "name": "C:\\Windows\\explorer.exe"
+    },
+    {
+      "pid": "9232",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Roaming\\Spotify\\Spotify.exe"
+    },
+    {
+      "pid": "9452",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22607.1401.7.0_x64__8wekyb3d8bbwe\\WinStore.App.exe"
+    },
+    {
+      "pid": "10308",
+      "type": "C+G",
+      "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+    },
+    {
+      "pid": "11020",
+      "type": "C+G",
+      "name": "D:\\thorium\\BIN\\thorium.exe"
+    },
+    {
+      "pid": "11048",
+      "type": "C+G",
+      "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+    },
+    {
+      "pid": "11164",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\SearchHost.exe"
+    },
+    {
+      "pid": "11220",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\\StartMenuExperienceHost.exe"
+    },
+    {
+      "pid": "12908",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\153.0.4234.48\\msedgewebview2.exe"
+    },
+    {
+      "pid": "14252",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+    },
+    {
+      "pid": "14912",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+    },
+    {
+      "pid": "15580",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+    },
+    {
+      "pid": "18352",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.917.6896.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": "18920",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\f53823cd54b14f45\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+    },
+    {
+      "pid": "20472",
+      "type": "C+G",
+      "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+    },
+    {
+      "pid": "21488",
+      "type": "C+G",
+      "name": ""
+    },
+    {
+      "pid": "22968",
+      "type": "C+G",
+      "name": "C:\\Program Files\\RustDesk\\RustDesk.exe"
+    },
+    {
+      "pid": "23716",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.11911.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+    }
+  ]
+}

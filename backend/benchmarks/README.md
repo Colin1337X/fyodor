@@ -13,6 +13,8 @@ The [September 26 dot-product probe](INFERENCE_DOT_PROBE_20260926.md) records
 a rejected two-chain accumulation experiment and restores the Stage 9 kernels.
 The [matrix shape profile](INFERENCE_MATRIX_PROFILE_20260926.md) identifies
 the next projection target and records a native long-dot numerical case to fix.
+The [native long-dot correction](INFERENCE_LONG_DOT_20260926.md) follows that
+finding with explicit vendor-disabled regression coverage.
 The [September 25 optional inference provider report](INFERENCE_PROVIDERS_20260925.md)
 records the separate ROCm/MLX commit and its validation scope.
 The tables below retain the September 8–9 milestone as historical evidence.

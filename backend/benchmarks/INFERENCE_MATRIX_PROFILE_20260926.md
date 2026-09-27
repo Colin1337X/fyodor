@@ -68,6 +68,8 @@ investigation: the native BF16 GEMM with K=8192 returned 2076.98633 where the
 analytic fixture expects exactly 2077. This profiler changes no device math,
 and successful vendor checks do not validate that native result. Preserve the
 failure and address it before adopting the proposed gate/up optimization.
+The subsequent [long-dot correction](INFERENCE_LONG_DOT_20260926.md) addresses
+the exact native GEMM case with explicit vendor-disabled regression tests.
 
 This diagnostic-only change does not claim another performance win, a fresh
 desktop package, or a complete portability/sanitizer rerun. Stage 9 retains

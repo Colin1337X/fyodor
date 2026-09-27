@@ -770,10 +770,17 @@ JSON includes GGUF storage-type counts, model size/shape, selected backend, actu
 
 ### Historical Stage 2 performance and verification
 
+The native CUDA 32×32 and 64×64 prefill GEMMs use two F32 accumulation chains
+for every supported weight storage format. This extends the existing F32-weight
+algorithm to fix long positive-dot rounding in F16/BF16 and quantized storage;
+decode GEMV and vendor GEMM are unchanged. See the
+[long-dot correctness report](benchmarks/INFERENCE_LONG_DOT_20260926.md).
+
 The measurements and test counts below describe the Stage 2 snapshot. Later
-inference work is recorded through [Stage 8](benchmarks/STAGE8.md); the September
-23–24 [training report](benchmarks/TRAINING_20260923.md) contains the current
-validation matrix and a fresh comparison using matched F32 KV/token workloads.
+inference work includes [Stage 9](benchmarks/STAGE9.md) and the
+[native long-dot correction](benchmarks/INFERENCE_LONG_DOT_20260926.md), with
+their validation matrices and comparisons using matched F32 KV/token workloads.
+The [benchmark index](benchmarks/README.md) also links current training reports.
 
 TinyLlama 1.1B Q4_K_M, Ryzen 5 9600X / RTX 5060 Ti, three measured repetitions with one warmup. Rates are tokens/second. The original baseline was captured before replacing per-matvec GPU transfers; intermediate and final raw records are preserved.
 

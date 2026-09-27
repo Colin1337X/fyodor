@@ -7,7 +7,9 @@
 /* F32 reductions may disagree near zero through cancellation, so extended
    fixtures also use a double-precision dot oracle and its sum of magnitudes.
    A 1e-6 forward-error bound is far tighter than the worst-case 1024-term F32
-   bound. The original 17-row / three-token relative checks remain below. */
+   bound. The original 1024-column, 17-row / three-token relative checks remain
+   below. Extended 8192-column cancellation fixtures use the same forward-error
+   bound; the positive exact-sum fixture separately detects long-chain drift. */
 static int oracle(const nya_llm_tensor *t, const float *x, size_t row, size_t columns, float actual)
 {
     double sum = 0, magnitude = 0;
@@ -52,7 +54,7 @@ static int storage_edges(void)
    transposition/stride mistakes without a tolerance dominated by cancellation. */
 static int chunked_matrix(void)
 {
-    const size_t rows=getenv("NYA_TEST_CUTLASS") ? 68U : 65U, columns=8192, batch=33;
+    const size_t rows=getenv("NYA_TEST_CUTLASS") || getenv("NYA_TEST_NATIVE_LONG") ? 68U : 65U, columns=8192, batch=33;
     float *w=malloc(rows*columns*sizeof(float)), *x=malloc(batch*columns*sizeof(float));
     float *y=malloc((rows*batch+2)*sizeof(float));
     nya_compute_context *c=NULL;
@@ -62,17 +64,18 @@ static int chunked_matrix(void)
     /* Compressed fixtures also exercise the fused transpose and a final one-row
        (or four-row CUTLASS) chunk. Recreate the context between formats because
        its immutable-weight cache keys allocations by their source address. */
-    const unsigned types[] = {0,30,8};
+    const unsigned types[] = {0,1,30,8};
     for (size_t t=0; t<sizeof(types)/sizeof(types[0]); ++t) {
     c=nya_compute_create();
     if (!c) goto done;
     for (size_t r=0; r<rows; ++r) {
         float value=(float)(r+1)/128;
         if (types[t]==0) for (size_t k=0; k<columns; ++k) w[r*columns+k]=value;
-        else if (types[t]==30) {
+        else if (types[t]==1 || types[t]==30) {
             uint32_t bits; memcpy(&bits,&value,sizeof(bits));
+            unsigned encoded = types[t]==30 ? bits>>16 : (((bits>>23)-112)<<10) | ((bits>>13)&1023U);
             unsigned char *p=(unsigned char *)w+r*columns*2;
-            for (size_t k=0; k<columns; ++k) { p[k*2]=(unsigned char)(bits>>16); p[k*2+1]=(unsigned char)(bits>>24); }
+            for (size_t k=0; k<columns; ++k) { p[k*2]=(unsigned char)encoded; p[k*2+1]=(unsigned char)(encoded>>8); }
         } else {
             unsigned char *p=(unsigned char *)w+r*(columns/32)*34;
             for (size_t k=0; k<columns/32; ++k) {
@@ -136,9 +139,10 @@ int main(void)
 {
     if (getenv("NYA_TEST_BLAS_CHUNKS") && (chunked_matrix() || transpose_edges())) return 1;
     const unsigned types[] = {0, 1, 30, 2, 8, 12, 14};
-    const size_t strides[] = {4096, 2048, 2048, 576, 1088, 576, 840};
-    const size_t rows = getenv("NYA_TEST_CUTLASS") ? 64U : 65U, columns = 1024;
-    float x[1024], actual[65], expected[65];
+    const size_t columns = getenv("NYA_TEST_NATIVE_LONG") ? 8192U : 1024U;
+    const size_t strides[] = {columns*4, columns*2, columns*2, columns/32*18, columns/32*34, columns/256*144, columns/256*210};
+    const size_t rows = getenv("NYA_TEST_CUTLASS") ? 64U : 65U;
+    float x[8192], actual[65], expected[65];
     for (size_t k = 0; k < 7; ++k) {
         unsigned char *data = malloc(strides[k] * rows);
         nya_compute_context *compute = nya_compute_create();
@@ -172,7 +176,7 @@ int main(void)
             nya_llm_matvec(NULL, expected, &tensor, x, columns, rows);
             if (nya_compute_matvec_typed(compute, data, rows, columns, types[k], x, actual)) return 1;
             for (size_t row = 0; row < rows; ++row) {
-                if (!oracle(&tensor,x,row,columns,actual[row]) || (row < 17 && fabsf(actual[row]-expected[row]) > 0.00015f*(1+fabsf(expected[row])))) {
+                if (!oracle(&tensor,x,row,columns,actual[row]) || (columns == 1024 && row < 17 && fabsf(actual[row]-expected[row]) > 0.00015f*(1+fabsf(expected[row])))) {
                     fprintf(stderr, "type %u row %zu: %.9g vs %.9g\n", types[k], row, (double)actual[row], (double)expected[row]); return 1;
                 }
             }
@@ -195,7 +199,7 @@ int main(void)
                 for (size_t row = 0; row < rows; ++row) {
                     float value = outputs[1+token*rows+row];
                     if (!oracle(&tensor,inputs+token*columns,row,columns,value) ||
-                        (row < 17 && token < 3 && fabsf(value-expected[row]) > 0.00015f*(1+fabsf(expected[row])))) {
+                        (columns == 1024 && row < 17 && token < 3 && fabsf(value-expected[row]) > 0.00015f*(1+fabsf(expected[row])))) {
                         fprintf(stderr,"GEMM type %u batch %zu token %zu row %zu: %.9g vs %.9g\n",types[k],batch,token,row,(double)value,(double)expected[row]); return 1;
                     }
                 }
