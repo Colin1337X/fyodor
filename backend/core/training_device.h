@@ -73,6 +73,18 @@ int nya_train_device_binary(nya_train_device *device, nya_train_buffer y,
 int nya_train_device_binary_backward(nya_train_device *device, nya_train_buffer da, nya_train_buffer db,
     nya_train_view a, nya_train_view b, nya_train_buffer dy, nya_train_binary_op operation);
 
+/* RMSNorm over each row of dense F32 x. Optional weight has columns F32 values.
+   Forward overwrites y and saves one double inverse RMS per row in inverse
+   (at least rows*8 bytes). Backward requires this exact forward state, with x,
+   weight and inverse unchanged, and accumulates dx/dweight. Either gradient
+   may be omitted; dweight requires weight. dx == dweight requires rows == 1.
+   Other output/input aliases are rejected. Epsilon is positive and finite.
+   No allocation, transfer or fence is added. Numerical checks stay explicit. */
+int nya_train_device_rms_norm(nya_train_device *device, nya_train_buffer y, nya_train_buffer inverse,
+    nya_train_view x, nya_train_buffer weight, float epsilon);
+int nya_train_device_rms_norm_backward(nya_train_device *device, nya_train_buffer dx, nya_train_buffer dweight,
+    nya_train_buffer inverse, nya_train_view x, nya_train_buffer weight, nya_train_buffer dy);
+
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
    Linear overwrites Y; gradient operations accumulate into initialized dX/dW.

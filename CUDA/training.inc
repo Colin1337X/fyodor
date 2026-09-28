@@ -12,7 +12,7 @@ typedef struct nya_cuda_train_buffer {
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw, check_finite, unary, binary;
+    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -114,6 +114,9 @@ static void *nya_ct_create(size_t capacity)
         t->cuda->function_get(&t->check_finite,t->cuda->module,"nya_train_check_finite") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->unary,t->cuda->module,"nya_train_unary") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->binary,t->cuda->module,"nya_train_binary") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->rms,t->cuda->module,"nya_train_rms") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->rms_dx,t->cuda->module,"nya_train_rms_dx") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->rms_dw,t->cuda->module,"nya_train_rms_dw") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
     t->stats.capacity_bytes = capacity;
@@ -302,6 +305,52 @@ static int nya_ct_binary(void *context, nya_train_buffer out_a, nya_train_buffer
     if (nya_ct_enter(t)) return -1;
     return nya_ct_leave(t,nya_ct_launch(t,t->binary,(unsigned)blocks,1,256,1,args));
 }
+static int nya_ct_rms_norm(void *context, nya_train_buffer out, nya_train_buffer dweight, nya_train_buffer inverse,
+    nya_train_view x, nya_train_buffer weight, nya_train_buffer dy, float epsilon, int backward)
+{
+    nya_cuda_train *t = context;
+    if (t->stats.failed) return -1;
+    size_t count = 0;
+    nya_cuda_train_buffer *a = nya_ct_view(t,x,&count), *w = nya_ct_find(t,weight), *g = nya_ct_find(t,dy);
+    nya_cuda_train_buffer *dst = nya_ct_find(t,out), *dw = nya_ct_find(t,dweight), *inv = nya_ct_find(t,inverse);
+    if (!a || !inv || x.rows > inv->bytes/8 || inverse == x.buffer || inverse == weight || inverse == dy ||
+        (weight && (!w || x.columns > w->bytes/4)) || (backward != 0 && backward != 1) ||
+        (out && (!dst || count > dst->bytes/4 || out == x.buffer || out == weight || out == dy || out == inverse)))
+        return nya_ct_error(t,"invalid training RMSNorm descriptor",0);
+    if (!backward) {
+        if (!out || dweight || dy || !isfinite(epsilon) || epsilon <= 0)
+            return nya_ct_error(t,"invalid training RMSNorm forward",0);
+    } else {
+        if ((!out && !dweight) || !g || count > g->bytes/4 ||
+            (dweight && (!weight || !dw || x.columns > dw->bytes/4 || dweight == x.buffer ||
+                dweight == weight || dweight == dy || dweight == inverse)) ||
+            (out && out == dweight && x.rows != 1))
+            return nya_ct_error(t,"invalid training RMSNorm gradients",0);
+    }
+    size_t blocks = x.columns/256+(x.columns%256 != 0);
+    if (((!backward || out) && x.rows > (size_t)t->cuda->grid_limit) ||
+        (dweight && blocks > (size_t)t->cuda->grid_limit))
+        return nya_ct_error(t,"training RMSNorm grid too large",0);
+    unsigned long long rows = x.rows, columns = x.columns;
+    CUdeviceptr wp = w ? w->memory : 0;
+    double eps = epsilon;
+    if (nya_ct_enter(t)) return -1;
+    int result = 0;
+    if (!backward) {
+        void *args[] = {&a->memory,&wp,&dst->memory,&inv->memory,&columns,&eps};
+        result = nya_ct_launch(t,t->rms,(unsigned)rows,1,256,1,args);
+    } else {
+        if (out) {
+            void *args[] = {&a->memory,&wp,&g->memory,&inv->memory,&dst->memory,&columns};
+            result = nya_ct_launch(t,t->rms_dx,(unsigned)rows,1,256,1,args);
+        }
+        if (!result && dweight) {
+            void *args[] = {&a->memory,&g->memory,&inv->memory,&dw->memory,&rows,&columns};
+            result = nya_ct_launch(t,t->rms_dw,(unsigned)blocks,1,256,1,args);
+        }
+    }
+    return nya_ct_leave(t,result);
+}
 static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_buffer a, nya_train_buffer b,
     unsigned type, size_t outputs, size_t inputs, size_t tokens, unsigned operation)
 {
@@ -350,6 +399,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
-        nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary};
+        nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm};
     return &api;
 }

@@ -57,6 +57,12 @@ int nya_train_device_binary_backward(nya_train_device *d, nya_train_buffer da, n
 int nya_train_device_linear(nya_train_device *d, nya_train_buffer y, nya_train_buffer w,
     unsigned type, size_t o, size_t i, nya_train_buffer x, size_t n)
 { return d ? d->api->matrix(d->context,y,w,x,type,o,i,n,0) : -1; }
+int nya_train_device_rms_norm(nya_train_device *d, nya_train_buffer y, nya_train_buffer inverse,
+    nya_train_view x, nya_train_buffer weight, float epsilon)
+{ return d ? d->api->rms_norm(d->context,y,0,inverse,x,weight,0,epsilon,0) : -1; }
+int nya_train_device_rms_norm_backward(nya_train_device *d, nya_train_buffer dx, nya_train_buffer dweight,
+    nya_train_buffer inverse, nya_train_view x, nya_train_buffer weight, nya_train_buffer dy)
+{ return d ? d->api->rms_norm(d->context,dx,dweight,inverse,x,weight,dy,0,1) : -1; }
 int nya_train_device_linear_dx(nya_train_device *d, nya_train_buffer dx, nya_train_buffer w,
     unsigned type, size_t o, size_t i, nya_train_buffer dy, size_t n)
 { return d ? d->api->matrix(d->context,dx,w,dy,type,o,i,n,1) : -1; }

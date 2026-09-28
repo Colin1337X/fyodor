@@ -1,6 +1,7 @@
 # Runtime benchmark evidence
 
-**Training:** [September 29 resident activations and gated FFN](TRAINING_ELEMENTWISE_20260929.md),
+**Training:** [September 29 resident RMSNorm](TRAINING_NORM_20260929.md),
+[September 29 resident activations and gated FFN](TRAINING_ELEMENTWISE_20260929.md),
 [September 28 resident finite checks](TRAINING_FINITE_20260928.md),
 [September 28 reusable scratch scopes](TRAINING_SCRATCH_20260928.md),
 [September 27 resident matrix foundation](TRAINING_DEVICE_20260927.md),

@@ -19,5 +19,7 @@ typedef struct nya_train_device_interface {
         size_t count, unsigned operation, double scalar, int backward);
     int (*binary)(void *context, nya_train_buffer out_a, nya_train_buffer out_b,
         nya_train_view a, nya_train_view b, nya_train_buffer dy, unsigned operation, int backward);
+    int (*rms_norm)(void *context, nya_train_buffer out, nya_train_buffer dweight, nya_train_buffer inverse,
+        nya_train_view x, nya_train_buffer weight, nya_train_buffer dy, float epsilon, int backward);
 } nya_train_device_interface;
 #endif

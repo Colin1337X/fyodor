@@ -16,6 +16,60 @@ extern "C" __global__ void nya_train_check_finite(const float *data, unsigned *s
     int bad = i < count && (__float_as_uint(data[i]) & 0x7f800000u) == 0x7f800000u;
     if (__syncthreads_or(bad) && threadIdx.x == 0) atomicCAS(status,0u,tag);
 }
+/* One row per block, fixed-order double reduction, with saved inverse RMS.
+   This keeps extreme finite F32 squares representable and avoids a separate
+   norm recomputation in the per-column weight-gradient kernel. */
+extern "C" __global__ void nya_train_rms(const float *x, const float *weight, float *y,
+    double *inverse, unsigned long long columns, double epsilon)
+{
+    __shared__ double sums[256];
+    unsigned lane = threadIdx.x;
+    unsigned long long base = (unsigned long long)blockIdx.x*columns;
+    double sum = 0;
+    for (unsigned long long j = lane; j < columns; j += 256) { double v = x[base+j]; sum += v*v; }
+    sums[lane] = sum;
+    __syncthreads();
+    for (unsigned stride = 128; stride; stride >>= 1) {
+        if (lane < stride) sums[lane] += sums[lane+stride];
+        __syncthreads();
+    }
+    double scale = 1.0/sqrt(sums[0]/(double)columns+epsilon);
+    if (!lane) inverse[blockIdx.x] = scale;
+    for (unsigned long long j = lane; j < columns; j += 256)
+        y[base+j] = (float)((double)x[base+j]*scale*(weight ? weight[j] : 1.0));
+}
+extern "C" __global__ void nya_train_rms_dx(const float *x, const float *weight, const float *dy,
+    const double *inverse, float *dx, unsigned long long columns)
+{
+    __shared__ double sums[256];
+    unsigned lane = threadIdx.x;
+    unsigned long long base = (unsigned long long)blockIdx.x*columns;
+    double dot = 0;
+    for (unsigned long long j = lane; j < columns; j += 256)
+        dot += (double)dy[base+j]*(weight ? weight[j] : 1.0)*x[base+j];
+    sums[lane] = dot;
+    __syncthreads();
+    for (unsigned stride = 128; stride; stride >>= 1) {
+        if (lane < stride) sums[lane] += sums[lane+stride];
+        __syncthreads();
+    }
+    double scale = inverse[blockIdx.x];
+    for (unsigned long long j = lane; j < columns; j += 256)
+        dx[base+j] += (float)(scale*((double)dy[base+j]*(weight ? weight[j] : 1.0) -
+            (double)x[base+j]*scale*scale*sums[0]/(double)columns));
+}
+/* One writer per weight, ordered F32 accumulation across rows as on CPU.
+   A shared dx/dweight is safe for one row: stream order adds dx before dw. */
+extern "C" __global__ void nya_train_rms_dw(const float *x, const float *dy, const double *inverse,
+    float *dw, unsigned long long rows, unsigned long long columns)
+{
+    unsigned long long j = (unsigned long long)blockIdx.x*256+threadIdx.x;
+    if (j >= columns) return;
+    float sum = dw[j];
+    for (unsigned long long row = 0; row < rows; ++row)
+        sum += (float)((double)dy[row*columns+j]*x[row*columns+j]*inverse[row]);
+    dw[j] = sum;
+}
 /* Match the CPU graph's double intermediates and stable negative SiLU branch.
    Storage and accumulated gradients stay F32. */
 extern "C" __global__ void nya_train_unary(const float *x, const float *dy, float *out,
