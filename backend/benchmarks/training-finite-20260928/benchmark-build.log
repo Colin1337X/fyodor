@@ -1,0 +1,14 @@
+[ 93%] Built target nya-engine
+[ 96%] Building C object backend/CMakeFiles/nya-bench-training-device.dir/benchmarks/training_device_bench.c.obj
+C:\Users\Colin\fyodor\backend\benchmarks\training_device_bench.c: In function 'run':
+C:\Users\Colin\fyodor\backend\benchmarks\training_device_bench.c:62:189: error: conversion to 'uint64_t' {aka 'long long unsigned int'} from 'int' may change the sign of the result [-Werror=sign-conversion]
+   62 |             REQUIRE(after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations+1 && after.kernel_launches==before.kernel_launches+20*(status?2:1));
+      |                                                                                                                                                                                             ^
+C:\Users\Colin\fyodor\backend\benchmarks\training_device_bench.c:10:31: note: in definition of macro 'REQUIRE'
+   10 | #define REQUIRE(x) do { if (!(x)) { fprintf(stderr,"line %d: %s; %s\n",__LINE__,#x,nya_train_device_error(d)); return 1; } } while (0)
+      |                               ^
+cc1.exe: all warnings being treated as errors
+make[3]: *** [backend\CMakeFiles\nya-bench-training-device.dir\build.make:79: backend/CMakeFiles/nya-bench-training-device.dir/benchmarks/training_device_bench.c.obj] Error 1
+make[2]: *** [CMakeFiles\Makefile2:2157: backend/CMakeFiles/nya-bench-training-device.dir/all] Error 2
+make[1]: *** [CMakeFiles\Makefile2:2164: backend/CMakeFiles/nya-bench-training-device.dir/rule] Error 2
+make: *** [Makefile:887: nya-bench-training-device] Error 2

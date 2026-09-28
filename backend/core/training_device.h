@@ -38,6 +38,17 @@ int nya_train_device_finish(nya_train_device *device);
 nya_train_scope nya_train_device_scratch_begin(nya_train_device *device);
 int nya_train_device_scratch_end(nya_train_device *device, nya_train_scope scope);
 
+/* Queue a read-only F32 finite check. status holds a uint32_t, initialized to
+   zero by the caller. The first failing check writes its nonzero tag; later
+   checks preserve it. status must not alias data and must outlive queued checks
+   (allocate before scratch_begin to retain errors across scope reuse).
+   Return zero means successfully queued, not numerically valid. Read status
+   explicitly at a step boundary: zero means all queued checks passed. No copy,
+   allocation or fence occurs here. Numerical failure does not poison the device;
+   the graph/optimizer must reject the step before mutating persistent state. */
+int nya_train_device_check_finite(nya_train_device *device, nya_train_buffer status,
+    nya_train_buffer data, size_t count, uint32_t tag);
+
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
    Linear overwrites Y; gradient operations accumulate into initialized dX/dW.

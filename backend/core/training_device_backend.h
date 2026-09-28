@@ -14,5 +14,6 @@ typedef struct nya_train_device_interface {
         unsigned type, size_t outputs, size_t inputs, size_t tokens, unsigned operation);
     nya_train_scope (*scratch_begin)(void *context);
     int (*scratch_end)(void *context, nya_train_scope scope);
+    int (*check_finite)(void *context, nya_train_buffer status, nya_train_buffer data, size_t count, uint32_t tag);
 } nya_train_device_interface;
 #endif

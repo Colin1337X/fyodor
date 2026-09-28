@@ -11,7 +11,7 @@ typedef struct nya_cuda_train_buffer {
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw;
+    CUfunction zero, dx[31], dw, check_finite;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -110,6 +110,7 @@ static void *nya_ct_create(size_t capacity)
         if (t->cuda->function_get(&t->dx[types[i]],t->cuda->module,name) != CUDA_SUCCESS) goto done;
     }
     if (t->cuda->function_get(&t->zero,t->cuda->module,"nya_train_zero") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->check_finite,t->cuda->module,"nya_train_check_finite") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
     t->stats.capacity_bytes = capacity;
@@ -220,6 +221,22 @@ static int nya_ct_finish(void *context)
     if (nya_ct_enter(t)) return -1;
     return nya_ct_leave(t,nya_ct_sync(t,t->cuda->stream));
 }
+static int nya_ct_check_finite(void *context, nya_train_buffer status, nya_train_buffer data, size_t count, uint32_t tag)
+{
+    nya_cuda_train *t = context;
+    if (t->stats.failed) return -1;
+    nya_cuda_train_buffer *s = nya_ct_find(t,status), *b = nya_ct_find(t,data);
+    if (!s || !b || status == data || s->bytes < sizeof(uint32_t) || !count ||
+        count > b->bytes/sizeof(float) || !tag)
+        return nya_ct_error(t,"invalid training finite-check descriptor",0);
+    size_t blocks = count/256+(count%256 != 0);
+    if (blocks > (size_t)t->cuda->grid_limit) return nya_ct_error(t,"training finite-check grid too large",0);
+    unsigned long long n = count;
+    unsigned label = tag;
+    void *args[] = {&b->memory,&s->memory,&n,&label};
+    if (nya_ct_enter(t)) return -1;
+    return nya_ct_leave(t,nya_ct_launch(t,t->check_finite,(unsigned)blocks,1,256,1,args));
+}
 static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_buffer a, nya_train_buffer b,
     unsigned type, size_t outputs, size_t inputs, size_t tokens, unsigned operation)
 {
@@ -268,6 +285,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
-        nya_ct_scratch_begin,nya_ct_scratch_end};
+        nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite};
     return &api;
 }

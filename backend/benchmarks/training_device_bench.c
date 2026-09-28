@@ -9,12 +9,16 @@
 
 #define REQUIRE(x) do { if (!(x)) { fprintf(stderr,"line %d: %s; %s\n",__LINE__,#x,nya_train_device_error(d)); return 1; } } while (0)
 static int dispatch(nya_train_device *d, unsigned op, nya_train_buffer y, nya_train_buffer w, nya_train_buffer x,
-    nya_train_buffer dy, nya_train_buffer dx, nya_train_buffer dw, unsigned type, size_t o, size_t i, size_t n)
+    nya_train_buffer dy, nya_train_buffer dx, nya_train_buffer dw, unsigned type, size_t o, size_t i, size_t n,
+    nya_train_buffer status)
 {
-    return op==0 ? nya_train_device_linear(d,y,w,type,o,i,x,n) : op==1 ?
+    int result=op==0 ? nya_train_device_linear(d,y,w,type,o,i,x,n) : op==1 ?
         nya_train_device_linear_dx(d,dx,w,type,o,i,dy,n) : nya_train_device_linear_dw(d,dw,x,dy,o,i,n);
+    if (!result && status) result=nya_train_device_check_finite(d,status,op==0?y:op==1?dx:dw,
+        op==0?n*o:op==1?n*i:o*i,op+1);
+    return result;
 }
-static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recycle)
+static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recycle, nya_train_buffer status)
 {
     nya_train_scope scope=recycle ? nya_train_device_scratch_begin(d) : 0;
     REQUIRE(!recycle || scope);
@@ -30,7 +34,7 @@ static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recyc
     REQUIRE(!nya_train_device_write(d,bw,0,w->data,w->data_size) && !nya_train_device_write(d,bx,0,x,n*i*4) &&
         !nya_train_device_write(d,bd,0,dy,n*o*4));
     for (unsigned op=0;op<3;++op) {
-        REQUIRE(!dispatch(d,op,by,bw,bx,bd,dx,dw,w->type,o,i,n));
+        REQUIRE(!dispatch(d,op,by,bw,bx,bd,dx,dw,w->type,o,i,n,status));
         /* Independently check 64 spread elements per real-model result. The
            CTest suite checks every element on tile tails and long reductions. */
         for (size_t sample=0;sample<64;++sample) {
@@ -51,11 +55,11 @@ static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recyc
             REQUIRE(!nya_train_device_zero(d,dx) && !nya_train_device_zero(d,dw) && !nya_train_device_finish(d));
             nya_train_device_stats before,after; nya_train_device_get_stats(d,&before);
             double start=tr_seconds();
-            for (unsigned repeat=0;repeat<20;++repeat) REQUIRE(!dispatch(d,op,by,bw,bx,bd,dx,dw,w->type,o,i,n));
+            for (unsigned repeat=0;repeat<20;++repeat) REQUIRE(!dispatch(d,op,by,bw,bx,bd,dx,dw,w->type,o,i,n,status));
             REQUIRE(!nya_train_device_finish(d));
             double ms=(tr_seconds()-start)*1000/20;
             nya_train_device_get_stats(d,&after);
-            REQUIRE(after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations+1 && after.kernel_launches==before.kernel_launches+20);
+            REQUIRE(after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations+1 && after.kernel_launches==before.kernel_launches+20u*(status?2u:1u));
             if (pass>=2) times[pass-2]=ms;
         }
         printf("{\"tensor\":\"%s\",\"type\":%u,\"outputs\":%zu,\"inputs\":%zu,\"tokens\":%zu,\"operation\":%u,\"ms\":[",w->name,w->type,o,i,n,op);
@@ -103,12 +107,18 @@ int main(int argc,char **argv)
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
     const nya_llm_tensor *weights[]={m->layers[0].query,m->layers[0].feed_forward_down,m->layers[0].feed_forward_up};
     /* Reuse mode retires each complete matrix job before admitting the next. */
-    int recycle=!strcmp(argv[2],"reuse-forward") || !strcmp(argv[2],"reuse-reverse");
+    int checked=!strcmp(argv[2],"checked-forward") || !strcmp(argv[2],"checked-reverse");
+    int recycle=checked || !strcmp(argv[2],"reuse-forward") || !strcmp(argv[2],"reuse-reverse");
     d=nya_train_device_create("cuda",(recycle?64u:256u)*1024*1024); REQUIRE(d);
-    int reverse=!strcmp(argv[2],"reverse") || !strcmp(argv[2],"reuse-reverse");
+    nya_train_buffer status=checked?nya_train_device_alloc(d,4):0; REQUIRE(!checked || status);
+    int reverse=!strcmp(argv[2],"reverse") || !strcmp(argv[2],"reuse-reverse") || !strcmp(argv[2],"checked-reverse");
     for (size_t j=0;j<6;++j) {
         size_t job=reverse?5-j:j;
-        REQUIRE(!run(d,weights[job/2],job%2?64:8,recycle));
+        REQUIRE(!run(d,weights[job/2],job%2?64:8,recycle,status));
+    }
+    if (checked) {
+        uint32_t failure=UINT32_MAX;
+        REQUIRE(!nya_train_device_read(d,status,0,&failure,4) && !failure);
     }
     nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
     fprintf(stderr,"arena_capacity=%zu arena_used=%zu buffers=%zu launches=%llu uploads=%llu upload_bytes=%llu downloads=%llu download_bytes=%llu peak_bytes=%zu scratch_resets=%llu\n",

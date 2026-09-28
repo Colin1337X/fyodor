@@ -168,15 +168,125 @@ static int scratch_lifetime(void)
     nya_train_device_free(d);
     return 0;
 }
+static int finite_checks(void)
+{
+    nya_train_device *d=nya_train_device_create("cuda",1024*1024);
+    if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
+    nya_train_buffer status=nya_train_device_alloc(d,8), data=nya_train_device_alloc(d,1026*4);
+    nya_train_buffer small=nya_train_device_alloc(d,3);
+    CHECK(status && data && small);
+    uint32_t bits[1026], actual[1026], result[2], initial[]={0,0xdeadbeefu};
+    const uint32_t finite[]={0,0x80000000u,1,0x80000001u,0x007fffffu,0x807fffffu,
+        0x00800000u,0x80800000u,0x7f7fffffu,0xff7fffffu,0x3f800000u,0xbf800000u};
+    const uint32_t invalid[]={0x7f800000u,0xff800000u,0x7fc00000u,0xffc00001u,0x7f800001u,0xffffffffu};
+    const size_t sizes[]={1,31,32,33,255,256,257,1025};
+    for (size_t shape=0;shape<sizeof(sizes)/sizeof(sizes[0]);++shape) {
+        size_t n=sizes[shape];
+        for (size_t i=0;i<1026;++i) bits[i]=finite[i%(sizeof(finite)/sizeof(finite[0]))];
+        bits[n]=0x7fc00000u; /* A non-finite value just outside the checked prefix. */
+        CHECK(!nya_train_device_write(d,data,0,bits,sizeof(bits)));
+        CHECK(!nya_train_device_write(d,status,0,initial,sizeof(initial)));
+        CHECK(!nya_train_device_check_finite(d,status,data,n,123));
+        CHECK(!nya_train_device_read(d,status,0,result,sizeof(result)) && !result[0] && result[1]==initial[1]);
+        const size_t positions[]={0,n/2,n-1};
+        for (size_t bad=0;bad<sizeof(invalid)/sizeof(invalid[0]);++bad) for (size_t p=0;p<3;++p) {
+            size_t i=positions[p]; uint32_t saved=bits[i]; bits[i]=invalid[bad];
+            uint32_t tag=bad==5 ? UINT32_MAX : 1+(uint32_t)(3*bad+p);
+            CHECK(!nya_train_device_write(d,data,0,bits,sizeof(bits)));
+            CHECK(!nya_train_device_write(d,status,0,initial,sizeof(initial)));
+            CHECK(!nya_train_device_check_finite(d,status,data,n,tag));
+            CHECK(!nya_train_device_check_finite(d,status,data,n,42));
+            CHECK(!nya_train_device_read(d,status,0,result,sizeof(result)) && result[0]==tag && result[1]==initial[1]);
+            CHECK(!nya_train_device_read(d,data,0,actual,sizeof(actual)) && !memcmp(bits,actual,sizeof(bits)));
+            bits[i]=saved;
+        }
+    }
+    nya_train_device_stats before,after;
+    nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+    nya_train_buffer stale=nya_train_device_alloc(d,4); CHECK(stale);
+    CHECK(!nya_train_device_scratch_end(d,scope));
+    nya_train_device *other=nya_train_device_create("cuda",1024); CHECK(other);
+    nya_train_buffer foreign=nya_train_device_alloc(other,4); CHECK(foreign);
+    nya_train_device_get_stats(d,&before);
+    CHECK(nya_train_device_check_finite(d,status,data,0,1));
+    CHECK(nya_train_device_check_finite(d,status,data,SIZE_MAX,1));
+    CHECK(nya_train_device_check_finite(d,status,data,1027,1));
+    CHECK(nya_train_device_check_finite(d,status,data,1,0));
+    CHECK(nya_train_device_check_finite(d,data,data,1,1));
+    CHECK(nya_train_device_check_finite(d,small,data,1,1));
+    CHECK(nya_train_device_check_finite(d,status,small,1,1));
+    CHECK(nya_train_device_check_finite(d,status,stale,1,1));
+    CHECK(nya_train_device_check_finite(d,stale,data,1,1));
+    CHECK(nya_train_device_check_finite(d,status,foreign,1,1));
+    CHECK(nya_train_device_check_finite(d,foreign,data,1,1));
+    nya_train_device_get_stats(d,&after);
+    CHECK(!after.failed && after.kernel_launches==before.kernel_launches && after.used_bytes==before.used_bytes &&
+        after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations);
+    nya_train_device_free(other);
+
+    /* All blocks fail concurrently; the atomic publication must be race-free. */
+    for (size_t i=0;i<1026;++i) bits[i]=invalid[i%6];
+    CHECK(!nya_train_device_write(d,data,0,bits,sizeof(bits)) && !nya_train_device_zero(d,status));
+    CHECK(!nya_train_device_check_finite(d,status,data,1026,71));
+    /* Discard the invalid data before reading its status, then repeatedly reuse
+       the same scratch bytes. A finite successor must not erase the failure. */
+    CHECK(!nya_train_device_zero(d,data));
+    nya_train_device_get_stats(d,&before);
+    for (size_t iteration=0;iteration<100;++iteration) {
+        scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        nya_train_buffer next=nya_train_device_alloc(d,4*(1+iteration%67)); CHECK(next);
+        CHECK(!nya_train_device_check_finite(d,status,next,1+iteration%67,99));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    nya_train_device_get_stats(d,&after);
+    CHECK(!after.failed && after.kernel_launches==before.kernel_launches+200 && after.buffers==before.buffers &&
+        after.used_bytes==before.used_bytes && after.uploads==before.uploads && after.downloads==before.downloads &&
+        after.synchronizations==before.synchronizations);
+    CHECK(!nya_train_device_read(d,status,0,result,4) && result[0]==71);
+    /* Explicit reset begins a new validation group on the same usable device. */
+    CHECK(!nya_train_device_zero(d,status) && !nya_train_device_check_finite(d,status,data,1026,1));
+    CHECK(!nya_train_device_read(d,status,0,result,4) && !result[0]);
+    uint32_t maximum=0x7f7fffffu;
+    CHECK(!nya_train_device_write(d,data,0,&maximum,4));
+    scope=nya_train_device_scratch_begin(d); CHECK(scope);
+    nya_train_buffer overflow=nya_train_device_alloc(d,4); CHECK(overflow);
+    nya_train_device_get_stats(d,&before);
+    CHECK(!nya_train_device_check_finite(d,status,data,1,11));
+    CHECK(!nya_train_device_linear(d,overflow,data,0,1,1,data,1));
+    CHECK(!nya_train_device_check_finite(d,status,overflow,1,12));
+    CHECK(!nya_train_device_scratch_end(d,scope));
+    scope=nya_train_device_scratch_begin(d); CHECK(scope);
+    nya_train_buffer reused=nya_train_device_alloc(d,4); CHECK(reused && reused!=overflow);
+    CHECK(!nya_train_device_check_finite(d,status,reused,1,13));
+    CHECK(!nya_train_device_scratch_end(d,scope));
+    nya_train_device_get_stats(d,&after);
+    CHECK(!after.failed && after.kernel_launches==before.kernel_launches+5 && after.uploads==before.uploads &&
+        after.downloads==before.downloads && after.synchronizations==before.synchronizations);
+    CHECK(!nya_train_device_read(d,status,0,result,4) && result[0]==12);
+    printf("finite checks: 8 tails, 6 non-finite encodings, 100 queued scopes, sticky first tag, zero added transfers/fences passed\n");
+    nya_train_device_free(d);
+    return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
     CHECK(!nya_train_device_create(NULL,1) && !nya_train_device_create("absent",1) && !nya_train_device_create("cuda",0));
     CHECK(nya_train_device_finish(NULL) && !nya_train_device_alloc(NULL,4));
     CHECK(!nya_train_device_scratch_begin(NULL) && nya_train_device_scratch_end(NULL,0));
+    CHECK(nya_train_device_check_finite(NULL,1,2,1,1));
     if (argc == 1) return 0;
+    if (!strcmp(argv[1],"--finite")) return finite_checks();
     d=nya_train_device_create("cuda",64*1024*1024);
     if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
+    if (!strcmp(argv[1],"--finite-failure")) {
+        nya_train_buffer status=nya_train_device_alloc(d,4), data=nya_train_device_alloc(d,4);
+        CHECK(status && data && nya_train_device_check_finite(d,status,data,1,1));
+        nya_train_device_stats s; nya_train_device_get_stats(d,&s);
+        uint32_t value=123;
+        CHECK(s.failed && s.kernel_launches==2 && nya_train_device_read(d,status,0,&value,4) && value==123);
+        CHECK(nya_train_device_finish(d) && nya_train_device_check_finite(d,status,data,1,2));
+        nya_train_device_free(d); return 0;
+    }
     if (!strcmp(argv[1],"--failure")) {
         nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
         nya_train_buffer b=nya_train_device_alloc(d,4);
@@ -184,6 +294,7 @@ int main(int argc, char **argv)
         nya_train_device_stats s; nya_train_device_get_stats(d,&s);
         CHECK(s.failed && s.kernel_launches==1 && nya_train_device_finish(d) && !nya_train_device_alloc(d,4));
         CHECK(!nya_train_device_scratch_begin(d) && nya_train_device_scratch_end(d,scope));
+        CHECK(nya_train_device_check_finite(d,b,b,1,1));
         nya_train_device_get_stats(d,&s); CHECK(s.buffers==1 && s.scratch_resets==0);
         nya_train_device_free(d); return 0;
     }
@@ -245,5 +356,6 @@ int main(int argc, char **argv)
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
         (unsigned long long)after.kernel_launches,(unsigned long long)after.uploads,(unsigned long long)after.downloads);
     nya_train_device_free(d);
-    return scratch_lifetime();
+    int result=scratch_lifetime();
+    return result ? result : finite_checks();
 }

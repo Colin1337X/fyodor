@@ -6,6 +6,16 @@ extern "C" __global__ void nya_train_zero(unsigned char *data, unsigned long lon
     unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;
     if (i < bytes) data[i] = 0;
 }
+/* Classify F32 storage bits so subnormals and signed zero remain finite, while
+   both signs and every payload of infinity/NaN are rejected. All threads join
+   the vote, including the tail. Only one thread per failing block publishes. */
+extern "C" __global__ void nya_train_check_finite(const float *data, unsigned *status,
+    unsigned long long count, unsigned tag)
+{
+    unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;
+    int bad = i < count && (__float_as_uint(data[i]) & 0x7f800000u) == 0x7f800000u;
+    if (__syncthreads_or(bad) && threadIdx.x == 0) atomicCAS(status,0u,tag);
+}
 __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float *dy, float *dx,
     unsigned long long inputs, unsigned long long row_bytes, unsigned outputs, unsigned tokens, unsigned TYPE)
 {
