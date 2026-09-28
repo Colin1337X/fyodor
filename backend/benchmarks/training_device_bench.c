@@ -14,8 +14,10 @@ static int dispatch(nya_train_device *d, unsigned op, nya_train_buffer y, nya_tr
     return op==0 ? nya_train_device_linear(d,y,w,type,o,i,x,n) : op==1 ?
         nya_train_device_linear_dx(d,dx,w,type,o,i,dy,n) : nya_train_device_linear_dw(d,dw,x,dy,o,i,n);
 }
-static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n)
+static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recycle)
 {
+    nya_train_scope scope=recycle ? nya_train_device_scratch_begin(d) : 0;
+    REQUIRE(!recycle || scope);
     size_t i=(size_t)w->dimensions[0], o=(size_t)w->dimensions[1];
     float *x=malloc(n*i*4), *dy=malloc(n*o*4);
     REQUIRE(x && dy);
@@ -60,6 +62,7 @@ static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n)
         for (size_t k=0;k<5;++k) printf("%s%.9f",k?",":"",times[k]);
         printf("]}\n"); fflush(stdout);
     }
+    if (recycle) REQUIRE(!nya_train_device_scratch_end(d,scope));
     free(x); free(dy);
     return 0;
 }
@@ -99,16 +102,18 @@ int main(int argc,char **argv)
     nya_llm_context *m=NULL; char error[256];
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
     const nya_llm_tensor *weights[]={m->layers[0].query,m->layers[0].feed_forward_down,m->layers[0].feed_forward_up};
-    /* Six jobs each own their buffers; bounded arena includes all full F32 dW. */
-    d=nya_train_device_create("cuda",256*1024*1024); REQUIRE(d);
-    int reverse=!strcmp(argv[2],"reverse");
+    /* Reuse mode retires each complete matrix job before admitting the next. */
+    int recycle=!strcmp(argv[2],"reuse-forward") || !strcmp(argv[2],"reuse-reverse");
+    d=nya_train_device_create("cuda",(recycle?64u:256u)*1024*1024); REQUIRE(d);
+    int reverse=!strcmp(argv[2],"reverse") || !strcmp(argv[2],"reuse-reverse");
     for (size_t j=0;j<6;++j) {
         size_t job=reverse?5-j:j;
-        REQUIRE(!run(d,weights[job/2],job%2?64:8));
+        REQUIRE(!run(d,weights[job/2],job%2?64:8,recycle));
     }
     nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
-    fprintf(stderr,"arena_capacity=%zu arena_used=%zu buffers=%zu launches=%llu uploads=%llu upload_bytes=%llu downloads=%llu download_bytes=%llu\n",
+    fprintf(stderr,"arena_capacity=%zu arena_used=%zu buffers=%zu launches=%llu uploads=%llu upload_bytes=%llu downloads=%llu download_bytes=%llu peak_bytes=%zu scratch_resets=%llu\n",
         stats.capacity_bytes,stats.used_bytes,stats.buffers,(unsigned long long)stats.kernel_launches,(unsigned long long)stats.uploads,
-        (unsigned long long)stats.upload_bytes,(unsigned long long)stats.downloads,(unsigned long long)stats.download_bytes);
+        (unsigned long long)stats.upload_bytes,(unsigned long long)stats.downloads,(unsigned long long)stats.download_bytes,
+        stats.peak_bytes,(unsigned long long)stats.scratch_resets);
     nya_train_device_free(d); nya_llm_free(m); return 0;
 }

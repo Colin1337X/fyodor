@@ -109,22 +109,86 @@ static int autograd(nya_train_device *d)
     nya_train_graph_free(g); nya_train_parameter_free(px); nya_train_parameter_free(pw);
     return 0;
 }
+static int scratch_lifetime(void)
+{
+    nya_train_device *d=nya_train_device_create("cuda",2*1024*1024);
+    CHECK(d);
+    nya_train_buffer w=nya_train_device_alloc(d,4), x=nya_train_device_alloc(d,4), grad=nya_train_device_alloc(d,4);
+    float weight=3, input=2, value;
+    CHECK(w && x && grad && !nya_train_device_write(d,w,0,&weight,4) && !nya_train_device_write(d,x,0,&input,4));
+    CHECK(nya_train_device_scratch_end(d,0) && nya_train_device_scratch_end(d,w));
+    nya_train_scope empty=nya_train_device_scratch_begin(d);
+    CHECK(empty && !nya_train_device_scratch_begin(d) && !nya_train_device_scratch_end(d,empty));
+    CHECK(nya_train_device_scratch_end(d,empty));
+    nya_train_device_stats before,after;
+    nya_train_device_get_stats(d,&before);
+    nya_train_buffer stale=0;
+    nya_train_scope old_scope=empty;
+    /* More graph lifetimes than the descriptor table can hold. All work stays
+       queued; reuse must not zero Y before the preceding dW consumes it. */
+    for (size_t iteration=0;iteration<5000;++iteration) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d);
+        CHECK(scope && scope!=old_scope && nya_train_device_scratch_end(d,old_scope));
+        CHECK(nya_train_device_zero(d,scope));
+        nya_train_buffer y=nya_train_device_alloc(d,4*(1+iteration%67));
+        CHECK(y && y!=stale && nya_train_device_scratch_end(d,y));
+        if (stale) CHECK(nya_train_device_zero(d,stale) && nya_train_device_write(d,stale,0,&input,4));
+        CHECK(!nya_train_device_linear(d,y,w,0,1,1,x,1));
+        CHECK(!nya_train_device_linear_dw(d,grad,x,y,1,1,1));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+        stale=y; old_scope=scope;
+    }
+    nya_train_device_get_stats(d,&after);
+    CHECK(!after.failed && after.buffers==3 && after.used_bytes==before.used_bytes && after.peak_bytes==1036);
+    CHECK(after.scratch_resets==before.scratch_resets+5000 && after.kernel_launches==before.kernel_launches+15000);
+    CHECK(after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations);
+    CHECK(nya_train_device_read(d,stale,0,&value,4));
+    CHECK(!nya_train_device_read(d,grad,0,&value,4) && value==60000);
+    CHECK(!nya_train_device_read(d,w,0,&value,4) && value==weight);
+    CHECK(!nya_train_device_read(d,x,0,&value,4) && value==input);
+    printf("scratch reuse: scopes=5000 peak_bytes=%zu live_bytes=%zu added_transfers=0 added_fences=0 gradient=60000\n",after.peak_bytes,after.used_bytes);
+
+    nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+    nya_train_device *other=nya_train_device_create("cuda",1024); CHECK(other);
+    nya_train_scope foreign=nya_train_device_scratch_begin(other); CHECK(foreign);
+    CHECK(nya_train_device_scratch_end(d,foreign) && nya_train_device_scratch_end(other,scope));
+    CHECK(nya_train_device_alloc(other,17));
+    nya_train_device_free(other); /* Active scope and queued zero work. */
+    CHECK(!nya_train_device_alloc(d,SIZE_MAX));
+    for (size_t k=3;k<4096;++k) CHECK(nya_train_device_alloc(d,4));
+    CHECK(!nya_train_device_alloc(d,4));
+    nya_train_device_get_stats(d,&after); CHECK(after.buffers==4096 && !after.failed);
+    CHECK(!nya_train_device_scratch_end(d,scope));
+    /* Recover both table slots and byte capacity, and zero reused storage. */
+    nya_train_buffer fresh=nya_train_device_alloc(d,268); CHECK(fresh);
+    float zeros[67]; CHECK(!nya_train_device_read(d,fresh,0,zeros,sizeof(zeros)));
+    for (size_t k=0;k<67;++k) CHECK(zeros[k]==0);
+    CHECK(nya_train_device_read(d,stale,0,&value,4));
+    CHECK(!nya_train_device_read(d,grad,0,&value,4) && value==60000);
+    nya_train_device_free(d);
+    return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
     CHECK(!nya_train_device_create(NULL,1) && !nya_train_device_create("absent",1) && !nya_train_device_create("cuda",0));
     CHECK(nya_train_device_finish(NULL) && !nya_train_device_alloc(NULL,4));
+    CHECK(!nya_train_device_scratch_begin(NULL) && nya_train_device_scratch_end(NULL,0));
     if (argc == 1) return 0;
     d=nya_train_device_create("cuda",64*1024*1024);
     if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
     if (!strcmp(argv[1],"--failure")) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
         nya_train_buffer b=nya_train_device_alloc(d,4);
         CHECK(b && nya_train_device_zero(d,b));
         nya_train_device_stats s; nya_train_device_get_stats(d,&s);
         CHECK(s.failed && s.kernel_launches==1 && nya_train_device_finish(d) && !nya_train_device_alloc(d,4));
+        CHECK(!nya_train_device_scratch_begin(d) && nya_train_device_scratch_end(d,scope));
+        nya_train_device_get_stats(d,&s); CHECK(s.buffers==1 && s.scratch_resets==0);
         nya_train_device_free(d); return 0;
     }
     if (!strcmp(argv[1],"--matrix-failure")) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
         nya_train_buffer b[6];
         for (size_t k=0;k<6;++k) { b[k]=nya_train_device_alloc(d,4); CHECK(b[k]); }
         CHECK(!nya_train_device_linear(d,b[0],b[1],0,1,1,b[2],1));
@@ -134,6 +198,8 @@ int main(int argc, char **argv)
         CHECK(nya_train_device_read(d,b[0],0,&value,4));
         nya_train_device_stats s; nya_train_device_get_stats(d,&s);
         CHECK(s.failed && s.kernel_launches==7 && s.downloads==0);
+        CHECK(nya_train_device_scratch_end(d,scope));
+        nya_train_device_get_stats(d,&s); CHECK(s.buffers==6 && s.scratch_resets==0);
         nya_train_device_free(d); return 0;
     }
     nya_train_buffer small=nya_train_device_alloc(d,17);
@@ -179,5 +245,5 @@ int main(int argc, char **argv)
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
         (unsigned long long)after.kernel_launches,(unsigned long long)after.uploads,(unsigned long long)after.downloads);
     nya_train_device_free(d);
-    return 0;
+    return scratch_lifetime();
 }

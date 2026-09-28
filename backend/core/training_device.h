@@ -5,13 +5,16 @@
 
 /* Private building block for accelerator graph execution. This is not yet a
    complete training backend. A device owns a bounded persistent arena; buffers
-   are zero-initialized and remain valid until device destruction. One caller
+   are zero-initialized and remain valid until device destruction or the end of
+   their scratch scope. One caller
    serializes operations. Handles cannot be shared between devices. */
 typedef struct nya_train_device nya_train_device;
 typedef uint64_t nya_train_buffer;
+typedef uint64_t nya_train_scope;
 typedef struct nya_train_device_stats {
-    size_t capacity_bytes, used_bytes, buffers;
+    size_t capacity_bytes, used_bytes, buffers, peak_bytes;
     uint64_t kernel_launches, uploads, downloads, upload_bytes, download_bytes, synchronizations;
+    uint64_t scratch_resets;
     int failed;
 } nya_train_device_stats;
 
@@ -24,6 +27,16 @@ int nya_train_device_write(nya_train_device *device, nya_train_buffer buffer, si
 int nya_train_device_read(nya_train_device *device, nya_train_buffer buffer, size_t offset, void *destination, size_t bytes);
 int nya_train_device_zero(nya_train_device *device, nya_train_buffer buffer);
 int nya_train_device_finish(nya_train_device *device);
+
+/* One non-nesting scratch scope at a time. Allocations made after begin belong
+   to that scope; end invalidates their handles and reclaims arena/descriptors.
+   Earlier allocations (parameters, optimizer state, accumulated gradients)
+   survive. Zero is never a valid scope; stale/foreign tokens are rejected.
+   End adds no fence: queued uses and later zero-initialization/reuse are ordered
+   on the same stream. Call finish explicitly to observe asynchronous failure.
+   A failed device cannot begin/end scopes or recycle its state. */
+nya_train_scope nya_train_device_scratch_begin(nya_train_device *device);
+int nya_train_device_scratch_end(nya_train_device *device, nya_train_scope scope);
 
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.

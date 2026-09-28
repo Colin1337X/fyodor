@@ -36,6 +36,10 @@ int nya_train_device_zero(nya_train_device *d, nya_train_buffer b)
 { return d ? d->api->zero(d->context,b) : -1; }
 int nya_train_device_finish(nya_train_device *d)
 { return d ? d->api->finish(d->context) : -1; }
+nya_train_scope nya_train_device_scratch_begin(nya_train_device *d)
+{ return d ? d->api->scratch_begin(d->context) : 0; }
+int nya_train_device_scratch_end(nya_train_device *d, nya_train_scope scope)
+{ return d ? d->api->scratch_end(d->context,scope) : -1; }
 int nya_train_device_linear(nya_train_device *d, nya_train_buffer y, nya_train_buffer w,
     unsigned type, size_t o, size_t i, nya_train_buffer x, size_t n)
 { return d ? d->api->matrix(d->context,y,w,x,type,o,i,n,0) : -1; }

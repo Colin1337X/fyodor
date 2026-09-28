@@ -14,6 +14,8 @@ typedef struct nya_cuda_train {
     CUfunction zero, dx[31], dw;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
+    nya_train_scope scope;
+    size_t scope_bytes, scope_buffers;
     uint64_t fail_after;
     char error[160];
 } nya_cuda_train;
@@ -23,6 +25,16 @@ static int nya_ct_error(nya_cuda_train *t, const char *message, int fatal)
     if (!t->stats.failed) snprintf(t->error,sizeof(t->error),"%s",message);
     if (fatal) t->stats.failed = 1;
     return -1;
+}
+/* Buffer and scope tokens share one never-reused namespace, including across
+   devices. A recycled descriptor cannot make an expired handle valid again. */
+static uint64_t nya_ct_id(nya_cuda_train *t)
+{
+    uint64_t id = atomic_load_explicit(&nya_train_next_id,memory_order_relaxed);
+    do {
+        if (id == UINT64_MAX) { nya_ct_error(t,"training handle space exhausted",0); return 0; }
+    } while (!atomic_compare_exchange_weak_explicit(&nya_train_next_id,&id,id+1,memory_order_relaxed,memory_order_relaxed));
+    return id;
 }
 static int nya_ct_enter(nya_cuda_train *t)
 {
@@ -134,17 +146,44 @@ static nya_train_buffer nya_ct_alloc(void *context, size_t bytes)
         bytes/256+(bytes%256 != 0) > (size_t)t->cuda->grid_limit) {
         nya_ct_error(t,"training arena budget exceeded",0); return 0;
     }
-    uint64_t id = atomic_load_explicit(&nya_train_next_id,memory_order_relaxed);
-    do {
-        if (id == UINT64_MAX) { nya_ct_error(t,"training handle space exhausted",0); return 0; }
-    } while (!atomic_compare_exchange_weak_explicit(&nya_train_next_id,&id,id+1,memory_order_relaxed,memory_order_relaxed));
+    uint64_t id = nya_ct_id(t);
+    if (!id) return 0;
     if (nya_ct_enter(t)) return 0;
     nya_cuda_train_buffer b = {id,t->arena+offset,bytes};
     int result = nya_ct_zero_buffer(t,&b);
     if (nya_ct_leave(t,result)) return 0;
     t->buffers[t->stats.buffers++] = b;
     t->stats.used_bytes = offset+bytes;
+    if (t->stats.used_bytes > t->stats.peak_bytes) t->stats.peak_bytes = t->stats.used_bytes;
     return id;
+}
+static nya_train_scope nya_ct_scratch_begin(void *context)
+{
+    nya_cuda_train *t = context;
+    if (t->stats.failed) return 0;
+    if (t->scope) { nya_ct_error(t,"training scratch scope already active",0); return 0; }
+    nya_train_scope scope = nya_ct_id(t);
+    if (!scope) return 0;
+    t->scope = scope;
+    t->scope_bytes = t->stats.used_bytes;
+    t->scope_buffers = t->stats.buffers;
+    t->error[0] = 0;
+    return scope;
+}
+static int nya_ct_scratch_end(void *context, nya_train_scope scope)
+{
+    nya_cuda_train *t = context;
+    if (t->stats.failed) return -1;
+    if (!scope || scope != t->scope) return nya_ct_error(t,"invalid training scratch scope",0);
+    /* No memory is freed and no device work is submitted here. cuLaunchKernel
+       already copied queued argument values; every later arena use (including
+       allocation zeroing) follows prior consumers on this device's one stream. */
+    t->stats.used_bytes = t->scope_bytes;
+    t->stats.buffers = t->scope_buffers;
+    t->scope = 0;
+    ++t->stats.scratch_resets;
+    t->error[0] = 0;
+    return 0;
 }
 static int nya_ct_transfer(void *context, nya_train_buffer id, size_t offset, void *host, size_t bytes, int upload)
 {
@@ -228,6 +267,7 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
 const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
-        nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix};
+        nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
+        nya_ct_scratch_begin,nya_ct_scratch_end};
     return &api;
 }
