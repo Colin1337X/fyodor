@@ -87,7 +87,7 @@ static void *nya_ct_create(size_t capacity)
         if (!*fault || *fault == '-' || *end || errno) goto fail;
         t->fail_after = value;
     }
-    t->cuda = nya_cuda_create();
+    t->cuda = nya_cuda_create_for(1);
     if (!t->cuda || !capacity || capacity > t->cuda->cache_limit) goto fail;
     if (nya_ct_enter(t)) goto fail;
     int result = -1;

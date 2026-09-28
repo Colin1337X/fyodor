@@ -208,4 +208,6 @@ forward/backward operations, losses, finite checks, reusable graph storage and
 transactional optimizer state before exposing device selection. The current
 shared NVRTC module also includes the training kernels during inference setup;
 separating that compilation will avoid unnecessary inference initialization work.
+The subsequent [September 28 module split](CUDA_MODULES_20260928.md) addresses
+that initialization coupling.
 No inference throughput gain or complete GPU training trajectory is claimed here.

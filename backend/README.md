@@ -521,6 +521,9 @@ provides private persistent buffers and matrix forward/input-gradient/weight-gra
 kernels. It is not yet connected to the training graph; the CLI and UI still use
 CPU training. Complete resident loss, backward, optimizer and recovery semantics
 remain under development.
+Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
+so inference initialization does not compile training derivatives. The native
+training context does not load optional inference matrix libraries.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 

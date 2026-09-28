@@ -63,10 +63,37 @@ static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n)
     free(x); free(dy);
     return 0;
 }
+static int startup(const char *mode)
+{
+    nya_train_device *d=NULL;
+    double start=tr_seconds(), created, executed;
+    float w=3, x=2, y=0;
+    nya_compute_context *c=NULL;
+    if (!strcmp(mode,"inference")) {
+        c=nya_compute_create();
+        REQUIRE(c && !strcmp(nya_compute_name(c),"cuda"));
+        created=tr_seconds();
+        REQUIRE(!nya_compute_matvec(c,&w,1,1,&x,&y) && y==6);
+    } else if (!strcmp(mode,"training")) {
+        d=nya_train_device_create("cuda",1024*1024); REQUIRE(d);
+        created=tr_seconds();
+        nya_train_buffer bw=nya_train_device_alloc(d,4), bx=nya_train_device_alloc(d,4), by=nya_train_device_alloc(d,4);
+        REQUIRE(bw && bx && by && !nya_train_device_write(d,bw,0,&w,4) && !nya_train_device_write(d,bx,0,&x,4));
+        REQUIRE(!nya_train_device_linear(d,by,bw,0,1,1,bx,1) && !nya_train_device_read(d,by,0,&y,4) && y==6);
+    } else return 1;
+    executed=tr_seconds();
+    printf("{\"mode\":\"%s\",\"create_ms\":%.6f,\"first_work_ms\":%.6f",mode,(created-start)*1000,(executed-created)*1000);
+#ifdef _WIN32
+    printf(",\"cublas_loaded\":%d,\"cutlass_loaded\":%d",GetModuleHandleA("cublas64_13.dll")!=NULL,GetModuleHandleA("fyodor-cutlass.dll")!=NULL);
+#endif
+    printf("}\n");
+    nya_train_device_free(d); nya_compute_free(c); return 0;
+}
 int main(int argc,char **argv)
 {
     nya_train_device *d=NULL;
     REQUIRE(argc==3);
+    if (!strcmp(argv[1],"--startup")) return startup(argv[2]);
     FILE *f=fopen(argv[1],"rb"); REQUIRE(f);
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];

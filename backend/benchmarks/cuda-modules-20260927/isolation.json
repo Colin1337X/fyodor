@@ -1,0 +1,124 @@
+[
+  {
+    "name": "isolation-baseline-inference",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "inference"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-baseline-training",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "training"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-build-training",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-bench-training-device",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-poison-training-run-inference",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "inference"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-poison-training-run-training",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "training"
+    ],
+    "exit_code": 1,
+    "expected": 1
+  },
+  {
+    "name": "isolation-build-inference",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-bench-training-device",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-poison-inference-run-inference",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "inference"
+    ],
+    "exit_code": 1,
+    "expected": 1
+  },
+  {
+    "name": "isolation-poison-inference-run-training",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "training"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-restore-build",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-bench-training-device",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-restored-inference",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "inference"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  },
+  {
+    "name": "isolation-restored-training",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-bench-training-device.exe",
+      "--startup",
+      "training"
+    ],
+    "exit_code": 0,
+    "expected": 0
+  }
+]

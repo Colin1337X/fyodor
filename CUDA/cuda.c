@@ -203,7 +203,10 @@ void nya_cuda_free(nya_cuda_context *c)
     nya_cuda_close(c->driver_library); free(c);
 }
 
-nya_cuda_context *nya_cuda_create(void)
+/* Each context compiles only its execution domain. Inference does not compile
+   training kernels, and training neither compiles inference attention/graphs
+   nor loads optional inference matrix libraries. */
+static nya_cuda_context *nya_cuda_create_for(int training)
 {
     nya_cuda_context *c = (nya_cuda_context *)calloc(1, sizeof(*c));
     nvrtcProgram program = NULL;
@@ -265,7 +268,9 @@ nya_cuda_context *nya_cuda_create(void)
     const char *reference = getenv("NYA_CUDA_REFERENCE");
     c->reference = reference != NULL && strcmp(reference, "1") == 0;
     const char *options[] = {architecture, "--std=c++11", c->reference ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
-    if (c->program_create(&program, (const char *)nya_cuda_source, "fyodor_matvec.cu", 0, NULL, NULL) != NVRTC_SUCCESS) goto failure;
+    const unsigned char *source = training ? nya_cuda_training_source : nya_cuda_source;
+    const char *source_name = training ? "fyodor_training.cu" : "fyodor_inference.cu";
+    if (c->program_create(&program, (const char *)source, source_name, 0, NULL, NULL) != NVRTC_SUCCESS) goto failure;
     if (c->program_compile(program, 4, options) != NVRTC_SUCCESS) {
         if (getenv("NYA_CUDA_DEBUG") != NULL) {
             size_t log_bytes;
@@ -300,10 +305,12 @@ nya_cuda_context *nya_cuda_create(void)
         snprintf(name, sizeof(name), "nya_expand_t_%u", types[i]);
         if (c->function_get(&c->expand_transposed[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
     }
+    if (!training) {
     nya_blas_open(c);
 #ifdef NYA_ENABLE_CUTLASS
     nya_cutlass_open(c);
 #endif
+    }
     /* Leave at least a quarter of currently free device memory for other work.
        This is a per-context upper bound, not a reservation or eviction policy. */
     size_t reserve = free_bytes / 10;
@@ -325,10 +332,13 @@ nya_cuda_context *nya_cuda_create(void)
 failure:
     if (pushed) c->pop(&previous);
     if (program != NULL && c->program_destroy != NULL) c->program_destroy(&program);
-    if (getenv("NYA_CUDA_DEBUG") != NULL) fprintf(stderr, "CUDA provider unavailable; CPU fallback selected\n");
+    if (getenv("NYA_CUDA_DEBUG") != NULL) fprintf(stderr, "%s\n", training ?
+        "CUDA training device unavailable" : "CUDA provider unavailable; CPU fallback selected");
     free(ptx); nya_cuda_free(c);
     return NULL;
 }
+
+nya_cuda_context *nya_cuda_create(void) { return nya_cuda_create_for(0); }
 
 int nya_cuda_active(const nya_cuda_context *c) { return c != NULL && !c->failed; }
 
