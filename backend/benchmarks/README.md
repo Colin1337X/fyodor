@@ -1,11 +1,24 @@
 # Runtime benchmark evidence
 
-**Training:** [September 24 Unicode paths and recovery validation](TRAINING_PATHS_20260924.md),
+**Training:** [September 27 resident matrix foundation](TRAINING_DEVICE_20260927.md),
+[September 25 held-out evaluation](TRAINING_EVALUATION_20260925.md),
+[September 25 native CPU execution](TRAINING_EXECUTION_20260925.md),
+[September 24 Unicode paths and recovery validation](TRAINING_PATHS_20260924.md),
 [September 24 safe stop and recovery](TRAINING_RECOVERY_20260924.md),
 [September 24 gradient accumulation and validation](TRAINING_20260924.md),
 following the [September 23 audit and CPU optimizations](TRAINING_20260923.md).
-**Inference history:** [Stage 8](STAGE8.md) is the latest numbered report;
+**Inference history:** [Stage 9: partitioned CUDA decode attention](STAGE9.md)
+is the latest numbered report; [Stage 8](STAGE8.md) covers prefill layout;
 [Stage 2](STAGE2.md) retains the September 10 measurements.
+The [September 26 dot-product probe](INFERENCE_DOT_PROBE_20260926.md) records
+a rejected two-chain accumulation experiment and restores the Stage 9 kernels.
+The [matrix shape profile](INFERENCE_MATRIX_PROFILE_20260926.md) identifies
+the next projection target and records a native long-dot numerical case to fix.
+The [native long-dot correction](INFERENCE_LONG_DOT_20260926.md) follows that
+finding with explicit vendor-disabled regression coverage.
+The [September 28 CUDA module split](CUDA_MODULES_20260928.md) isolates training
+and inference compilation; its changing-desktop startup timing attempts are
+preserved and excluded from performance claims.
 The [September 25 optional inference provider report](INFERENCE_PROVIDERS_20260925.md)
 records the separate ROCm/MLX commit and its validation scope.
 The tables below retain the September 8–9 milestone as historical evidence.

@@ -1,0 +1,36 @@
+[ 92%] Built target nya-engine
+[100%] Built target fyodor-bench
+-- The C compiler identification is GNU 16.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Optional ROCm C loader enabled; HIP/rocBLAS are discovered at runtime
+-- Optional MLX C loader enabled; MLX C/GPU are discovered at runtime
+-- Configuring done (2.9s)
+CMake Error at backend/CMakeLists.txt:340 (add_executable):
+  Cannot find source file:
+
+    benchmarks/training_device_bench.c
+
+
+CMake Error at backend/CMakeLists.txt:340 (add_executable):
+  No SOURCES given to target: nya-bench-training-device
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.
+CMake Error at C:/Users/Colin/fyodor/backend/cmake/VerifyWithoutOptional.cmake:33 (execute_process):
+  execute_process failed command indexes:
+
+    1: "Child return code: 1"
+
+
+
+make[3]: *** [backend\CMakeFiles\verify-without-optcpp.dir\build.make:69: backend/CMakeFiles/verify-without-optcpp] Error 1
+make[2]: *** [CMakeFiles\Makefile2:1378: backend/CMakeFiles/verify-without-optcpp.dir/all] Error 2
+make[1]: *** [CMakeFiles\Makefile2:1385: backend/CMakeFiles/verify-without-optcpp.dir/rule] Error 2
+make: *** [Makefile:588: verify-without-optcpp] Error 2

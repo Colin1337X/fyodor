@@ -10,3 +10,11 @@ backend/benchmarks/stage*-validation/*.py -text whitespace=cr-at-eol,-blank-at-e
 backend/benchmarks/training-*/**/corpus.txt -text whitespace=-blank-at-eol
 backend/benchmarks/training-*/corpus.txt -text whitespace=-blank-at-eol
 backend/benchmarks/training-20260923/before-gprof.txt -text -diff
+# Preserve raw nvidia-smi process snapshots, including terminal padding.
+backend/benchmarks/inference-20260925/**/processes*.txt -text -diff
+backend/benchmarks/inference-20260925/**/contamination-processes.txt -text -diff
+backend/benchmarks/inference-20260926/**/processes*.txt -text -diff
+backend/benchmarks/inference-matrix-profile-20260926/**/processes*.txt -text -diff
+backend/benchmarks/inference-long-dot-20260926/**/processes*.txt -text -diff
+backend/benchmarks/training-device-20260927/**/processes*.txt -text -diff
+backend/benchmarks/cuda-modules-20260927/**/processes*.txt -text -diff

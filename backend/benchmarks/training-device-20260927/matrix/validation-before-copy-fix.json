@@ -1,0 +1,129 @@
+[
+  {
+    "name": "build-cpu-build",
+    "log": "build-cpu-build.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cpu-tests",
+    "log": "build-cpu-tests.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cpu",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-build",
+    "log": "build-cuda-build.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-tests",
+    "log": "build-cuda-tests.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-c23-build",
+    "log": "build-cuda-c23-build.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda-c23",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-cuda-c23-tests",
+    "log": "build-cuda-c23-tests.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda-c23",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-ort-build",
+    "log": "build-ort-build.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-ort",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-ort-tests",
+    "log": "build-ort-tests.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-ort",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-sanitize-build",
+    "log": "build-sanitize-build.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-sanitize",
+      "--parallel",
+      "4"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "build-sanitize-tests",
+    "log": "build-sanitize-tests.log",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-sanitize",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "verify-without-optcpp",
+    "log": "verify-without-optcpp.log",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cpu",
+      "--target",
+      "verify-without-optcpp"
+    ],
+    "exit_code": 2
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "tool": "memcheck",
+    "tile": "32",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "99",
+      "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-quant-long-dot-candidate.exe"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_TEST_NATIVE_LONG": "1",
+      "NYA_TEST_BLAS_CHUNKS": "1",
+      "NYA_CUDA_GEMM_TILE": "32"
+    },
+    "exit_code": 0,
+    "log": "sanitize-memcheck-32.log"
+  },
+  {
+    "tool": "synccheck",
+    "tile": "32",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "99",
+      "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-quant-long-dot-candidate.exe"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_TEST_NATIVE_LONG": "1",
+      "NYA_TEST_BLAS_CHUNKS": "1",
+      "NYA_CUDA_GEMM_TILE": "32"
+    },
+    "exit_code": 0,
+    "log": "sanitize-synccheck-32.log"
+  },
+  {
+    "tool": "memcheck",
+    "tile": "64",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "99",
+      "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-quant-long-dot-candidate.exe"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_TEST_NATIVE_LONG": "1",
+      "NYA_TEST_BLAS_CHUNKS": "1",
+      "NYA_CUDA_GEMM_TILE": "64"
+    },
+    "exit_code": 0,
+    "log": "sanitize-memcheck-64.log"
+  },
+  {
+    "tool": "synccheck",
+    "tile": "64",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "99",
+      "C:\\Users\\Colin\\fyodor\\.tools\\fyodor-quant-long-dot-candidate.exe"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_TEST_NATIVE_LONG": "1",
+      "NYA_TEST_BLAS_CHUNKS": "1",
+      "NYA_CUDA_GEMM_TILE": "64"
+    },
+    "exit_code": 0,
+    "log": "sanitize-synccheck-64.log"
+  }
+]

@@ -2,11 +2,12 @@
 
 September 11 optimization checkpoint: [F32 matrix dispatch and validation](benchmarks/STAGE3.md).
 September 12 continuation: [persistent decode graphs and validation](benchmarks/STAGE4.md).
-Latest pass: [F32 fusion, cache diagnostics and a rejected F16 experiment](benchmarks/STAGE5.md).
+Previous pass: [F32 fusion, cache diagnostics and a rejected F16 experiment](benchmarks/STAGE5.md).
 Optional C++ extension: [removable CUTLASS prefill adapter](../CUDA/cutlass/README.md).
 Previous measurements: [CUTLASS validation and matched F32 llama.cpp comparison](benchmarks/STAGE6.md).
 Previous measurements: [query-tiled prefill attention and validation](benchmarks/STAGE7.md).
-Current pass: [fused weight decode/transpose and validation](benchmarks/STAGE8.md).
+Previous pass: [fused weight decode/transpose and validation](benchmarks/STAGE8.md).
+Current pass: [partitioned CUDA decode attention and validation](benchmarks/STAGE9.md).
 The performance goal remains open; current measurements do not establish a win
 over llama.cpp under equivalent workloads.
 
@@ -160,7 +161,7 @@ pinned source, standalone build, precision policy and fallback behavior.
 | Ordinary draft and Gemma 4 MTP speculative decoding | Target verification and rejection sampling | Same; verification currently uses scalar steps |
 | Gemma 4 Unified image/audio projection | Native `gemma4uv` / `gemma4ua` GGUF projectors | Optional F32 matrix-vector acceleration |
 | Projected multimodal prompt embeddings | C generation API; local image-block attention | Same; HTTP generation integration pending |
-| Autograd, LoRA/full-weight SFT/CPT/DPO, random-weight pretraining | C library and `fyodor-train`; dense LLaMA/Gemma 4 training | CPU training; GPU backward kernels pending |
+| Autograd, LoRA/full-weight SFT/CPT/DPO, random-weight pretraining | C library and `fyodor-train`; dense LLaMA/Gemma 4 training | CPU training; resident GPU training integration pending |
 | Generic ONNX graph execution | Optional external adapter, disabled by default | Same independent option |
 | Native REST plus OpenAI/Anthropic text compatibility | Model management, generation, tokenization; documented non-streaming subset | Same |
 
@@ -252,12 +253,20 @@ Headers are found through `CUDA_PATH`/`CUDA_HOME` or explicit `NYA_CUDA_INCLUDE_
 
 CUDA supports F32, F16, BF16, Q4_0, Q8_0, Q4_K and Q6_K projections. Dense LLaMA and dense Gemma 4 (including shared KV) now use persistent device execution plans: compressed weights, activations, Q/K/V, attention/FFN scratch, KV and logits remain on the GPU. Prefill uses custom F32 64×64 tiled GEMM (32×32 for small shapes) in chunks of up to 512 tokens (`NYA_CUDA_BATCH=1..512`, reduced when the memory budget requires it); decode uses format-specialized warp reductions and reusable CUDA executable graphs. Only final logits return to the CPU. `NYA_CUDA_REFERENCE=1` selects the generic matvec kernel and disables fused multiply-add; normal mode permits FMA without enabling unsafe fast-math. `NYA_CUDA_GRAPHS=0` disables graph submission for diagnosis.
 
-Decode captures one graph per resident session and replays it without recapturing
-on each token. A stream-ordered device packet supplies token ID and position;
+Decode retains at most two graphs per resident session and replays them without
+recapturing on each token. For 64/128-wide heads after 256 cached tokens,
+four blocks divide each head's context and a second kernel combines their F32
+softmax numerators and denominators. Windows of at most 256 tokens retain the
+ordinary kernel. `NYA_CUDA_SPLIT_ATTENTION=0` retains ordinary attention at every
+length. The extra persistent buffer is `4 * heads * (head_width + 2)` floats
+for the largest eligible layer (33 KiB for TinyLlama), included in scratch
+accounting and admission. Prefill and other head widths retain their existing
+kernels. A stream-ordered device packet supplies token ID and position;
 key RoPE also writes the indexed K/V cache. Reset and batched prefill preserve
-the executable graph while replacing the valid prefix. Each request owns two
+both executable graphs while replacing the valid prefix. Each request owns two
 temporary K/V vectors plus eight bytes of metadata. Benchmark JSON reports
-`graph_captures` and `graph_replays`; warmed decode should have zero captures.
+`graph_captures` and `graph_replays`; warmed decode should have zero captures
+unless it crosses into a topology that has not yet been captured.
 For single-token states of at most 256 elements, residual addition and the
 following FFN RMSNorm share one F32 kernel; larger states and prefill retain
 the separate kernels following paired measurements. An explicit
@@ -267,7 +276,7 @@ existing real-model parity bounds and was removed, with its evidence archived.
 
 The old 8 GiB ceiling is removed. A plan checks all weights plus complete KV/scratch against available VRAM, retaining a reserve of at least 256 MiB or 10% of free memory. `NYA_CUDA_MEMORY_MIB` sets an additional upper bound. A graph is admitted as a whole. If it cannot fit, the request uses CPU reference execution; automatic layer offload is not implemented. The 2048 cached-tensor entry limit remains. Failed execution invalidates the device prefix and replays accepted token IDs into the CPU cache before continuing. `NYA_CUDA_FAIL_AFTER=N` injects a failure for recovery tests.
 
-Resident lowering currently excludes PLE, routed experts, MTP's borrowed target KV, and multimodal attention overlays. These features retain their existing implementations. Vulkan still accelerates only F32 matvec. GPU training/backward remains separate and unimplemented.
+Resident lowering currently excludes PLE, routed experts, MTP's borrowed target KV, and multimodal attention overlays. These features retain their existing implementations. Vulkan still accelerates only F32 matvec. GPU training remains unintegrated; private resident matrix primitives are available for backend development.
 
 CUDA and Vulkan can be compiled together and selected independently. CUDA uses its own stream and balances primary-context retain/release and push/pop calls; it does not reset another user's device context. All CUDA headers, dynamic loading, device allocation, source embedding and kernels are confined to `/CUDA`. The backend retains only the optional generic dispatch boundary.
 
@@ -507,7 +516,16 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 
 ## Training
 
-`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
+The [resident CUDA matrix foundation](benchmarks/TRAINING_DEVICE_20260927.md)
+provides private persistent buffers and matrix forward/input-gradient/weight-gradient
+kernels. It is not yet connected to the training graph; the CLI and UI still use
+CPU training. Complete resident loss, backward, optimizer and recovery semantics
+remain under development.
+Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
+so inference initialization does not compile training derivatives. The native
+training context does not load optional inference matrix libraries.
+
+`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
 The CLI uses persistent native C CPU workers for sufficiently large dense and
 mapped matrix operations. `--threads 0` (default) chooses host cores, capped at
@@ -528,6 +546,19 @@ thread must serialize operations sharing an executor; independent executors
 may run concurrently. Destroy borrowing graphs before freeing their executor.
 Worker stacks and executor metadata are outside graph memory budgets. Progress
 and CSV metrics report `cpu_threads` as configured capacity, not utilization.
+
+Add `--eval-data validation.txt --eval-every 10` for held-out loss before training,
+at global optimizer-step intervals and after the final requested update. Data
+uses the same mode-specific format and masks. `--eval-records N` selects a fixed
+prefix; 0 (default) evaluates all records/windows. CE averages supervised tokens;
+DPO averages pairs against the original reference policy. Evaluation does not
+change gradients, parameters, moments or checkpoint identity, and can be changed
+on resume. Stop discards an incomplete validation pass and saves the last update.
+Completed validation has separate log/CSV telemetry; training throughput excludes
+its elapsed time. The C API's `nya_train_graph_create_for_evaluation` omits
+gradients and backward-only metadata, rejects backward and reuses one attention
+probability row. See the [evaluation report](benchmarks/TRAINING_EVALUATION_20260925.md)
+for limits, interruption behavior, exact-state checks and real-model evidence.
 
 Exported F32 models use double accumulation in scalar CPU projection/RMS
 references. Native CUDA F32 prefill uses two shorter F32 accumulation chains;
@@ -744,14 +775,21 @@ The benchmark times synthetic token-ID transformer execution. Model load, tokeni
 
 JSON includes GGUF storage-type counts, model size/shape, selected backend, actual execution mode, device weight/KV/scratch bytes, and resident-plan kernel/transfer/fence counts summed across measured repetitions. Zero device counters on CPU or legacy Vulkan mean uninstrumented/nonresident execution, not a claim of zero physical transfers. Token IDs passed as kernel parameters are not counted as buffer uploads. Weight upload and RoPE setup occur outside timing. Driver context/module overhead, GPU utilization and process RSS are not currently sampled by this executable.
 
-`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. It disables executable graphs and adds timing overhead; profile results must not be presented as normal throughput. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. The [benchmark index](benchmarks/README.md) links the historical stages and the latest [training/export validation and matched inference baseline](benchmarks/TRAINING_20260923.md).
+`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. Matrix entries additionally report storage type, rows, columns, batch size, execution path, call count, and total milliseconds. Diagnostic storage holds 63 distinct matrix shapes plus an explicit overflow bucket; allocation failure retains the aggregate profile. A `vendor-gemm` entry includes weight expansion and all internal chunks, not one vendor kernel. Counts and timings include warmup and untimed prefix preparation. Profiling disables executable graphs and adds timing overhead, including possible host submission gaps; profile results must not be presented as normal throughput. No matrix contents or tensor names are logged. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. The [benchmark index](benchmarks/README.md) links the historical stages and the latest [training/export validation and matched inference baseline](benchmarks/TRAINING_20260923.md).
 
 ### Historical Stage 2 performance and verification
 
+The native CUDA 32×32 and 64×64 prefill GEMMs use two F32 accumulation chains
+for every supported weight storage format. This extends the existing F32-weight
+algorithm to fix long positive-dot rounding in F16/BF16 and quantized storage;
+decode GEMV and vendor GEMM are unchanged. See the
+[long-dot correctness report](benchmarks/INFERENCE_LONG_DOT_20260926.md).
+
 The measurements and test counts below describe the Stage 2 snapshot. Later
-inference work is recorded through [Stage 8](benchmarks/STAGE8.md); the September
-23–24 [training report](benchmarks/TRAINING_20260923.md) contains the current
-validation matrix and a fresh comparison using matched F32 KV/token workloads.
+inference work includes [Stage 9](benchmarks/STAGE9.md) and the
+[native long-dot correction](benchmarks/INFERENCE_LONG_DOT_20260926.md), with
+their validation matrices and comparisons using matched F32 KV/token workloads.
+The [benchmark index](benchmarks/README.md) also links current training reports.
 
 TinyLlama 1.1B Q4_K_M, Ryzen 5 9600X / RTX 5060 Ti, three measured repetitions with one warmup. Rates are tokens/second. The original baseline was captured before replacing per-matvec GPU transfers; intermediate and final raw records are preserved.
 

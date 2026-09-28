@@ -12,6 +12,8 @@ file(COPY "${NYA_SOURCE_ROOT}/CMakeLists.txt" "${NYA_SOURCE_ROOT}/config.yaml"
     DESTINATION "${check_root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/backend" DESTINATION "${check_root}/source"
     PATTERN cuda EXCLUDE PATTERN CUDA EXCLUDE PATTERN "build*" EXCLUDE PATTERN benchmarks EXCLUDE)
+file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
+    DESTINATION "${check_root}/source/backend/benchmarks")
 if(EXISTS "${check_root}/source/backend/cuda" OR EXISTS "${check_root}/source/CUDA")
     message(FATAL_ERROR "Verification copy unexpectedly contains CUDA")
 endif()

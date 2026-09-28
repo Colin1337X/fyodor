@@ -1,0 +1,362 @@
+{
+  "timestamp_utc": "2026-09-28T01:39:39.752694+00:00",
+  "revision": "d6e2bdd40d90bc0d6f40e064d72c1412bd3ba19e",
+  "binary_sha256": {
+    "before": "2305fdb5d1294d963a8cc046569b140e019fc955a57ab9172776693e8efa506b",
+    "after": "56f2c1103e7236337c8e42c82cf04af60412f8c9d035cf240e8761c41c897318"
+  },
+  "source_sha256": {
+    "CUDA/CMakeLists.txt": "7737eb298299a2651c8bfbed43f504f2ba1009ab8a234ae19970d9d7d9232ea2",
+    "CUDA/cuda.c": "ca5ee26e0f20c3e39ea213f27a28cc23be859a9ae08ff8077b36437977f595b8",
+    "CUDA/training.inc": "71b51cfa0eaf01860108c3234a53e27da90c34af6a7eaa71869ad3240008b495",
+    "backend/benchmarks/training_device_bench.c": "5512e87b03946aab674a8cf7cc3eaecdb202b10f84481d549ed4caf0612645a2"
+  },
+  "environment": {
+    "NYA_CUDA_BLAS": "0",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_COMPUTE": "cuda"
+  },
+  "blocks": [
+    {
+      "cache": "disabled",
+      "mode": "inference",
+      "order": [
+        "before",
+        "after"
+      ],
+      "before": [
+        "2 %, 928 MiB, P5, 1125 MHz, 810 MHz, 13.76 W, 36",
+        "9 %, 999 MiB, P0, 2302 MHz, 14001 MHz, 18.83 W, 37"
+      ],
+      "runs": [
+        {
+          "version": "before",
+          "repeat": 0,
+          "warmup": true,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2876.429800,\"first_work_ms\":0.493300,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 1.9699999995737016e-05,
+              "peak_working_set": 2187264,
+              "working_set": 2187264,
+              "private_bytes": 413696,
+              "whole_gpu": "1 %, 999 MiB, P0, 2302 MHz, 14001 MHz, 20.82 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.207796099999996,
+              "peak_working_set": 83918848,
+              "working_set": 70819840,
+              "private_bytes": 44007424,
+              "whole_gpu": "2 %, 969 MiB, P3, 1942 MHz, 7001 MHz, 16.22 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3989930000000186,
+              "peak_working_set": 205410304,
+              "working_set": 204894208,
+              "private_bytes": 288260096,
+              "whole_gpu": "3 %, 1029 MiB, P1, 637 MHz, 13801 MHz, 13.36 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2876.4298,
+            "first_work_ms": 0.4933,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "after",
+          "repeat": 0,
+          "warmup": true,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2413.265300,\"first_work_ms\":0.388100,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.3999999920506525e-06,
+              "peak_working_set": 2191360,
+              "working_set": 2191360,
+              "private_bytes": 413696,
+              "whole_gpu": "1 %, 912 MiB, P1, 637 MHz, 13801 MHz, 17.99 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.1797095000000013,
+              "peak_working_set": 80437248,
+              "working_set": 70139904,
+              "private_bytes": 43118592,
+              "whole_gpu": "1 %, 864 MiB, P0, 2602 MHz, 14001 MHz, 22.11 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3445893999999896,
+              "peak_working_set": 205320192,
+              "working_set": 204828672,
+              "private_bytes": 284946432,
+              "whole_gpu": "2 %, 981 MiB, P1, 2602 MHz, 13801 MHz, 20.78 W, 37",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2413.2653,
+            "first_work_ms": 0.3881,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "before",
+          "repeat": 1,
+          "warmup": true,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2940.681200,\"first_work_ms\":0.446800,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.800000025146801e-06,
+              "peak_working_set": 2191360,
+              "working_set": 2191360,
+              "private_bytes": 421888,
+              "whole_gpu": "2 %, 865 MiB, P1, 2602 MHz, 13801 MHz, 20.78 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.1995134000000007,
+              "peak_working_set": 84148224,
+              "working_set": 73093120,
+              "private_bytes": 47624192,
+              "whole_gpu": "1 %, 865 MiB, P0, 2602 MHz, 14001 MHz, 22.26 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3822780000000137,
+              "peak_working_set": 205082624,
+              "working_set": 198971392,
+              "private_bytes": 280821760,
+              "whole_gpu": "3 %, 981 MiB, P1, 2602 MHz, 13801 MHz, 21.72 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2940.6812,
+            "first_work_ms": 0.4468,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "after",
+          "repeat": 1,
+          "warmup": true,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2401.086100,\"first_work_ms\":0.326700,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 3.939999999147403e-05,
+              "peak_working_set": 2195456,
+              "working_set": 2195456,
+              "private_bytes": 417792,
+              "whole_gpu": "1 %, 865 MiB, P1, 2602 MHz, 13801 MHz, 21.71 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.2041427000000056,
+              "peak_working_set": 79937536,
+              "working_set": 69009408,
+              "private_bytes": 42061824,
+              "whole_gpu": "1 %, 866 MiB, P0, 2632 MHz, 14001 MHz, 22.56 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3757749000000103,
+              "peak_working_set": 206426112,
+              "working_set": 205733888,
+              "private_bytes": 285609984,
+              "whole_gpu": "1 %, 869 MiB, P1, 2602 MHz, 13801 MHz, 22.44 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2401.0861,
+            "first_work_ms": 0.3267,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "before",
+          "repeat": 2,
+          "warmup": false,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2908.253400,\"first_work_ms\":0.358300,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.80000005356851e-06,
+              "peak_working_set": 2121728,
+              "working_set": 2121728,
+              "private_bytes": 417792,
+              "whole_gpu": "1 %, 866 MiB, P0, 2602 MHz, 13801 MHz, 22.33 W, 37",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.201974000000007,
+              "peak_working_set": 83939328,
+              "working_set": 70103040,
+              "private_bytes": 44244992,
+              "whole_gpu": "1 %, 866 MiB, P0, 2602 MHz, 14001 MHz, 22.19 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.410567600000036,
+              "peak_working_set": 204607488,
+              "working_set": 201404416,
+              "private_bytes": 283582464,
+              "whole_gpu": "6 %, 983 MiB, P1, 690 MHz, 13801 MHz, 16.88 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2908.2534,
+            "first_work_ms": 0.3583,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "after",
+          "repeat": 2,
+          "warmup": false,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2392.773300,\"first_work_ms\":0.436100,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.29999999798747e-06,
+              "peak_working_set": 2134016,
+              "working_set": 2134016,
+              "private_bytes": 421888,
+              "whole_gpu": "1 %, 866 MiB, P1, 690 MHz, 13801 MHz, 18.25 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.1698129000000108,
+              "peak_working_set": 80769024,
+              "working_set": 69865472,
+              "private_bytes": 42721280,
+              "whole_gpu": "1 %, 865 MiB, P0, 2602 MHz, 14001 MHz, 22.23 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3562182000000007,
+              "peak_working_set": 206442496,
+              "working_set": 205316096,
+              "private_bytes": 285593600,
+              "whole_gpu": "1 %, 981 MiB, P1, 2602 MHz, 13801 MHz, 20.84 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2392.7733,
+            "first_work_ms": 0.4361,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "before",
+          "repeat": 3,
+          "warmup": false,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2871.627100,\"first_work_ms\":0.360800,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.400000020472362e-06,
+              "peak_working_set": 2191360,
+              "working_set": 2191360,
+              "private_bytes": 413696,
+              "whole_gpu": "1 %, 865 MiB, P1, 2602 MHz, 13801 MHz, 20.84 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.1774480999999923,
+              "peak_working_set": 84226048,
+              "working_set": 70582272,
+              "private_bytes": 44191744,
+              "whole_gpu": "1 %, 865 MiB, P0, 2625 MHz, 14001 MHz, 22.44 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.372624700000017,
+              "peak_working_set": 204500992,
+              "working_set": 201236480,
+              "private_bytes": 283025408,
+              "whole_gpu": "2 %, 982 MiB, P1, 2602 MHz, 13801 MHz, 21.78 W, 36",
+              "competing_compute_processes": []
+            }
+          ],
+          "result": {
+            "mode": "inference",
+            "create_ms": 2871.6271,
+            "first_work_ms": 0.3608,
+            "cublas_loaded": 0,
+            "cutlass_loaded": 0
+          }
+        },
+        {
+          "version": "after",
+          "repeat": 3,
+          "warmup": false,
+          "exit_code": 0,
+          "stdout": "{\"mode\":\"inference\",\"create_ms\":2438.926400,\"first_work_ms\":0.321000,\"cublas_loaded\":0,\"cutlass_loaded\":0}\r\n",
+          "stderr": "",
+          "resources": [
+            {
+              "elapsed_seconds": 5.6999999742402e-06,
+              "peak_working_set": 2121728,
+              "working_set": 2121728,
+              "private_bytes": 409600,
+              "whole_gpu": "1 %, 865 MiB, P1, 2602 MHz, 13801 MHz, 21.78 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 1.1805434999999989,
+              "peak_working_set": 80502784,
+              "working_set": 69603328,
+              "private_bytes": 42704896,
+              "whole_gpu": "1 %, 865 MiB, P0, 2602 MHz, 14001 MHz, 22.13 W, 36",
+              "competing_compute_processes": []
+            },
+            {
+              "elapsed_seconds": 2.3515894999999887,
+              "peak_working_set": 202567680,
+              "working_set": 196104192,
+              "private_bytes": 277782528,
+              "whole_gpu": "2 %, 1000 MiB, P1, 2625 MHz, 13801 MHz, 22.81 W, 36",
+              "competing_compute_processes": [
+                {
+                  "pid": "17668",
+                  "type": "C+G",
+                  "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

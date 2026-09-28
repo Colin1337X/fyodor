@@ -1,0 +1,12 @@
+Numerical comparison uses optimized native CPU kernels
+prefix 33: max_abs=6.7949295e-06 rms=1.46374073e-06 max_scaled=4.8422098e-06 worst_logit=30322
+prefix 32: max_abs=6.55651093e-06 rms=1.27589823e-06 max_scaled=4.66498366e-06 worst_logit=30322
+prefix 31: max_abs=7.62939453e-06 rms=1.83287802e-06 max_scaled=6.2866986e-06 worst_logit=29460
+CUDA kernel GPU milliseconds: matmul=395.400 norm=41.929 rope=29.118 vector=44.436 attention=19.030 gather=0.356 (profiling disables graphs)
+CUDA matrix profile: path=dot type=12 rows=2048 columns=2048 batch=1 calls=4224 milliseconds=85.353664
+CUDA matrix profile: path=dot type=12 rows=256 columns=2048 batch=1 calls=3264 milliseconds=32.772352
+CUDA matrix profile: path=dot type=14 rows=256 columns=2048 batch=1 calls=960 milliseconds=13.777408
+CUDA matrix profile: path=dot type=12 rows=5632 columns=2048 batch=1 calls=4224 milliseconds=162.899263
+CUDA matrix profile: path=dot type=14 rows=2048 columns=5632 batch=1 calls=960 milliseconds=33.495040
+CUDA matrix profile: path=dot type=12 rows=2048 columns=5632 batch=1 calls=1152 milliseconds=52.348641
+CUDA matrix profile: path=dot type=14 rows=32000 columns=2048 batch=1 calls=96 milliseconds=14.753600

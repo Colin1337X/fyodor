@@ -1,0 +1,98 @@
+[
+  {
+    "tool": "memcheck",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "memcheck",
+      "--error-exitcode",
+      "99",
+      "--launch-timeout",
+      "120",
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-test-inference.exe",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\split-attention-sanitizer.gguf",
+      "resident",
+      "273"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_TEST_GRAPH": "1",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0"
+    },
+    "exit_code": 0,
+    "log": "cuda-memcheck.log"
+  },
+  {
+    "tool": "racecheck",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "racecheck",
+      "--error-exitcode",
+      "99",
+      "--launch-timeout",
+      "120",
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-test-inference.exe",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\split-attention-sanitizer.gguf",
+      "resident",
+      "273"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_TEST_GRAPH": "1",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0"
+    },
+    "exit_code": 0,
+    "log": "cuda-racecheck.log"
+  },
+  {
+    "tool": "initcheck",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "initcheck",
+      "--error-exitcode",
+      "99",
+      "--launch-timeout",
+      "120",
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-test-inference.exe",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\split-attention-sanitizer.gguf",
+      "resident",
+      "273"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_TEST_GRAPH": "1",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0"
+    },
+    "exit_code": 0,
+    "log": "cuda-initcheck.log"
+  },
+  {
+    "tool": "synccheck",
+    "command": [
+      "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+      "--tool",
+      "synccheck",
+      "--error-exitcode",
+      "99",
+      "--launch-timeout",
+      "120",
+      "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-test-inference.exe",
+      "C:\\Users\\Colin\\fyodor\\build-train-profile\\split-attention-sanitizer.gguf",
+      "resident",
+      "273"
+    ],
+    "environment": {
+      "NYA_COMPUTE": "cuda",
+      "NYA_TEST_GRAPH": "1",
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0"
+    },
+    "exit_code": 0,
+    "log": "cuda-synccheck.log"
+  }
+]

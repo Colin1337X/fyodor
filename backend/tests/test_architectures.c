@@ -424,6 +424,11 @@ static int check_gemma_training(nya_llm_context *c, const char *path)
             nya_train_tensor *logits = nya_train_decoder_forward(train,g,ids,4);
             if (logits == NULL) { fprintf(stderr,"Gemma train forward: %s\n",nya_train_error(g)); return 1; }
             if (step == 0 || step == 40) {
+                nya_train_graph *eval = nya_train_graph_create_for_evaluation(16*1024*1024,NULL);
+                nya_train_tensor *evaluated = nya_train_decoder_forward(train,eval,ids,4);
+                if (evaluated == NULL || memcmp(nya_train_data(evaluated),nya_train_data(logits),4*8*sizeof(float)) ||
+                    nya_train_memory_used(eval) >= nya_train_memory_used(g)) return 1;
+                nya_train_graph_free(eval);
                 nya_llm_context *compare = c, *exported = NULL;
                 if (step != 0) {
                     char exported_path[1400]; snprintf(exported_path,sizeof(exported_path),"%s.train-%zu.gguf",path,rank);

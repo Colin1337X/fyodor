@@ -1,0 +1,39 @@
+diff --git a/CUDA/matvec.cu b/CUDA/matvec.cu
+index 07d7377..aab2036 100644
+--- a/CUDA/matvec.cu
++++ b/CUDA/matvec.cu
+@@ -74,7 +74,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
+     unsigned long long row = (unsigned long long)blockIdx.x * 8 + (threadIdx.x >> 5);
+     if (row >= rows) return;
+     const unsigned char *w = weights + row * row_bytes;
+-    float sum = 0;
++    float sum = 0, alternate = 0;
+     if (TYPE == 12) {
+         for (unsigned long long base = 0; base < columns; base += 256) {
+             const unsigned char *b = w + base / 256 * 144;
+@@ -85,7 +85,8 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
+                 unsigned sc = g < 4 ? s[g] & 63U : (s[g+4] & 15U) | ((unsigned)(s[g-4] >> 6) << 4);
+                 unsigned mn = g < 4 ? s[g+4] & 63U : (s[g+4] >> 4) | ((unsigned)(s[g] >> 6) << 4);
+                 unsigned q = (b[16+g/2*32+lane] >> (g%2*4)) & 15U;
+-                sum += (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
++                float product = (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
++                if (g & 1) alternate += product; else sum += product;
+             }
+         }
+     } else if (TYPE == 14) {
+@@ -98,12 +99,14 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
+                 unsigned lo = b[half*64+quarter%2*32+lane], hi = b[128+half*32+lane];
+                 int q = (int)(((lo >> (quarter/2*4)) & 15U) | (((hi >> (quarter*2)) & 3U) << 4)) - 32;
+                 int sc = ((const signed char *)(b+192))[g*2+lane/16];
+-                sum += d*(float)sc*(float)q * input[base+g*32+lane];
++                float product = d*(float)sc*(float)q * input[base+g*32+lane];
++                if (g & 1) alternate += product; else sum += product;
+             }
+         }
+     } else {
+         for (unsigned long long i = lane; i < columns; i += 32) sum += nya_weight(w, i, TYPE) * input[i];
+     }
++    if (TYPE == 12 || TYPE == 14) sum += alternate;
+     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
+     if (!lane) output[row] = sum;
+ }

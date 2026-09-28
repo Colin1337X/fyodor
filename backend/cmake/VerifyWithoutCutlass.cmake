@@ -11,6 +11,8 @@ file(MAKE_DIRECTORY "${check_root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/CMakeLists.txt" "${NYA_SOURCE_ROOT}/config.yaml" DESTINATION "${check_root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/backend" "${NYA_SOURCE_ROOT}/CUDA" DESTINATION "${check_root}/source"
     PATTERN cutlass EXCLUDE PATTERN vendor EXCLUDE PATTERN "build*" EXCLUDE PATTERN benchmarks EXCLUDE)
+file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
+    DESTINATION "${check_root}/source/backend/benchmarks")
 if(EXISTS "${check_root}/source/CUDA/cutlass" OR NOT EXISTS "${check_root}/source/CUDA/cuda.c")
     message(FATAL_ERROR "Verification source does not have CUDA-without-CUTLASS layout")
 endif()

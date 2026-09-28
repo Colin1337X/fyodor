@@ -80,6 +80,14 @@ the live thread count reports configured capacity, not measured utilization.
 The setting can change when resuming a checkpoint. Training remains CPU-only.
 See the [execution and correctness report](../backend/benchmarks/TRAINING_EXECUTION_20260925.md).
 
+An optional validation dataset enables held-out loss before training, at the
+selected optimizer-update interval and at the end. The record limit selects a
+fixed prefix (0 means all); data uses the current mode's format. Validation loss
+shows its own step and record count separately from training loss. Evaluation
+can be changed on resume and never updates weights or optimizer state. Stop
+interrupts a validation pass between records and discards its partial result.
+See [evaluation behavior and evidence](../backend/benchmarks/TRAINING_EVALUATION_20260925.md).
+
 Training shows actual trainer log lines and a loss trace from reported
 `step=... loss=...` values. Status polling updates telemetry without replacing
 the configuration form. Launching training requires the desktop app. Logs have

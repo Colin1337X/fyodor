@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-09-26T11:42:24.093133+00:00",
+  "revision": "0c5290080c3a5691930018586f34442f7271b4dc",
+  "exe_sha256": "8ae5d94d10f5aebcc6ea63d63e46ca35419c3535cbb9c90b5e81d48ec063069a",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "caveat": "Diagnostic desktop runs. Other apps remain open; no performance acceptance from these measurements. CUDA event profiling disables graphs and includes host submission gaps.",
+  "runs": [
+    {
+      "name": "profile-prefill",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "--context",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 1641 MiB, P0, 1950 MHz, 14001 MHz, 26.85 W, 44",
+      "exit_code": 0,
+      "gpu_after": "98 %, 1641 MiB, P0, 2715 MHz, 14001 MHz, 72.16 W, 64"
+    },
+    {
+      "name": "profile-short",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 1641 MiB, P0, 2040 MHz, 14001 MHz, 29.72 W, 45",
+      "exit_code": 0,
+      "gpu_after": "87 %, 1639 MiB, P0, 2782 MHz, 14001 MHz, 112.43 W, 60"
+    },
+    {
+      "name": "profile-long",
+      "command": [
+        "C:\\Users\\Colin\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "9 %, 1639 MiB, P0, 2002 MHz, 14001 MHz, 29.85 W, 46",
+      "exit_code": 0,
+      "gpu_after": "88 %, 1639 MiB, P0, 2790 MHz, 14001 MHz, 126.76 W, 62"
+    }
+  ]
+}

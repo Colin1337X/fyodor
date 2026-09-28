@@ -172,19 +172,26 @@ extern "C" __global__ void nya_attention_reference(const float *q, const float *
    Value accumulation partitions the context across warps and reduces their
    partial vectors in shared memory. Scratch remains O(batch*heads*capacity),
    and causal/shared-KV indexing is identical to the reference kernel above. */
-extern "C" __global__ void nya_attention(const float *q, const float *keys,
+__device__ __forceinline__ void nya_attention_partition(const float *q, const float *keys,
     const float *values, float *out, float *scores, unsigned width, unsigned heads,
     unsigned kvheads, unsigned window, unsigned end, unsigned capacity, float scale,
-    const unsigned *request)
+    const unsigned *request, unsigned partitions)
 {
     if (request) end = request[1];
-    end += blockIdx.y;
+    unsigned query = blockIdx.y/partitions, partition = blockIdx.y%partitions;
+    end += query;
     unsigned first = window && end >= window ? end-window+1 : 0;
+    if (partitions > 1) {
+        unsigned length = end-first+1;
+        end = first+(unsigned)((unsigned long long)length*(partition+1)/partitions)-1;
+        first += (unsigned)((unsigned long long)length*partition/partitions);
+    }
     unsigned head = blockIdx.x, kh = head/(heads/kvheads), stride = kvheads*width;
     unsigned lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
-    q += ((unsigned long long)blockIdx.y*heads+head)*width;
-    out += ((unsigned long long)blockIdx.y*heads+head)*width;
-    float *row = scores+((unsigned long long)blockIdx.y*heads+head)*capacity;
+    q += ((unsigned long long)query*heads+head)*width;
+    out += partitions == 1 ? ((unsigned long long)query*heads+head)*width :
+        ((unsigned long long)head*partitions+partition)*(width+2);
+    float *row = scores+((unsigned long long)query*heads+head)*capacity;
     __shared__ float partial[8][32];
     __shared__ float maxima[8], maximum, denominator;
     float local_max = -__int_as_float(0x7f800000);
@@ -221,10 +228,44 @@ extern "C" __global__ void nya_attention(const float *q, const float *keys,
         __syncthreads();
         if (!warp && j < width) {
             for (unsigned i = 1; i < 8; ++i) value += partial[i][lane];
-            out[j] = value/denominator;
+            out[j] = partitions == 1 ? value/denominator : value;
         }
         __syncthreads();
     }
+    if (partitions > 1 && !threadIdx.x) { out[width] = maximum; out[width+1] = denominator; }
+}
+
+#define NYA_ATTENTION_ENTRY(NAME, PARTITIONS) \
+extern "C" __global__ void NAME(const float *q, const float *keys, const float *values, \
+    float *out, float *scores, unsigned width, unsigned heads, unsigned kvheads, \
+    unsigned window, unsigned end, unsigned capacity, float scale, const unsigned *request) \
+{ nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,window,end,capacity,scale,request,PARTITIONS); }
+NYA_ATTENTION_ENTRY(nya_attention, 1)
+NYA_ATTENTION_ENTRY(nya_attention_split, 4)
+#undef NYA_ATTENTION_ENTRY
+
+/* Four independent context ranges expose more blocks for long decode. Combine
+   unnormalized value sums using a common softmax maximum. This is an original
+   F32 implementation of the partition-and-rescale technique also studied in
+   ggml's MIT-licensed fattn-common.cuh (b10809); no upstream source is copied.
+   The host admits only ranges of at least 257 keys, so every partition is live. */
+extern "C" __global__ void nya_attention_combine(const float *parts, float *out, unsigned width)
+{
+    unsigned j = threadIdx.x, head = blockIdx.x;
+    parts += (unsigned long long)head*4*(width+2);
+    if (j >= width) return;
+    float maximum = parts[width];
+    #pragma unroll
+    for (unsigned i = 1; i < 4; ++i) maximum = fmaxf(maximum,parts[i*(width+2)+width]);
+    float numerator = 0, denominator = 0;
+    #pragma unroll
+    for (unsigned i = 0; i < 4; ++i) {
+        const float *p = parts+i*(width+2);
+        float correction = expf(p[width]-maximum);
+        numerator += correction*p[j];
+        denominator += correction*p[width+1];
+    }
+    out[(unsigned long long)head*width+j] = numerator/denominator;
 }
 
 /* Prefill owns eight queries per block. Load each 32-key K/V tile once into

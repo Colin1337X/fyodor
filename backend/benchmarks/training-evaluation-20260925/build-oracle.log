@@ -1,0 +1,41 @@
+[ 32%] Built target nya-engine
+[ 35%] Built target nya-mock-vendor
+[ 37%] Built target nya-mock-missing-vendor
+[ 40%] Built target nya-make-test-models
+[ 44%] Built target nya-test-config
+[ 47%] Built target nya-test-formats
+[ 50%] Built target nya-test-execution
+[ 52%] Built target nya-test-generation
+[ 55%] Built target nya-test-architectures
+[ 58%] Built target nya-test-training
+[ 60%] Built target nya-test-pretraining
+[ 62%] Building C object backend/CMakeFiles/nya-test-train-runner.dir/tests/test_train_runner.c.obj
+[ 64%] Built target nya-test-compute
+[ 67%] Built target nya-test-inference
+[ 70%] Built target nya-test-quant-kernels
+[ 72%] Built target nya-test-attention
+[ 75%] Built target nya-test-kv-precision
+[ 79%] Built target nya-test-server
+[ 83%] Built target nya-test-api
+[ 87%] Built target nya-server
+[ 90%] Built target fyodor-train
+C:\Users\Colin\fyodor\backend\tests\test_train_runner.c: In function 'objective':
+C:\Users\Colin\fyodor\backend\tests\test_train_runner.c:132:13: error: declaration of 'a' shadows a previous local [-Werror=shadow]
+  132 |         int a, b;
+      |             ^
+C:\Users\Colin\fyodor\backend\tests\test_train_runner.c:62:14: note: shadowed declaration is here
+   62 |     uint32_t a[] = {100,101,102,100}, b[] = {102,101,100,102,100,101,102,100};
+      |              ^
+C:\Users\Colin\fyodor\backend\tests\test_train_runner.c:132:16: error: declaration of 'b' shadows a previous local [-Werror=shadow]
+  132 |         int a, b;
+      |                ^
+C:\Users\Colin\fyodor\backend\tests\test_train_runner.c:62:39: note: shadowed declaration is here
+   62 |     uint32_t a[] = {100,101,102,100}, b[] = {102,101,100,102,100,101,102,100};
+      |                                       ^
+[ 93%] Built target fyodor-bench
+[ 95%] Built target nya-test-vendor
+[ 98%] Built target fyodor-backend
+cc1.exe: all warnings being treated as errors
+make[2]: *** [backend\CMakeFiles\nya-test-train-runner.dir\build.make:79: backend/CMakeFiles/nya-test-train-runner.dir/tests/test_train_runner.c.obj] Error 1
+make[1]: *** [CMakeFiles\Makefile2:1756: backend/CMakeFiles/nya-test-train-runner.dir/all] Error 2
+make: *** [Makefile:100: all] Error 2

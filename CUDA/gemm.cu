@@ -9,10 +9,9 @@ __device__ __forceinline__ void nya_tile(const unsigned char *w, const float *x,
     unsigned row = blockIdx.x*32 + threadIdx.x;
     unsigned token = blockIdx.y*32 + threadIdx.y;
     unsigned linear = threadIdx.y*32 + threadIdx.x;
-    float sums[4] = {0,0,0,0};
-    /* F32 exports have long dot products without quantization noise. Two
-       independent chains reduce their rounding depth and expose instruction
-       parallelism; TYPE is constant, so other formats keep their old kernel. */
+    /* Every storage format accumulates in F32. Two independent chains reduce
+       rounding depth for long positive dot products as well as cancellation;
+       low-precision storage does not justify a less accurate accumulator. */
     float precise[4][2] = {};
     for (unsigned long long k = 0; k < columns; k += 32) {
         #pragma unroll
@@ -31,8 +30,7 @@ __device__ __forceinline__ void nya_tile(const unsigned char *w, const float *x,
             float weight = weights[threadIdx.x][j];
             #pragma unroll
             for (unsigned slot = 0; slot < 4; ++slot) {
-                if (TYPE == 0) precise[slot][j&1] += weight * inputs[threadIdx.y+slot*8][j];
-                else sums[slot] += weight * inputs[threadIdx.y+slot*8][j];
+                precise[slot][j&1] += weight * inputs[threadIdx.y+slot*8][j];
             }
         }
         __syncthreads();
@@ -40,8 +38,8 @@ __device__ __forceinline__ void nya_tile(const unsigned char *w, const float *x,
     if (row < rows) {
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot)
-            if (token+slot*8 < batch) y[(unsigned long long)(token+slot*8)*rows+row] = TYPE == 0 ?
-                precise[slot][0]+precise[slot][1] : sums[slot];
+            if (token+slot*8 < batch) y[(unsigned long long)(token+slot*8)*rows+row] =
+                precise[slot][0]+precise[slot][1];
     }
 }
 #define NYA_GEMM(TYPE) extern "C" __global__ void nya_gemm_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned r, unsigned b) { nya_tile(w,x,y,c,s,r,b,TYPE); }
@@ -50,15 +48,13 @@ NYA_GEMM(0) NYA_GEMM(1) NYA_GEMM(2) NYA_GEMM(8) NYA_GEMM(12) NYA_GEMM(14) NYA_GE
 
 /* A 64x64 output tile gives each thread a 4x4 register tile. Each shared
    operand now feeds four products before another load, doubling reuse over
-   the 32x32 kernel. Quantized formats keep their ascending F32 reduction;
-   F32 weights use the two shorter chains described above. Padding
+   the 32x32 kernel. All formats use the two shorter F32 chains described above. Padding
    avoids shared-memory bank conflicts when lanes access distinct rows. */
 __device__ __forceinline__ void nya_tile64(const unsigned char *w, const float *x,
     float *y, unsigned long long columns, unsigned long long row_bytes, unsigned rows, unsigned batch, unsigned TYPE)
 {
     __shared__ float weights[64][33], inputs[64][33];
     unsigned linear = threadIdx.y*16+threadIdx.x;
-    float sums[4][4] = {};
     float precise[4][4][2] = {};
     for (unsigned long long base = 0; base < columns; base += 32) {
         #pragma unroll
@@ -78,8 +74,7 @@ __device__ __forceinline__ void nya_tile64(const unsigned char *w, const float *
             for (unsigned i = 0; i < 4; ++i) {
                 #pragma unroll
                 for (unsigned j = 0; j < 4; ++j) {
-                    if (TYPE == 0) precise[i][j][k&1] += a[i]*b[j];
-                    else sums[i][j] += a[i]*b[j];
+                    precise[i][j][k&1] += a[i]*b[j];
                 }
             }
         }
@@ -91,8 +86,8 @@ __device__ __forceinline__ void nya_tile64(const unsigned char *w, const float *
         #pragma unroll
         for (unsigned j = 0; j < 4; ++j) {
             unsigned token = blockIdx.y*64+threadIdx.y+j*16;
-            if (row < rows && token < batch) y[(unsigned long long)token*rows+row] = TYPE == 0 ?
-                precise[i][j][0]+precise[i][j][1] : sums[i][j];
+            if (row < rows && token < batch) y[(unsigned long long)token*rows+row] =
+                precise[i][j][0]+precise[i][j][1];
         }
     }
 }

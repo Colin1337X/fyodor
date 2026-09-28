@@ -31,6 +31,31 @@ static int compare_logits(nya_train_decoder *decoder, const nya_model *model)
     nya_train_graph *graph = nya_train_graph_create(16*1024*1024);
     nya_train_tensor *logits = nya_train_decoder_forward(decoder,graph,tokens,12);
     REQUIRE(logits != NULL && nya_llm_state_create(c,16,&state,error,sizeof(error)) == 0);
+    size_t parameter_count;
+    nya_train_parameter *const *parameters = nya_train_decoder_parameters(decoder,&parameter_count);
+    nya_train_adamw snapshot; nya_train_adamw_defaults(&snapshot);
+    FILE *before = tmpfile(), *after = tmpfile(); REQUIRE(before && after);
+    REQUIRE(nya_train_checkpoint_write(before,&snapshot,parameters,parameter_count) == 0);
+    nya_train_executor *executor = nya_train_executor_create(3); REQUIRE(executor);
+    nya_train_graph *eval = nya_train_graph_create_for_evaluation(16*1024*1024,executor);
+    nya_train_tensor *evaluated = nya_train_decoder_forward(decoder,eval,tokens,12);
+    REQUIRE(evaluated && memcmp(nya_train_data(logits),nya_train_data(evaluated),12*259*sizeof(float)) == 0);
+    REQUIRE(nya_train_memory_used(eval) < nya_train_memory_used(graph));
+    printf("decoder evaluation graph: train=%zu eval=%zu bytes\n",nya_train_memory_used(graph),nya_train_memory_used(eval));
+    size_t evaluation_budget = nya_train_memory_used(eval);
+    REQUIRE(nya_train_backward(nya_train_cross_entropy(evaluated,labels,NULL,12)) != 0);
+    REQUIRE(nya_train_checkpoint_write(after,&snapshot,parameters,parameter_count) == 0);
+    rewind(before); rewind(after);
+    int a, b;
+    do { a = fgetc(before); b = fgetc(after); REQUIRE(a == b); } while (a != EOF);
+    REQUIRE(!ferror(before) && !ferror(after)); fclose(before); fclose(after);
+    nya_train_graph_free(eval); nya_train_executor_free(executor);
+    eval = nya_train_graph_create_for_evaluation(evaluation_budget,NULL);
+    REQUIRE(nya_train_decoder_forward(decoder,eval,tokens,12));
+    nya_train_graph_free(eval);
+    eval = nya_train_graph_create(evaluation_budget);
+    REQUIRE(!nya_train_decoder_forward(decoder,eval,tokens,12));
+    nya_train_graph_free(eval);
     for (size_t i = 0; i < 12; ++i) {
         REQUIRE(nya_llm_forward(c,&state,tokens[i],i,1) == 0);
         for (size_t j = 0; j < 259; ++j) {

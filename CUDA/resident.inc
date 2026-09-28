@@ -3,29 +3,37 @@
    is read-only; every live request owns one scratch allocation and KV prefix. */
 #include "../backend/core/llm_internal.h"
 #include <math.h>
-typedef struct nya_cuda_timing { CUevent start, end; unsigned kind; } nya_cuda_timing;
+typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; } nya_cuda_timing;
+typedef struct nya_cuda_matrix_profile {
+    size_t rows, columns, batch;
+    unsigned type, path;
+    unsigned long long calls;
+    double milliseconds;
+} nya_cuda_matrix_profile;
 
 typedef struct nya_cuda_plan {
     nya_cuda_context *cuda;
     const nya_llm_context *model;
     CUdeviceptr storage, x, norm, residual, gate, up, q, scores, keys, values, logits, frequencies;
-    CUdeviceptr blas_storage;
+    CUdeviceptr blas_storage, attention_parts;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors;
     CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
-    CUfunction decode_request, attention_prefill;
+    CUfunction decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     int failed;
     nya_compute_stats stats;
-    CUgraphExec executable;
-    unsigned long long graph_kernels;
-    int use_graphs;
+    CUgraphExec executable[2];
+    unsigned long long graph_kernels[2];
+    int use_graphs, split_attention;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
     size_t timing_count;
     double milliseconds[6];
+    nya_cuda_matrix_profile *matrix_profiles;
+    unsigned matrix_profile, matrix_profile_count;
 } nya_cuda_plan;
 
 static void plan_profile_flush(nya_cuda_plan *p)
@@ -34,7 +42,13 @@ static void plan_profile_flush(nya_cuda_plan *p)
     p->cuda->stream_sync(p->cuda->stream);
     for (size_t i = 0; i < p->timing_count; ++i) {
         nya_cuda_timing *t = &p->timings[i]; float elapsed;
-        if (p->cuda->event_elapsed(&elapsed, t->start, t->end) == CUDA_SUCCESS) p->milliseconds[t->kind] += elapsed;
+        if (p->cuda->event_elapsed(&elapsed, t->start, t->end) == CUDA_SUCCESS) {
+            p->milliseconds[t->kind] += elapsed;
+            if (t->matrix) {
+                nya_cuda_matrix_profile *m = &p->matrix_profiles[t->matrix - 1];
+                ++m->calls; m->milliseconds += elapsed;
+            }
+        }
         p->cuda->event_free(t->start); p->cuda->event_free(t->end);
     }
     p->timing_count = 0;
@@ -51,14 +65,22 @@ static void cuda_plan_free(void *opaque)
     if (p->storage && p->cuda->push(p->cuda->context) == CUDA_SUCCESS) {
         p->cuda->stream_sync(p->cuda->stream);
         plan_profile_flush(p);
-        if (p->executable) p->cuda->graph_exec_free(p->executable);
+        for (size_t i = 0; i < 2; ++i) if (p->executable[i]) p->cuda->graph_exec_free(p->executable[i]);
         p->cuda->deallocate(p->storage);
         if (p->blas_storage) p->cuda->deallocate(p->blas_storage);
         p->cuda->pop(&previous);
     }
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
-    free(p->timings); free(p->tensors); free(p);
+    if (p->matrix_profiles) {
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow"};
+        for (unsigned i = 0; i < 64; ++i) {
+            const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
+            if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
+                paths[m->path], m->type, m->rows, m->columns, m->batch, m->calls, m->milliseconds);
+        }
+    }
+    free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p);
 }
 
 static int plan_add(size_t *total, size_t count)
@@ -92,7 +114,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (m == NULL || m->is_assistant || m->expert_count || m->per_layer_embedding_length ||
         capacity == 0 || capacity > m->context_length || capacity > UINT32_MAX || m->cache_width > SIZE_MAX / capacity) return NULL;
     size_t d = m->embedding_length, h = m->maximum_hidden_length, q = m->maximum_query_length;
-    size_t heads = 0, rope_count = 0, total = 0, weights = 0, maximum_kv = 0;
+    size_t heads = 0, rope_count = 0, total = 0, weights = 0, maximum_kv = 0, partial_count = 0;
+    const char *split_setting = getenv("NYA_CUDA_SPLIT_ATTENTION");
+    int split_attention = !c->reference && capacity > 256 && (!split_setting || strcmp(split_setting,"0"));
     int all_tiled = !c->reference;
     for (size_t i = 0; i < m->block_count; ++i) {
         if (m->layers[i].head_dimension != 64 && m->layers[i].head_dimension != 128) all_tiled = 0;
@@ -100,6 +124,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         if (!m->layers[i].head_dimension || m->layers[i].kv_head_count > SIZE_MAX / m->layers[i].head_dimension) return NULL;
         size_t kv = m->layers[i].kv_head_count * m->layers[i].head_dimension;
         if (kv > maximum_kv) maximum_kv = kv;
+        if (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128) &&
+            (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256)) {
+            size_t width = m->layers[i].head_dimension+2;
+            if (m->layers[i].head_count > SIZE_MAX/width/4) return NULL;
+            size_t partials = m->layers[i].head_count*width*4;
+            if (partials > partial_count) partial_count = partials;
+        }
         if (plan_add(&rope_count, m->layers[i].head_dimension / 2) != 0) return NULL;
     }
     if (heads > SIZE_MAX / capacity) return NULL;
@@ -119,7 +150,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
         m->cache_width * capacity, m->cache_width * capacity, m->tokenizer.vocabulary_size, rope_count / sizeof(float),
-        maximum_kv, maximum_kv, 2};
+        maximum_kv, maximum_kv, 2, partial_count};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (weights > SIZE_MAX - m->tensors[i].data_size) return NULL;
@@ -139,12 +170,16 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (p == NULL) return NULL;
     p->cuda = c; p->model = m; p->capacity = capacity; p->bytes = total;
     p->batch = 1; p->maximum_batch = batch;
+    p->split_attention = partial_count != 0;
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
     const char *profile = getenv("NYA_CUDA_PROFILE");
     if (profile && !strcmp(profile, "1")) {
         p->timings = calloc(4096, sizeof(*p->timings));
-        if (p->timings) p->use_graphs = 0;
+        if (p->timings) {
+            p->use_graphs = 0;
+            p->matrix_profiles = calloc(64, sizeof(*p->matrix_profiles));
+        }
     }
     p->fail_after = SIZE_MAX;
     p->fail_allocation_after = SIZE_MAX;
@@ -166,9 +201,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->stats.scratch_bytes = total - p->stats.kv_bytes;
     p->stats.prefill_batch = batch;
     p->tensors = calloc(m->tensor_count, sizeof(*p->tensors));
-    if (p->tensors == NULL) { free(p->timings); free(p); return NULL; }
+    if (p->tensors == NULL) { free(p->matrix_profiles); free(p->timings); free(p); return NULL; }
     CUcontext previous;
-    if (c->push(c->context) != CUDA_SUCCESS) { free(p->timings); free(p->tensors); free(p); return NULL; }
+    if (c->push(c->context) != CUDA_SUCCESS) { free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p); return NULL; }
     size_t start_weights = c->weight_count, free_bytes, total_bytes;
     size_t missing = 0;
     for (size_t i = 0; i < m->tensor_count; ++i) {
@@ -215,7 +250,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     }
     CUdeviceptr *buffers[] = {&p->x, &p->norm, &p->residual, &p->gate, &p->up, &p->q,
         &p->scores, &p->keys, &p->values, &p->logits, &p->frequencies,
-        &p->decode_key, &p->decode_value, &p->request};
+        &p->decode_key, &p->decode_value, &p->request, &p->attention_parts};
     size_t offset = 0;
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) {
         *buffers[i] = p->storage + offset; offset += counts[i] * sizeof(float);
@@ -256,7 +291,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         c->function_get(&p->rope, c->module, "nya_rope") != CUDA_SUCCESS ||
         c->function_get(&p->vector, c->module, "nya_vector") != CUDA_SUCCESS ||
         c->function_get(&p->attention, c->module, c->reference ? "nya_attention_reference" : "nya_attention") != CUDA_SUCCESS ||
-        c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS) goto failure;
+        c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS ||
+        c->function_get(&p->attention_split, c->module, "nya_attention_split") != CUDA_SUCCESS ||
+        c->function_get(&p->attention_combine, c->module, "nya_attention_combine") != CUDA_SUCCESS) goto failure;
     if (c->pop(&previous) != CUDA_SUCCESS) { p->failed = 1; cuda_plan_free(p); return NULL; }
     return p;
 failure:
@@ -279,9 +316,10 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         if (p->timing_count == 4096) plan_profile_flush(p);
         timing = &p->timings[p->timing_count];
         timing->start = NULL; timing->end = NULL;
+        timing->matrix = p->matrix_profile;
         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
-        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
+        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
         ++p->timing_count;
         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
     }
@@ -295,7 +333,7 @@ static int plan_grid(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy, unsig
 { return plan_grid_shared(p, f, gx, gy, bx, by, 0, args); }
 static int plan_launch(nya_cuda_plan *p, CUfunction f, size_t blocks, void **args)
 { return plan_grid(p, f, blocks, 1, 256, 1, args); }
-static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
+static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
 {
     CUdeviceptr matrix = plan_tensor(p, t);
     unsigned long long cols = columns, stride = t->data_size / rows;
@@ -313,6 +351,7 @@ static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *
                 if (p->timing_count == 4096) plan_profile_flush(p);
                 timing = &p->timings[p->timing_count];
                 timing->start = NULL; timing->end = NULL; timing->kind = 0;
+                timing->matrix = p->matrix_profile;
                 if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
                 if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
                 ++p->timing_count;
@@ -335,6 +374,28 @@ static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *
     unsigned long long row_count = rows;
     args[5] = &row_count;
     return plan_launch(p, p->cuda->dot[type], (rows + 7) / 8, args);
+}
+static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
+{
+    if (!p->matrix_profiles) return plan_matvec_impl(p, out, t, in, rows, columns);
+    /* Fixed diagnostic storage: 63 distinct shapes plus one explicit overflow
+       bucket. A vendor entry times the complete expansion/chunked GEMM call,
+       not an individual internal kernel. No tensor names or contents are logged. */
+    unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
+        p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U : 2U;
+    unsigned slot = 0;
+    for (; slot < p->matrix_profile_count; ++slot) {
+        const nya_cuda_matrix_profile *m = &p->matrix_profiles[slot];
+        if (m->rows == rows && m->columns == columns && m->batch == p->batch && m->type == t->type && m->path == path) break;
+    }
+    if (slot == p->matrix_profile_count && slot < 63) {
+        p->matrix_profiles[slot] = (nya_cuda_matrix_profile){rows, columns, p->batch, t->type, path, 0, 0};
+        ++p->matrix_profile_count;
+    } else if (slot == 63) p->matrix_profiles[slot].path = 4;
+    p->matrix_profile = slot + 1;
+    int result = plan_matvec_impl(p, out, t, in, rows, columns);
+    p->matrix_profile = 0;
+    return result;
 }
 static int plan_norm(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr in, const nya_llm_tensor *t, size_t n, size_t rows)
 {
@@ -382,10 +443,12 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
     p->batch = count;
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { p->failed = 1; return -1; }
-    /* Only single-token/logits execution has a fixed topology. Prefill remains
-       independently batched. Reset/rewind do not invalidate the graph: request
-       metadata and cache stores select the new prefix on every replay. */
+    /* Single-token/logits execution retains at most two fixed topologies:
+       ordinary attention and four-way partitioned attention after 256 tokens.
+       Reset/rewind select the matching cached graph; neither graph embeds a
+       stale token or position. Prefill remains independently batched. */
     int capturing = 0;
+    unsigned graph_index = p->split_attention && count == 1 && position >= 256 ? 1U : 0U;
     CUgraph graph = NULL;
     unsigned long long capture_start = 0;
     p->active_request = 0;
@@ -394,9 +457,9 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         void *args[] = {&p->request, &token, &pos};
         if (plan_grid(p, p->decode_request, 1, 1, 1, 1, args)) goto failure;
         p->active_request = p->request;
-        if (p->executable) {
-            if (c->graph_launch(p->executable, c->stream) != CUDA_SUCCESS) goto failure;
-            p->stats.kernel_launches += p->graph_kernels;
+        if (p->executable[graph_index]) {
+            if (c->graph_launch(p->executable[graph_index], c->stream) != CUDA_SUCCESS) goto failure;
+            p->stats.kernel_launches += p->graph_kernels[graph_index];
             ++p->stats.graph_replays;
             goto read_logits;
         }
@@ -458,6 +521,11 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             RUN(plan_grid_shared(p, p->attention_prefill, heads, (count+7)/8, 256, 1,
                 73*width*(unsigned)sizeof(float), tiled));
             ++p->stats.tiled_attention_calls;
+        } else if (graph_index && (width == 64 || width == 128) && (!window || window > 256)) {
+            attention[3] = &p->attention_parts;
+            RUN(plan_grid(p, p->attention_split, heads, 4, 256, 1, attention));
+            void *combine[] = {&p->attention_parts, &p->norm, &width};
+            RUN(plan_grid(p, p->attention_combine, heads, 1, 128, 1, combine));
         } else RUN(plan_grid(p, p->attention, heads, count, 256, 1, attention));
         RUN(plan_matvec(p, p->residual, w->attention_output, p->norm, d, qdim));
         if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->attention_post_norm, d, 1));
@@ -485,11 +553,11 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         if (capturing) {
             CUresult ended = c->capture_end(c->stream, &graph); capturing = 0;
             if (ended != CUDA_SUCCESS) goto failure;
-            if (c->graph_instantiate(&p->executable, graph, 0) != CUDA_SUCCESS) goto failure;
-            p->graph_kernels = p->stats.kernel_launches - capture_start;
+            if (c->graph_instantiate(&p->executable[graph_index], graph, 0) != CUDA_SUCCESS) goto failure;
+            p->graph_kernels[graph_index] = p->stats.kernel_launches - capture_start;
             ++p->stats.graph_captures;
             c->graph_free(graph); graph = NULL;
-            if (c->graph_launch(p->executable, c->stream) != CUDA_SUCCESS) goto failure;
+            if (c->graph_launch(p->executable[graph_index], c->stream) != CUDA_SUCCESS) goto failure;
             ++p->stats.graph_replays;
         }
 read_logits:

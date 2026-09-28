@@ -58,7 +58,7 @@ run("frontend-tests", [node, "--test", "frontend/tests/ui.test.mjs", "frontend/t
 run("frontend-build", [node, "node_modules/vite/bin/vite.js", "build"], cwd=root / "frontend")
 hashes = {}
 for name in ("backend/core/training.c", "backend/core/train_main.c", "backend/core/train_clock.h", "backend/core/train_control.h",
-             "backend/tests/train_stop.py", "backend/core/llm_quant.c",
+             "backend/tests/train_stop.py", "backend/tests/train_eval.py", "backend/tests/test_architectures.c", "backend/core/llm_quant.c",
              "backend/core/file.c", "backend/core/file.h", "backend/tests/train_paths.py",
              "backend/core/train_executor.c", "backend/core/train_executor.h", "backend/include/training.h",
              "backend/core/llm_cpu.c", "backend/tests/test_pretraining.c", "CUDA/gemm.cu",

@@ -34,8 +34,8 @@ typedef struct train_record {
 } train_record;
 
 typedef struct train_options {
-    const char *mode, *data, *output, *base, *checkpoint, *resume, *metrics;
-    size_t steps, rank, memory, accumulate, control_stdin, threads;
+    const char *mode, *data, *output, *base, *checkpoint, *resume, *metrics, *eval_data;
+    size_t steps, rank, memory, accumulate, control_stdin, threads, eval_every, eval_records;
     nya_train_executor *executor;
     float rate, beta;
     nya_train_decoder_config config;
@@ -55,6 +55,9 @@ static void usage(void)
          "  --memory-mib N          Budget for each of parameters and graph (default 256)\n"
          "  --checkpoint FILE --resume FILE   Save/load weights and AdamW state\n"
          "  --metrics FILE          Write per-update timing/loss CSV to a new path\n"
+         "  --eval-data FILE        Held-out data in the same format as training\n"
+         "  --eval-every N          Evaluate before training, every N updates, and at end (default 10)\n"
+         "  --eval-records N        Fixed first N validation windows/pairs; 0 means all (default)\n"
          "  --control-stdin 1       Pipe control: S or EOF saves and stops between updates\n"
          "  --beta X                DPO beta (default 0.1)\n"
          "Corpora are UTF-8 text. SFT lines: prompt<TAB>completion.\n"
@@ -85,7 +88,8 @@ static int options(int argc, char **argv, train_options *o)
 {
     memset(o,0,sizeof(*o)); nya_train_decoder_defaults(&o->config);
     o->mode = "pretrain"; o->steps = 100; o->rank = 8; o->rate = 0.001f;
-    o->beta = 0.1f; o->memory = 256U*1024U*1024U; o->accumulate = 1;
+    o->beta = 0.1f; o->memory = 256U*1024U*1024U; o->accumulate = 1; o->eval_every = 10;
+    int evaluation_options = 0;
     for (int i = 1; i < argc; i += 2) {
         const char *key = argv[i];
         if (i+1 >= argc) return -1;
@@ -97,6 +101,7 @@ static int options(int argc, char **argv, train_options *o)
         else if (strcmp(key,"--checkpoint") == 0) o->checkpoint = value;
         else if (strcmp(key,"--resume") == 0) o->resume = value;
         else if (strcmp(key,"--metrics") == 0) o->metrics = value;
+        else if (strcmp(key,"--eval-data") == 0) o->eval_data = value;
         else if (strcmp(key,"--lr") == 0) { if (real(value,&o->rate) != 0) return -1; }
         else if (strcmp(key,"--beta") == 0) { if (real(value,&o->beta) != 0) return -1; }
         else {
@@ -105,6 +110,8 @@ static int options(int argc, char **argv, train_options *o)
             else if (strcmp(key,"--accumulate") == 0) o->accumulate = n;
             else if (strcmp(key,"--control-stdin") == 0) o->control_stdin = n;
             else if (strcmp(key,"--threads") == 0) o->threads = n;
+            else if (strcmp(key,"--eval-every") == 0) { if (!n) return -1; o->eval_every = n; evaluation_options = 1; }
+            else if (strcmp(key,"--eval-records") == 0) { o->eval_records = n; evaluation_options = 1; }
             else if (strcmp(key,"--rank") == 0) o->rank = n;
             else if (strcmp(key,"--seed") == 0) o->config.seed = n;
             else if (strcmp(key,"--memory-mib") == 0) {
@@ -126,6 +133,7 @@ static int options(int argc, char **argv, train_options *o)
     if (!pretrain && strcmp(o->mode,"cpt") != 0 && strcmp(o->mode,"sft") != 0 && strcmp(o->mode,"dpo") != 0) return -1;
     if (o->data == NULL || o->output == NULL || o->steps == 0 || o->rank > 256 ||
         o->accumulate == 0 || o->accumulate > 1024 || o->control_stdin > 1 || o->threads > 64 ||
+        (evaluation_options && o->eval_data == NULL) ||
         (pretrain ? o->base != NULL : o->base == NULL)) return -1;
     o->config.parameter_memory_limit = o->memory; return 0;
 }
@@ -190,6 +198,62 @@ typedef struct train_dataset {
     int dpo;
 } train_dataset;
 
+static void dataset_free(train_dataset *dataset)
+{
+    if (dataset->records != NULL) for (size_t i = 0; i < dataset->count; ++i) {
+        sequence_free(&dataset->records[i].chosen); sequence_free(&dataset->records[i].rejected);
+    }
+    free(dataset->records); sequence_free(&dataset->corpus); memset(dataset,0,sizeof(*dataset));
+}
+
+/* Parse both datasets identically. DPO reference scores are cached before a
+   resumed policy is loaded; evaluation cannot redefine the reference policy. */
+static int dataset_parse(nya_train_decoder *model, char *text, size_t bytes,
+    size_t context, const train_options *o, train_dataset *dataset, char *error, size_t capacity)
+{
+    dataset->context = context; dataset->dpo = !strcmp(o->mode,"dpo");
+    if (!dataset->dpo && strcmp(o->mode,"sft")) {
+        if (nya_train_decoder_tokenize(model,text,&dataset->corpus.tokens,&dataset->corpus.count,error,capacity) ||
+            dataset->corpus.count < 2) return -1;
+        dataset->count = (dataset->corpus.count-2)/context+1; return 0;
+    }
+    size_t lines = 1;
+    for (size_t i = 0; i < bytes; ++i) if (text[i] == '\n') ++lines;
+    if (lines > 100000) { snprintf(error,capacity,"at most 100000 structured records are supported"); return -1; }
+    dataset->records = calloc(lines,sizeof(*dataset->records)); if (!dataset->records) return -1;
+    char *line = text;
+    while (*line) {
+        char *next = strchr(line,'\n'); if (next) *next++ = '\0';
+        size_t length = strlen(line); if (length && line[length-1] == '\r') line[--length] = '\0';
+        if (length) {
+            /* Count partially initialized records too, so every failure frees
+               any token or mask allocation already made for this record. */
+            train_record *record = &dataset->records[dataset->count++];
+            char *chosen = strchr(line,'\t'), *rejected = NULL;
+            if (!chosen) goto bad_record;
+            *chosen++ = '\0';
+            if (dataset->dpo) { rejected = strchr(chosen,'\t'); if (!rejected) goto bad_record; *rejected++ = '\0'; }
+            if (strchr(rejected ? rejected : chosen,'\t')) goto bad_record;
+            if (encode_record(model,line,chosen,&record->chosen,context,error,capacity) ||
+                (dataset->dpo && encode_record(model,line,rejected,&record->rejected,context,error,capacity))) goto bad_record;
+            if (dataset->dpo) {
+                nya_train_graph *g = nya_train_graph_create_for_evaluation(o->memory,o->executor);
+                nya_train_tensor *c = sequence_loss(model,g,&record->chosen,1);
+                nya_train_tensor *r = sequence_loss(model,g,&record->rejected,1);
+                if (!c || !r) { snprintf(error,capacity,"%s",nya_train_error(g)); nya_train_graph_free(g); return -1; }
+                record->reference_chosen = nya_train_data(c)[0]; record->reference_rejected = nya_train_data(r)[0];
+                nya_train_graph_free(g);
+            }
+        }
+        if (!next) break;
+        line = next;
+    }
+    if (dataset->count) return 0;
+bad_record:
+    snprintf(error,capacity,"invalid SFT/DPO record %zu: check tabs, nonempty completions, and context length",dataset->count ? dataset->count : 1);
+    return -1;
+}
+
 typedef struct train_metrics {
     double loss, forward, backward, optimizer, elapsed;
     size_t tokens, units, graph_bytes;
@@ -212,6 +276,71 @@ static train_sequence batch_sequence(const train_dataset *data, size_t index)
     if (count-1 > data->context) count = data->context+1;
     train_sequence sequence = {data->corpus.tokens+begin,NULL,count,count-1};
     return sequence;
+}
+
+typedef struct train_evaluation {
+    double loss, elapsed;
+    size_t tokens, units, records, graph_bytes;
+} train_evaluation;
+
+/* Fixed-order held-out pass, with token weighting for CE and pair weighting for
+   DPO. No zero_grad, backward, optimizer or random-number calls occur here.
+   Return 1 on graceful stop; callers must discard incomplete evaluation. */
+static int evaluate(nya_train_decoder *model, const train_dataset *data,
+    const train_options *o, train_evaluation *m, char *error, size_t capacity)
+{
+    memset(m,0,sizeof(*m)); double start = tr_seconds();
+    size_t count = data->count;
+    if (o->eval_records && o->eval_records < count) count = o->eval_records;
+    for (size_t i = 0; i < count; ++i) {
+        if (o->control_stdin && train_control_stop()) return 1;
+        train_sequence sequence = batch_sequence(data,i);
+        size_t units = data->dpo ? 1 : sequence.supervised, tokens = sequence.count-1;
+        if (data->dpo) {
+            size_t rejected = data->records[i].rejected.count-1;
+            if (rejected > SIZE_MAX-tokens) goto overflow;
+            tokens += rejected;
+        }
+        if (!units || units > SIZE_MAX-m->units || tokens > SIZE_MAX-m->tokens) goto overflow;
+        nya_train_graph *g = nya_train_graph_create_for_evaluation(o->memory,o->executor);
+        nya_train_tensor *loss = sequence_loss(model,g,&sequence,data->dpo);
+        if (data->dpo) {
+            const train_record *record = &data->records[i];
+            loss = nya_train_dpo(loss,sequence_loss(model,g,&record->rejected,1),
+                record->reference_chosen,record->reference_rejected,o->beta);
+        }
+        if (!loss) { snprintf(error,capacity,"evaluation failed: %s",nya_train_error(g)); nya_train_graph_free(g); return -1; }
+        double weighted = (double)nya_train_data(loss)[0]*(double)units;
+        size_t memory = nya_train_memory_used(g);
+        nya_train_graph_free(g);
+        if (!isfinite(weighted) || !isfinite(m->loss+weighted)) goto overflow;
+        m->loss += weighted; m->units += units; m->tokens += tokens; ++m->records;
+        if (memory > m->graph_bytes) m->graph_bytes = memory;
+    }
+    if (!m->units) { snprintf(error,capacity,"evaluation dataset has no supervised labels"); return -1; }
+    m->loss /= (double)m->units; m->elapsed = tr_seconds()-start;
+    return 0;
+overflow:
+    snprintf(error,capacity,"evaluation count or loss overflow"); return -1;
+}
+
+static int report_evaluation(uint64_t step, const train_evaluation *m, int control)
+{
+    int written = printf("eval_step=%" PRIu64 " validation_loss=%.9g eval_tokens=%zu eval_units=%zu eval_records=%zu eval_ms=%.6f eval_graph_bytes=%zu\n",
+        step,m->loss,m->tokens,m->units,m->records,m->elapsed*1000,m->graph_bytes);
+    int flushed = fflush(stdout);
+    return control || (written >= 0 && flushed == 0) ? 0 : -1;
+}
+
+static int run_evaluation(nya_train_decoder *model, const train_dataset *data,
+    const train_options *o, uint64_t step, train_evaluation *m, char *error, size_t capacity)
+{
+    int written = printf("evaluation_start step=%" PRIu64 "\n",step), flushed = fflush(stdout);
+    if ((written < 0 || flushed != 0) && !o->control_stdin) goto output_failed;
+    int status = evaluate(model,data,o,m,error,capacity);
+    if (status || !report_evaluation(step,m,o->control_stdin != 0)) return status;
+output_failed:
+    snprintf(error,capacity,"evaluation progress output failed"); return -1;
 }
 
 /* One optimizer update retains only one sequence graph (one pair for DPO).
@@ -351,8 +480,9 @@ static int train_main(int argc, char **argv)
     FILE *metrics = NULL;
     uint64_t identity = 0;
     nya_model_registry registry; nya_model_registry_init(&registry); const nya_model *base = NULL;
-    nya_train_decoder *model = NULL; char *data = NULL; size_t bytes = 0, record_count = 0, initialized = 0;
-    train_record *records = NULL; train_sequence corpus = {0};
+    nya_train_decoder *model = NULL; char *data = NULL, *eval_text = NULL; size_t bytes = 0;
+    train_dataset dataset = {0}, validation = {0};
+    int stopping = 0, evaluation_failed = 0;
     o.executor = nya_train_executor_create(o.threads);
     if (o.executor == NULL) { snprintf(error,sizeof(error),"cannot create requested CPU training workers"); goto cleanup; }
     if (o.base != NULL && nya_model_load(&registry,o.base,&base) != NYA_MODEL_OK) {
@@ -368,43 +498,12 @@ static int train_main(int argc, char **argv)
     if ((o.resume != NULL || o.checkpoint != NULL) && run_identity(&o,model,context,data,bytes,&identity) != 0) {
         snprintf(error,sizeof(error),"cannot fingerprint training inputs"); goto cleanup;
     }
-    int dpo = strcmp(o.mode,"dpo") == 0, structured = dpo || strcmp(o.mode,"sft") == 0;
-    if (!structured) {
-        if (nya_train_decoder_tokenize(model,data,&corpus.tokens,&corpus.count,error,sizeof(error)) != 0 || corpus.count < 2) goto cleanup;
-    } else {
-        size_t lines = 1;
-        for (size_t i = 0; i < bytes; ++i) if (data[i] == '\n') ++lines;
-        if (lines > 100000) { snprintf(error,sizeof(error),"at most 100000 structured records are supported"); goto cleanup; }
-        records = (train_record *)calloc(lines,sizeof(*records)); if (records == NULL) goto cleanup;
-        char *line = data;
-        while (*line != '\0') {
-            char *next = strchr(line,'\n'); if (next != NULL) *next++ = '\0';
-            size_t length = strlen(line); if (length && line[length-1] == '\r') line[--length] = '\0';
-            if (length != 0) {
-                char *chosen = strchr(line,'\t'), *rejected = NULL;
-                if (chosen == NULL) goto bad_record;
-                *chosen++ = '\0';
-                if (dpo) { rejected = strchr(chosen,'\t'); if (rejected == NULL) goto bad_record; *rejected++ = '\0'; }
-                if (strchr(rejected == NULL ? chosen : rejected,'\t') != NULL) goto bad_record;
-                train_record *record = &records[record_count]; initialized = record_count+1;
-                if (encode_record(model,line,chosen,&record->chosen,context,error,sizeof(error)) != 0 ||
-                    (dpo && encode_record(model,line,rejected,&record->rejected,context,error,sizeof(error)) != 0)) goto bad_record;
-                /* The initial policy is the fixed DPO reference. Cache sums
-                   before loading a resumed policy or performing any updates. */
-                if (dpo) {
-                    nya_train_graph *g = nya_train_graph_create_with_executor(o.memory,o.executor);
-                    nya_train_tensor *c = sequence_loss(model,g,&record->chosen,1);
-                    nya_train_tensor *r = sequence_loss(model,g,&record->rejected,1);
-                    if (c == NULL || r == NULL) { snprintf(error,sizeof(error),"%s",nya_train_error(g)); nya_train_graph_free(g); goto cleanup; }
-                    record->reference_chosen = nya_train_data(c)[0]; record->reference_rejected = nya_train_data(r)[0];
-                    nya_train_graph_free(g);
-                }
-                ++record_count;
-            }
-            if (next == NULL) break;
-            line = next;
-        }
-        if (record_count == 0) goto bad_record;
+    if (dataset_parse(model,data,bytes,context,&o,&dataset,error,sizeof(error))) goto cleanup;
+    if (o.eval_data != NULL) {
+        size_t eval_bytes = 0;
+        eval_text = read_data(o.eval_data,&eval_bytes);
+        if (!eval_text) { snprintf(error,sizeof(error),"evaluation data must be readable, nonempty text without NUL bytes, at most 64 MiB"); goto cleanup; }
+        if (dataset_parse(model,eval_text,eval_bytes,context,&o,&validation,error,sizeof(error))) goto cleanup;
     }
     size_t parameter_count;
     nya_train_parameter *const *parameters = nya_train_decoder_parameters(model,&parameter_count);
@@ -419,22 +518,34 @@ static int train_main(int argc, char **argv)
     if (o.metrics != NULL) {
         metrics = nya_file_create_exclusive(o.metrics);
         if (metrics == NULL) { snprintf(error,sizeof(error),"metrics output must be a new writable path"); goto cleanup; }
-        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads\n",metrics);
+        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads,validation_loss,eval_ms,eval_tokens,eval_units\n",metrics);
     }
-    train_dataset dataset = {records,corpus,context,structured ? record_count : (corpus.count-2)/context+1,dpo};
-    for (size_t step = 0; step < o.steps; ++step) {
+    if (o.eval_data != NULL) {
+        train_evaluation evaluation;
+        int status = run_evaluation(model,&validation,&o,optimizer.step,&evaluation,error,sizeof(error));
+        if (status < 0) goto cleanup;
+        if (status > 0) stopping = 1;
+    }
+    for (size_t step = 0; step < o.steps && !stopping; ++step) {
         if (o.control_stdin && train_control_stop()) {
-            printf("stopping step=%" PRIu64 " saving_outputs=1\n",optimizer.step);
-            fflush(stdout);
-            break;
+            stopping = 1; break;
         }
         train_metrics m;
         if (train_update(model,&dataset,&o,&optimizer,&m,error,sizeof(error)) != 0) goto cleanup;
         double throughput = m.elapsed > 0 ? (double)m.tokens/m.elapsed : 0;
-        if (metrics != NULL && (fprintf(metrics,"%" PRIu64 ",%.9g,%zu,%.6f,%.6f,%.6f,%.6f,%.6f,%zu,%zu,%zu,%zu\n",
-            optimizer.step,m.loss,m.tokens,m.forward*1000,m.backward*1000,m.optimizer*1000,m.elapsed*1000,
-            throughput,m.graph_bytes,o.accumulate,m.units,nya_train_executor_threads(o.executor)) < 0 || fflush(metrics) != 0)) {
-            snprintf(error,sizeof(error),"metrics write failed"); goto cleanup;
+        train_evaluation evaluation = {0}; int evaluated = 0;
+        if (o.eval_data != NULL && (optimizer.step%o.eval_every == 0 || step+1 == o.steps)) {
+            int status = run_evaluation(model,&validation,&o,optimizer.step,&evaluation,error,sizeof(error));
+            if (status != 0) { stopping = 1; evaluation_failed = status < 0; }
+            else evaluated = 1;
+        }
+        if (metrics != NULL) {
+            int failed = fprintf(metrics,"%" PRIu64 ",%.9g,%zu,%.6f,%.6f,%.6f,%.6f,%.6f,%zu,%zu,%zu,%zu",
+                optimizer.step,m.loss,m.tokens,m.forward*1000,m.backward*1000,m.optimizer*1000,m.elapsed*1000,
+                throughput,m.graph_bytes,o.accumulate,m.units,nya_train_executor_threads(o.executor)) < 0;
+            if (evaluated) failed |= fprintf(metrics,",%.9g,%.6f,%zu,%zu\n",evaluation.loss,evaluation.elapsed*1000,evaluation.tokens,evaluation.units) < 0;
+            else failed |= fputs(",,,,\n",metrics) == EOF;
+            if (failed || fflush(metrics)) { snprintf(error,sizeof(error),"metrics write failed"); goto cleanup; }
         }
         if (step == 0 || (step+1)%10 == 0 || step+1 == o.steps) {
             if (printf("step=%" PRIu64 " loss=%.7f graph_bytes=%zu tokens_per_second=%.3f microbatches=%zu cpu_threads=%zu\n",
@@ -445,6 +556,7 @@ static int train_main(int argc, char **argv)
             }
         }
     }
+    if (stopping) { printf("stopping step=%" PRIu64 " saving_outputs=1\n",optimizer.step); fflush(stdout); }
     /* Exclusive creation prevents an accidental overwrite of the user's base
        model or checkpoint. Failed writes remove only the file created here.
        A process killed during I/O may leave a partial file; do not reuse it. */
@@ -461,16 +573,14 @@ static int train_main(int argc, char **argv)
     int written = nya_train_decoder_export(model,output,error,sizeof(error));
     if (fclose(output) != 0) { written = -1; snprintf(error,sizeof(error),"GGUF close failed"); }
     if (written != 0) { nya_file_remove(o.output); goto cleanup; }
-    printf("exported=%s\n",o.output); result = 0; goto cleanup;
-bad_record:
-    snprintf(error,sizeof(error),"invalid SFT/DPO record %zu: check tabs, nonempty completions, and context length",record_count+1);
+    printf("exported=%s\n",o.output); result = evaluation_failed ? 1 : 0;
 cleanup:
     if (metrics != NULL && fclose(metrics) != 0) {
         snprintf(error,sizeof(error),"metrics close failed"); result = 1;
     }
     if (result != 0) fprintf(stderr,"training failed: %s\n",error[0] == '\0' ? "allocation or dataset error" : error);
-    for (size_t i = 0; i < initialized; ++i) { sequence_free(&records[i].chosen); sequence_free(&records[i].rejected); }
-    free(records); sequence_free(&corpus); free(data); nya_train_decoder_free(model); nya_model_registry_shutdown(&registry);
+    dataset_free(&dataset); dataset_free(&validation); free(data); free(eval_text);
+    nya_train_decoder_free(model); nya_model_registry_shutdown(&registry);
     nya_train_executor_free(o.executor);
     return result;
 }

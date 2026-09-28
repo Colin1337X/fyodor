@@ -2,7 +2,7 @@ import"./styles.css";
 import {icon, navigationMarkup} from './icons.js';
 import {messageBody} from './message.js';
 import {benchmarkMarkup, parseBenchmark} from './benchmark.js';
-import {parseTrainingMetric} from './training-metrics.js';
+import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from './training-metrics.js';
 import{backend}from"./api.js";
 import {formatConversation, normalizeChat, generationOptions} from "./session.js";
 import {workspaceMarkup, apiMarkup} from "./workspace.js";
@@ -19,7 +19,7 @@ for(const entry of Array.isArray(persisted.chats)?persisted.chats.slice(0,300):[
 }
 persisted.chats=restored;
 const defaults={temperature:.8,top_p:.95,top_k:40,max_tokens:256,seed:"",system:"",frequency_penalty:0,presence_penalty:0,stop:"",draft_model_id:"",speculative_tokens:4};
-const trainingDefaults={mode:"pretrain",data:"",output:"",base:"",checkpoint:"",resume:"",steps:100,accumulate:1,threads:0,learningRate:.001,rank:0,beta:.1,context:256,dimension:64,feedForward:128,layers:2,heads:4,kvHeads:2,seed:42,memoryMib:256};
+const trainingDefaults={mode:"pretrain",data:"",output:"",base:"",checkpoint:"",resume:"",steps:100,accumulate:1,threads:0,evalData:"",evalEvery:10,evalRecords:0,learningRate:.001,rank:0,beta:.1,context:256,dimension:64,feedForward:128,layers:2,heads:4,kvHeads:2,seed:42,memoryMib:256};
 // Restore only known primitive settings. Imported storage cannot introduce
 // arbitrary attribute strings where a numeric control is expected.
 function restoreSettings(defaults, value){
@@ -116,12 +116,12 @@ function trainingView(){
   const needsBase=s.training.mode!=="pretrain";
   viewRoot.innerHTML=`<div class="training-view"><section class="training-head orange-white"><div><label>NATIVE TRAINING</label><h1>Training workspace</h1><p>Pretrain, continue, supervise, or preference-tune with the bundled C trainer.</p></div><span class="train-state ${s.trainStatus.running?"running":""}">${s.trainStatus.running?(s.trainStatus.stopping?"SAVING / STOPPING":"RUNNING"):s.trainStatus.exitCode==null?"IDLE":"EXIT "+s.trainStatus.exitCode}</span></section>
   <form id="training-form"><section class="panel training-files"><header><div><label>RUN</label><h2>Inputs</h2></div></header><label class="field">mode<select id="train-mode" data-train="mode"><option value="pretrain">pretrain · random weights</option><option value="cpt">CPT · continued pretraining</option><option value="sft">SFT · supervised</option><option value="dpo">DPO · preference</option></select></label>
-  ${trainingInput("data","dataset")}${needsBase?trainingInput("base","base model"):""}${trainingInput("output","output GGUF")}${trainingInput("checkpoint","checkpoint (optional)")}${trainingInput("resume","resume checkpoint (optional)")}
+  ${trainingInput("data","dataset")}${trainingInput("evalData","validation dataset (optional)")}${needsBase?trainingInput("base","base model"):""}${trainingInput("output","output GGUF")}${trainingInput("checkpoint","checkpoint (optional)")}${trainingInput("resume","resume checkpoint (optional)")}
   <div class="run-actions"><button class="blue-action" id="start-training" type="submit" ${s.trainStatus.running?"disabled":""}>start training ↗</button><button class="danger-action" id="stop-training" type="button" ${s.trainStatus.running&&!s.trainStatus.stopping?"":"disabled"}>stop &amp; save</button></div><p>Stop finishes the current update and saves the output model and optional checkpoint. Closing the app waits for saving.</p></section>
   <section class="panel training-config"><header><div><label>CONFIGURATION</label><h2>Optimizer + graph</h2></div></header><div class="config-grid">
-  ${trainingNumber("steps","optimizer updates",1)}${trainingNumber("threads","CPU threads (0 = auto)",0,'max="64" step="1"')}${trainingNumber("accumulate","sequences / pairs per update",1,'max="1024" step="1"')}${trainingNumber("learningRate","learning rate",.000001,"step=\"0.0001\"")}${trainingNumber("rank","LoRA rank",0)}${trainingNumber("beta","DPO beta",.0001,"step=\"0.01\"")}${trainingNumber("context","context",1)}${trainingNumber("memoryMib","memory MiB",1)}
+  ${trainingNumber("steps","optimizer updates",1)}${trainingNumber("evalEvery","evaluate every N updates",1)}${trainingNumber("evalRecords","validation records (0 = all)",0)}${trainingNumber("threads","CPU threads (0 = auto)",0,'max="64" step="1"')}${trainingNumber("accumulate","sequences / pairs per update",1,'max="1024" step="1"')}${trainingNumber("learningRate","learning rate",.000001,"step=\"0.0001\"")}${trainingNumber("rank","LoRA rank",0)}${trainingNumber("beta","DPO beta",.0001,"step=\"0.01\"")}${trainingNumber("context","context",1)}${trainingNumber("memoryMib","memory MiB",1)}
   ${trainingNumber("dimension","dimension",1)}${trainingNumber("feedForward","feed-forward",1)}${trainingNumber("layers","layers",1)}${trainingNumber("heads","heads",1)}${trainingNumber("kvHeads","KV heads",1)}${trainingNumber("seed","seed",0)}</div>
-  <div class="training-note"><b>Gradient accumulation</b><p>Each update processes the selected number of sequences, or preference pairs for DPO, one at a time. Loss averages supervised tokens (DPO: pairs). Memory holds one sequence graph, or one pair.</p><b>Native limitations</b><p>CPU backward. Dense LLaMA and Gemma 4 imports. MoE, MTP training, encoders, mixed precision, and distributed runs are not implemented.</p></div></section></form></div>`;
+  <div class="training-note"><b>Gradient accumulation</b><p>Each update processes the selected number of sequences, or preference pairs for DPO, one at a time. Loss averages supervised tokens (DPO: pairs). Memory holds one sequence graph, or one pair.</p><b>Held-out evaluation</b><p>Optional validation uses the same data format, before training, at the selected interval, and at the end. A record limit selects a fixed prefix. Validation never updates weights; Stop can interrupt a validation pass between records.</p><b>Native limitations</b><p>CPU backward. Dense LLaMA and Gemma 4 imports. MoE, MTP training, encoders, mixed precision, and distributed runs are not implemented.</p></div></section></form></div>`;
   document.querySelector("#train-mode").value=s.training.mode;
   viewRoot.querySelector('.training-view').insertAdjacentHTML('beforeend','<section class="panel training-live" id="training-live" aria-label="Training telemetry"></section>');updateTrainingLive();
   if(!window.__TAURI_INTERNALS__){document.querySelector('#start-training').disabled=true;document.querySelector('#start-training').title='Training launches from the desktop app';}
@@ -273,14 +273,14 @@ async function refreshTraining(){if(!window.__TAURI_INTERNALS__)return;try{s.tra
 async function refreshLogs(){if(window.__TAURI_INTERNALS__)try{s.logs=(await invokeDesktop("runtime_logs")).slice(-2000)}catch(error){log(error.message,"ui")}if(s.view==="logs")updateLogOutput()}
 function updateTrainingLive(){
   const n=document.querySelector('#training-live');if(!n)return;
-  const lines=s.logs.filter(x=>x.includes('[trainer]')).slice(-200),points=[];
+  const lines=currentTrainingLines(s.logs),points=[];
   for(const line of lines){const metric=parseTrainingMetric(line);if(metric)points.push(metric)}
-  const latest=points.at(-1);let chart='';
+  const latest=points.at(-1),evaluation=lines.map(parseEvaluationMetric).filter(Boolean).at(-1);let chart='';
   if(points.length>1){const lo=Math.min(...points.map(p=>p.loss)),hi=Math.max(...points.map(p=>p.loss));const coords=points.map((p,i)=>`${(i/(points.length-1)*580+10).toFixed(2)},${(110-(p.loss-lo)/(hi-lo||1)*100).toFixed(2)}`).join(' ');chart=`<svg class="loss-chart" viewBox="0 0 600 120" role="img" aria-label="Training loss over recent logged steps"><polyline points="${coords}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`}
   const throughput=latest?.tokensPerSecond==null?'':` · ${latest.tokensPerSecond.toFixed(1)} tokens/s`;
   const threads=latest?.cpuThreads==null?'':` · ${latest.cpuThreads} CPU threads`;
   const memory=latest?.graphBytes==null?'':` · graph ${(latest.graphBytes/1048576).toFixed(1)} MiB`;
-  n.innerHTML=`<h2>${latest?`Step ${latest.step} · loss ${latest.loss.toFixed(6)}${throughput}${memory}${threads}`:'Run telemetry'}</h2>${chart}<pre>${esc(lines.join('\n')||'Trainer output appears here during a desktop run.')}</pre>`;
+  n.innerHTML=`<h2>${latest?`Step ${latest.step} · loss ${latest.loss.toFixed(6)}${throughput}${memory}${threads}`:'Run telemetry'}</h2>${chart}${evaluation?`<p>Validation loss ${evaluation.loss.toFixed(6)} · step ${evaluation.step}${evaluation.records==null?'':` · ${evaluation.records} records`}</p>`:''}<pre>${esc(lines.join('\n')||'Trainer output appears here during a desktop run.')}</pre>`;
 }
 function collectTraining(){document.querySelectorAll("[data-train]").forEach(n=>{s.training[n.dataset.train]=n.type==="number"?+n.value:n.value});save()}
 
@@ -321,7 +321,7 @@ document.addEventListener("click",async event=>{
   if(event.target.closest("#open-settings")){settingsView();appearanceSettings()}if(event.target.closest("#provider-type"))toggleRemoteSettings();
   if(event.target.closest("#save-settings")&&!s.busy){s.provider.type=document.querySelector("#provider-type").value;s.provider.endpoint=document.querySelector("#provider-endpoint").value.trim();s.provider.apiKey=document.querySelector("#provider-key").value.trim();s.provider.model=document.querySelector("#provider-model").value.trim();s.provider.remember=document.querySelector("#remember-key").checked;s.provider.stream=document.querySelector('#remote-stream').checked;s.agent.enabled=document.querySelector("#agent-enabled").checked;s.agent.maxTurns=Math.max(1,Math.min(24,+document.querySelector("#agent-turns").value||6));save();document.querySelector("#settings").close();render()}
   if(event.target.closest("#test-provider"))try{const p={type:"openai",endpoint:document.querySelector("#provider-endpoint").value,apiKey:document.querySelector("#provider-key").value};const result=await backend.openaiModels(p);toast(`connected · ${result.data?.length||0} models`,"success")}catch(error){toast(error.message,"error")}
-  const pick=event.target.closest("[data-pick]")?.dataset.pick;if(pick){let path;if(pick==="data")path=await chooseDataset();else if(pick==="output")path=await chooseOutput();else if(pick==="checkpoint"||pick==="resume")path=await chooseCheckpoint(pick==="checkpoint");else path=await chooseModel();if(path){s.training[pick]=path;trainingView()}}
+  const pick=event.target.closest("[data-pick]")?.dataset.pick;if(pick){let path;if(pick==="data"||pick==="evalData")path=await chooseDataset();else if(pick==="output")path=await chooseOutput();else if(pick==="checkpoint"||pick==="resume")path=await chooseCheckpoint(pick==="checkpoint");else path=await chooseModel();if(path){s.training[pick]=path;trainingView()}}
   if(event.target.closest("#stop-training"))try{await invokeDesktop("stop_training");await refreshTraining()}catch(error){toast(error.message,"error")}
   if(event.target.closest("#refresh-logs"))refreshLogs();if(event.target.closest("#copy-logs")){await navigator.clipboard.writeText([...s.appLogs,...s.logs].join("\n"));toast("logs copied","success")}
   if(event.target.closest("#clear-logs")){s.appLogs=[];if(window.__TAURI_INTERNALS__)await invokeDesktop("clear_runtime_logs");s.logs=[];logsView()}
