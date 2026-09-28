@@ -1,6 +1,7 @@
 /* Resident matrix microbenchmark, not a complete training throughput test. */
 #include "training_device.h"
 #include "llm_internal.h"
+#include "training_internal.h"
 #include "train_clock.h"
 #include <math.h>
 #include <stdio.h>
@@ -96,6 +97,92 @@ static int startup(const char *mode)
     printf("}\n");
     nya_train_device_free(d); nya_compute_free(c); return 0;
 }
+/* Real compressed gate/up/down weights; frozen FFN input-gradient parity.
+   This is a component probe, not a complete transformer training step. */
+static int ffn(const nya_llm_context *model,size_t n)
+{
+    nya_train_device *d=NULL;
+    const nya_llm_tensor *w[]={model->layers[0].feed_forward_gate,model->layers[0].feed_forward_up,model->layers[0].feed_forward_down};
+    REQUIRE(w[0] && w[1] && w[2]);
+    size_t i=(size_t)w[0]->dimensions[0], h=(size_t)w[0]->dimensions[1];
+    REQUIRE(i && h && w[1]->dimensions[0]==i && w[1]->dimensions[1]==h && w[2]->dimensions[0]==h && w[2]->dimensions[1]==i);
+    REQUIRE(n<=SIZE_MAX/4/i && n<=SIZE_MAX/4/h);
+    size_t count=n*i, hidden=n*h;
+    float *x=malloc(count*4), *dy=malloc(count*4), *expected=malloc(count*4), *actual=malloc(count*4);
+    REQUIRE(x && dy && expected && actual);
+    for (size_t k=0;k<count;++k) { x[k]=(float)((int)(k%71)-35)/64; dy[k]=(float)((int)(k%67)-33)/64; }
+    nya_train_parameter *px=nya_train_parameter_create(n,i,x);
+    nya_train_executor *executor=nya_train_executor_create(6); REQUIRE(px && executor);
+    for (unsigned pass=0;pass<2;++pass) {
+        nya_train_graph *g=nya_train_graph_create_with_executor(256*1024*1024,executor); REQUIRE(g);
+        nya_train_tensor *input=nya_train_leaf(g,px);
+        nya_train_tensor *a=nya_train_linear_mapped(input,w[0]), *b=nya_train_linear_mapped(input,w[1]);
+        nya_train_tensor *out=nya_train_linear_mapped(nya_train_mul(nya_train_silu(a),b),w[2]); REQUIRE(out);
+        memcpy(expected,nya_train_data(out),count*4);
+        REQUIRE(!nya_train_backward(nya_train_linear(nya_train_reshape(out,1,count),nya_train_input(g,1,count,dy))));
+        nya_train_graph_free(g);
+    }
+    nya_train_executor_free(executor);
+    d=nya_train_device_create("cuda",64*1024*1024); REQUIRE(d);
+    nya_train_buffer weights[3];
+    for (size_t k=0;k<3;++k) {
+        weights[k]=nya_train_device_alloc(d,w[k]->data_size); REQUIRE(weights[k]);
+        REQUIRE(!nya_train_device_write(d,weights[k],0,w[k]->data,w[k]->data_size));
+    }
+    nya_train_buffer input=nya_train_device_alloc(d,count*4), seed=nya_train_device_alloc(d,count*4);
+    nya_train_buffer output=nya_train_device_alloc(d,count*4), dx=nya_train_device_alloc(d,count*4), status=nya_train_device_alloc(d,4);
+    REQUIRE(input && seed && output && dx && status);
+    REQUIRE(!nya_train_device_write(d,input,0,x,count*4) && !nya_train_device_write(d,seed,0,dy,count*4));
+    double times[5];
+    for (unsigned repetition=0;repetition<7;++repetition) {
+        REQUIRE(!nya_train_device_zero(d,dx) && !nya_train_device_zero(d,status) && !nya_train_device_finish(d));
+        nya_train_device_stats before,after; nya_train_device_get_stats(d,&before);
+        double start=tr_seconds();
+        for (unsigned pass=0;pass<2;++pass) {
+            nya_train_scope scope=nya_train_device_scratch_begin(d); REQUIRE(scope);
+            nya_train_buffer a=nya_train_device_alloc(d,hidden*4), b=nya_train_device_alloc(d,hidden*4), s=nya_train_device_alloc(d,hidden*4), m=nya_train_device_alloc(d,hidden*4);
+            nya_train_buffer dm=nya_train_device_alloc(d,hidden*4), ds=nya_train_device_alloc(d,hidden*4), db=nya_train_device_alloc(d,hidden*4), da=nya_train_device_alloc(d,hidden*4);
+            REQUIRE(a && b && s && m && dm && ds && db && da);
+            REQUIRE(!nya_train_device_linear(d,a,weights[0],w[0]->type,h,i,input,n));
+            REQUIRE(!nya_train_device_linear(d,b,weights[1],w[1]->type,h,i,input,n));
+            REQUIRE(!nya_train_device_unary(d,s,a,hidden,NYA_TRAIN_UNARY_SILU,0));
+            REQUIRE(!nya_train_device_binary(d,m,(nya_train_view){s,n,h},(nya_train_view){b,n,h},NYA_TRAIN_BINARY_MUL));
+            REQUIRE(!nya_train_device_linear(d,output,weights[2],w[2]->type,i,h,m,n));
+            REQUIRE(!nya_train_device_linear_dx(d,dm,weights[2],w[2]->type,i,h,seed,n));
+            REQUIRE(!nya_train_device_binary_backward(d,ds,db,(nya_train_view){s,n,h},(nya_train_view){b,n,h},dm,NYA_TRAIN_BINARY_MUL));
+            REQUIRE(!nya_train_device_unary_backward(d,da,a,ds,hidden,NYA_TRAIN_UNARY_SILU,0));
+            REQUIRE(!nya_train_device_linear_dx(d,dx,weights[1],w[1]->type,h,i,db,n));
+            REQUIRE(!nya_train_device_linear_dx(d,dx,weights[0],w[0]->type,h,i,da,n));
+            REQUIRE(!nya_train_device_check_finite(d,status,output,count,1) && !nya_train_device_check_finite(d,status,dx,count,2));
+            REQUIRE(!nya_train_device_scratch_end(d,scope));
+        }
+        REQUIRE(!nya_train_device_finish(d));
+        double ms=(tr_seconds()-start)*1000;
+        nya_train_device_get_stats(d,&after);
+        REQUIRE(after.kernel_launches==before.kernel_launches+40 && after.uploads==before.uploads &&
+            after.downloads==before.downloads && after.synchronizations==before.synchronizations+1 && after.used_bytes==before.used_bytes);
+        if (repetition>=2) times[repetition-2]=ms;
+    }
+    uint32_t failure=1; REQUIRE(!nya_train_device_read(d,status,0,&failure,4) && !failure);
+    double maximum[2]={0,0};
+    for (unsigned gradient=0;gradient<2;++gradient) {
+        const float *reference=gradient?nya_train_parameter_gradient(px):expected;
+        REQUIRE(!nya_train_device_read(d,gradient?dx:output,0,actual,count*4));
+        for (size_t k=0;k<count;++k) {
+            double error=fabs((double)actual[k]-reference[k])/(1+fabs(reference[k]));
+            REQUIRE(isfinite(actual[k]) && error<=1e-5);
+            if (error>maximum[gradient]) maximum[gradient]=error;
+        }
+    }
+    nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
+    printf("{\"component\":\"frozen-silu-ffn\",\"tokens\":%zu,\"inputs\":%zu,\"hidden\":%zu,\"microbatches\":2,\"max_scaled_output_error\":%.9g,\"max_scaled_input_gradient_error\":%.9g,\"tolerance\":1e-5,\"peak_bytes\":%zu,\"live_bytes\":%zu,\"uploads\":%llu,\"downloads\":%llu,\"timing_accepted\":false,\"ms\":[",
+        n,i,h,maximum[0],maximum[1],stats.peak_bytes,stats.used_bytes,(unsigned long long)stats.uploads,(unsigned long long)stats.downloads);
+    for (size_t k=0;k<5;++k) printf("%s%.9f",k?",":"",times[k]);
+    printf("]}\n");
+    nya_train_device_free(d); nya_train_parameter_free(px);
+    free(x); free(dy); free(expected); free(actual);
+    return 0;
+}
 int main(int argc,char **argv)
 {
     nya_train_device *d=NULL;
@@ -105,6 +192,9 @@ int main(int argc,char **argv)
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
+    if (!strcmp(argv[2],"ffn8") || !strcmp(argv[2],"ffn64")) {
+        int result=ffn(m,!strcmp(argv[2],"ffn8")?8u:64u); nya_llm_free(m); return result;
+    }
     const nya_llm_tensor *weights[]={m->layers[0].query,m->layers[0].feed_forward_down,m->layers[0].feed_forward_up};
     /* Reuse mode retires each complete matrix job before admitting the next. */
     int checked=!strcmp(argv[2],"checked-forward") || !strcmp(argv[2],"checked-reverse");

@@ -49,6 +49,30 @@ int nya_train_device_scratch_end(nya_train_device *device, nya_train_scope scope
 int nya_train_device_check_finite(nya_train_device *device, nya_train_buffer status,
     nya_train_buffer data, size_t count, uint32_t tag);
 
+typedef enum nya_train_unary_op {
+    NYA_TRAIN_UNARY_SCALE=0, NYA_TRAIN_UNARY_SILU=1, NYA_TRAIN_UNARY_GELU=2, NYA_TRAIN_UNARY_SOFTCAP=3
+} nya_train_unary_op;
+typedef enum nya_train_binary_op { NYA_TRAIN_BINARY_ADD=0, NYA_TRAIN_BINARY_MUL=1 } nya_train_binary_op;
+typedef struct nya_train_view { nya_train_buffer buffer; size_t rows, columns; } nya_train_view;
+
+/* Dense F32 elementwise operations. Forward overwrites; backward accumulates.
+   Destinations cannot alias any input. The scalar must be finite and is used
+   by SCALE/SOFTCAP; SOFTCAP additionally requires a positive scalar. GELU uses
+   the same tanh approximation as the CPU graph. Numerical status checks remain
+   explicit, as for matrices. No allocation, transfer or fence is added. */
+int nya_train_device_unary(nya_train_device *device, nya_train_buffer y, nya_train_buffer x,
+    size_t count, nya_train_unary_op operation, double scalar);
+int nya_train_device_unary_backward(nya_train_device *device, nya_train_buffer dx, nya_train_buffer x,
+    nya_train_buffer dy, size_t count, nya_train_unary_op operation, double scalar);
+/* Each dimension broadcasts independently when equal to one. Both gradients
+   are optional (zero), but at least one is required for backward. da == db is
+   supported only for equal operand shapes, preserving both contributions in
+   CPU row-major order. Distinct input views may share read-only storage. */
+int nya_train_device_binary(nya_train_device *device, nya_train_buffer y,
+    nya_train_view a, nya_train_view b, nya_train_binary_op operation);
+int nya_train_device_binary_backward(nya_train_device *device, nya_train_buffer da, nya_train_buffer db,
+    nya_train_view a, nya_train_view b, nya_train_buffer dy, nya_train_binary_op operation);
+
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
    Linear overwrites Y; gradient operations accumulate into initialized dX/dW.

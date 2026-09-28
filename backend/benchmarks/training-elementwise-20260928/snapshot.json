@@ -1,0 +1,122 @@
+{
+  "base_revision": "5a1bf4a8b793694ae8f3f0fd684ddcd02b099998",
+  "source_sha256": {
+    "CUDA/training.cu": "b054c76bbae68a893d68d10111228123c6ea8e19a69ee0f8479bcc27d54430d3",
+    "CUDA/training.inc": "546f4ca0c91e4dbed559b5d5ade97096b67e7f02f477e7b1d9ae42caecd2fb1c",
+    "CUDA/cuda.c": "ca5ee26e0f20c3e39ea213f27a28cc23be859a9ae08ff8077b36437977f595b8",
+    "CUDA/CMakeLists.txt": "7737eb298299a2651c8bfbed43f504f2ba1009ab8a234ae19970d9d7d9232ea2",
+    "backend/CMakeLists.txt": "16af9f0e1f181099db67970ebe6361891181cca7332c401246651f70e2155edb",
+    "backend/core/training_device.c": "8c1cdbc148c1f09c0f1b226078b88484251c12bdb0f243d41af2f585f818d387",
+    "backend/core/training_device.h": "a5702a55ab73e86e797e1f4a7026cd90049e9e1310bc5e388b876c246ae32ee1",
+    "backend/core/training_device_backend.h": "5f4c65277873125a3b816d43f447df26475425d91e71f5a140306945c91304b5",
+    "backend/tests/test_training_elementwise.c": "729d9dc54da334f143da313ce81989b2d603bf91983c8b6422fc110ab9598d01",
+    "backend/tests/test_training_device.c": "a7a77d5a4307efdd7ea9b97ef2d6fcc73411ab727fea3df4a00a36bea8392e84",
+    "backend/benchmarks/training_device_bench.c": "02aa582be68c6ad8838209b2deafd0bdbb6db8b0b942c0d2168197b97a32ab86",
+    "backend/core/training.c": "283603426707c9c27f5f0f6004809729f740aff82867eace85da95b219c4bd3b",
+    "backend/core/train_executor.c": "a0bd3e21fd08de133795c278074d493fd0f1455403a9e4e93ac9db4c864d874a"
+  },
+  "generated_bundles": {
+    "nya_cuda_source": {
+      "bytes": 32423,
+      "sha256": "927af8f2929259b9984b8b82ddf4a327f8194a4d9603947d4758765613822d55"
+    },
+    "nya_cuda_training_source": {
+      "bytes": 23131,
+      "sha256": "413c82393dd24275ab3633a6d4d0804f4577e387eb8fa7064d0afb689fb02eef"
+    }
+  },
+  "inference_bundle_identical_to_module_split": true,
+  "gpu": "NVIDIA GeForce RTX 5060 Ti, 610.88, 16311 MiB",
+  "compiler": "gcc.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "model": {
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "executable_sha256": "a5a6a41168af498d83f2737463323da242ef18ddf8b96b1fc77b7417eb47f378",
+  "results": {
+    "ffn8": {
+      "command": [
+        "build-cuda/nya-bench-training-device.exe",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "ffn8"
+      ],
+      "exit_code": 0,
+      "result": {
+        "component": "frozen-silu-ffn",
+        "tokens": 8,
+        "inputs": 2048,
+        "hidden": 5632,
+        "microbatches": 2,
+        "max_scaled_output_error": 1.65849492e-06,
+        "max_scaled_input_gradient_error": 1.70720346e-06,
+        "tolerance": 1e-05,
+        "peak_bytes": 24142080,
+        "live_bytes": 22700036,
+        "uploads": 5,
+        "downloads": 3,
+        "timing_accepted": false,
+        "ms": [
+          7.277599998,
+          7.441199999,
+          6.374699999,
+          6.349499999,
+          7.486899998
+        ]
+      }
+    },
+    "ffn64": {
+      "command": [
+        "build-cuda/nya-bench-training-device.exe",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "ffn64"
+      ],
+      "exit_code": 0,
+      "result": {
+        "component": "frozen-silu-ffn",
+        "tokens": 64,
+        "inputs": 2048,
+        "hidden": 5632,
+        "microbatches": 2,
+        "max_scaled_output_error": 1.65849492e-06,
+        "max_scaled_input_gradient_error": 2.27811414e-06,
+        "tolerance": 1e-05,
+        "peak_bytes": 36069632,
+        "live_bytes": 24535044,
+        "uploads": 5,
+        "downloads": 3,
+        "timing_accepted": false,
+        "ms": [
+          10.259800001,
+          10.299499998,
+          11.185700001,
+          10.3447,
+          10.2735
+        ]
+      }
+    }
+  },
+  "method": {
+    "warmups": 2,
+    "measured_repetitions": 5,
+    "microbatches_per_repetition": 2,
+    "checked_elements": "Every final output and accumulated input-gradient element",
+    "oracle": "Native CPU autograd, six workers, same mapped quantized weights and inputs",
+    "timing_exclusion": "Interactive desktop activity was not isolated; no throughput acceptance.",
+    "environment": {
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_COMPUTE": "cpu"
+    }
+  },
+  "source_study": {
+    "project": "llama.cpp/ggml",
+    "revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+    "license": "MIT",
+    "sha256": {
+      "LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "ggml/src/ggml-cuda/unary.cu": "bb85d502d79a5c144f90335ad71a2a0f03ce286aab57934e85180b38677ce775",
+      "ggml/src/ggml-cuda/unary.cuh": "a5a7e3a00554b45407f758bc4567491203d5a6ce0acf81c04cc962e8b77b5d77"
+    },
+    "finding": "Upstream unary and SiLU-backward paths flatten contiguous tensors onto a selected CUDA stream. Fyodor retains its own CPU activation formulas with double intermediates, accumulating derivatives and deterministic one-writer broadcast reductions. No upstream source or C++ tensor machinery is copied."
+  }
+}

@@ -42,6 +42,18 @@ int nya_train_device_scratch_end(nya_train_device *d, nya_train_scope scope)
 { return d ? d->api->scratch_end(d->context,scope) : -1; }
 int nya_train_device_check_finite(nya_train_device *d, nya_train_buffer status, nya_train_buffer data, size_t count, uint32_t tag)
 { return d ? d->api->check_finite(d->context,status,data,count,tag) : -1; }
+int nya_train_device_unary(nya_train_device *d, nya_train_buffer y, nya_train_buffer x,
+    size_t count, nya_train_unary_op operation, double scalar)
+{ return d ? d->api->unary(d->context,y,x,0,count,(unsigned)operation,scalar,0) : -1; }
+int nya_train_device_unary_backward(nya_train_device *d, nya_train_buffer dx, nya_train_buffer x,
+    nya_train_buffer dy, size_t count, nya_train_unary_op operation, double scalar)
+{ return d ? d->api->unary(d->context,dx,x,dy,count,(unsigned)operation,scalar,1) : -1; }
+int nya_train_device_binary(nya_train_device *d, nya_train_buffer y, nya_train_view a, nya_train_view b,
+    nya_train_binary_op operation)
+{ return d ? d->api->binary(d->context,y,0,a,b,0,(unsigned)operation,0) : -1; }
+int nya_train_device_binary_backward(nya_train_device *d, nya_train_buffer da, nya_train_buffer db,
+    nya_train_view a, nya_train_view b, nya_train_buffer dy, nya_train_binary_op operation)
+{ return d ? d->api->binary(d->context,da,db,a,b,dy,(unsigned)operation,1) : -1; }
 int nya_train_device_linear(nya_train_device *d, nya_train_buffer y, nya_train_buffer w,
     unsigned type, size_t o, size_t i, nya_train_buffer x, size_t n)
 { return d ? d->api->matrix(d->context,y,w,x,type,o,i,n,0) : -1; }

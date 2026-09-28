@@ -15,5 +15,9 @@ typedef struct nya_train_device_interface {
     nya_train_scope (*scratch_begin)(void *context);
     int (*scratch_end)(void *context, nya_train_scope scope);
     int (*check_finite)(void *context, nya_train_buffer status, nya_train_buffer data, size_t count, uint32_t tag);
+    int (*unary)(void *context, nya_train_buffer dst, nya_train_buffer x, nya_train_buffer dy,
+        size_t count, unsigned operation, double scalar, int backward);
+    int (*binary)(void *context, nya_train_buffer out_a, nya_train_buffer out_b,
+        nya_train_view a, nya_train_view b, nya_train_buffer dy, unsigned operation, int backward);
 } nya_train_device_interface;
 #endif

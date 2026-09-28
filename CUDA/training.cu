@@ -16,6 +16,82 @@ extern "C" __global__ void nya_train_check_finite(const float *data, unsigned *s
     int bad = i < count && (__float_as_uint(data[i]) & 0x7f800000u) == 0x7f800000u;
     if (__syncthreads_or(bad) && threadIdx.x == 0) atomicCAS(status,0u,tag);
 }
+/* Match the CPU graph's double intermediates and stable negative SiLU branch.
+   Storage and accumulated gradients stay F32. */
+extern "C" __global__ void nya_train_unary(const float *x, const float *dy, float *out,
+    unsigned long long count, unsigned operation, double scalar, int backward)
+{
+    unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;
+    if (i >= count) return;
+    double v = x[i], result;
+    if (!backward) {
+        if (operation == 0) result = v*scalar;
+        else if (operation == 1) result = v*(v >= 0 ? 1.0/(1.0+exp(-v)) : exp(v)/(1.0+exp(v)));
+        else if (operation == 2) result = 0.5*v*(1.0+tanh(0.7978845608028654*(v+0.044715*v*v*v)));
+        else result = scalar*tanh(v/scalar);
+        out[i] = (float)result;
+    } else {
+        if (operation == 0) result = scalar;
+        else if (operation == 1) {
+            double s = v >= 0 ? 1.0/(1.0+exp(-v)) : exp(v)/(1.0+exp(v));
+            result = s*(1.0+v*(1.0-s));
+        } else if (operation == 2) {
+            double z = tanh(0.7978845608028654*(v+0.044715*v*v*v));
+            result = 0.5*(1.0+z)+0.5*v*(1.0-z*z)*0.7978845608028654*(1.0+0.134145*v*v);
+        } else {
+            double z = tanh(v/scalar); result = 1.0-z*z;
+        }
+        out[i] += (float)((double)dy[i]*result);
+    }
+}
+__device__ __forceinline__ unsigned long long nya_train_broadcast_index(unsigned long long row,
+    unsigned long long col, unsigned long long rows, unsigned long long cols)
+{
+    return (rows == 1 ? 0 : row)*cols+(cols == 1 ? 0 : col);
+}
+/* A gradient element has exactly one writer. Broadcast reductions visit the
+   same row-major contributions as the CPU graph, without atomic float sums.
+   Shared gradient destinations interleave a/b contributions at each position. */
+__device__ __forceinline__ float nya_train_binary_gradient(const float *a, const float *b,
+    const float *dy, float initial, unsigned long long i, unsigned long long ar, unsigned long long ac,
+    unsigned long long br, unsigned long long bc, unsigned long long rows, unsigned long long cols,
+    unsigned operation, unsigned side, int shared)
+{
+    unsigned long long own_rows = side ? br : ar, own_cols = side ? bc : ac;
+    unsigned long long first_row = own_rows == 1 ? 0 : i/own_cols;
+    unsigned long long last_row = own_rows == 1 ? rows : first_row+1;
+    unsigned long long first_col = own_cols == 1 ? 0 : i%own_cols;
+    unsigned long long last_col = own_cols == 1 ? cols : first_col+1;
+    float sum = initial;
+    for (unsigned long long row = first_row; row < last_row; ++row)
+        for (unsigned long long col = first_col; col < last_col; ++col) {
+            float g = dy[row*cols+col];
+            unsigned long long ia = nya_train_broadcast_index(row,col,ar,ac);
+            unsigned long long ib = nya_train_broadcast_index(row,col,br,bc);
+            sum += operation == 0 ? g : g*(side ? a[ia] : b[ib]);
+            if (shared) sum += operation == 0 ? g : g*a[ia];
+        }
+    return sum;
+}
+extern "C" __global__ void nya_train_binary(const float *a, const float *b, const float *dy,
+    float *out_a, float *out_b, unsigned long long ar, unsigned long long ac,
+    unsigned long long br, unsigned long long bc, unsigned long long rows, unsigned long long cols,
+    unsigned operation, int backward)
+{
+    unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;
+    if (!backward) {
+        if (i >= rows*cols) return;
+        float x = a[nya_train_broadcast_index(i/cols,i%cols,ar,ac)];
+        float y = b[nya_train_broadcast_index(i/cols,i%cols,br,bc)];
+        out_a[i] = operation == 0 ? x+y : x*y;
+    } else {
+        int shared = out_a && out_a == out_b;
+        if (out_a && i < ar*ac)
+            out_a[i] = nya_train_binary_gradient(a,b,dy,out_a[i],i,ar,ac,br,bc,rows,cols,operation,0,shared);
+        if (out_b && !shared && i < br*bc)
+            out_b[i] = nya_train_binary_gradient(a,b,dy,out_b[i],i,ar,ac,br,bc,rows,cols,operation,1,0);
+    }
+}
 __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float *dy, float *dx,
     unsigned long long inputs, unsigned long long row_bytes, unsigned outputs, unsigned tokens, unsigned TYPE)
 {
