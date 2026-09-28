@@ -1,0 +1,22 @@
+{
+  "command": [
+    "C:\\Users\\Colin\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+    "--tool",
+    "racecheck",
+    "--launch-skip",
+    "240",
+    "--launch-count",
+    "256",
+    "--error-exitcode",
+    "9",
+    "--log-file",
+    "C:\\Users\\Colin\\fyodor\\backend\\benchmarks\\training-scratch-20260928\\racecheck-bounded.log",
+    "C:\\Users\\Colin\\fyodor\\build-cuda\\nya-test-training-device.exe",
+    "--cuda"
+  ],
+  "exit_code": 0,
+  "started_utc": "2026-09-28T09:00:35.635372+00:00",
+  "finished_utc": "2026-09-28T09:00:53.507790+00:00",
+  "executable_sha256": "4c74ae35500690254dc65f8b2d23d733460eae7184b1842c81deac1b8fcce466",
+  "scope": "Full program executes; race instrumentation is limited to 256 launches after skipping 240. This covers initial scratch allocations and repeated reuse across all 67 allocation lengths, not all 5000 iterations."
+}

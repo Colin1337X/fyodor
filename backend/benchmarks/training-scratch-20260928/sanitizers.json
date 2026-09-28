@@ -1,0 +1,13 @@
+{
+  "executable": "build-cuda/nya-test-training-device.exe",
+  "arguments": ["--cuda"],
+  "tool": ".tools/cuda-sanitizer/cuda_sanitizer_api-windows-x86_64-13.1.118-archive/compute-sanitizer/compute-sanitizer.exe",
+  "common_options": ["--error-exitcode", "9"],
+  "environment": {"NYA_CUDA_BLAS": "0", "NYA_CUDA_CUTLASS": "0"},
+  "runs": [
+    {"tool": "memcheck", "exit_code": 0, "log": "memcheck.log", "stdout": "memcheck.out"},
+    {"tool": "initcheck", "exit_code": 0, "log": "initcheck.log", "stdout": "initcheck.out"},
+    {"tool": "synccheck", "exit_code": 0, "log": "synccheck.log", "stdout": "synccheck.out"}
+  ],
+  "scope": "Each complete program, including all 5000 scratch lifetimes, completed. Process exits were checked by the sequential PowerShell driver. Unrestricted racecheck was subsequently interrupted and is recorded separately."
+}

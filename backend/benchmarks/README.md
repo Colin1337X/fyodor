@@ -1,6 +1,7 @@
 # Runtime benchmark evidence
 
-**Training:** [September 27 resident matrix foundation](TRAINING_DEVICE_20260927.md),
+**Training:** [September 28 reusable scratch scopes](TRAINING_SCRATCH_20260928.md),
+[September 27 resident matrix foundation](TRAINING_DEVICE_20260927.md),
 [September 25 held-out evaluation](TRAINING_EVALUATION_20260925.md),
 [September 25 native CPU execution](TRAINING_EXECUTION_20260925.md),
 [September 24 Unicode paths and recovery validation](TRAINING_PATHS_20260924.md),

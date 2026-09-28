@@ -1,0 +1,98 @@
+{
+  "revision": "a868d708b6d0feca8b2491c62f8a5d02ecc003f8",
+  "os": "Windows-11-10.0.26200-SP0",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti, 610.88, 16311 MiB",
+  "compiler": "gcc.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "source_sha256": {
+    "CUDA/training.inc": "f8cf8b64f5d0645bae5bb572e5ba5ef1e66e0b0e34f57f9d3f821fbdd9c05b67",
+    "CUDA/training.cu": "589494b932592a16558133dac18d5dbf564fd40dd0f4710883fe14f3b3cec406",
+    "CUDA/cuda.c": "ca5ee26e0f20c3e39ea213f27a28cc23be859a9ae08ff8077b36437977f595b8",
+    "backend/core/training_device.c": "44f346d2f51fae31bdef150c8625b3fad9c841d70ec57a2b015f0a3fdfd6d4ca",
+    "backend/core/training_device.h": "d348fa54e13b6e16d88d5b69b7bad845e97595d1b909a36ece1e69a7e30c3112",
+    "backend/core/training_device_backend.h": "b9d7609588fd339a49e6e99540a9df48d5f1f6eaefd7b9406ee4b40167219c30",
+    "backend/tests/test_training_device.c": "d6d86c7f0dc8dc5a9982eefcc212f3c97fb5e9f9d03110fbe92f0659663581a5",
+    "backend/benchmarks/training_device_bench.c": "74e4fa10cce0173b8dc3cc0ed18eee6dca3fceeb9ae4061aea2cdc4d2e2171f0"
+  },
+  "model": {
+    "path": ".tools\\tinyllama-q4_k_m.gguf",
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "executable_sha256": "2861392842ee6f7b26b3da68ceee0fc709bc702f09fba1ef39c268900ad014a6",
+  "cmake_cache_sha256": "e19d34bb623f4ffdb957e82385d0c0b07c037c2f4144209cf37ac7298610eaf0",
+  "environment": {
+    "NYA_CUDA_BLAS": "0",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_COMPUTE": "cpu"
+  },
+  "method": {
+    "warmups": 2,
+    "measured_batches": 5,
+    "calls_per_batch": 20,
+    "checked_elements_per_operation": 64,
+    "timing_exclusion": "Desktop GPU activity was not isolated; resource and correctness evidence only."
+  },
+  "results": {
+    "forward": {
+      "counters": {
+        "arena_capacity": 268435456,
+        "arena_used": 265928704,
+        "buffers": 36,
+        "launches": 2826,
+        "uploads": 18,
+        "upload_bytes": 42221568,
+        "downloads": 1152,
+        "download_bytes": 4608,
+        "peak_bytes": 265928704,
+        "scratch_resets": 0
+      },
+      "correctness_operations": 18,
+      "timing_accepted": false
+    },
+    "reuse-forward": {
+      "counters": {
+        "arena_capacity": 67108864,
+        "arena_used": 0,
+        "buffers": 0,
+        "launches": 2826,
+        "uploads": 18,
+        "upload_bytes": 42221568,
+        "downloads": 1152,
+        "download_bytes": 4608,
+        "peak_bytes": 59531264,
+        "scratch_resets": 6
+      },
+      "correctness_operations": 18,
+      "timing_accepted": false
+    },
+    "reuse-reverse": {
+      "counters": {
+        "arena_capacity": 67108864,
+        "arena_used": 0,
+        "buffers": 0,
+        "launches": 2826,
+        "uploads": 18,
+        "upload_bytes": 42221568,
+        "downloads": 1152,
+        "download_bytes": 4608,
+        "peak_bytes": 59531264,
+        "scratch_resets": 6
+      },
+      "correctness_operations": 18,
+      "timing_accepted": false
+    }
+  },
+  "source_study": {
+    "project": "llama.cpp/ggml",
+    "license": "MIT",
+    "revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+    "sha256": {
+      "LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "ggml/src/ggml-cuda/common.cuh": "9c733c0e8fef8354f79a962ea397fcde0247a0197c42c465388655c05d49f6a8",
+      "ggml/src/ggml-cuda/ggml-cuda.cu": "0832b007fb5cd0165dd80116ea7833c5acda6dfd44f89f2c248d5d977a3e1fde",
+      "ggml/src/ggml-cuda/mmf.cu": "18da52f6233f1d278e5a0900211d55890f0e8491f1ef11859d20446683ba8388"
+    },
+    "finding": "Pool selection is per device and stream. VMM free rewinds its offset in reverse allocation order. Scoped matrix temporaries use the selected stream and pool.",
+    "adaptation": "Original Fyodor C implementation. No upstream source copied; bounded arena with one graph scope and globally unique expiring handles, rather than VMM growth or C++ RAII."
+  }
+}

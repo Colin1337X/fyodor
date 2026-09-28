@@ -1,0 +1,7 @@
+{
+  "command": ["compute-sanitizer.exe", "--tool", "racecheck", "--error-exitcode", "9", "--log-file", "racecheck.log", "build-cuda/nya-test-training-device.exe", "--cuda"],
+  "exit_code": -1,
+  "accepted": false,
+  "reason": "Agent deliberately terminated the verified test process after lengthy instrumentation of the repeated tiny matrix launches. The entire test did not finish. The zero-hazards summary emitted during termination is not a successful full-suite result.",
+  "replacement": "After the configuration matrix, skip 240 launches (238 on the original matrix-suite device plus two foreign-device allocation zeroes), instrument the next 256 launches, and execute the full program. Full 5000-scope memcheck, initcheck and synccheck already completed successfully."
+}

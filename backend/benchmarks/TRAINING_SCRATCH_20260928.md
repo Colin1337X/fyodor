@@ -15,7 +15,15 @@ asynchronous failures. A poisoned device cannot begin or end a scope. CPU caller
 must serialize operations. Persistent weights, gradients and optimizer state
 must be allocated before the scratch scope.
 
-This is original Fyodor C implementation. It extends the internal device API,
+This is original Fyodor C implementation. The source study in
+[the reproducibility snapshot](training-scratch-20260928/snapshot.json) records
+the MIT-licensed llama.cpp/ggml revision and file hashes: `common.cuh` selects a
+pool per device and stream, `ggml_cuda_pool_vmm::free` rewinds its offset in LIFO
+order, and `mmf.cu` uses scoped temporaries on that stream. Fyodor uses its own
+bounded arena, graph-wide scope and expiring integer handles; no upstream source
+was copied and no VMM or C++ dependency was added.
+
+The change extends the internal device API,
 not the public training graph. The CLI and UI still execute training on the CPU;
 resident non-matrix operations, loss, optimizer and graph integration remain
 unfinished. No end-to-end GPU training throughput improvement is claimed.
@@ -62,4 +70,49 @@ build-cuda/nya-bench-training-device.exe .tools/tinyllama-q4_k_m.gguf reuse-forw
 build-cuda/nya-bench-training-device.exe .tools/tinyllama-q4_k_m.gguf reuse-reverse
 ```
 
-Broader configuration and GPU sanitizer validation are pending at this checkpoint.
+## Configuration and sanitizer validation
+
+All 15 stages of [the configuration matrix](training-scratch-20260928/matrix/validation.json)
+passed. CPU C17 and ASan/UBSan each passed 48 applicable tests, CUDA/Vulkan C17
+and C23 each passed 80, and ONNX passed 49. Physical removal passed 48 tests
+without `optcpp`, 48 without CUDA, and 75 without CUTLASS. Each configuration
+skipped the same four unavailable ROCm/MLX hardware checks. All 11 frontend tests and
+the production frontend build also passed.
+
+[CUDA sanitizer records](training-scratch-20260928/sanitizers.json) show complete
+memcheck, initcheck and synccheck runs exiting zero with no reported errors.
+Each runs the entire program, including all 5,000 queued scratch lifetimes and
+the descriptor-exhaustion/recovery checks.
+
+The unrestricted racecheck was deliberately interrupted during lengthy repeated
+kernel instrumentation. Its target returned an error on termination; the
+zero-hazards summary is **not** a completed pass. Its raw logs and explicit
+[exclusion record](training-scratch-20260928/racecheck-interrupted.json) are kept.
+The bounded replacement completed with exit zero and zero hazards. It instruments
+256 launches after skipping the original
+240 launches (238 on the matrix-suite device and two foreign-device allocation
+zeroes). This covers the scratch setup and reuse across all 67 allocation
+lengths. The full 5,000-iteration program still executes, but race instrumentation
+does not cover every iteration. See [the runner](training-scratch-20260928/racecheck.py)
+for the exact selection and independent process-exit recording.
+
+## Desktop package and final audit
+
+PowerShell 7 packaging completed successfully. The rebuilt
+`frontend/src-tauri/target/release/bundle/nsis/Fyodor_0.3.0_x64-setup.exe` is
+406,282,477 bytes with SHA-256
+`1e906aaf23dc292a8814cce7bbd2fde93d110437e536daead6d2877377d8d43c`.
+[Package verification](training-scratch-20260928/desktop-package.json) checks
+all extracted backend resources against the packaged sources, the desktop
+binary's expected Tauri bundle marker, the extracted trainer CLI, and eight
+authenticated/unauthenticated HTTP requests. Native CUDA inference with optional
+BLAS/CUTLASS disabled produced the same eight-token continuation twice from a
+725-token prompt, without CPU prefix replay. This is extracted-binary validation,
+not an installation or interactive UI test.
+
+[The final evidence audit](training-scratch-20260928/audit.json) verifies source
+hashes, all 15 matrix stages, full stress-test outputs under three CUDA sanitizer
+tools, the bounded racecheck exit/result, exclusion of the interrupted run, and
+the package verification record. The scripts and raw outputs remain alongside
+it. No throughput result from this milestone is accepted; complete resident GPU
+training and its end-to-end trajectory validation remain future work.

@@ -524,6 +524,10 @@ remain under development.
 Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
 so inference initialization does not compile training derivatives. The native
 training context does not load optional inference matrix libraries.
+The private device also supports [reusable scratch scopes](benchmarks/TRAINING_SCRATCH_20260928.md).
+Ending a scope invalidates its temporary handles and recycles storage in stream
+order without adding a host fence; allocations preceding the scope survive.
+This prepares repeated graph execution while public training remains on CPU.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
