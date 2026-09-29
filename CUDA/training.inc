@@ -8,11 +8,12 @@ typedef struct nya_cuda_train_buffer {
     nya_train_buffer id;
     CUdeviceptr memory;
     size_t bytes;
+    size_t index_count, index_rows, index_groups;
 } nya_cuda_train_buffer;
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw;
+    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -71,7 +72,7 @@ static int nya_ct_launch(nya_cuda_train *t, CUfunction f, unsigned gx, unsigned 
 static nya_cuda_train_buffer *nya_ct_find(nya_cuda_train *t, nya_train_buffer id)
 {
     if (id) for (size_t i = 0; i < t->stats.buffers; ++i)
-        if (t->buffers[i].id == id) return &t->buffers[i];
+        if (t->buffers[i].id == id && !t->buffers[i].index_count) return &t->buffers[i];
     return NULL;
 }
 static void nya_ct_destroy(void *context)
@@ -117,6 +118,8 @@ static void *nya_ct_create(size_t capacity)
         t->cuda->function_get(&t->rms,t->cuda->module,"nya_train_rms") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->rms_dx,t->cuda->module,"nya_train_rms_dx") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->rms_dw,t->cuda->module,"nya_train_rms_dw") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->embedding,t->cuda->module,"nya_train_embedding") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->embedding_back,t->cuda->module,"nya_train_embedding_back") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
     t->stats.capacity_bytes = capacity;
@@ -156,7 +159,7 @@ static nya_train_buffer nya_ct_alloc(void *context, size_t bytes)
     uint64_t id = nya_ct_id(t);
     if (!id) return 0;
     if (nya_ct_enter(t)) return 0;
-    nya_cuda_train_buffer b = {id,t->arena+offset,bytes};
+    nya_cuda_train_buffer b = {.id=id,.memory=t->arena+offset,.bytes=bytes};
     int result = nya_ct_zero_buffer(t,&b);
     if (nya_ct_leave(t,result)) return 0;
     t->buffers[t->stats.buffers++] = b;
@@ -211,6 +214,55 @@ static int nya_ct_transfer(void *context, nya_train_buffer id, size_t offset, vo
         } else { ++t->stats.downloads; t->stats.download_bytes += bytes; }
     }
     return nya_ct_leave(t,result);
+}
+static nya_train_indices nya_ct_indices(void *context, const nya_train_index_pack *pack)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return 0;
+    if (!pack || !pack->data || !pack->count || !pack->rows || !pack->groups ||
+        pack->count>(size_t)t->cuda->grid_limit || pack->groups>pack->count) {
+        nya_ct_error(t,"invalid training token indices or host staging allocation failed",0); return 0;
+    }
+    nya_train_buffer id=nya_ct_alloc(t,pack->bytes);
+    if (!id || nya_ct_transfer(t,id,0,pack->data,pack->bytes,1)) return 0;
+    nya_cuda_train_buffer *b=nya_ct_find(t,id);
+    b->index_count=pack->count; b->index_rows=pack->rows; b->index_groups=pack->groups;
+    return id;
+}
+static int nya_ct_embedding(void *context, nya_train_buffer out, nya_train_buffer source,
+    unsigned type, size_t columns, nya_train_indices indices, int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    nya_cuda_train_buffer *dst=nya_ct_find(t,out), *src=nya_ct_find(t,source), *map=NULL;
+    if (indices) for (size_t k=0;k<t->stats.buffers;++k)
+        if (t->buffers[k].id==indices && t->buffers[k].index_count) { map=&t->buffers[k]; break; }
+    if (!dst || !src || !map || out==source || !columns || (backward!=0 && backward!=1))
+        return nya_ct_error(t,"invalid training embedding descriptor",0);
+    size_t block=1, unit=4;
+    switch (type) {
+        case 0: break;
+        case 1: case 30: unit=2; break;
+        case 2: block=32; unit=18; break;
+        case 8: block=32; unit=34; break;
+        case 12: block=256; unit=144; break;
+        case 14: block=256; unit=210; break;
+        default: return nya_ct_error(t,"unsupported training embedding type",0);
+    }
+    if ((backward && type) || columns%block || columns/block>SIZE_MAX/unit ||
+        columns>SIZE_MAX/4/map->index_count)
+        return nya_ct_error(t,"training embedding size overflow or alignment",0);
+    size_t stride=columns/block*unit;
+    if (map->index_rows>SIZE_MAX/stride)
+        return nya_ct_error(t,"training embedding table size overflow",0);
+    size_t table_bytes=map->index_rows*stride, token_bytes=map->index_count*columns*4;
+    if (dst->bytes<(backward?table_bytes:token_bytes) || src->bytes<(backward?token_bytes:table_bytes))
+        return nya_ct_error(t,"training embedding buffer too small",0);
+    unsigned long long cols=columns, row_bytes=stride, count=map->index_count, groups=map->index_groups;
+    void *args[]={&src->memory,&map->memory,&dst->memory,&cols,backward?&count:&row_bytes,backward?(void *)&groups:(void *)&type};
+    if (nya_ct_enter(t)) return -1;
+    return nya_ct_leave(t,nya_ct_launch(t,backward?t->embedding_back:t->embedding,
+        (unsigned)(backward?groups:count),1,256,1,args));
 }
 static int nya_ct_zero(void *context, nya_train_buffer id)
 {
@@ -399,6 +451,7 @@ const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
-        nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm};
+        nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
+        nya_ct_indices,nya_ct_embedding};
     return &api;
 }

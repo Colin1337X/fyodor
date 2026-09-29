@@ -1,0 +1,128 @@
+{
+  "base_revision": "d522d577e3d979a7a9d708e749c5507b1da1ea5a",
+  "source_sha256": {
+    "CUDA/training.cu": "93e0117d9120d90ca7d60b99180d730e6d1a1ce6323ffb2abc25e2b1b6f2ec52",
+    "CUDA/training.inc": "45a81631d0569d14ca0eccfb3aba61d79fafdf7e0f8ba40c87c17535b94958f9",
+    "CUDA/cuda.c": "ca5ee26e0f20c3e39ea213f27a28cc23be859a9ae08ff8077b36437977f595b8",
+    "CUDA/CMakeLists.txt": "7737eb298299a2651c8bfbed43f504f2ba1009ab8a234ae19970d9d7d9232ea2",
+    "backend/CMakeLists.txt": "e8532145a81d9890354d990752c4166161a0a12c4a8de40df331341e0a294e10",
+    "backend/core/training_device.c": "f624554220869608d0df045763666a35f03dac04b8aa1599b715bdc90d7e99a4",
+    "backend/core/training_device.h": "5395b80df6185853d5ffdb2aa0a7d79e369dc404f6748c7bbc3689c8d8e01398",
+    "backend/core/training_device_backend.h": "f88d4af5a3939256aac277943fa31a99aaf065a6eb89939ba68c3d2e960151c9",
+    "backend/tests/test_training_embedding.c": "034a5a029cacdf481345f33faedc4c13e85766efcfb43841eb5ffa5b6ecb3ecb",
+    "backend/core/training_indices.c": "ca4f0566f2a63c666e47ece448d49a05f43f32e089bc4cedf99037e3fe9efbe2",
+    "backend/core/training_indices.h": "147740b2de4c29486d965ab62ff9389e44194a457f8e086fc9f68a23a153d2db",
+    "backend/tests/test_training_device.c": "a7a77d5a4307efdd7ea9b97ef2d6fcc73411ab727fea3df4a00a36bea8392e84",
+    "backend/benchmarks/training_device_bench.c": "ced414f5508da3417c5198885c94041cafea85f5354081af0c2c1507daf10fa7",
+    "backend/core/training.c": "283603426707c9c27f5f0f6004809729f740aff82867eace85da95b219c4bd3b",
+    "backend/core/train_executor.c": "a0bd3e21fd08de133795c278074d493fd0f1455403a9e4e93ac9db4c864d874a"
+  },
+  "generated_bundles": {
+    "nya_cuda_source": {
+      "bytes": 32423,
+      "sha256": "927af8f2929259b9984b8b82ddf4a327f8194a4d9603947d4758765613822d55"
+    },
+    "nya_cuda_training_source": {
+      "bytes": 27638,
+      "sha256": "1724281003d6deedf13b51eb044a62694bca33142619879ce10090a55a1a3f22"
+    }
+  },
+  "inference_bundle_identical_to_module_split": true,
+  "gpu": "NVIDIA GeForce RTX 5060 Ti, 610.88, 16311 MiB",
+  "compiler": "gcc.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "model": {
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "executable_sha256": "8a75689dcbebef0d69c26511cad83bc2a2422c364be6373c4748441fa5d421a2",
+  "results": {
+    "embedffn8": {
+      "command": [
+        "build-cuda/nya-bench-training-device.exe",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "embedffn8"
+      ],
+      "exit_code": 0,
+      "result": {
+        "component": "embedding-rms-ffn",
+        "tokens": 8,
+        "inputs": 2048,
+        "hidden": 5632,
+        "table_rows": 32000,
+        "microbatches": 2,
+        "max_scaled_output_error": 1.83100899e-07,
+        "max_scaled_embedding_gradient_error": 4.55228527e-06,
+        "max_scaled_norm_gradient_error": 8.84322511e-07,
+        "tolerance": 1e-05,
+        "peak_bytes": 548577856,
+        "live_bytes": 547004928,
+        "uploads": 7,
+        "downloads": 4,
+        "timing_accepted": false,
+        "ms": [
+          7.993699997,
+          9.768799995,
+          8.041100009,
+          8.157600008,
+          9.9472
+        ]
+      }
+    },
+    "embedffn64": {
+      "command": [
+        "build-cuda/nya-bench-training-device.exe",
+        ".tools/tinyllama-q4_k_m.gguf",
+        "embedffn64"
+      ],
+      "exit_code": 0,
+      "result": {
+        "component": "embedding-rms-ffn",
+        "tokens": 64,
+        "inputs": 2048,
+        "hidden": 5632,
+        "table_rows": 32000,
+        "microbatches": 2,
+        "max_scaled_output_error": 1.83100899e-07,
+        "max_scaled_embedding_gradient_error": 6.48548272e-06,
+        "max_scaled_norm_gradient_error": 1.45553556e-06,
+        "tolerance": 1e-05,
+        "peak_bytes": 561423872,
+        "live_bytes": 548840448,
+        "uploads": 7,
+        "downloads": 4,
+        "timing_accepted": false,
+        "ms": [
+          13.101199991,
+          12.063899994,
+          13.310900002,
+          11.973900007,
+          12.009500002
+        ]
+      }
+    }
+  },
+  "method": {
+    "warmups": 2,
+    "measured_repetitions": 5,
+    "microbatches_per_repetition": 2,
+    "checked_elements": "Every final output, full accumulated embedding-table gradient and normalization-scale gradient element",
+    "oracle": "Native CPU autograd, six workers, same mapped quantized weights and inputs",
+    "timing_exclusion": "Interactive desktop activity was not isolated; no throughput acceptance.",
+    "environment": {
+      "NYA_CUDA_BLAS": "0",
+      "NYA_CUDA_CUTLASS": "0",
+      "NYA_COMPUTE": "cpu"
+    }
+  },
+  "source_study": {
+    "project": "llama.cpp/ggml",
+    "revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+    "license": "MIT",
+    "sha256": {
+      "LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "ggml/src/ggml-cuda/getrows.cu": "3b399af2e669cca806a55168cbd28ec22365390ad4e7b6cb0a9f0fad66fba4e4",
+      "ggml/src/ggml-cuda/getrows.cuh": "230b96ab88cd2235d0b0b226f43e32085e2424dfe7958524c08a5887748d100c"
+    },
+    "finding": "Upstream get-rows gathers/dequantizes selected rows and its backward scans IDs for every destination row. Fyodor uses original gather kernels and portable C sorted occurrence maps so backward visits only selected rows in token order. No source or C++ tensor machinery copied."
+  }
+}

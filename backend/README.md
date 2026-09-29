@@ -538,6 +538,10 @@ autograd without intermediate host transfers; full GPU training remains unfinish
 Resident [RMSNorm forward and backward](benchmarks/TRAINING_NORM_20260929.md)
 adds optional trainable normalization scales and caller-owned saved inverse state.
 The real-model normalized FFN probe checks full output, input-gradient and scale-gradient parity.
+Resident [embedding forward/backward](benchmarks/TRAINING_EMBEDDING_20260929.md)
+uses immutable token maps and ordered repeated-token gradients. A real trainable
+embedding → normalized FFN component matches CPU autograd; matrix backward now
+preserves CPU F32 product/addition order, including existing gradients.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 

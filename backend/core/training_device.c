@@ -36,6 +36,21 @@ int nya_train_device_zero(nya_train_device *d, nya_train_buffer b)
 { return d ? d->api->zero(d->context,b) : -1; }
 int nya_train_device_finish(nya_train_device *d)
 { return d ? d->api->finish(d->context) : -1; }
+nya_train_indices nya_train_device_indices(nya_train_device *d, const uint32_t *ids, size_t count, size_t rows)
+{
+    if (!d) return 0;
+    nya_train_index_pack pack;
+    if (nya_train_index_pack_create(&pack,ids,count,rows)) return d->api->indices(d->context,NULL);
+    nya_train_indices result=d->api->indices(d->context,&pack);
+    nya_train_index_pack_free(&pack);
+    return result;
+}
+int nya_train_device_embedding(nya_train_device *d, nya_train_buffer output, nya_train_buffer table,
+    unsigned type, size_t columns, nya_train_indices indices)
+{ return d ? d->api->embedding(d->context,output,table,type,columns,indices,0) : -1; }
+int nya_train_device_embedding_backward(nya_train_device *d, nya_train_buffer dtable,
+    nya_train_buffer dy, size_t columns, nya_train_indices indices)
+{ return d ? d->api->embedding(d->context,dtable,dy,0,columns,indices,1) : -1; }
 nya_train_scope nya_train_device_scratch_begin(nya_train_device *d)
 { return d ? d->api->scratch_begin(d->context) : 0; }
 int nya_train_device_scratch_end(nya_train_device *d, nya_train_scope scope)

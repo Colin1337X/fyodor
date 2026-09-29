@@ -11,6 +11,7 @@
 typedef struct nya_train_device nya_train_device;
 typedef uint64_t nya_train_buffer;
 typedef uint64_t nya_train_scope;
+typedef uint64_t nya_train_indices;
 typedef struct nya_train_device_stats {
     size_t capacity_bytes, used_bytes, buffers, peak_bytes;
     uint64_t kernel_launches, uploads, downloads, upload_bytes, download_bytes, synchronizations;
@@ -27,6 +28,23 @@ int nya_train_device_write(nya_train_device *device, nya_train_buffer buffer, si
 int nya_train_device_read(nya_train_device *device, nya_train_buffer buffer, size_t offset, void *destination, size_t bytes);
 int nya_train_device_zero(nya_train_device *device, nya_train_buffer buffer);
 int nya_train_device_finish(nya_train_device *device);
+
+/* Bind validated host token IDs to immutable resident metadata. This explicit
+   setup allocates arena storage and uploads once; it uses host sorting/staging
+   proportional to count, not vocabulary size. rows/count must fit uint32_t.
+   The map follows buffer scratch lifetime but is opaque: ordinary buffer APIs
+   cannot read, write or use it as tensor storage. Caller IDs may change after
+   this returns. Repeated forward/backward adds no allocation, copy or fence. */
+nya_train_indices nya_train_device_indices(nya_train_device *device, const uint32_t *ids, size_t count, size_t rows);
+/* Gather table[rows,columns] into output[count,columns], overwriting output.
+   Table may use any supported matrix storage type; output is dense F32. */
+int nya_train_device_embedding(nya_train_device *device, nya_train_buffer output, nya_train_buffer table,
+    unsigned type, size_t columns, nya_train_indices indices);
+/* Accumulate into a dense F32 table gradient, touching only referenced rows.
+   Repeated IDs accumulate in original token order with one writer per element.
+   Output/input aliasing is rejected; no floating-point atomics are used. */
+int nya_train_device_embedding_backward(nya_train_device *device, nya_train_buffer dtable,
+    nya_train_buffer dy, size_t columns, nya_train_indices indices);
 
 /* One non-nesting scratch scope at a time. Allocations made after begin belong
    to that scope; end invalidates their handles and reclaims arena/descriptors.
@@ -87,7 +105,8 @@ int nya_train_device_rms_norm_backward(nya_train_device *device, nya_train_buffe
 
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
-   Linear overwrites Y; gradient operations accumulate into initialized dX/dW.
+   Linear overwrites Y; gradient operations accumulate each F32-rounded product
+   in CPU reduction order into initialized dX/dW, without fused multiply-add.
    Outputs must not alias inputs. No implicit transfers or fences occur here. */
 int nya_train_device_linear(nya_train_device *device, nya_train_buffer y, nya_train_buffer w,
     unsigned type, size_t outputs, size_t inputs, nya_train_buffer x, size_t tokens);

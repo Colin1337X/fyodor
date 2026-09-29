@@ -16,6 +16,30 @@ extern "C" __global__ void nya_train_check_finite(const float *data, unsigned *s
     int bad = i < count && (__float_as_uint(data[i]) & 0x7f800000u) == 0x7f800000u;
     if (__syncthreads_or(bad) && threadIdx.x == 0) atomicCAS(status,0u,tag);
 }
+/* Token maps are validated, sorted and sealed at the explicit upload boundary.
+   The backward grid visits only unique referenced rows. Each element has one
+   writer and adds occurrences in token order, preserving CPU F32 rounding. */
+extern "C" __global__ void nya_train_embedding(const unsigned char *table, const unsigned *ids,
+    float *out, unsigned long long columns, unsigned long long row_bytes, unsigned type)
+{
+    unsigned long long token=blockIdx.x;
+    const unsigned char *row=table+(unsigned long long)ids[token]*row_bytes;
+    for (unsigned long long j=threadIdx.x;j<columns;j+=256)
+        out[token*columns+j]=nya_weight(row,j,type);
+}
+extern "C" __global__ void nya_train_embedding_back(const float *dy, const unsigned *map, float *dt,
+    unsigned long long columns, unsigned long long count, unsigned long long groups)
+{
+    unsigned long long group=blockIdx.x;
+    const unsigned *keys=map+count, *offsets=keys+groups, *positions=offsets+groups+1;
+    unsigned long long base=(unsigned long long)keys[group]*columns;
+    for (unsigned long long j=threadIdx.x;j<columns;j+=256) {
+        float sum=dt[base+j];
+        for (unsigned long long k=offsets[group];k<offsets[group+1];++k)
+            sum+=dy[(unsigned long long)positions[k]*columns+j];
+        dt[base+j]=sum;
+    }
+}
 /* One row per block, fixed-order double reduction, with saved inverse RMS.
    This keeps extreme finite F32 squares representable and avoids a separate
    norm recomputation in the per-column weight-gradient kernel. */
@@ -153,7 +177,13 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
     unsigned linear = threadIdx.y*32+threadIdx.x;
     unsigned long long column = (unsigned long long)blockIdx.x*32+threadIdx.x;
     unsigned token = blockIdx.y*32+threadIdx.y;
-    float sum[4][2] = {};
+    /* Preserve CPU backward's F32 product/addition order, including the
+       gradient already present from an earlier branch or microbatch. */
+    float sum[4];
+    #pragma unroll
+    for (unsigned slot = 0; slot < 4; ++slot)
+        sum[slot] = column < inputs && token+slot*8 < tokens ?
+            dx[(unsigned long long)(token+slot*8)*inputs+column] : 0;
     for (unsigned long long base = 0; base < outputs; base += 32) {
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot) {
@@ -173,14 +203,15 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
             float weight = weights[threadIdx.x][k];
             #pragma unroll
             for (unsigned slot = 0; slot < 4; ++slot)
-                sum[slot][k&1] += weight*gradients[threadIdx.y+slot*8][k];
+                if (base+k < outputs)
+                    sum[slot] = __fadd_rn(sum[slot],__fmul_rn(weight,gradients[threadIdx.y+slot*8][k]));
         }
         __syncthreads();
     }
     if (column < inputs) {
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot)
-            if (token+slot*8 < tokens) dx[(unsigned long long)(token+slot*8)*inputs+column] += sum[slot][0]+sum[slot][1];
+            if (token+slot*8 < tokens) dx[(unsigned long long)(token+slot*8)*inputs+column] = sum[slot];
     }
 }
 #define NYA_TRAIN_DX(TYPE) extern "C" __global__ void nya_train_dx_##TYPE(const unsigned char *w, const float *dy, float *dx, unsigned long long i, unsigned long long s, unsigned o, unsigned n) { nya_train_dx(w,dy,dx,i,s,o,n,TYPE); }
@@ -193,7 +224,11 @@ extern "C" __global__ void nya_train_dw(const float *x, const float *dy, float *
     __shared__ float gradients[32][33], inputs_tile[32][33];
     unsigned linear = threadIdx.y*32+threadIdx.x;
     unsigned column = blockIdx.x*32+threadIdx.x, row = blockIdx.y*32+threadIdx.y;
-    float sum[4][2] = {};
+    float sum[4];
+    #pragma unroll
+    for (unsigned slot = 0; slot < 4; ++slot)
+        sum[slot] = column < inputs && row+slot*8 < outputs ?
+            dw[(unsigned long long)(row+slot*8)*inputs+column] : 0;
     for (unsigned long long base = 0; base < tokens; base += 32) {
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot) {
@@ -208,13 +243,14 @@ extern "C" __global__ void nya_train_dw(const float *x, const float *dy, float *
             float input = inputs_tile[k][threadIdx.x];
             #pragma unroll
             for (unsigned slot = 0; slot < 4; ++slot)
-                sum[slot][k&1] += gradients[threadIdx.y+slot*8][k]*input;
+                if (base+k < tokens)
+                    sum[slot] = __fadd_rn(sum[slot],__fmul_rn(gradients[threadIdx.y+slot*8][k],input));
         }
         __syncthreads();
     }
     if (column < inputs) {
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot)
-            if (row+slot*8 < outputs) dw[(unsigned long long)(row+slot*8)*inputs+column] += sum[slot][0]+sum[slot][1];
+            if (row+slot*8 < outputs) dw[(unsigned long long)(row+slot*8)*inputs+column] = sum[slot];
     }
 }

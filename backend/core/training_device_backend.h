@@ -1,6 +1,7 @@
 #ifndef NYA_TRAINING_DEVICE_BACKEND_H
 #define NYA_TRAINING_DEVICE_BACKEND_H
 #include "training_device.h"
+#include "training_indices.h"
 typedef struct nya_train_device_interface {
     void *(*create)(size_t capacity);
     void (*destroy)(void *context);
@@ -21,5 +22,8 @@ typedef struct nya_train_device_interface {
         nya_train_view a, nya_train_view b, nya_train_buffer dy, unsigned operation, int backward);
     int (*rms_norm)(void *context, nya_train_buffer out, nya_train_buffer dweight, nya_train_buffer inverse,
         nya_train_view x, nya_train_buffer weight, nya_train_buffer dy, float epsilon, int backward);
+    nya_train_indices (*indices)(void *context, const nya_train_index_pack *pack);
+    int (*embedding)(void *context, nya_train_buffer out, nya_train_buffer source,
+        unsigned type, size_t columns, nya_train_indices indices, int backward);
 } nya_train_device_interface;
 #endif

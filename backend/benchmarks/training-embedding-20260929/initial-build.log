@@ -1,0 +1,84 @@
+-- Optional ROCm C loader enabled; HIP/rocBLAS are discovered at runtime
+-- Optional MLX C loader enabled; MLX C/GPU are discovered at runtime
+-- CUDA driver/NVRTC provider enabled (C host compiler; runtime CUDA compilation)
+-- CUTLASS: this generator cannot compile CUDA C++; use a standalone CUDA/cutlass build. C/NVRTC build retained
+-- Configuring done (0.3s)
+-- Generating done (0.2s)
+-- Build files have been written to: C:/Users/Colin/fyodor/build-cuda
+[  2%] Built target nya-mock-vendor
+[  4%] Built target nya-mock-missing-vendor
+[  6%] Built target nya-make-test-models
+[  7%] Building C object backend/CMakeFiles/nya-engine.dir/core/training_device.c.obj
+[  9%] Building C object backend/CMakeFiles/nya-engine.dir/core/training_indices.c.obj
+[ 10%] Building C object backend/CMakeFiles/nya-engine.dir/__/CUDA/cuda.c.obj
+[ 13%] Built target nya-test-config
+[ 14%] Linking C static library libnya-engine.a
+[ 42%] Built target nya-engine
+[ 43%] Linking C executable ..\nya-test-vendor.exe
+[ 46%] Built target nya-server
+[ 48%] Linking C executable ..\fyodor-train.exe
+[ 48%] Linking C executable ..\fyodor-bench.exe
+[ 50%] Linking C executable ..\nya-test-formats.exe
+[ 51%] Built target nya-test-vendor
+[ 52%] Built target fyodor-bench
+[ 53%] Built target fyodor-train
+[ 54%] Linking C executable ..\nya-test-execution.exe
+[ 55%] Linking C executable ..\nya-test-generation.exe
+[ 56%] Linking C executable ..\nya-test-architectures.exe
+[ 57%] Built target nya-test-formats
+[ 59%] Linking C executable ..\nya-test-training.exe
+[ 60%] Built target nya-test-execution
+[ 61%] Built target nya-test-generation
+[ 62%] Built target nya-test-architectures
+[ 64%] Linking C executable ..\nya-test-pretraining.exe
+[ 64%] Linking C executable ..\nya-test-compute.exe
+[ 67%] Linking C executable ..\nya-test-train-runner.exe
+[ 67%] Built target nya-test-training
+[ 68%] Linking C executable ..\nya-test-inference.exe
+[ 69%] Built target nya-test-compute
+[ 70%] Built target nya-test-pretraining
+[ 71%] Built target nya-test-train-runner
+[ 72%] Built target nya-test-inference
+[ 73%] Linking C executable ..\nya-test-quant-kernels.exe
+[ 76%] Linking C executable ..\nya-test-attention.exe
+[ 76%] Linking C executable ..\nya-test-kv-precision.exe
+[ 77%] Linking C executable ..\nya-test-server.exe
+[ 78%] Built target nya-test-attention
+[ 80%] Built target nya-test-quant-kernels
+[ 80%] Built target nya-test-kv-precision
+[ 81%] Building C object backend/CMakeFiles/nya-test-training-device.dir/tests/test_training_device.c.obj
+[ 82%] Linking C executable ..\nya-test-api.exe
+[ 84%] Building C object backend/CMakeFiles/nya-bench-training-device.dir/benchmarks/training_device_bench.c.obj
+[ 86%] Built target nya-test-server
+[ 87%] Building C object backend/CMakeFiles/nya-test-training-elementwise.dir/tests/test_training_elementwise.c.obj
+[ 89%] Built target nya-test-api
+[ 90%] Building C object backend/CMakeFiles/nya-test-training-norm.dir/tests/test_training_norm.c.obj
+[ 92%] Linking C executable ..\nya-test-training-device.exe
+[ 93%] Linking C executable ..\nya-test-training-elementwise.exe
+[ 93%] Built target nya-test-training-device
+[ 94%] Linking C executable ..\nya-test-training-norm.exe
+[ 94%] Built target nya-test-training-elementwise
+[ 95%] Building C object backend/CMakeFiles/nya-test-training-embedding.dir/tests/test_training_embedding.c.obj
+[ 96%] Linking C executable ..\fyodor-backend.exe
+C:\Users\Colin\fyodor\backend\tests\test_training_embedding.c: In function 'packing':
+C:\Users\Colin\fyodor\backend\tests\test_training_embedding.c:16:11: error: 'ids' may be used uninitialized [-Werror=maybe-uninitialized]
+   16 |     CHECK(nya_train_index_pack_create(NULL,ids,1,1));
+      |           ^
+C:\Users\Colin\fyodor\backend\tests\test_training_embedding.c:10:29: note: in definition of macro 'CHECK'
+   10 | #define CHECK(x) do { if (!(x)) { fprintf(stderr,"line %d: %s (%s)\n",__LINE__,#x,nya_train_device_error(d)); return 1; } } while (0)
+      |                             ^
+In file included from C:\Users\Colin\fyodor\backend\tests\test_training_embedding.c:2:
+C:/Users/Colin/fyodor/backend/core/training_indices.h:12:5: note: by argument 2 of type 'const uint32_t *' {aka 'const unsigned int *'} to 'nya_train_index_pack_create' declared here
+   12 | int nya_train_index_pack_create(nya_train_index_pack *pack, const uint32_t *ids, size_t count, size_t rows);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\Colin\fyodor\backend\tests\test_training_embedding.c:15:14: note: 'ids' declared here
+   15 |     uint32_t ids[4097], random=42;
+      |              ^~~
+[ 96%] Built target nya-test-training-norm
+[ 97%] Linking C executable ..\nya-bench-training-device.exe
+[ 98%] Built target fyodor-backend
+[ 98%] Built target nya-bench-training-device
+cc1.exe: all warnings being treated as errors
+make[2]: *** [backend\CMakeFiles\nya-test-training-embedding.dir\build.make:79: backend/CMakeFiles/nya-test-training-embedding.dir/tests/test_training_embedding.c.obj] Error 1
+make[1]: *** [CMakeFiles\Makefile2:2262: backend/CMakeFiles/nya-test-training-embedding.dir/all] Error 2
+make: *** [Makefile:100: all] Error 2
