@@ -8,6 +8,8 @@ read-only. This milestone does not add a dataset job/materialization backend.
 
 - Create a dataset with pretraining, CPT, SFT or DPO format.
 - Import strict UTF-8 `.txt`/`.tsv` files into new unsaved resources.
+- Select saved Writing/Explore revisions and local chat snapshots, map them to
+  corpus/SFT drafts and preserve provenance; see [Source ingestion](DATASET_SOURCES.md).
 - Edit title/content; inspect format issues and the first 50 filtered records.
 - See bytes, record/nonempty-line counts and exact duplicate counts.
 - Filter, sample, shuffle and remove exact duplicates into a new derived draft.
@@ -17,7 +19,7 @@ read-only. This milestone does not add a dataset job/materialization backend.
 - Export and open Training with the chosen mode; explicitly select the downloaded
   file in the native Training form.
 
-Writing/Explore/Chat/Unified Context source ingestion, automatic native file
+Permission-scoped Unified Context ingestion, automatic native file
 materialization and persisted run/evaluation linkage remain open. They are
 requirements of the full product brief, not implied by the current dataset editor.
 
@@ -28,7 +30,8 @@ transforms, typed identity and bounded catalog filtering. It is independently
 testable without a DOM or server. `src/dataset-workspace.js` owns view state,
 requests, draft lifecycle and downloads. `main.js` mounts the view and handles
 the explicit export-to-Training navigation. Shared clay/layout styles remain
-in `clay.css`; no new framework or editor dependency was added.
+in `clay.css`; no new framework or editor dependency was added. Source mapping
+and picker ownership are documented separately in `DATASET_SOURCES.md`.
 
 The current namespace, draft, editor revision, mode, filter, seed, sample size,
 split share and split drafts live in memory. The app persists the selected view,
@@ -172,8 +175,9 @@ Native contracts still needed:
 - Dataset-revision materialization into managed training/validation files, exact
   provenance, cleanup/lifetime, permission checks and failure reporting.
 - Validation against the selected native tokenizer/context/architecture.
-- Source ingestion from Writing, Explore, Chats and selected context resources,
-  explicit field mappings, permission enforcement and revision provenance.
+- Permission-scoped ingestion from selected Context resources, durable native
+  chat snapshots and source/lineage services. The current human-selected
+  Writing/Explore/chat frontend mappings are documented in `DATASET_SOURCES.md`.
 - Atomic/recoverable derived dataset jobs, split linkage and job/run identities.
 - Training/evaluation launch from a dataset revision, run history and reproducibility.
 
@@ -185,7 +189,7 @@ source resources when adding ingestion.
 
 Five unit tests cover native structural grammar edge cases, bounds, import
 decoding, mode annotation, deterministic sampling/splits, exact dedup/filter and
-sparse catalog paging. The full selected frontend suite has 29 passing checks.
+sparse catalog paging. Six source-domain checks bring the selected suite to 35.
 
 The Windows headless browser flow creates/saves an SFT dataset, derives an exact
 deduplicated copy, verifies its source remains unchanged, saves both split copies,

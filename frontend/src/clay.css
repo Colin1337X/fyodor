@@ -145,6 +145,17 @@ input, select, textarea { color: var(--text); }
 .dataset-table th { position: sticky; top: 0; background: var(--surface); }
 .dataset-parts { list-style: none; padding: 0; display: grid; gap: 14px; }
 .dataset-parts li { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.dataset-source-picker { margin-bottom: var(--space); }
+.dataset-source-picker > summary { cursor: pointer; font-weight: 600; }
+.dataset-source-picker[open] > summary { margin-bottom: 18px; }
+.dataset-source-list { max-height: 240px; overflow: auto; margin: 16px 0; }
+.dataset-source-list label.check { width: 100%; margin: 0; }
+.dataset-source-list small, .dataset-source-selection small { display: block; color: var(--muted); font-size: 11px; }
+.dataset-source-selection { list-style: none; padding: 0; display: grid; gap: 12px; }
+.dataset-source-selection li { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.dataset-source-selection span { min-width: 0; overflow-wrap: anywhere; }
+.dataset-source-picker .resource-toolbar label { min-width: 0; }
+.dataset-workspace [data-dataset-uri][aria-pressed='true'] { background: var(--hover); box-shadow: var(--clay-inset); }
 
 :root[data-borders='false'] .panel,
 :root[data-borders='false'] .tool-card,

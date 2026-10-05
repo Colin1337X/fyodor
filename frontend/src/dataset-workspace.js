@@ -2,12 +2,13 @@ import {backend} from './api.js';
 import {escapeHtml as esc} from './message.js';
 import {datasetModes,datasetLimit,isDataset,savedDatasetMode,inspectDataset,decodeDataset,transformDataset,newDataset,datasetPage} from './dataset-data.js';
 import {writingDownloadName} from './writing-files.js';
+import {datasetSourcePicker} from './dataset-source-picker.js';
 
 const state = {namespace:'workspace',items:[],next:'',draft:null,revision:'0',mode:'pretrain',originalMode:null,dirty:false,busy:false,error:'',notice:'',query:'',seed:42,count:10,validationPercent:20,parts:[]};
 let mount=0,repaint=()=>{};
 window.addEventListener('beforeunload',event=>{if(state.dirty||state.parts.some(part=>!part.revision)){event.preventDefault();event.returnValue='';}});
 
-export function datasetWorkspace(root, prepareTraining = null) {
+export function datasetWorkspace(root, prepareTraining = null, getChats = () => []) {
   const generation=++mount;
   const current=()=>generation===mount&&document.body.dataset.view==='datasets';
   function paint(){
@@ -16,6 +17,7 @@ export function datasetWorkspace(root, prepareTraining = null) {
     root.innerHTML=`<section class="resource-workspace dataset-workspace"><header class="view-heading"><div><p class="eyebrow">DATASET STUDIO</p><h1>Datasets</h1><p class="muted">Shape your training data and keep its source intact.</p></div></header>
       <div class="resource-toolbar"><label>Namespace<input id="dataset-namespace" maxlength="64" value="${esc(state.namespace)}"></label><button data-dataset="refresh">Refresh</button><button data-dataset="new">New dataset</button><button data-dataset="import">Import text / TSV</button><input id="dataset-import" type="file" accept=".txt,.tsv" hidden></div>
       <p role="status" aria-live="polite" class="${state.error?'danger-action':'muted'}">${esc(state.error||state.notice||(state.busy?'Working…':''))}</p>
+      <div id="dataset-source-picker"></div>
       <div class="resource-columns"><section aria-label="Dataset library"><ul class="resource-list">${state.items.map(item=>`<li><button data-dataset-uri="${esc(item.uri)}" aria-pressed="${d?.uri===item.uri}"><b>${esc(item.title||'Untitled dataset')}</b><small>Revision ${esc(item.revision)}</small></button></li>`).join('')||'<li class="muted">No datasets on this page.</li>'}</ul><button data-dataset="next" ${state.next?'':'disabled'}>Next page</button></section>
       <section class="panel resource-editor" aria-label="Dataset editor">${d?`<p class="fine-print">${state.revision==='0'?'New dataset':'Revision '+esc(state.revision)}${state.dirty?' · Unsaved changes':''}</p><label>Title<input id="dataset-title" maxlength="1024" value="${esc(d.title)}"></label>
         <label>Training format<select id="dataset-mode">${Object.entries(datasetModes).map(([value,label])=>`<option value="${value}" ${state.mode===value?'selected':''}>${label}</option>`).join('')}</select></label>
@@ -56,6 +58,14 @@ export function datasetWorkspace(root, prepareTraining = null) {
       });
     });
     inspect();
+    datasetSourcePicker(root.querySelector('#dataset-source-picker'),{namespace:state.namespace,busy:state.busy,api:backend,run,repaint:paint,getChats,onDraft:async build=>{
+      requireClean();
+      const draft=await build();
+      // Build completely before replacing the editor. Failed reads/mappings
+      // retain its existing text and every successful split save.
+      clear();state.draft=draft;state.mode=draft.metadata.dataset_studio.mode;state.dirty=true;
+      state.notice='Source dataset draft prepared. Review it and save.';
+    }});
     if(state.busy)root.querySelectorAll('button,input,textarea,select').forEach(control=>control.disabled=true);
   }
 

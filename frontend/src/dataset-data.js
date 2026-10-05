@@ -1,6 +1,7 @@
 // Mirror the native CLI's structural grammar, not its model tokenizer. See
 // backend/core/train_main.c: dataset_parse/encode_record. Token/context fit is
 // checked by the trainer; character counts must never masquerade as tokens.
+import {boundedResourceTitle} from './resource-text.js';
 export const datasetModes = {pretrain:'Pretraining', cpt:'Continued pretraining', sft:'Supervised fine-tuning', dpo:'Preference / DPO'};
 export const datasetLimit = 1024 * 1024;
 const encoder = new TextEncoder();
@@ -86,7 +87,7 @@ export function transformDataset(content, mode, operation, options = {}) {
 
 export function newDataset(mode, title = 'Untitled dataset', content = '', provenance = {}) {
   if (!Object.hasOwn(datasetModes,mode)) throw new Error('Unsupported training format.');
-  return {schema:1,uri:'fyodor://datasets/'+crypto.randomUUID(),title,content,metadata:{dataset_studio:{version:1,mode}},provenance};
+  return {schema:1,uri:'fyodor://datasets/'+crypto.randomUUID(),title:boundedResourceTitle(title),content,metadata:{dataset_studio:{version:1,mode}},provenance};
 }
 
 export async function datasetPage(api, namespace, after = '') {

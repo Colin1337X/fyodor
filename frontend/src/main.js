@@ -97,7 +97,7 @@ function render(){
   document.querySelector('#footer-stat').textContent=`${s.models.length} models · ${activeRuntime?.compute?.toUpperCase()||'no active compute'}${s.busy?' · generating':s.actionBusy?' · loading':s.trainStatus.running?' · training':''}`;
   document.querySelector('#global-model').disabled=s.busy||s.actionBusy;
   document.querySelectorAll('.stage>header .load-model').forEach(n=>n.disabled=s.actionBusy||s.busy);
-  history();({workspace,resources:()=>resourceWorkspace(viewRoot),writing:()=>resourceWorkspace(viewRoot,'writing',s.selected),explore:()=>exploreWorkspace(viewRoot),datasets:()=>datasetWorkspace(viewRoot,prepareDatasetTraining),context:()=>contextWorkspace(viewRoot,s.selected),models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
+  history();({workspace,resources:()=>resourceWorkspace(viewRoot),writing:()=>resourceWorkspace(viewRoot,'writing',s.selected),explore:()=>exploreWorkspace(viewRoot),datasets:()=>datasetWorkspace(viewRoot,prepareDatasetTraining,()=>s.chats),context:()=>contextWorkspace(viewRoot,s.selected),models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
 }
 function prepareDatasetTraining({mode}){
   // Until the native service materializes a resource revision as a training

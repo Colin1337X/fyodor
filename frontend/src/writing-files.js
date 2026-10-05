@@ -1,17 +1,7 @@
 // Plain-text interchange is separate from schema-1 resource packages. Imported
 // files become new drafts; they never replace a loaded resource or its metadata.
 export const writingFileLimit = 1024 * 1024;
-const encoder = new TextEncoder();
-
-function boundedTitle(value) {
-  let title = '', bytes = 0;
-  for (const character of value) {
-    const length = encoder.encode(character).length;
-    if (bytes + length > 1024) break;
-    title += character; bytes += length;
-  }
-  return title || 'Untitled';
-}
+import {boundedResourceTitle} from './resource-text.js';
 
 export function decodeWritingFile(bytes, name) {
   if (!/\.(md|markdown|txt)$/i.test(name)) throw new Error('Choose a Markdown (.md) or plain text (.txt) file.');
@@ -20,7 +10,7 @@ export function decodeWritingFile(bytes, name) {
   try { content = new TextDecoder('utf-8', {fatal:true}).decode(bytes); }
   catch { throw new Error('This file is not valid UTF-8. Save it as UTF-8 text and try again.'); }
   if (content.includes('\0')) throw new Error('This file contains null characters. Choose a text file.');
-  const title = boundedTitle(String(name).split(/[\\/]/).at(-1).replace(/\.(md|markdown|txt)$/i, '').trim());
+  const title = boundedResourceTitle(String(name).split(/[\\/]/).at(-1).replace(/\.(md|markdown|txt)$/i, '').trim());
   return {title, content};
 }
 

@@ -430,3 +430,27 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   checkpoint verification of earlier native work, not new backend implementation.
 - The full goal remains open. Upcoming work includes context inspection and the
   backend-dependent workflows recorded in frontend/docs/ROADMAP.md.
+
+## Frontend dataset source ingestion (2026-10-06)
+
+- Added a source picker and separate mapping/provenance domain module. Human
+  selections mix exact saved Writing/Explore revisions with frozen local chat
+  text. Sources remain unchanged and new dataset drafts require explicit Save.
+- Corpus mapping preserves resource text and labels chat roles. SFT explicitly
+  maps a shared resource prompt/completion or adjacent user/assistant pairs;
+  tool-interrupted pairs are excluded. Tabs/newlines reject by default; explicit
+  space replacement is versioned in provenance. No DPO preference labels are
+  invented. Source/output byte bounds, exact hashes, source revisions, mapping
+  ranges and chat message indices are recorded and documented thoroughly.
+- Existing local administrative reads do not enforce Context principal grants.
+  Native permission-scoped Context ingestion, durable chat snapshots, managed
+  materialization/direct Training and broad product requirements remain open.
+  No backend implementation changed in this frontend milestone.
+- Production build, 35 selected frontend checks and real browser integration
+  pass. Browser/CLI evidence verifies a selected historical revision after a
+  concurrent source edit, mixed sources, guard/recovery behavior and downloaded
+  bytes. Real Writing/Explore CPT and local-chat SFT exports each complete one
+  native training update. Source-picker light/dark/mobile images are retained.
+- Shared UTF-8 title bounds prevent derived Unicode names exceeding the native
+  title limit. Maintenance contracts and limitations live in
+  frontend/docs/DATASET_SOURCES.md and the architecture/delivery map.

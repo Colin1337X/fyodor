@@ -88,7 +88,10 @@ Maintenance and integration documentation:
   composition, implemented controls and remaining native contract requirements.
 - [Dataset Studio](docs/DATASET_STUDIO.md): formats, validation, reproducible
   transformations, provenance, split recovery and the explicit file handoff to
-  Training. Direct dataset-resource training and source ingestion remain open.
+  Training. Direct dataset-resource training remains open.
+- [Dataset sources](docs/DATASET_SOURCES.md): Writing/Explore revision selection,
+  local chat snapshots, explicit corpus/SFT mapping, hashes and native Context
+  ingestion requirements.
 - [Frontend delivery map](docs/ROADMAP.md): implemented coverage, remaining work
   and contract checklist.
 

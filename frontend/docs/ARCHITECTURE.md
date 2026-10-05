@@ -23,6 +23,8 @@ client router, remote font dependency or server-rendered page.
 | `src/explore-workspace.js` | World/lore authoring controller and view | Existing resource APIs only; see `EXPLORE.md`. |
 | `src/dataset-data.js` | Dataset format inspection, deterministic transforms, annotation and paging | Pure helpers; structural checks do not replace native tokenizer validation. |
 | `src/dataset-workspace.js` | Dataset editing, imports, derived drafts, split persistence and export | Existing resource APIs; file handoff to Training, documented in `DATASET_STUDIO.md`. |
+| `src/dataset-sources.js`, `src/dataset-source-picker.js` | Source snapshots, explicit mappings/provenance and source selection controls | Parent owns busy state/editor replacement; see `DATASET_SOURCES.md` for administrative/Context boundary. |
+| `src/resource-text.js` | Complete-code-point UTF-8 title bounds | Shared by Writing imports and new/derived dataset titles. |
 | `src/context-workspace.js` | Source selection, explicit grants, search, generation receipts | Selected principal is an access label, not remote authentication. |
 | `src/api.js` | Authenticated local HTTP and compatible external endpoint requests | Keep protocol details here, never in rendering templates. |
 | `src/platform.js` | Tauri connection, native pickers and desktop commands | Browser mode must report unavailable desktop-only operations. |
@@ -141,7 +143,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 

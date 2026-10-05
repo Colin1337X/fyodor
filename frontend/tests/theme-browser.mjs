@@ -404,7 +404,72 @@ try {
     assert.equal(await evaluate('document.querySelector("#train-mode").value'),'sft');
     assert.equal(await evaluate('document.querySelector("#train-data").value'),'');
     assert.equal(await evaluate('document.querySelector("#train-evalData").value'),'');
-    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri}));
+    // Ingest saved revisions across libraries. An independent writer advances
+    // the Writing head after selection; the source read must still use rev 2.
+    await call('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false},sessionId);
+    await evaluate('document.querySelector("[data-view=datasets]").click()');
+    await waitFor('!!document.querySelector("[data-source=browse]:not(:disabled)")');
+    await evaluate('document.querySelector(".dataset-source-picker").open=true;document.querySelector("[data-source=browse]").click()');
+    await waitFor(`!!document.querySelector('[data-source-key="workspace:'+${JSON.stringify(imported_uri)}+'"]:not(:disabled)')`);
+    await evaluate(`document.querySelector('[data-source-key="workspace:'+${JSON.stringify(imported_uri)}+'"]').click()`);
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===1');
+    assert.equal(await evaluate('document.activeElement?.dataset.sourceKey'),'workspace:'+imported_uri);
+    await evaluate(`(async()=>{const {backend}=await import('/src/api.js');await backend.updateResource('workspace',{uri:${JSON.stringify(imported_uri)},title:'Sea notes',content:'Newer saved text.'},'2');})()`);
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-kind");n.value="explore";n.dispatchEvent(new Event("change"));})()');
+    await waitFor(`!!document.querySelector('[data-source-key="workspace:'+${JSON.stringify(lore_uri)}+'"]:not(:disabled)')`);
+    await evaluate(`document.querySelector('[data-source-key="workspace:'+${JSON.stringify(lore_uri)}+'"]').click()`);
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===2');
+    await waitFor('!document.querySelector("#toast").classList.contains("show")');
+    for(const [theme,width,label] of [['fyodor',1280,'datasets-sources'],['fyodor-dark',1280,'datasets-sources-dark'],['fyodor',390,'datasets-sources-mobile']]){
+      await evaluate(`window.fyodorAppearance.set({theme:${JSON.stringify(theme)}});document.querySelector('.stage>main').scrollTop=0`);
+      await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false},sessionId);await new Promise(r=>setTimeout(r,250));
+      assert.equal(await evaluate('document.documentElement.scrollWidth>innerWidth || document.querySelector(".stage>main").scrollWidth>document.querySelector(".stage>main").clientWidth'),false);
+      await writeFile(path.join(output,label+'.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'},sessionId)).data,'base64'));
+    }
+    await evaluate('document.querySelector("[data-source=build]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Source dataset draft prepared")');
+    const corpus='Independent edit.\n\nA harbor built from sea glass.';
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),corpus);
+    await evaluate('document.querySelector("[data-source=build]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Save or discard")');
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),corpus);
+    await evaluate('document.querySelector("[data-dataset=save]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Dataset saved")');
+    const corpus_uri=await evaluate('Array.from(document.querySelectorAll("[data-dataset-uri]")).find(n=>n.querySelector("b").textContent==="Selected sources · dataset").dataset.datasetUri');
+    await evaluate('document.querySelector("[data-dataset=export]").click()');
+    let corpusDownload;
+    for(let i=0;i<100;i++){try{corpusDownload=await readFile(path.join(profile,'Selected sources · dataset.txt'),'utf8');break;}catch{}await new Promise(r=>setTimeout(r,50));}
+    assert.equal(corpusDownload,corpus);await writeFile(process.env.FYODOR_RESOURCE_QA+'.source.txt',corpusDownload);
+
+    // Import a real local chat through the public JSON control. Only the first
+    // adjacent user/assistant pair is SFT; a tool breaks the later pair.
+    const chatFixture={title:'Chat training examples',created:123,messages:[{role:'user',text:'a\nb'},{role:'assistant',text:'c'},{role:'user',text:'b'},{role:'tool',text:'tool output'},{role:'assistant',text:'a'}]};
+    await evaluate(`(()=>{const transfer=new DataTransfer();transfer.items.add(new File([${JSON.stringify(JSON.stringify(chatFixture))}],'chat.json',{type:'application/json'}));const n=document.querySelector('#import-file');n.files=transfer.files;n.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    await waitFor('document.querySelector("#chat-title")?.value==="Chat training examples"');
+    await evaluate('document.querySelector("[data-view=datasets]").click()');
+    await waitFor('!!document.querySelector("[data-source=clear]:not(:disabled)")');
+    await evaluate('document.querySelector("[data-source=clear]").click()');
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===0 && !document.querySelector("#dataset-source-kind").disabled');
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-kind");n.value="chats";n.dispatchEvent(new Event("change"));})()');
+    await waitFor('!!document.querySelector("[data-source-key^=chat]:not(:disabled)")');
+    await evaluate('Array.from(document.querySelectorAll(".dataset-source-list li")).find(n=>n.textContent.includes("Chat training examples")).querySelector("input").click()');
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===1');
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-mode");n.value="sft";n.dispatchEvent(new Event("change"));})()');
+    await evaluate('document.querySelector("[data-source=build]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("replacement policy")');
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),corpus);
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-policy");n.value="spaces";n.dispatchEvent(new Event("change"));document.querySelector("[data-source=build]").click();})()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Source dataset draft prepared")');
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),'a b\tc');
+    await evaluate('document.querySelector("[data-dataset=save]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Dataset saved")');
+    const chat_dataset_uri=await evaluate('Array.from(document.querySelectorAll("[data-dataset-uri]")).find(n=>n.querySelector("b").textContent==="Chat training examples · dataset").dataset.datasetUri');
+    assert.deepEqual(await evaluate('JSON.parse(localStorage.getItem("fyodor-state")).chats.find(c=>c.title==="Chat training examples").messages.map(({role,text})=>({role,text}))'),chatFixture.messages);
+    await evaluate('document.querySelector("[data-dataset=export]").click()');
+    let chatDownload;
+    for(let i=0;i<100;i++){try{chatDownload=await readFile(path.join(profile,'Chat training examples · dataset.tsv'),'utf8');break;}catch{}await new Promise(r=>setTimeout(r,50));}
+    assert.equal(chatDownload,'a b\tc');await writeFile(process.env.FYODOR_RESOURCE_QA+'.chat.tsv',chatDownload);
+    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri}));
 
 
 

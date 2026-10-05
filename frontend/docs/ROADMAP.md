@@ -15,7 +15,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Context | Explicit grants/revocation, selected layers, search, generation and actual receipts | Human-readable source inspection, shared workspace/session coordination, automatic retrieval UX. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
 | Models | Registry and runtime capability display, load/unload, compute selection | Complete model card/evaluation/lineage UI over agreed native registry metadata. |
-| Datasets | Native resource persistence, corpus/SFT/DPO inspection, strict UTF-8 import, record editing, seeded filter/sample/shuffle/split, exact dedup, provenance and file export | Source ingestion, native tokenizer validation, direct resource training and large/streaming datasets; see `DATASET_STUDIO.md`. |
+| Datasets | Native resource persistence, corpus/SFT/DPO inspection, strict UTF-8 import, record editing, seeded transforms/splits, exact dedup, source-preserving Writing/Explore/chat corpus/SFT ingestion, provenance and file export | Permission-scoped Context ingestion, durable chat identity, native tokenizer validation, direct resource training and large/streaming datasets; see `DATASET_STUDIO.md` and `DATASET_SOURCES.md`. |
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
 | Logs/API | Logs with filters and API route presentation | Authenticated remote pairing/capability/session UI, WSS lifecycle. |
@@ -27,7 +27,7 @@ separates usable frontend behavior from planned screens and required contracts.
    from `main.js` and `resources.js`, retain behavior coverage and shared tokens.
    Improve source inspection and context receipts without exposing engineering notes
    as primary product text.
-2. Extend Dataset Studio with source ingestion and direct training once native
+2. Extend Dataset Studio with permission-scoped Context ingestion and direct training once native
    revision materialization, permission and tokenizer contracts are agreed.
    Basic editing/inspection/transforms use existing resource storage; file-path
    Training remains the usable launch path.
@@ -81,3 +81,10 @@ independent split saves, exported bytes, metadata reload, invalid export recover
 and clearing old Training paths during the mode handoff. A separate native CLI
 export confirms provenance; the exported TSV completes one actual SFT update.
 See `DATASET_STUDIO.md` for supported formats and remaining native contracts.
+
+2026-10-06 Writing/Explore/local-chat source ingestion adds six domain checks
+(35 selected frontend checks total). Browser QA verifies exact historical reads
+after an independent writer advances a source head, mixed-library selection,
+dirty guards, delimiter policy, actual corpus/SFT downloads and unchanged chats.
+Separate CLI exports confirm provenance and the exports complete native CPT/SFT
+updates. See `DATASET_SOURCES.md` for snapshot/hash semantics and native boundaries.

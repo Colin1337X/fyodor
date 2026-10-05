@@ -4,6 +4,7 @@ import {mkdtemp,readFile,rm,copyFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 const folder=await mkdtemp(path.join(tmpdir(),'fyodor-resource-browser-'));
 const database=path.join(folder,'workspace.db');let vite,server,token,base;
 try{
@@ -19,7 +20,7 @@ try{
   const evidence=path.join(folder,'evidence.json');
   const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
-  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri}=JSON.parse(await readFile(evidence,'utf8'));
+  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
   const receipt=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','context','receipt',principal,receipt_id],{windowsHide:true,encoding:'utf8'}));
@@ -33,12 +34,22 @@ try{
     assert.equal(resource.title,title);assert.equal(resource.content,content);
   }
   const imported=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',imported_uri],{windowsHide:true,encoding:'utf8'}));
-  assert.equal(imported.content,'Independent edit.');assert.equal(imported.metadata.writing_parent,project_uri);
+  assert.equal(imported.content,'Newer saved text.');assert.equal(imported.metadata.writing_parent,project_uri);
   const derived=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',derived_uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(derived.metadata.dataset_studio.mode,'sft');assert.equal(derived.content,'aa\tb\nbb\tc\ncc\ta');
   assert.equal(derived.provenance.dataset_studio.source.uri,dataset_uri);assert.equal(derived.provenance.dataset_studio.source.revision,'1');
   execFileSync(path.resolve('build-cpu/fyodor-train.exe'),['--mode','sft','--base',modelPath,'--rank','0','--steps','1','--threads','1','--data',evidence+'.dataset.tsv','--output',path.join(folder,'dataset-studio-trained.gguf')],{windowsHide:true,encoding:'utf8',stdio:'pipe'});
   console.log('Dataset Studio export accepted by the native SFT trainer');
+  const corpus=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',corpus_uri],{windowsHide:true,encoding:'utf8'}));
+  assert.equal(corpus.content,'Independent edit.\n\nA harbor built from sea glass.');
+  assert.deepEqual(corpus.provenance.dataset_studio.sources.map(({uri,revision})=>({uri,revision})),[{uri:imported_uri,revision:'2'},{uri:lore_uri,revision:'1'}]);
+  assert.equal(corpus.provenance.dataset_studio.output_sha256,createHash('sha256').update(corpus.content).digest('hex'));
+  const chatData=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',chat_dataset_uri],{windowsHide:true,encoding:'utf8'}));
+  assert.equal(chatData.content,'a b\tc');assert.deepEqual(chatData.provenance.dataset_studio.sources[0].message_pairs,[[0,1]]);
+  for(const [mode,file] of [['cpt',evidence+'.source.txt'],['sft',evidence+'.chat.tsv']]){
+    execFileSync(path.resolve('build-cpu/fyodor-train.exe'),['--mode',mode,'--base',modelPath,'--rank','0','--steps','1','--threads','1','--data',file,'--output',path.join(folder,mode+'-source-trained.gguf')],{windowsHide:true,encoding:'utf8',stdio:'pipe'});
+  }
+  console.log('Writing/Explore CPT and local-chat SFT exports completed native training updates');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
