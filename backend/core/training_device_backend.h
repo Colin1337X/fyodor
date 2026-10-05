@@ -27,5 +27,7 @@ typedef struct nya_train_device_interface {
         unsigned type, size_t columns, nya_train_indices indices, int backward);
     int (*rope)(void *context, nya_train_buffer destination, nya_train_view source,
         size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half, int backward);
+    int (*attention)(void *context, nya_train_buffer out_q, nya_train_buffer out_k, nya_train_buffer out_v,
+        nya_train_buffer state, nya_train_buffer dy, nya_train_buffer workspace, nya_train_attention_desc descriptor, int backward);
 } nya_train_device_interface;
 #endif

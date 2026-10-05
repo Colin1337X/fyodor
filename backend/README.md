@@ -546,6 +546,11 @@ Resident [RoPE forward/backward](benchmarks/TRAINING_ROPE_20261005.md) supports
 adjacent-pair and split-half layouts, with resident frequencies and accumulated
 input gradients. Large finite CPU training angles bypass inaccurate MinGW
 static trigonometry using the already-linked Windows CRT imports.
+Resident [causal/local attention forward/backward](benchmarks/TRAINING_ATTENTION_20261005.md)
+recomputes probabilities in bounded query tiles. It saves linear-sized
+normalization state and accumulates grouped-query gradients in CPU order.
+The real TinyLlama attention branch includes Q/K/V and output projections plus
+RoPE; public training graph, loss and optimizer integration remain unfinished.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 

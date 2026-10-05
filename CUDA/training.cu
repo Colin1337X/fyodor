@@ -274,3 +274,152 @@ extern "C" __global__ void nya_train_rope(const float *source, const float *freq
     if (backward) { out[i]=__fadd_rn(out[i],first); out[k]=__fadd_rn(out[k],second); }
     else { out[i]=first; out[k]=second; }
 }
+
+/* Attention saves O(tokens*heads) normalization state. Backward recomputes
+   probabilities into a bounded 16-query workspace, then gives every gradient
+   element one writer. Tile order preserves row/head accumulation across tiles. */
+__device__ __forceinline__ bool nya_train_attn_visible(unsigned long long row, unsigned long long col,
+    unsigned long long window, const unsigned *groups)
+{
+    if (window && row>=window && col<row-window+1) return false;
+    return col<=row || (window && groups && groups[row] && groups[row]==groups[col]);
+}
+__device__ __forceinline__ float nya_train_attn_score(const float *q,const float *k,
+    unsigned long long row,unsigned long long head,unsigned long long col,
+    unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,double scale)
+{
+    unsigned long long qi=(row*heads+head)*dim,ki=(col*kv_heads+head/(heads/kv_heads))*dim;
+    double dot=0;
+    for (unsigned long long j=0;j<dim;++j) dot+=(double)q[qi+j]*(double)k[ki+j];
+    double score=dot*scale;
+    /* Check before the F32 cast: a slight overflow can round back to FLT_MAX. */
+    if (!isfinite(score) || fabs(score)>(double)__int_as_float(0x7f7fffff)) return __int_as_float(0x7fc00000);
+    return (float)score;
+}
+extern "C" __global__ void nya_train_attention(const float *q,const float *k,const float *v,
+    const unsigned *groups,float *out,double *state,unsigned long long n,unsigned long long heads,
+    unsigned long long kv_heads,unsigned long long dim,unsigned long long window,double scale)
+{
+    __shared__ double reduction[256];
+    __shared__ float probability[256];
+    unsigned lane=threadIdx.x;
+    unsigned long long row=blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long first=window && row>=window?row-window+1:0;
+    unsigned long long end=window && groups?n:row+1;
+    double maximum=-(double)__int_as_float(0x7f800000);
+    int bad=0;
+    for (unsigned long long col=first+lane;col<end;col+=256) if (nya_train_attn_visible(row,col,window,groups)) {
+        float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+        if (!isfinite(score)) bad=1;
+        else if (score>maximum) maximum=score;
+    }
+    if (__syncthreads_or(bad)) {
+        if (!lane) { state[2*blockIdx.x]=__int_as_float(0x7fc00000); state[2*blockIdx.x+1]=__int_as_float(0x7fc00000); }
+        for (unsigned long long j=lane;j<dim;j+=256) out[((unsigned long long)blockIdx.x)*dim+j]=__int_as_float(0x7fc00000);
+        return;
+    }
+    reduction[lane]=maximum; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride && reduction[lane+stride]>reduction[lane]) reduction[lane]=reduction[lane+stride];
+        __syncthreads();
+    }
+    maximum=reduction[0];
+    double mass=0;
+    for (unsigned long long col=first+lane;col<end;col+=256) if (nya_train_attn_visible(row,col,window,groups)) {
+        float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+        mass+=(float)exp((double)score-maximum);
+    }
+    /* Every lane has read the shared maximum before overwriting reduction. */
+    __syncthreads(); reduction[lane]=mass; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) reduction[lane]+=reduction[lane+stride];
+        __syncthreads();
+    }
+    mass=reduction[0];
+    if (!lane) { state[2*blockIdx.x]=maximum; state[2*blockIdx.x+1]=mass; }
+    for (unsigned long long base_dim=0;base_dim<dim;base_dim+=256) {
+        unsigned long long j=base_dim+lane;
+        double sum=0;
+        for (unsigned long long base=first;base<end;base+=256) {
+            unsigned long long col=base+lane;
+            float p=0;
+            if (col<end && nya_train_attn_visible(row,col,window,groups)) {
+                float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+                p=(float)((float)exp((double)score-maximum)/mass);
+            }
+            probability[lane]=p; __syncthreads();
+            if (j<dim) for (unsigned t=0;t<256 && base+t<end;++t)
+                sum+=(double)probability[t]*v[((base+t)*kv_heads+kh)*dim+j];
+            __syncthreads();
+        }
+        if (j<dim) out[(row*heads+head)*dim+j]=(float)sum;
+    }
+}
+extern "C" __global__ void nya_train_attention_prepare(const float *q,const float *k,const float *v,
+    const unsigned *groups,const float *dy,const double *state,double *workspace,
+    unsigned long long n,unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,
+    unsigned long long window,double scale,unsigned long long start,int scores)
+{
+    __shared__ double reduction[256];
+    unsigned lane=threadIdx.x;
+    unsigned long long row=start+blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long qi=(row*heads+head)*dim,base=(unsigned long long)blockIdx.x*n;
+    double maximum=state[2*(row*heads+head)],mass=state[2*(row*heads+head)+1],average=0;
+    for (unsigned long long col=lane;col<n;col+=256) {
+        float p=0; double dp=0;
+        if (nya_train_attn_visible(row,col,window,groups)) {
+            float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+            p=(float)((float)exp((double)score-maximum)/mass);
+            if (scores && p!=0) {
+                unsigned long long ki=(col*kv_heads+kh)*dim;
+                for (unsigned long long j=0;j<dim;++j) dp+=(double)dy[qi+j]*(double)v[ki+j];
+                average+=(double)p*dp;
+            }
+        }
+        workspace[2*(base+col)]=p; workspace[2*(base+col)+1]=dp;
+    }
+    reduction[lane]=average; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) reduction[lane]+=reduction[lane+stride];
+        __syncthreads();
+    }
+    average=reduction[0];
+    for (unsigned long long col=lane;col<n;col+=256) {
+        double p=workspace[2*(base+col)],dp=workspace[2*(base+col)+1];
+        workspace[2*(base+col)+1]=p!=0?p*(dp-average)*scale:0;
+    }
+}
+extern "C" __global__ void nya_train_attention_dq(const float *k,const double *workspace,float *dq,
+    unsigned long long n,unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,unsigned long long start)
+{
+    unsigned long long row=start+blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long base=(unsigned long long)blockIdx.x*n;
+    for (unsigned long long j=threadIdx.x;j<dim;j+=256) {
+        unsigned long long qi=(row*heads+head)*dim+j;
+        float sum=dq[qi];
+        for (unsigned long long col=0;col<n;++col) if (workspace[2*(base+col)]!=0) {
+            double ds=workspace[2*(base+col)+1];
+            sum=__fadd_rn(sum,(float)(ds*(double)k[(col*kv_heads+kh)*dim+j]));
+        }
+        dq[qi]=sum;
+    }
+}
+extern "C" __global__ void nya_train_attention_dkv(const float *q,const float *dy,const double *workspace,
+    float *dk,float *dv,unsigned long long n,unsigned long long heads,unsigned long long kv_heads,
+    unsigned long long dim,unsigned long long start,unsigned long long count)
+{
+    unsigned long long col=blockIdx.x/kv_heads,kh=blockIdx.x%kv_heads,group=heads/kv_heads;
+    for (unsigned long long j=threadIdx.x;j<dim;j+=256) {
+        unsigned long long ki=(col*kv_heads+kh)*dim+j;
+        float sum_k=dk?dk[ki]:0,sum_v=dv?dv[ki]:0;
+        for (unsigned long long r=0;r<count;++r) for (unsigned long long h=kh*group;h<(kh+1)*group;++h) {
+            unsigned long long index=(r*heads+h)*n+col,qi=((start+r)*heads+h)*dim+j;
+            float p=(float)workspace[2*index];
+            if (p==0) continue;
+            if (dk) sum_k=__fadd_rn(sum_k,(float)(workspace[2*index+1]*(double)q[qi]));
+            if (dv) sum_v=__fadd_rn(sum_v,__fmul_rn(p,dy[qi]));
+        }
+        if (dk) dk[ki]=sum_k;
+        if (dv) dv[ki]=sum_v;
+    }
+}

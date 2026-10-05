@@ -13,7 +13,7 @@ typedef struct nya_cuda_train_buffer {
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope;
+    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope, attention, attention_prepare, attention_dq, attention_dkv;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -120,6 +120,10 @@ static void *nya_ct_create(size_t capacity)
         t->cuda->function_get(&t->rms_dw,t->cuda->module,"nya_train_rms_dw") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->embedding,t->cuda->module,"nya_train_embedding") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->embedding_back,t->cuda->module,"nya_train_embedding_back") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->attention,t->cuda->module,"nya_train_attention") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->attention_prepare,t->cuda->module,"nya_train_attention_prepare") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->attention_dq,t->cuda->module,"nya_train_attention_dq") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->attention_dkv,t->cuda->module,"nya_train_attention_dkv") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->rope,t->cuda->module,"nya_train_rope") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
@@ -322,6 +326,70 @@ static nya_cuda_train_buffer *nya_ct_view(nya_cuda_train *t, nya_train_view view
     *count = view.rows*view.columns;
     return *count <= buffer->bytes/4 ? buffer : NULL;
 }
+static int nya_ct_attention(void *context, nya_train_buffer out_q, nya_train_buffer out_k, nya_train_buffer out_v,
+    nya_train_buffer state, nya_train_buffer dy, nya_train_buffer workspace, nya_train_attention_desc desc, int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    size_t nq=0,nk=0,nv=0;
+    nya_cuda_train_buffer *q=nya_ct_view(t,desc.q,&nq), *k=nya_ct_view(t,desc.k,&nk), *v=nya_ct_view(t,desc.v,&nv);
+    nya_cuda_train_buffer *saved=nya_ct_find(t,state), *groups=nya_ct_find(t,desc.groups);
+    nya_cuda_train_buffer *gradient=nya_ct_find(t,dy), *work=nya_ct_find(t,workspace);
+    size_t n=desc.q.rows,h=desc.heads,kh=desc.kv_heads,dim=desc.dimension;
+    if (!q || !k || !v || !saved || !h || !kh || !dim || h%kh || h>SIZE_MAX/dim || kh>SIZE_MAX/dim ||
+        desc.q.columns!=h*dim || desc.k.columns!=kh*dim || desc.v.columns!=desc.k.columns ||
+        desc.k.rows!=n || desc.v.rows!=n || !isfinite(desc.scale) || desc.scale<=0 ||
+        h>SIZE_MAX/n || n*h>saved->bytes/16 || n*h>(size_t)t->cuda->grid_limit ||
+        (desc.groups && (!groups || n>groups->bytes/4)) ||
+        state==desc.q.buffer || state==desc.k.buffer || state==desc.v.buffer || state==desc.groups ||
+        (backward!=0 && backward!=1)) return nya_ct_error(t,"invalid training attention descriptor",0);
+    size_t work_bytes=nya_train_attention_workspace_bytes(n,h);
+    if (!backward) {
+        if (!out_q || out_k || out_v || dy || workspace) return nya_ct_error(t,"invalid training attention forward",0);
+    } else {
+        if ((!out_q && !out_k && !out_v) || !gradient || nq>gradient->bytes/4 ||
+            !work || !work_bytes || work_bytes>work->bytes || workspace==state || workspace==dy ||
+            workspace==desc.q.buffer || workspace==desc.k.buffer || workspace==desc.v.buffer || workspace==desc.groups || dy==state)
+            return nya_ct_error(t,"invalid training attention backward state",0);
+    }
+    nya_train_buffer ids[]={out_q,out_k,out_v};
+    nya_cuda_train_buffer *outputs[3]={NULL,NULL,NULL};
+    for (size_t j=0;j<3;++j) if (ids[j]) {
+        outputs[j]=nya_ct_find(t,ids[j]);
+        if (!outputs[j] || (j?nk:nq)>outputs[j]->bytes/4 || ids[j]==desc.q.buffer || ids[j]==desc.k.buffer ||
+            ids[j]==desc.v.buffer || ids[j]==desc.groups || ids[j]==state || ids[j]==dy || ids[j]==workspace)
+            return nya_ct_error(t,"invalid training attention output",0);
+        for (size_t prior=0;prior<j;++prior) if (ids[j]==ids[prior])
+            return nya_ct_error(t,"aliased training attention gradients",0);
+    }
+    unsigned long long tokens=n,heads=h,kv_heads=kh,dimension=dim,window=desc.window;
+    CUdeviceptr gp=groups?groups->memory:0,oq=outputs[0]?outputs[0]->memory:0;
+    double scale=desc.scale;
+    if (nya_ct_enter(t)) return -1;
+    int result=0;
+    if (!backward) {
+        void *args[]={&q->memory,&k->memory,&v->memory,&gp,&oq,&saved->memory,&tokens,&heads,&kv_heads,&dimension,&window,&scale};
+        result=nya_ct_launch(t,t->attention,(unsigned)(n*h),1,256,1,args);
+    } else {
+        CUdeviceptr ok=outputs[1]?outputs[1]->memory:0,ov=outputs[2]?outputs[2]->memory:0;
+        int scores=out_q || out_k;
+        for (size_t first=0;first<n && !result;first+=16) {
+            unsigned long long start=first,count=n-first<16?n-first:16;
+            void *prepare[]={&q->memory,&k->memory,&v->memory,&gp,&gradient->memory,&saved->memory,&work->memory,
+                &tokens,&heads,&kv_heads,&dimension,&window,&scale,&start,&scores};
+            result=nya_ct_launch(t,t->attention_prepare,(unsigned)(count*h),1,256,1,prepare);
+            if (!result && out_q) {
+                void *args[]={&k->memory,&work->memory,&oq,&tokens,&heads,&kv_heads,&dimension,&start};
+                result=nya_ct_launch(t,t->attention_dq,(unsigned)(count*h),1,256,1,args);
+            }
+            if (!result && (out_k || out_v)) {
+                void *args[]={&q->memory,&gradient->memory,&work->memory,&ok,&ov,&tokens,&heads,&kv_heads,&dimension,&start,&count};
+                result=nya_ct_launch(t,t->attention_dkv,(unsigned)(n*kh),1,256,1,args);
+            }
+        }
+    }
+    return nya_ct_leave(t,result);
+}
 static int nya_ct_rope(void *context, nya_train_buffer destination, nya_train_view source,
     size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half, int backward)
 {
@@ -474,6 +542,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding,nya_ct_rope};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention};
     return &api;
 }

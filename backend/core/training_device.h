@@ -117,6 +117,30 @@ int nya_train_device_rope(nya_train_device *device, nya_train_buffer y, nya_trai
 int nya_train_device_rope_backward(nya_train_device *device, nya_train_buffer dx, nya_train_view dy,
     size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half);
 
+/* Dense causal/local grouped-query attention. q=[tokens,heads*dimension],
+   k/v=[tokens,kv_heads*dimension]. Optional groups is tokens U32 IDs: for a
+   nonzero window, matching nonzero IDs permit future keys as on the CPU graph.
+   scale must be finite and positive. Saved state holds two doubles per query
+   row/head (maximum and mass), not a square probability matrix.
+   Backward recomputes probabilities in bounded query tiles; workspace size is
+   returned below. Inputs, groups and state must remain unchanged between calls.
+   Gradients accumulate in row/head/key order without floating-point atomics.
+   At least one gradient is required. Outputs must be distinct and cannot alias
+   any input, state or workspace. Numerical checks remain explicit. Dispatch adds
+   no allocation, transfer or fence. Zero workspace size signals invalid/overflow. */
+typedef struct nya_train_attention_desc {
+    nya_train_view q, k, v;
+    size_t heads, kv_heads, dimension, window;
+    float scale;
+    nya_train_buffer groups;
+} nya_train_attention_desc;
+size_t nya_train_attention_workspace_bytes(size_t tokens, size_t heads);
+int nya_train_device_attention(nya_train_device *device, nya_train_buffer y,
+    nya_train_buffer state, nya_train_attention_desc descriptor);
+int nya_train_device_attention_backward(nya_train_device *device, nya_train_buffer dq,
+    nya_train_buffer dk, nya_train_buffer dv, nya_train_buffer state, nya_train_buffer dy,
+    nya_train_buffer workspace, nya_train_attention_desc descriptor);
+
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
    Linear overwrites Y; gradient operations accumulate each F32-rounded product

@@ -1,6 +1,7 @@
 # Runtime benchmark evidence
 
-**Training:** [October 5 resident RoPE and large-angle CPU correction](TRAINING_ROPE_20261005.md),
+**Training:** [October 5 resident attention with bounded backward workspace](TRAINING_ATTENTION_20261005.md),
+[October 5 resident RoPE and large-angle CPU correction](TRAINING_ROPE_20261005.md),
 [September 29 resident embeddings and ordered matrix gradients](TRAINING_EMBEDDING_20260929.md),
 [September 29 resident RMSNorm](TRAINING_NORM_20260929.md),
 [September 29 resident activations and gated FFN](TRAINING_ELEMENTWISE_20260929.md),

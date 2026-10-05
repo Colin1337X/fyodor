@@ -91,3 +91,17 @@ int nya_train_device_rope(nya_train_device *d, nya_train_buffer y, nya_train_vie
 int nya_train_device_rope_backward(nya_train_device *d, nya_train_buffer dx, nya_train_view dy,
     size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half)
 { return d ? d->api->rope(d->context,dx,dy,heads,dimension,frequencies,split_half,1) : -1; }
+
+size_t nya_train_attention_workspace_bytes(size_t tokens, size_t heads)
+{
+    size_t tile=tokens<16?tokens:16;
+    if (!tokens || !heads || heads>SIZE_MAX/tokens || tokens*heads>SIZE_MAX/tile/16) return 0;
+    return tokens*heads*tile*16;
+}
+int nya_train_device_attention(nya_train_device *d, nya_train_buffer y,
+    nya_train_buffer state, nya_train_attention_desc descriptor)
+{ return d ? d->api->attention(d->context,y,0,0,state,0,0,descriptor,0) : -1; }
+int nya_train_device_attention_backward(nya_train_device *d, nya_train_buffer dq,
+    nya_train_buffer dk, nya_train_buffer dv, nya_train_buffer state, nya_train_buffer dy,
+    nya_train_buffer workspace, nya_train_attention_desc descriptor)
+{ return d ? d->api->attention(d->context,dq,dk,dv,state,dy,workspace,descriptor,1) : -1; }
