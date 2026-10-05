@@ -6,7 +6,14 @@ The backend is written in C, with CPU execution and an optional Vulkan provider.
 
 See [backend/README.md](backend/README.md) for the architecture, supported models, CPU/Vulkan builds, API, configuration, ownership rules, tests, and current limitations.
 
-See [frontend/README.md](frontend/README.md) for the pure vanilla desktop UI, sidecar integration, and installer builds.
+The native `fyodor` resource client now supports local import/export, listing,
+and revision-checked updates through shared C application services. See
+[resource commands](backend/RESOURCE_CLIENT.md) for usage and current limits;
+the pure-C [terminal client](backend/TUI.md) now provides resource browsing and
+shared command entry. Broader CLI/TUI workspaces remain in development.
+
+The desktop [Resources library](backend/RESOURCE_HTTP.md) uses the same native
+store for documents, notes and resource packages through authenticated local HTTP.
 
 See [frontend/README.md](frontend/README.md) for the pure vanilla HTML/CSS/JS desktop interface, C sidecar integration, and cross-platform installers.
 

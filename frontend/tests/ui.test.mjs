@@ -64,7 +64,7 @@ test('SSE bounds unfinished records and rejects streamed tools',async()=>{
 test('Model text stays inert inside and outside code fences',()=>{
   const html=messageBody('<img src=x onerror=alert(1)>\n```html\n</code><script>alert(1)</script>\n```');
   assert(!html.includes('<script>'));assert(!html.includes('<img'));assert(html.includes('&lt;/code&gt;'));
-  assert(html.includes('data-copy-code'));assert(messageBody('```c\nint x;').includes('int x;'));
+  assert(html.includes('data-copy-code'));assert(messageBody('```c\nint x;').replace(/<\/?span[^>]*>/g,'').includes('int x;'));
 });
 test('Benchmark parser accepts measured results and rejects invalid data',()=>{
   const record={schema_version:1,backend:'cuda',model:'<img>.gguf',results:[{test:'pp512',tokens_per_second:100,stddev:1,ms_per_token:10}]};

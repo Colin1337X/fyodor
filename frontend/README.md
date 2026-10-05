@@ -51,17 +51,46 @@ An optional OpenAI-compatible remote endpoint supports agent tool calls for loca
 
 ## Current interface
 
-Navigation groups Overview/Chat/Models under Use, Playground/Training under
-Create, Benchmarks/Logs under Run, and API access under Serve. The sidebar
+Navigation groups Overview/Chat/Models under Use; Writing, Explore, Resources,
+Datasets, Context, Playground and Training under Create; Benchmarks/Logs under Run; and API access under Serve. The sidebar
 collapses to icons; Ctrl/Cmd+backslash toggles it. Narrow windows use a keyboard
 accessible navigation overlay, with Escape to close it. The header preserves
 the selected model; the footer reports its actual compute provider and activity.
 
-Settings offers blue-black, blue-white, orange-white, graphite, forest, violet,
-and system palettes, plus compact spacing. All screens use semantic CSS tokens.
+Settings offers the named Fyodor, Strawberry, Mint, Lavender and Catppuccin
+palettes, system selection and retained legacy palettes. Claymorphic panels,
+controls and recessed fields share semantic CSS tokens. Radius, fonts, spacing,
+colors, density, motion, shadows and borders remain customizable.
 The small local `public/appearance.js` script applies the palette before first
 paint and stores appearance separately from sessions or credentials. No remote
 fonts or frontend framework is required.
+
+Writing supports projects/folders, characters, notes, revision previews and
+linked world lore. Generation remains a preview until applied and saved; native
+receipts record executed context and accepted output. Context grants remain
+explicit. Resources supports local package import/export and generic editing.
+Writing also imports UTF-8 Markdown/plain text into new drafts and exports current
+drafts as `.md`/`.txt`; saved JSON packages remain a separate format. Ctrl/Cmd+S
+saves from the editor, and explicit saved-version reload handles concurrent edits.
+
+Explore now authors worlds and their lore through the existing native resource
+store. It includes title/text editing, revision previews, conflict recovery,
+export and deletion confirmation. Gameplay, canonical state, saves and branches
+still need separate native contracts; the authoring view creates no mock state.
+
+Maintenance and integration documentation:
+
+- [Frontend architecture](docs/ARCHITECTURE.md): module ownership, lifecycle,
+  persistence, writes, clay tokens, accessibility and test setup.
+- [Explore authoring and API handoff](docs/EXPLORE.md): user flows, exact existing
+  APIs, conflict/paging behavior and backend-owned gameplay requirements.
+- [Writing UX reference and adaptation](docs/WRITING_UX.md): Snep-inspired editor
+  composition, implemented controls and remaining native contract requirements.
+- [Dataset Studio](docs/DATASET_STUDIO.md): formats, validation, reproducible
+  transformations, provenance, split recovery and the explicit file handoff to
+  Training. Direct dataset-resource training and source ingestion remain open.
+- [Frontend delivery map](docs/ROADMAP.md): implemented coverage, remaining work
+  and contract checklist.
 
 Chat includes safe fenced-code rendering, copy/code-copy, regeneration,
 edit-and-resend, system prompts, and collapsible sampling controls. Long chats

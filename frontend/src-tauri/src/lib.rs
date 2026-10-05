@@ -268,6 +268,10 @@ fn spawn_backend(app: &tauri::App, logs: Logs) -> Result<Backend, String> {
         .unwrap_or_default();
     let mut command = background_command(&exe);
     command.args(["--port", "0"]);
+    // Shared native workspace: Rust supplies the location, C owns persistence.
+    let workspace_dir = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(&workspace_dir).map_err(|error| error.to_string())?;
+    command.env("FYODOR_STORE_PATH", workspace_dir.join("workspace.db"));
     // Each model starts with the requested accelerator, with native CPU fallback.
     // The REST compute endpoint can later switch a single loaded model safely.
     command.env(

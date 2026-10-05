@@ -1,4 +1,10 @@
 import"./styles.css";
+import './clay.css';
+import {resourceWorkspace} from './resources.js';
+import {exploreWorkspace} from './explore-workspace.js';
+import {datasetWorkspace} from './dataset-workspace.js';
+import {contextWorkspace} from './context-workspace.js';
+import {appearanceControls,syncAppearanceColors} from './appearance-controls.js';
 import {icon, navigationMarkup} from './icons.js';
 import {messageBody} from './message.js';
 import {benchmarkMarkup, parseBenchmark} from './benchmark.js';
@@ -8,11 +14,14 @@ import {formatConversation, normalizeChat, generationOptions} from "./session.js
 import {workspaceMarkup, apiMarkup} from "./workspace.js";
 import{chooseCheckpoint,chooseDataset,chooseModel,chooseOutput,getBackendConnection,invokeDesktop}from"./platform.js";
 
+// Training currently uses CPU backward with dense LLaMA/Gemma 4 imports.
+// Accumulation processes one sequence (or DPO pair) at a time; validation
+// uses a fixed prefix at configured intervals and never updates weights.
 // Storage and imported chats are untrusted. A corrupt value must not blank the app.
 let persisted={};
 try { persisted=JSON.parse(localStorage.getItem("fyodor-state")||"{}")||{}; } catch {}
 if(typeof persisted!=="object"||Array.isArray(persisted))persisted={};
-if(!["workspace","models","chat","playground","training","logs","api","benchmark"].includes(persisted.view))persisted.view="workspace";
+if(!["workspace","resources","writing","explore","datasets","context","models","chat","playground","training","logs","api","benchmark"].includes(persisted.view))persisted.view="workspace";
 const restored=[];
 for(const entry of Array.isArray(persisted.chats)?persisted.chats.slice(0,300):[]) {
   try { const c=normalizeChat(entry,crypto.randomUUID());if(entry.id===persisted.active)persisted.active=c.id;restored.push(c); } catch {}
@@ -45,7 +54,7 @@ if(!["local","openai"].includes(s.provider.type))s.provider.type="local";
 s.agent.maxTurns=Math.max(1,Math.min(24,Math.trunc(s.agent.maxTurns)));
 // Window-only state never enters session storage or backend payloads.
 const ui={benchmarks:[],logPaused:false,error:'',messageLimit:80};
-const meta={models:["Models","local registry and compute"],benchmark:["Benchmarks","measured runtime results"],api:["API access","local REST interfaces"],workspace:["Overview","models and activity"],chat:["Chat","conversation"],playground:["Playground","generation controls"],training:["Training","native C trainer"],logs:["Logs","engine and trainer"]};
+const meta={datasets:["Datasets","prepare training data"],explore:["Explore","worlds and lore"],writing:["Writing","local text, characters and revisions"],context:["Context","permission-checked generation and receipts"],resources:["Resources","local documents and notes"],models:["Models","local registry and compute"],benchmark:["Benchmarks","measured runtime results"],api:["API access","local REST interfaces"],workspace:["Overview","models and activity"],chat:["Chat","conversation"],playground:["Playground","generation controls"],training:["Training","train with your data"],logs:["Logs","engine and trainer"]};
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const id=()=>crypto.randomUUID?.()||Date.now()+Math.random()+"";
 const mid=m=>m.id??m.model_id;
@@ -88,7 +97,14 @@ function render(){
   document.querySelector('#footer-stat').textContent=`${s.models.length} models · ${activeRuntime?.compute?.toUpperCase()||'no active compute'}${s.busy?' · generating':s.actionBusy?' · loading':s.trainStatus.running?' · training':''}`;
   document.querySelector('#global-model').disabled=s.busy||s.actionBusy;
   document.querySelectorAll('.stage>header .load-model').forEach(n=>n.disabled=s.actionBusy||s.busy);
-  history();({workspace,models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
+  history();({workspace,resources:()=>resourceWorkspace(viewRoot),writing:()=>resourceWorkspace(viewRoot,'writing',s.selected),explore:()=>exploreWorkspace(viewRoot),datasets:()=>datasetWorkspace(viewRoot,prepareDatasetTraining),context:()=>contextWorkspace(viewRoot,s.selected),models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
+}
+function prepareDatasetTraining({mode}){
+  // Until the native service materializes a resource revision as a training
+  // file, export and require explicit path selection. Clear stale format/path
+  // combinations so the handoff cannot launch against a previous dataset.
+  s.training.mode=mode;s.training.data='';s.training.evalData='';s.view='training';
+  render();toast('Choose your exported file in Training’s dataset field.');
 }
 
 function workspace(){viewRoot.innerHTML=workspaceMarkup(s);}
@@ -121,7 +137,7 @@ function trainingView(){
   <section class="panel training-config"><header><div><label>CONFIGURATION</label><h2>Optimizer + graph</h2></div></header><div class="config-grid">
   ${trainingNumber("steps","optimizer updates",1)}${trainingNumber("evalEvery","evaluate every N updates",1)}${trainingNumber("evalRecords","validation records (0 = all)",0)}${trainingNumber("threads","CPU threads (0 = auto)",0,'max="64" step="1"')}${trainingNumber("accumulate","sequences / pairs per update",1,'max="1024" step="1"')}${trainingNumber("learningRate","learning rate",.000001,"step=\"0.0001\"")}${trainingNumber("rank","LoRA rank",0)}${trainingNumber("beta","DPO beta",.0001,"step=\"0.01\"")}${trainingNumber("context","context",1)}${trainingNumber("memoryMib","memory MiB",1)}
   ${trainingNumber("dimension","dimension",1)}${trainingNumber("feedForward","feed-forward",1)}${trainingNumber("layers","layers",1)}${trainingNumber("heads","heads",1)}${trainingNumber("kvHeads","KV heads",1)}${trainingNumber("seed","seed",0)}</div>
-  <div class="training-note"><b>Gradient accumulation</b><p>Each update processes the selected number of sequences, or preference pairs for DPO, one at a time. Loss averages supervised tokens (DPO: pairs). Memory holds one sequence graph, or one pair.</p><b>Held-out evaluation</b><p>Optional validation uses the same data format, before training, at the selected interval, and at the end. A record limit selects a fixed prefix. Validation never updates weights; Stop can interrupt a validation pass between records.</p><b>Native limitations</b><p>CPU backward. Dense LLaMA and Gemma 4 imports. MoE, MTP training, encoders, mixed precision, and distributed runs are not implemented.</p></div></section></form></div>`;
+  </section></form></div>`;
   document.querySelector("#train-mode").value=s.training.mode;
   viewRoot.querySelector('.training-view').insertAdjacentHTML('beforeend','<section class="panel training-live" id="training-live" aria-label="Training telemetry"></section>');updateTrainingLive();
   if(!window.__TAURI_INTERNALS__){document.querySelector('#start-training').disabled=true;document.querySelector('#start-training').title='Training launches from the desktop app';}
@@ -147,14 +163,16 @@ function updateLogOutput(){
 }
 
 function settingsView(){
-  const d=document.querySelector("#settings");d.innerHTML=`<form method="dialog" class="settings-card"><header><div><label>CONFIGURATION</label><h2>Settings</h2></div><button value="close">×</button></header><div class="settings-grid"><label class="field">provider<select id="provider-type"><option value="local">local C runtime</option><option value="openai">OpenAI-compatible endpoint</option></select></label><label class="field remote-setting">base URL<input id="provider-endpoint" value="${esc(s.provider.endpoint)}" placeholder="https://api.openai.com/v1"></label><label class="field remote-setting">API key<input id="provider-key" type="password" value="${esc(s.provider.apiKey)}" autocomplete="off"></label><label class="field remote-setting">model ID<div class="path-field"><input id="provider-model" value="${esc(s.provider.model)}" placeholder="gpt-5"><button type="button" id="test-provider">test</button></div></label><label class="check"><input id="remember-key" type="checkbox" ${s.provider.remember?"checked":""}> remember API key on this device</label><hr><label class="check"><input id="agent-enabled" type="checkbox" ${s.agent.enabled?"checked":""}> enable Agent mode</label><label class="field">maximum agent turns<input id="agent-turns" type="number" min="1" max="24" value="${s.agent.maxTurns}"></label><p class="settings-note">Agent tools are intentionally read-only: runtime status, loaded models, and local time.</p></div><footer><button value="close">cancel</button><button type="button" id="save-settings" class="blue-action">save configuration</button></footer></form>`;d.querySelector("#provider-type").value=s.provider.type;toggleRemoteSettings();d.showModal();
+  const d=document.querySelector("#settings");d.innerHTML=`<form method="dialog" class="settings-card"><header><div><label>CONFIGURATION</label><h2>Settings</h2></div><button value="close">×</button></header><div class="settings-grid"><label class="field">provider<select id="provider-type"><option value="local">local C runtime</option><option value="openai">OpenAI-compatible endpoint</option></select></label><label class="field remote-setting">base URL<input id="provider-endpoint" value="${esc(s.provider.endpoint)}" placeholder="https://api.openai.com/v1"></label><label class="field remote-setting">API key<input id="provider-key" type="password" value="${esc(s.provider.apiKey)}" autocomplete="off"></label><label class="field remote-setting">model ID<div class="path-field"><input id="provider-model" value="${esc(s.provider.model)}" placeholder="gpt-5"><button type="button" id="test-provider">test</button></div></label><label class="check"><input id="remember-key" type="checkbox" ${s.provider.remember?"checked":""}> remember API key on this device</label><hr><label class="check"><input id="agent-enabled" type="checkbox" ${s.agent.enabled?"checked":""}> enable Agent mode</label><label class="field">maximum agent turns<input id="agent-turns" type="number" min="1" max="24" value="${s.agent.maxTurns}"></label><p class="settings-note">Agent tools can read model status and local time.</p></div><footer><button value="close">cancel</button><button type="button" id="save-settings" class="blue-action">save configuration</button></footer></form>`;d.querySelector("#provider-type").value=s.provider.type;toggleRemoteSettings();d.showModal();
 }
 function toggleRemoteSettings(){const remote=document.querySelector("#provider-type")?.value==="openai";document.querySelectorAll(".remote-setting").forEach(n=>n.hidden=!remote)}
 
 function appearanceSettings(){
   const a=window.fyodorAppearance.get(),d=document.querySelector('#settings');
-  d.querySelector('.settings-card>header').insertAdjacentHTML('afterend',`<section class="settings-section"><h3>Appearance</h3><div class="theme-grid">${window.fyodorAppearance.themes.map(t=>`<button type="button" data-theme-choice="${t}" aria-pressed="${a.theme===t}">${t.replaceAll('-',' ')}</button>`).join('')}</div><label class="check"><input id="compact-density" type="checkbox" ${a.compact?'checked':''}>Compact spacing</label><p class="fine-print">Appearance changes apply immediately and persist on this device.</p></section>`);
+  d.querySelector('.settings-card>header').insertAdjacentHTML('afterend',`<section class="settings-section"><h3>Appearance</h3><div class="theme-grid">${window.fyodorAppearance.themes.map(t=>`<button type="button" data-theme-choice="${t}" aria-pressed="${a.theme===t}">${window.fyodorAppearance.label(t)}</button>`).join('')}</div><label class="check"><input id="compact-density" type="checkbox" ${a.compact?'checked':''}>Compact spacing</label><p class="fine-print">Appearance changes apply immediately and persist on this device. <a href="/theme-licenses.txt" target="_blank" rel="noopener">Theme licenses</a></p></section>`);
   d.querySelector('.settings-grid').insertAdjacentHTML('afterbegin',`<h3>Connection</h3><label class="check remote-setting"><input id="remote-stream" type="checkbox" ${s.provider.stream?'checked':''}>Stream responses from remote endpoints</label><p class="fine-print">The local C HTTP API currently returns completed responses. Remote streaming supports Stop; Agent mode uses complete tool-call responses.</p>`);
+  d.querySelector('.settings-section').insertAdjacentHTML('beforeend',appearanceControls(a));
+  syncAppearanceColors(a);
   toggleRemoteSettings();d.querySelector('#save-settings').disabled=s.busy;
 }
 
@@ -285,9 +303,17 @@ function updateTrainingLive(){
 function collectTraining(){document.querySelectorAll("[data-train]").forEach(n=>{s.training[n.dataset.train]=n.type==="number"?+n.value:n.value});save()}
 
 document.addEventListener("click",async event=>{
+  const clearAppearance=event.target.closest('[data-appearance-clear]');
+  if(clearAppearance){window.fyodorAppearance.set({[clearAppearance.dataset.appearanceClear]:''});syncAppearanceColors(window.fyodorAppearance.get());return;}
+  if(event.target.closest('#appearance-reset')){
+    window.fyodorAppearance.reset();const a=window.fyodorAppearance.get();
+    document.querySelectorAll('[data-appearance]').forEach(n=>{if(n.type==='checkbox')n.checked=a[n.dataset.appearance];else n.value=a[n.dataset.appearance]||'#215ea8';});
+    document.querySelectorAll('[data-theme-choice]').forEach(n=>n.setAttribute('aria-pressed',n.dataset.themeChoice===a.theme));
+    document.querySelector('#compact-density').checked=a.compact;syncAppearanceColors(a);return;
+  }
   if(event.target.closest('#stop-generation')){ui.request?.controller?.abort();return;}
   if(event.target.closest('#collapse-sidebar')){const a=window.fyodorAppearance.get();window.fyodorAppearance.set({collapsed:!a.collapsed});return;}
-  const theme=event.target.closest('[data-theme-choice]');if(theme){window.fyodorAppearance.set({theme:theme.dataset.themeChoice});document.querySelectorAll('[data-theme-choice]').forEach(n=>n.setAttribute('aria-pressed',n===theme));return;}
+  const theme=event.target.closest('[data-theme-choice]');if(theme){window.fyodorAppearance.set({theme:theme.dataset.themeChoice});document.querySelectorAll('[data-theme-choice]').forEach(n=>n.setAttribute('aria-pressed',n===theme));syncAppearanceColors(window.fyodorAppearance.get());return;}
   if(event.target.closest('#pause-logs')){ui.logPaused=!ui.logPaused;const n=event.target.closest('#pause-logs');n.textContent=ui.logPaused?'Resume scrolling':'Pause scrolling';n.setAttribute('aria-pressed',ui.logPaused);updateLogOutput();return;}
   if(event.target.closest('#older-messages')){ui.messageLimit+=80;const list=document.querySelector('.message-list'),height=list.scrollHeight;chatView();requestAnimationFrame(()=>{const n=document.querySelector('.message-list');if(n)n.scrollTop=n.scrollHeight-height});return;}
   const code=event.target.closest('[data-copy-code]');if(code){await navigator.clipboard.writeText(code.closest('.code-block').querySelector('code').textContent);toast('Code copied');return;}
@@ -336,6 +362,13 @@ document.addEventListener("input",event=>{
   if(event.target.id==="provider-type")toggleRemoteSettings();
 });
 document.addEventListener("change",event=>{
+  if(event.target.matches('[data-appearance]')){
+    const n=event.target,value=n.type==='checkbox'?n.checked:n.type==='number'?Number(n.value):n.value;
+    window.fyodorAppearance.set({[n.dataset.appearance]:value});
+    if(n.type==='color')syncAppearanceColors(window.fyodorAppearance.get());
+    if(n.type==='number')n.value=window.fyodorAppearance.get()[n.dataset.appearance];
+    return;
+  }
   if(event.target.id==='compact-density')window.fyodorAppearance.set({compact:event.target.checked});
   if(event.target.id==='benchmark-file'&&event.target.files[0]){const file=event.target.files[0];if(file.size>1024*1024){toast('Benchmark files are limited to 1 MiB.','error');return}file.text().then(text=>{ui.benchmarks.unshift(parseBenchmark(text));ui.benchmarks=ui.benchmarks.slice(0,12);if(s.view==='benchmark')render()}).catch(error=>toast(error.message,'error'));}
   if(event.target.id==="global-model"&&s.provider.type==="local"){s.selected=+event.target.value||null;render()}
