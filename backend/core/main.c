@@ -4,6 +4,10 @@
 #include "runtime.h"
 #include "server.h"
 #include "compute.h"
+#include "fyodor_store.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include <errno.h>
 #include <signal.h>
@@ -130,6 +134,19 @@ int main(int argument_count, char **arguments)
     int exit_code;
     int index;
     int verbose = 0;
+    char workspace_path[4096]={0};
+#ifdef _WIN32
+    wchar_t wide_workspace[4096];
+    DWORD workspace_length=GetEnvironmentVariableW(L"FYODOR_STORE_PATH",wide_workspace,4096);
+    if(workspace_length>=4096 || (workspace_length && WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,wide_workspace,-1,workspace_path,sizeof(workspace_path),NULL,NULL)==0)) {
+        fputs("fyodor: invalid workspace path\n",stderr); return 2;
+    }
+#else
+    const char *workspace_env=getenv("FYODOR_STORE_PATH");
+    if(workspace_env && nya_copy_option(workspace_path,sizeof(workspace_path),workspace_env)!=0) {
+        fputs("fyodor: invalid workspace path\n",stderr); return 2;
+    }
+#endif
 
     /* Load conservative defaults before applying the optional YAML file. */
     nya_config_defaults(&configuration);
@@ -246,6 +263,14 @@ int main(int argument_count, char **arguments)
     server_config.models = &models;
     server_config.external_stop_requested = &nya_stop_signal;
     server_config.verbose = verbose;
+    server_config.resource_store_path=workspace_path[0]?workspace_path:NULL;
+    if(workspace_path[0]) {
+        fyodor_store *workspace=NULL;
+        if(configuration.allow_remote || strcmp(configuration.bind_address,"127.0.0.1")!=0 || fyodor_store_open(workspace_path,&workspace)!=FYODOR_STORE_OK) {
+            fputs("fyodor: workspace requires a valid local store and loopback-only configuration\n",stderr); goto cleanup;
+        }
+        fyodor_store_close(workspace);
+    }
     if (verbose) fprintf(stderr,"[runtime] compiled cpu=1 cuda=%d vulkan=%d rocm=%d mlx=%d workers=%u queue=%u request_limit=%zu output_limit=%zu generation_limit=%u timeout_ms=%u\n",
         nya_compute_cuda_compiled(),nya_compute_vulkan_compiled(),nya_compute_backend_compiled("rocm"),nya_compute_backend_compiled("mlx"),configuration.worker_threads,
         configuration.queue_capacity,configuration.max_request_bytes,configuration.max_output_bytes,

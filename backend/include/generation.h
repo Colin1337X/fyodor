@@ -92,6 +92,11 @@ int nya_generation_run(
 /* Release text allocated by the generation provider. */
 void nya_generation_response_free(nya_generation_response *response);
 
+/* Count with the exact native generation tokenizer (including model BOS/EOS
+ * policy), without inference. Outputs are unchanged on error. */
+int nya_generation_prompt_info(const struct nya_model *model,const char *prompt,
+    size_t *token_count,size_t *context_length,char *error,size_t error_capacity);
+
 /* Convert a stop reason into its stable JSON name. */
 const char *nya_generation_stop_reason_name(nya_generation_stop_reason reason);
 

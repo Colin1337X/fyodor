@@ -4,6 +4,8 @@
 #include "execution.h"
 #include "generation.h"
 #include "thread.h"
+#include "fyodor_store.h"
+#include "fyodor_generate.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -2219,6 +2221,9 @@ static int nya_handle_generate(
     return send_result;
 }
 
+#include "server_resources.inc"
+#include "server_context.inc"
+
 /* Route one authenticated request to a small explicit endpoint handler. */
 static int nya_http_dispatch_request(
     nya_socket client,
@@ -2276,6 +2281,10 @@ static int nya_http_dispatch_request(
 
     if (strcmp(request->path,"/v1/models") == 0 && strcmp(request->method,"GET") == 0)
         return nya_handle_compat_models(client,server,request,origin);
+    if(strncmp(request->path,"/resources/",11)==0 && request->api_style==0)
+        return nya_handle_resources(client,server,request,origin);
+    if(strncmp(request->path,"/context/",9)==0 && request->api_style==0)
+        return nya_handle_context(client,server,request,origin);
     if ((strcmp(request->path,"/v1/chat/completions") == 0 || strcmp(request->path,"/v1/completions") == 0 ||
          strcmp(request->path,"/v1/messages") == 0 || strcmp(request->path,"/v1/messages/count_tokens") == 0) && strcmp(request->method,"POST") == 0)
         return nya_handle_compat_generate(client,server,request,origin);

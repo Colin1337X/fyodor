@@ -38,6 +38,9 @@ typedef struct nya_server_config {
     const volatile sig_atomic_t *external_stop_requested;
     /* Opt-in stderr diagnostics. Never include credentials or prompt bodies. */
     int verbose;
+    /* Optional UTF-8 local administrator workspace path. Borrowed for lifetime.
+     * Resource routes are disabled for remote-enabled/non-loopback servers. */
+    const char *resource_store_path;
 } nya_server_config;
 
 /* The server object contains only the state needed by one listening process. */

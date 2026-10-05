@@ -76,6 +76,24 @@ int nya_generation_run(
 }
 
 /* Release caller-owned generated text and clear stale metadata. */
+int nya_generation_prompt_info(const nya_model *model,const char *prompt,
+    size_t *token_count,size_t *context_length,char *error,size_t error_capacity)
+{
+    if(model==NULL||prompt==NULL||token_count==NULL||context_length==NULL||
+        !model->generation_supported||model->generation_context==NULL) {
+        if(error!=NULL&&error_capacity) snprintf(error,error_capacity,"this model has no active text-generation provider");
+        return -1;
+    }
+    const nya_llm_context *context=model->generation_context;
+    uint32_t *tokens=NULL; size_t count=0;
+    int result=nya_llm_tokenize(context,prompt,&tokens,&count,error,error_capacity);
+    free(tokens);
+    if(result!=0) return -1;
+    *token_count=count; *context_length=context->context_length;
+    return 0;
+}
+
+/* Release caller-owned generated text and clear stale metadata. */
 void nya_generation_response_free(nya_generation_response *response)
 {
     if (response == NULL) return;
