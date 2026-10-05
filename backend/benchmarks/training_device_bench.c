@@ -439,6 +439,112 @@ static int attention_branch(const nya_llm_context *model,size_t n)
     printf("]}\n");
     free(x);free(seed);free(expected);free(actual);free(freq);nya_train_parameter_free(px);nya_train_device_free(d);return 0;
 }
+/* Real quantized vocabulary projection plus masked CE or paired DPO. This
+   validates composition/residency, not full-model throughput or convergence. */
+static int loss_head(const nya_llm_context *model,size_t n,int paired)
+{
+    nya_train_device *d=NULL;
+    const nya_llm_tensor *w=model->output?model->output:model->token_embedding;
+    REQUIRE(w && w->dimensions[0] && w->dimensions[1]);
+    size_t width=(size_t)w->dimensions[0],vocab=(size_t)w->dimensions[1],branches=paired?2:1;
+    REQUIRE(n && width<=SIZE_MAX/4/n && vocab<=UINT32_MAX && vocab<=SIZE_MAX/4/n);
+    size_t count=n*width,logits_count=n*vocab;
+    float *x[2]={0},*expected[2]={0},*actual=malloc((count>logits_count?count:logits_count)*4);
+    uint32_t *labels=malloc(n*4); unsigned char *mask=malloc(n);
+    nya_train_parameter *parameters[2]={0};
+    REQUIRE(actual && labels && mask);
+    for (size_t j=0;j<n;++j) { mask[j]=(unsigned char)(j%3?255:0); labels[j]=mask[j]?(uint32_t)((j*937)%vocab):UINT32_MAX; }
+    for (size_t b=0;b<branches;++b) {
+        x[b]=malloc(count*4); expected[b]=malloc(logits_count*4); REQUIRE(x[b] && expected[b]);
+        for (size_t j=0;j<count;++j) x[b][j]=(float)((int)((j+b*17)%71)-35)/64;
+        parameters[b]=nya_train_parameter_create(n,width,x[b]); REQUIRE(parameters[b]);
+    }
+    nya_train_executor *executor=nya_train_executor_create(6); REQUIRE(executor);
+    float expected_loss=0; double refs[2]={0};
+    for (size_t micro=0;micro<2;++micro) {
+        nya_train_graph *g=nya_train_graph_create_with_executor(256*1024*1024,executor); REQUIRE(g);
+        nya_train_tensor *losses[2]={0};
+        for (size_t b=0;b<branches;++b) {
+            nya_train_tensor *logits=nya_train_linear_mapped(nya_train_leaf(g,parameters[b]),w); REQUIRE(logits);
+            memcpy(expected[b],nya_train_data(logits),logits_count*4);
+            losses[b]=paired?nya_train_logprob(logits,labels,mask,n):nya_train_cross_entropy(logits,labels,mask,n); REQUIRE(losses[b]);
+            refs[b]=(double)*nya_train_data(losses[b])+(b?0.5:0);
+        }
+        nya_train_tensor *loss=paired?nya_train_dpo(losses[0],losses[1],refs[0],refs[1],0.2f):losses[0]; REQUIRE(loss);
+        expected_loss=*nya_train_data(loss); REQUIRE(!nya_train_backward(loss));
+        nya_train_graph_free(g);
+    }
+    nya_train_executor_free(executor);
+    d=nya_train_device_create("cuda",128*1024*1024); REQUIRE(d);
+    nya_train_buffer bw=nya_train_device_alloc(d,w->data_size),bl=nya_train_device_alloc(d,n*4),bm=nya_train_device_alloc(d,n);
+    nya_train_buffer seed=nya_train_device_alloc(d,4),status=nya_train_device_alloc(d,4),y=nya_train_device_alloc(d,4);
+    nya_train_buffer bx[2]={0},dx[2]={0},logits[2]={0};
+    float one=1;
+    REQUIRE(bw && bl && bm && seed && status && y && !nya_train_device_write(d,bw,0,w->data,w->data_size) &&
+        !nya_train_device_write(d,bl,0,labels,n*4) && !nya_train_device_write(d,bm,0,mask,n) && !nya_train_device_write(d,seed,0,&one,4));
+    for (size_t b=0;b<branches;++b) {
+        bx[b]=nya_train_device_alloc(d,count*4); dx[b]=nya_train_device_alloc(d,count*4); logits[b]=nya_train_device_alloc(d,logits_count*4);
+        REQUIRE(bx[b] && dx[b] && logits[b] && !nya_train_device_write(d,bx[b],0,x[b],count*4));
+    }
+    double maximum[3]={0},times[5];
+    for (size_t rep=0;rep<7;++rep) {
+        for (size_t b=0;b<branches;++b) REQUIRE(!nya_train_device_zero(d,dx[b]));
+        REQUIRE(!nya_train_device_zero(d,status) && !nya_train_device_finish(d));
+        nya_train_device_stats before,after; nya_train_device_get_stats(d,&before);
+        double start=tr_seconds();
+        for (size_t micro=0;micro<2;++micro) {
+            nya_train_scope scope=nya_train_device_scratch_begin(d); REQUIRE(scope);
+            nya_train_buffer ls[2]={0},ly[2]={0},lg[2]={0},dl[2]={0};
+            for (size_t b=0;b<branches;++b) {
+                ls[b]=nya_train_device_alloc(d,nya_train_loss_state_bytes(n)); ly[b]=paired?nya_train_device_alloc(d,4):y;
+                lg[b]=paired?nya_train_device_alloc(d,4):seed; dl[b]=nya_train_device_alloc(d,logits_count*4);
+                REQUIRE(ls[b] && ly[b] && lg[b] && dl[b]);
+                REQUIRE(!nya_train_device_linear(d,logits[b],bw,w->type,vocab,width,bx[b],n));
+                REQUIRE(!nya_train_device_loss(d,ly[b],ls[b],(nya_train_view){logits[b],n,vocab},bl,bm,paired?NYA_TRAIN_LOSS_LOGPROB:NYA_TRAIN_LOSS_CE));
+                REQUIRE(!nya_train_device_check_finite(d,status,logits[b],logits_count,1+(uint32_t)b));
+                REQUIRE(!nya_train_device_check_finite(d,status,ly[b],1,3+(uint32_t)b));
+            }
+            if (paired) {
+                nya_train_buffer ds=nya_train_device_alloc(d,8); REQUIRE(ds);
+                REQUIRE(!nya_train_device_dpo(d,y,ds,ly[0],ly[1],refs[0],refs[1],0.2f));
+                REQUIRE(!nya_train_device_dpo_backward(d,lg[0],lg[1],ds,seed));
+                REQUIRE(!nya_train_device_check_finite(d,status,y,1,5));
+            }
+            for (size_t b=0;b<branches;++b) {
+                REQUIRE(!nya_train_device_loss_backward(d,dl[b],ls[b],(nya_train_view){logits[b],n,vocab},bl,bm,lg[b]));
+                REQUIRE(!nya_train_device_linear_dx(d,dx[b],bw,w->type,vocab,width,dl[b],n));
+                REQUIRE(!nya_train_device_check_finite(d,status,dx[b],count,6+(uint32_t)b));
+            }
+            REQUIRE(!nya_train_device_scratch_end(d,scope));
+        }
+        REQUIRE(!nya_train_device_finish(d));
+        double ms=(tr_seconds()-start)*1000;
+        nya_train_device_get_stats(d,&after);
+        REQUIRE(after.kernel_launches==before.kernel_launches+(paired?56:20) && after.uploads==before.uploads &&
+            after.downloads==before.downloads && after.synchronizations==before.synchronizations+1 && after.used_bytes==before.used_bytes);
+        if (rep>=2) times[rep-2]=ms;
+        uint32_t tag=99; REQUIRE(!nya_train_device_read(d,status,0,&tag,4) && !tag);
+        float loss; REQUIRE(!nya_train_device_read(d,y,0,&loss,4));
+        double err=fabs((double)loss-expected_loss)/(1+fabs(expected_loss)); REQUIRE(isfinite(loss) && err<=1e-5);
+        if (err>maximum[0]) maximum[0]=err;
+        for (size_t b=0;b<branches;++b) for (size_t gradient=0;gradient<2;++gradient) {
+            size_t size=gradient?count:logits_count;
+            const float *reference=gradient?nya_train_parameter_gradient(parameters[b]):expected[b];
+            REQUIRE(!nya_train_device_read(d,gradient?dx[b]:logits[b],0,actual,size*4));
+            for (size_t j=0;j<size;++j) {
+                double error=fabs((double)actual[j]-reference[j])/(1+fabs(reference[j]));
+                REQUIRE(isfinite(actual[j]) && error<=1e-5);
+                if (error>maximum[1+gradient]) maximum[1+gradient]=error;
+            }
+        }
+    }
+    nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
+    printf("{\"component\":\"frozen-vocabulary-%s\",\"weight_type\":%u,\"tokens\":%zu,\"width\":%zu,\"vocabulary\":%zu,\"microbatches\":2,\"cpu_loss\":%.9g,\"max_scaled_loss_error\":%.9g,\"max_scaled_logits_error\":%.9g,\"max_scaled_input_gradient_error\":%.9g,\"tolerance\":1e-5,\"loss_state_bytes_per_branch\":%zu,\"peak_bytes\":%zu,\"live_bytes\":%zu,\"uploads\":%llu,\"downloads\":%llu,\"timing_accepted\":false,\"ms\":[",paired?"dpo":"ce",w->type,n,width,vocab,(double)expected_loss,maximum[0],maximum[1],maximum[2],nya_train_loss_state_bytes(n),stats.peak_bytes,stats.used_bytes,(unsigned long long)stats.uploads,(unsigned long long)stats.downloads);
+    for (size_t j=0;j<5;++j) printf("%s%.9f",j?",":"",times[j]);
+    printf("]}\n");
+    for (size_t b=0;b<branches;++b) { free(x[b]); free(expected[b]); nya_train_parameter_free(parameters[b]); }
+    free(actual); free(labels); free(mask); nya_train_device_free(d); return 0;
+}
 int main(int argc,char **argv)
 {
     nya_train_device *d=NULL;
@@ -448,6 +554,9 @@ int main(int argc,char **argv)
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
+    if (!strcmp(argv[2],"loss8") || !strcmp(argv[2],"loss64") || !strcmp(argv[2],"dpo8") || !strcmp(argv[2],"dpo64")) {
+        int result=loss_head(m,(!strcmp(argv[2],"loss8") || !strcmp(argv[2],"dpo8"))?8u:64u,!strncmp(argv[2],"dpo",3)); nya_llm_free(m); return result;
+    }
     if (!strcmp(argv[2],"attention8") || !strcmp(argv[2],"attention64")) {
         int result=attention_branch(m,!strcmp(argv[2],"attention8")?8u:64u); nya_llm_free(m); return result;
     }

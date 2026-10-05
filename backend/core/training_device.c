@@ -98,6 +98,20 @@ size_t nya_train_attention_workspace_bytes(size_t tokens, size_t heads)
     if (!tokens || !heads || heads>SIZE_MAX/tokens || tokens*heads>SIZE_MAX/tile/16) return 0;
     return tokens*heads*tile*16;
 }
+size_t nya_train_loss_state_bytes(size_t rows)
+{ return rows && rows <= (SIZE_MAX-8)/32 ? rows*32+8 : 0; }
+int nya_train_device_loss(nya_train_device *d, nya_train_buffer y, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_loss_op operation)
+{ return d ? d->api->loss(d->context,y,state,logits,labels,mask,0,(unsigned)operation,0) : -1; }
+int nya_train_device_loss_backward(nya_train_device *d, nya_train_buffer dx, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_buffer dy)
+{ return d ? d->api->loss(d->context,dx,state,logits,labels,mask,dy,0,1) : -1; }
+int nya_train_device_dpo(nya_train_device *d, nya_train_buffer y, nya_train_buffer state,
+    nya_train_buffer chosen, nya_train_buffer rejected, double rc, double rr, float beta)
+{ return d ? d->api->dpo(d->context,y,0,state,chosen,rejected,0,rc,rr,beta,0) : -1; }
+int nya_train_device_dpo_backward(nya_train_device *d, nya_train_buffer dc, nya_train_buffer dr,
+    nya_train_buffer state, nya_train_buffer dy)
+{ return d ? d->api->dpo(d->context,dc,dr,state,0,0,dy,0,0,0,1) : -1; }
 int nya_train_device_attention(nya_train_device *d, nya_train_buffer y,
     nya_train_buffer state, nya_train_attention_desc descriptor)
 { return d ? d->api->attention(d->context,y,0,0,state,0,0,descriptor,0) : -1; }

@@ -29,5 +29,10 @@ typedef struct nya_train_device_interface {
         size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half, int backward);
     int (*attention)(void *context, nya_train_buffer out_q, nya_train_buffer out_k, nya_train_buffer out_v,
         nya_train_buffer state, nya_train_buffer dy, nya_train_buffer workspace, nya_train_attention_desc descriptor, int backward);
+    int (*loss)(void *context, nya_train_buffer out, nya_train_buffer state, nya_train_view logits,
+        nya_train_buffer labels, nya_train_buffer mask, nya_train_buffer dy, unsigned operation, int backward);
+    int (*dpo)(void *context, nya_train_buffer out_a, nya_train_buffer out_b, nya_train_buffer state,
+        nya_train_buffer chosen, nya_train_buffer rejected, nya_train_buffer dy,
+        double reference_chosen, double reference_rejected, float beta, int backward);
 } nya_train_device_interface;
 #endif

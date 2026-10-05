@@ -1,6 +1,89 @@
 /* Native training derivatives. Each output has one writer, so accumulation is
    stream ordered without floating-point atomics. Packed frozen weights stay
    compressed for dX. These are original Fyodor kernels. */
+/* Stable hard-label log softmax: double reductions, O(rows) saved state.
+   Inspired by the row/block reduction organization studied in PyTorch's
+   SoftMax.cu; original implementation, preserving Fyodor masking/precision. */
+extern "C" __global__ void nya_train_loss_rows(const float *x, const unsigned *labels,
+    const unsigned char *mask, double *state, unsigned long long columns)
+{
+    unsigned lane=threadIdx.x;
+    unsigned long long row=blockIdx.x, base=row*columns;
+    double *saved=state+row*4;
+    if (mask && !mask[row]) {
+        if (!lane) { saved[0]=0; saved[1]=1; saved[2]=0; saved[3]=0; }
+        return;
+    }
+    if ((unsigned long long)labels[row]>=columns) {
+        if (!lane) { saved[0]=__int_as_float(0x7fc00000); saved[1]=__int_as_float(0x7fc00000); saved[2]=__int_as_float(0x7fc00000); saved[3]=1; }
+        return;
+    }
+    __shared__ double values[256];
+    double maximum=-1.7976931348623157e308;
+    int bad=0;
+    for (unsigned long long j=lane;j<columns;j+=256) {
+        double v=x[base+j]; bad|=!isfinite(v); maximum=fmax(maximum,v);
+    }
+    if (__syncthreads_or(bad)) {
+        if (!lane) { saved[0]=__int_as_float(0x7fc00000); saved[1]=__int_as_float(0x7fc00000); saved[2]=__int_as_float(0x7fc00000); saved[3]=1; }
+        return;
+    }
+    values[lane]=maximum; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) values[lane]=fmax(values[lane],values[lane+stride]);
+        __syncthreads();
+    }
+    maximum=values[0]; __syncthreads();
+    double mass=0;
+    for (unsigned long long j=lane;j<columns;j+=256) mass+=exp((double)x[base+j]-maximum);
+    values[lane]=mass; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) values[lane]+=values[lane+stride];
+        __syncthreads();
+    }
+    if (!lane) {
+        saved[0]=maximum; saved[1]=values[0];
+        saved[2]=((double)x[base+labels[row]]-maximum)-log(values[0]); saved[3]=1;
+    }
+}
+extern "C" __global__ void nya_train_loss_reduce(double *state, float *y,
+    unsigned long long rows, unsigned operation)
+{
+    double total=0; unsigned long long active=0;
+    for (unsigned long long row=0;row<rows;++row) {
+        if (state[row*4+3]!=0) { ++active; total+=state[row*4+2]; }
+    }
+    double coefficient=active ? (operation ? 1.0 : -1.0/(double)active) : __int_as_float(0x7fc00000);
+    state[rows*4]=coefficient; *y=(float)(total*coefficient);
+}
+extern "C" __global__ void nya_train_loss_back(const float *x, const unsigned *labels,
+    const double *state, const float *dy, float *dx, unsigned long long rows, unsigned long long columns)
+{
+    unsigned long long row=blockIdx.x,base=row*columns;
+    if (state[row*4+3]==0) return;
+    double maximum=state[row*4],mass=state[row*4+1],scale=(double)*dy*state[rows*4];
+    for (unsigned long long j=threadIdx.x;j<columns;j+=256) {
+        double p=exp((double)x[base+j]-maximum)/mass;
+        float contribution=(float)(scale*((j==labels[row]?1.0:0.0)-p));
+        dx[base+j]=__fadd_rn(dx[base+j],contribution);
+    }
+}
+extern "C" __global__ void nya_train_dpo(const float *chosen, const float *rejected,
+    float *y, double *state, double reference_chosen, double reference_rejected, double beta)
+{
+    double margin=beta*(((double)*chosen-*rejected)-(reference_chosen-reference_rejected));
+    if (!isfinite(margin)) { *y=__int_as_float(0x7fc00000); *state=__int_as_float(0x7fc00000); return; }
+    *y=(float)(fmax(-margin,0.0)+log1p(exp(-fabs(margin))));
+    double e=exp(-fabs(margin));
+    *state=-beta*(margin>=0 ? e/(1.0+e) : 1.0/(1.0+e));
+}
+extern "C" __global__ void nya_train_dpo_back(const double *state, const float *dy,
+    float *dchosen, float *drejected)
+{
+    float contribution=(float)((double)(*dy)*(*state));
+    if (dchosen) *dchosen=__fadd_rn(*dchosen,contribution);
+    if (drejected) *drejected=__fsub_rn(*drejected,contribution);
+}
 extern "C" __global__ void nya_train_zero(unsigned char *data, unsigned long long bytes)
 {
     unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;

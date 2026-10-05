@@ -73,6 +73,32 @@ typedef enum nya_train_unary_op {
 typedef enum nya_train_binary_op { NYA_TRAIN_BINARY_ADD=0, NYA_TRAIN_BINARY_MUL=1 } nya_train_binary_op;
 typedef struct nya_train_view { nya_train_buffer buffer; size_t rows, columns; } nya_train_view;
 
+/* Masked hard-label loss on dense F32 logits. labels holds rows U32 IDs; mask
+   optionally holds rows bytes (nonzero means active). CE averages active rows;
+   LOGPROB sums their selected log probabilities for DPO. State needs the size
+   below: four doubles per row plus one coefficient, independent of vocabulary.
+   Active out-of-range labels, no active rows, or invalid numerical results
+   produce a nonfinite scalar: queue check_finite and reject the step. Masked
+   labels are not validated. No device value is copied to the host implicitly.
+   Backward consumes this exact state, unchanged logits/labels/mask, and a F32
+   scalar dy; it accumulates into dx. All output/input aliases are rejected.
+   Dispatch adds no allocation, transfer or fence. Zero size means overflow. */
+typedef enum nya_train_loss_op { NYA_TRAIN_LOSS_CE=0, NYA_TRAIN_LOSS_LOGPROB=1 } nya_train_loss_op;
+size_t nya_train_loss_state_bytes(size_t rows);
+int nya_train_device_loss(nya_train_device *device, nya_train_buffer y, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_loss_op operation);
+int nya_train_device_loss_backward(nya_train_device *device, nya_train_buffer dx, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_buffer dy);
+/* Stable scalar DPO. Reference log probabilities are finite doubles; beta is
+   positive finite F32. State saves one double derivative. Nonfinite margin or
+   output is reported through the scalar finite check. Backward accepts either
+   or both gradients and preserves CPU add-then-subtract rounding if they share
+   storage. Outputs cannot alias inputs/state. State must remain unchanged. */
+int nya_train_device_dpo(nya_train_device *device, nya_train_buffer y, nya_train_buffer state,
+    nya_train_buffer chosen, nya_train_buffer rejected, double reference_chosen, double reference_rejected, float beta);
+int nya_train_device_dpo_backward(nya_train_device *device, nya_train_buffer dchosen,
+    nya_train_buffer drejected, nya_train_buffer state, nya_train_buffer dy);
+
 /* Dense F32 elementwise operations. Forward overwrites; backward accumulates.
    Destinations cannot alias any input. The scalar must be finite and is used
    by SCALE/SOFTCAP; SOFTCAP additionally requires a positive scalar. GELU uses

@@ -14,6 +14,7 @@ typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
     CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope, attention, attention_prepare, attention_dq, attention_dkv;
+    CUfunction loss_rows, loss_reduce, loss_back, dpo, dpo_back;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -112,6 +113,11 @@ static void *nya_ct_create(size_t capacity)
         if (t->cuda->function_get(&t->dx[types[i]],t->cuda->module,name) != CUDA_SUCCESS) goto done;
     }
     if (t->cuda->function_get(&t->zero,t->cuda->module,"nya_train_zero") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->loss_rows,t->cuda->module,"nya_train_loss_rows") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->loss_reduce,t->cuda->module,"nya_train_loss_reduce") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->loss_back,t->cuda->module,"nya_train_loss_back") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->dpo,t->cuda->module,"nya_train_dpo") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->dpo_back,t->cuda->module,"nya_train_dpo_back") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->check_finite,t->cuda->module,"nya_train_check_finite") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->unary,t->cuda->module,"nya_train_unary") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->binary,t->cuda->module,"nya_train_binary") != CUDA_SUCCESS ||
@@ -493,6 +499,69 @@ static int nya_ct_rms_norm(void *context, nya_train_buffer out, nya_train_buffer
     }
     return nya_ct_leave(t,result);
 }
+static int nya_ct_loss(void *context, nya_train_buffer out, nya_train_buffer state, nya_train_view x,
+    nya_train_buffer labels, nya_train_buffer mask, nya_train_buffer dy, unsigned operation, int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    size_t count=0, bytes=nya_train_loss_state_bytes(x.rows);
+    nya_cuda_train_buffer *a=nya_ct_view(t,x,&count), *s=nya_ct_find(t,state), *o=nya_ct_find(t,out);
+    nya_cuda_train_buffer *l=nya_ct_find(t,labels), *m=nya_ct_find(t,mask), *g=nya_ct_find(t,dy);
+    if (!a || !s || !o || !l || !bytes || s->bytes<bytes || l->bytes/4<x.rows ||
+        (mask && (!m || m->bytes<x.rows)) || operation>NYA_TRAIN_LOSS_LOGPROB ||
+        (backward!=0 && backward!=1) || state==x.buffer || state==labels || state==mask || state==dy ||
+        out==state || out==x.buffer || out==labels || out==mask || out==dy ||
+        o->bytes/4<(backward?count:1) || (backward ? (!g || g->bytes<4) : dy!=0))
+        return nya_ct_error(t,"invalid training loss descriptor",0);
+    if (x.rows>(size_t)t->cuda->grid_limit) return nya_ct_error(t,"training loss grid too large",0);
+    unsigned long long rows=x.rows,columns=x.columns;
+    CUdeviceptr mp=m?m->memory:0;
+    if (nya_ct_enter(t)) return -1;
+    int result;
+    if (!backward) {
+        void *args[]={&a->memory,&l->memory,&mp,&s->memory,&columns};
+        result=nya_ct_launch(t,t->loss_rows,(unsigned)rows,1,256,1,args);
+        if (!result) {
+            void *reduce[]={&s->memory,&o->memory,&rows,&operation};
+            result=nya_ct_launch(t,t->loss_reduce,1,1,1,1,reduce);
+        }
+    } else {
+        void *args[]={&a->memory,&l->memory,&s->memory,&g->memory,&o->memory,&rows,&columns};
+        result=nya_ct_launch(t,t->loss_back,(unsigned)rows,1,256,1,args);
+    }
+    return nya_ct_leave(t,result);
+}
+static int nya_ct_dpo(void *context, nya_train_buffer out_a, nya_train_buffer out_b, nya_train_buffer state,
+    nya_train_buffer chosen, nya_train_buffer rejected, nya_train_buffer dy, double rc, double rr, float beta, int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    nya_cuda_train_buffer *s=nya_ct_find(t,state), *a=nya_ct_find(t,out_a), *b=nya_ct_find(t,out_b);
+    nya_cuda_train_buffer *c=nya_ct_find(t,chosen), *r=nya_ct_find(t,rejected), *g=nya_ct_find(t,dy);
+    if (!s || s->bytes<8 || (backward!=0 && backward!=1) ||
+        (out_a && (!a || a->bytes<4 || out_a==state || out_a==chosen || out_a==rejected || out_a==dy)) ||
+        (out_b && (!b || b->bytes<4 || out_b==state || out_b==chosen || out_b==rejected || out_b==dy)) ||
+        state==chosen || state==rejected || state==dy)
+        return nya_ct_error(t,"invalid training DPO descriptor",0);
+    if (!backward) {
+        if (!a || out_b || dy || !c || c->bytes<4 || !r || r->bytes<4 ||
+            !isfinite(rc) || !isfinite(rr) || !isfinite(beta) || beta<=0)
+            return nya_ct_error(t,"invalid training DPO forward",0);
+    } else if ((!out_a && !out_b) || chosen || rejected || !g || g->bytes<4)
+        return nya_ct_error(t,"invalid training DPO gradients",0);
+    if (nya_ct_enter(t)) return -1;
+    int result;
+    if (!backward) {
+        double scale=beta;
+        void *args[]={&c->memory,&r->memory,&a->memory,&s->memory,&rc,&rr,&scale};
+        result=nya_ct_launch(t,t->dpo,1,1,1,1,args);
+    } else {
+        CUdeviceptr ap=a?a->memory:0,bp=b?b->memory:0;
+        void *args[]={&s->memory,&g->memory,&ap,&bp};
+        result=nya_ct_launch(t,t->dpo_back,1,1,1,1,args);
+    }
+    return nya_ct_leave(t,result);
+}
 static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_buffer a, nya_train_buffer b,
     unsigned type, size_t outputs, size_t inputs, size_t tokens, unsigned operation)
 {
@@ -542,6 +611,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo};
     return &api;
 }
