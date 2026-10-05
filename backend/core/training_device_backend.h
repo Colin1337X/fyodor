@@ -25,5 +25,7 @@ typedef struct nya_train_device_interface {
     nya_train_indices (*indices)(void *context, const nya_train_index_pack *pack);
     int (*embedding)(void *context, nya_train_buffer out, nya_train_buffer source,
         unsigned type, size_t columns, nya_train_indices indices, int backward);
+    int (*rope)(void *context, nya_train_buffer destination, nya_train_view source,
+        size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half, int backward);
 } nya_train_device_interface;
 #endif

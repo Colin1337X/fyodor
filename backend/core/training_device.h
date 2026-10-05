@@ -103,6 +103,20 @@ int nya_train_device_rms_norm(nya_train_device *device, nya_train_buffer y, nya_
 int nya_train_device_rms_norm_backward(nya_train_device *device, nya_train_buffer dx, nya_train_buffer dweight,
     nya_train_buffer inverse, nya_train_view x, nya_train_buffer weight, nya_train_buffer dy);
 
+/* RoPE on dense F32 rows, each holding heads*dimension values. dimension is
+   positive and even; split_half selects adjacent pairs (0) or head halves (1).
+   frequencies holds dimension/2 F32 angular frequencies, shared by heads;
+   position is the zero-based row number, matching the CPU training graph.
+   Forward overwrites y; backward adds the inverse rotation of dy to dx.
+   Frequencies must remain unchanged between forward/backward. Inputs and
+   frequencies require explicit finite checks at the graph boundary. No host
+   validation of device values, allocation, transfer or fence occurs here.
+   Destinations cannot alias source or frequencies; read-only inputs may share. */
+int nya_train_device_rope(nya_train_device *device, nya_train_buffer y, nya_train_view x,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half);
+int nya_train_device_rope_backward(nya_train_device *device, nya_train_buffer dx, nya_train_view dy,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half);
+
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
    Linear overwrites Y; gradient operations accumulate each F32-rounded product

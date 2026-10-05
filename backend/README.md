@@ -542,6 +542,10 @@ Resident [embedding forward/backward](benchmarks/TRAINING_EMBEDDING_20260929.md)
 uses immutable token maps and ordered repeated-token gradients. A real trainable
 embedding → normalized FFN component matches CPU autograd; matrix backward now
 preserves CPU F32 product/addition order, including existing gradients.
+Resident [RoPE forward/backward](benchmarks/TRAINING_ROPE_20261005.md) supports
+adjacent-pair and split-half layouts, with resident frequencies and accumulated
+input gradients. Large finite CPU training angles bypass inaccurate MinGW
+static trigonometry using the already-linked Windows CRT imports.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 

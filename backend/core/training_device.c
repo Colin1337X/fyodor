@@ -84,3 +84,10 @@ int nya_train_device_linear_dx(nya_train_device *d, nya_train_buffer dx, nya_tra
 int nya_train_device_linear_dw(nya_train_device *d, nya_train_buffer dw, nya_train_buffer x,
     nya_train_buffer dy, size_t o, size_t i, size_t n)
 { return d ? d->api->matrix(d->context,dw,x,dy,0,o,i,n,2) : -1; }
+
+int nya_train_device_rope(nya_train_device *d, nya_train_buffer y, nya_train_view x,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half)
+{ return d ? d->api->rope(d->context,y,x,heads,dimension,frequencies,split_half,0) : -1; }
+int nya_train_device_rope_backward(nya_train_device *d, nya_train_buffer dx, nya_train_view dy,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half)
+{ return d ? d->api->rope(d->context,dx,dy,heads,dimension,frequencies,split_half,1) : -1; }

@@ -1,0 +1,65 @@
+{
+  "base_revision": "34921f44fe495e25b568d2ea36b4e82bf9a952ae",
+  "source_sha256": {
+    "CUDA/training.cu": "7f0c63e9678531e5868c247e0c6ac71489aff03e28d59f92c59334a45677a343",
+    "CUDA/training.inc": "1d33c17c2de4580506f0275592506166dc091694bd8d42de76e8072fa654bd49",
+    "CUDA/cuda.c": "f7153c885868677e231193af03dd4248f5e1efa439d8ddd9bbfcce4d30bd4cb1",
+    "CUDA/CMakeLists.txt": "da7d26e96d4386241ab0cd6f91d6399181f86c5f2c797bfbe610e6d27b062afc",
+    "backend/CMakeLists.txt": "af06b28ffb44cdd4658050920f270ec0f4f14f8a36342af65345c169cebe6d9c",
+    "backend/core/training_device.c": "3b31eddf94ed15c1b74bde2dab00a9c45f646faa9aef5b3b7fada37177f96951",
+    "backend/core/training_device.h": "6e6108826706b995249469eff56f96acbf608bd6f784d745a9b9b314c679dfff",
+    "backend/core/training_device_backend.h": "950fa99368dde04d021a1a1e85471756d86d0bea3ed83d79a25a1c8171983cc1",
+    "backend/core/training.c": "226c3204bf4968699e779896d0a2e3961eaae49b36d355daa4fc3505dbc48000",
+    "backend/tests/test_training_rope.c": "853178f85896b3684a9d2e5d43dd4f09839198879ca69048bce3fdcabd7a2230",
+    "backend/benchmarks/training_device_bench.c": "5905a3dfd2719a6a56ae6684d7371075e53714d4af6a4e01e563a56b4d6b5614"
+  },
+  "generated_bundles": {
+    "nya_cuda_source": {
+      "bytes": 32843,
+      "sha256": "5d307a7bafd596eeb2f8fb886383db315edbc679562664e89bf627c56594ea4d",
+      "crlf_count": 623,
+      "lf_normalized_sha256": "76313ca8c3b0ee61f4b7d6e805a337ca773617cc7021651d0b5d4d140942a680"
+    },
+    "nya_cuda_training_source": {
+      "bytes": 28832,
+      "sha256": "09a3fe551f6a1cf80b9c58f9e18d829a6d43cc5fe2ef12c2be4a41bc67a0e41c",
+      "crlf_count": 269,
+      "lf_normalized_sha256": "419669be31142638adf3fe1265374eeccbff85d85e95f7bc053dcb59225af189"
+    }
+  },
+  "historical_inference_bundle": {
+    "bytes": 32423,
+    "sha256": "927af8f2929259b9984b8b82ddf4a327f8194a4d9603947d4758765613822d55"
+  },
+  "inference_change": "Only checkout CRLF expansion: normalized bytes identical",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti, 610.88, 16311 MiB",
+  "compiler": "gcc.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "model": {
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "executables_sha256": {
+    "nya-test-training-rope.exe": "0a6ffd0b00b724af6f6fd25abb565a1e731cd94dd8c97581561d4feefaeaaff2",
+    "nya-bench-training-device.exe": "836d48fd912ce7f4d48362c21c606299a4bf208f58d78410b5ce35a5e4af45ba"
+  },
+  "source_study": {
+    "project": "llama.cpp/ggml",
+    "revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+    "license": "MIT",
+    "sha256": {
+      "LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "ggml/src/ggml-cuda/rope.cu": "6000ed7084c245e129c830b2caa23bea69ddb5a2beff458e57d9861c969d9c1a",
+      "ggml/src/ggml-cuda/rope.cuh": "236b4e98258ec4fbb8bcc79a01dc1ef2ead207cc44d076b9bc5fd8cc32dbffaf"
+    },
+    "finding": "Studied paired and split-half layouts and inverse-rotation backward. Original Fyodor kernel uses explicit resident frequencies, double trigonometry, F32 accumulating gradients and plain C descriptors. No source copied."
+  },
+  "method": {
+    "warmups": 2,
+    "measured_repetitions": 5,
+    "microbatches_per_repetition": 2,
+    "tolerance": 1e-05,
+    "oracle": "Six-worker CPU autograd; all Q/K outputs and accumulated input gradients checked after every repetition",
+    "timing_accepted": false,
+    "reason": "Interactive desktop and build activity not isolated; component correctness/resource evidence only"
+  }
+}

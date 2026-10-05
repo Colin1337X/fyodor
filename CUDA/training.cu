@@ -254,3 +254,23 @@ extern "C" __global__ void nya_train_dw(const float *x, const float *dy, float *
             if (row+slot*8 < outputs) dw[(unsigned long long)(row+slot*8)*inputs+column] = sum[slot];
     }
 }
+
+/* One thread owns each pair. Double trigonometry and intermediate products
+   preserve the CPU graph contract; only storage and gradient addition are F32.
+   No atomics, saved activation, or synchronization is needed for the adjoint. */
+extern "C" __global__ void nya_train_rope(const float *source, const float *frequencies, float *out,
+    unsigned long long pairs, unsigned long long columns, unsigned long long dimension,
+    int split_half, int backward)
+{
+    unsigned long long pair=(unsigned long long)blockIdx.x*256+threadIdx.x;
+    if (pair>=pairs) return;
+    unsigned long long half=dimension/2, j=pair%half;
+    unsigned long long base=(pair/half)*dimension;
+    unsigned long long i=base+(split_half ? j : 2*j), k=i+(split_half ? half : 1);
+    double angle=(double)(base/columns)*(double)frequencies[j];
+    double c=cos(angle), s=sin(angle), a=source[i], b=source[k];
+    float first=(float)(backward ? a*c+b*s : a*c-b*s);
+    float second=(float)(backward ? b*c-a*s : b*c+a*s);
+    if (backward) { out[i]=__fadd_rn(out[i],first); out[k]=__fadd_rn(out[k],second); }
+    else { out[i]=first; out[k]=second; }
+}

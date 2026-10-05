@@ -241,6 +241,100 @@ static int ffn(const nya_llm_context *model,size_t n,int normalized,int embedded
     free(x); free(dy); free(expected); free(actual);
     return 0;
 }
+/* Frozen real Q/K projections, RoPE, and shared input-gradient accumulation.
+   Both branches and two microbatches must match CPU graph reverse traversal. */
+static int qk_rope(const nya_llm_context *model,size_t n)
+{
+    nya_train_device *d=NULL;
+    const nya_llm_tensor *weights[2]={model->layers[0].query,model->layers[0].key};
+    size_t heads[2]={model->head_count,model->key_value_head_count};
+    REQUIRE(heads[0]);
+    size_t width=model->embedding_length,dim=width/heads[0];
+    REQUIRE(width && heads[0] && heads[1] && dim && !(dim%2) && width%heads[0]==0);
+    REQUIRE(isfinite(model->rope_frequency_base) && model->rope_frequency_base>=1);
+    REQUIRE(n<=SIZE_MAX/4/width);
+    float *x=malloc(n*width*4),*freq=malloc(dim/2*4),*actual=malloc(n*width*4);
+    float *seed[2],*expected[2]; size_t cols[2];
+    REQUIRE(x && freq && actual);
+    for (size_t j=0;j<n*width;++j) x[j]=(float)((int)(j%71)-35)/64;
+    for (size_t j=0;j<dim/2;++j) freq[j]=powf(model->rope_frequency_base,-2.0f*(float)j/(float)dim);
+    for (size_t b=0;b<2;++b) {
+        cols[b]=heads[b]*dim;
+        REQUIRE(cols[b]<=width && weights[b] && weights[b]->dimensions[0]==width && weights[b]->dimensions[1]==cols[b]);
+        seed[b]=malloc(n*cols[b]*4); expected[b]=malloc(n*cols[b]*4); REQUIRE(seed[b] && expected[b]);
+        for (size_t j=0;j<n*cols[b];++j) seed[b][j]=(float)((int)(j%(b?61:67))-31)/64;
+    }
+    nya_train_parameter *px=nya_train_parameter_create(n,width,x);
+    nya_train_executor *executor=nya_train_executor_create(6); REQUIRE(px && executor);
+    for (unsigned pass=0;pass<2;++pass) {
+        nya_train_graph *g=nya_train_graph_create_with_executor(128*1024*1024,executor); REQUIRE(g);
+        nya_train_tensor *input=nya_train_leaf(g,px),*loss[2]; REQUIRE(input);
+        for (size_t b=0;b<2;++b) {
+            nya_train_tensor *out=nya_train_rope(nya_train_linear_mapped(input,weights[b]),heads[b],dim,freq,0); REQUIRE(out);
+            memcpy(expected[b],nya_train_data(out),n*cols[b]*4);
+            loss[b]=nya_train_linear(nya_train_reshape(out,1,n*cols[b]),nya_train_input(g,1,n*cols[b],seed[b])); REQUIRE(loss[b]);
+        }
+        REQUIRE(!nya_train_backward(nya_train_add(loss[0],loss[1])));
+        nya_train_graph_free(g);
+    }
+    nya_train_executor_free(executor);
+    d=nya_train_device_create("cuda",64*1024*1024); REQUIRE(d);
+    nya_train_buffer bx=nya_train_device_alloc(d,n*width*4),bf=nya_train_device_alloc(d,dim/2*4);
+    nya_train_buffer dx=nya_train_device_alloc(d,n*width*4),status=nya_train_device_alloc(d,4);
+    REQUIRE(bx && bf && dx && status && !nya_train_device_write(d,bx,0,x,n*width*4) && !nya_train_device_write(d,bf,0,freq,dim/2*4));
+    nya_train_buffer bw[2],bs[2],by[2];
+    for (size_t b=0;b<2;++b) {
+        bw[b]=nya_train_device_alloc(d,weights[b]->data_size); bs[b]=nya_train_device_alloc(d,n*cols[b]*4); by[b]=nya_train_device_alloc(d,n*cols[b]*4);
+        REQUIRE(bw[b] && bs[b] && by[b] && !nya_train_device_write(d,bw[b],0,weights[b]->data,weights[b]->data_size) && !nya_train_device_write(d,bs[b],0,seed[b],n*cols[b]*4));
+    }
+    double times[5],maximum[3]={0};
+    for (unsigned repetition=0;repetition<7;++repetition) {
+        REQUIRE(!nya_train_device_zero(d,dx) && !nya_train_device_zero(d,status) && !nya_train_device_finish(d));
+        nya_train_device_stats before,after; nya_train_device_get_stats(d,&before);
+        double start=tr_seconds();
+        for (unsigned pass=0;pass<2;++pass) {
+            nya_train_scope scope=nya_train_device_scratch_begin(d); REQUIRE(scope);
+            nya_train_buffer projected[2],dr[2];
+            for (size_t b=0;b<2;++b) {
+                projected[b]=nya_train_device_alloc(d,n*cols[b]*4); dr[b]=nya_train_device_alloc(d,n*cols[b]*4); REQUIRE(projected[b] && dr[b]);
+                REQUIRE(!nya_train_device_linear(d,projected[b],bw[b],weights[b]->type,cols[b],width,bx,n));
+                REQUIRE(!nya_train_device_rope(d,by[b],(nya_train_view){projected[b],n,cols[b]},heads[b],dim,bf,0));
+                REQUIRE(!nya_train_device_check_finite(d,status,by[b],n*cols[b],(uint32_t)b+1));
+            }
+            for (size_t reverse=0;reverse<2;++reverse) {
+                size_t b=1-reverse;
+                REQUIRE(!nya_train_device_rope_backward(d,dr[b],(nya_train_view){bs[b],n,cols[b]},heads[b],dim,bf,0));
+                REQUIRE(!nya_train_device_linear_dx(d,dx,bw[b],weights[b]->type,cols[b],width,dr[b],n));
+            }
+            REQUIRE(!nya_train_device_check_finite(d,status,dx,n*width,3));
+            REQUIRE(!nya_train_device_scratch_end(d,scope));
+        }
+        REQUIRE(!nya_train_device_finish(d));
+        double ms=(tr_seconds()-start)*1000;
+        nya_train_device_get_stats(d,&after);
+        REQUIRE(after.kernel_launches==before.kernel_launches+30 && after.uploads==before.uploads && after.downloads==before.downloads &&
+            after.synchronizations==before.synchronizations+1 && after.used_bytes==before.used_bytes);
+        if (repetition>=2) times[repetition-2]=ms;
+        /* Validate every repetition, outside the measured interval. */
+        uint32_t tag=99; REQUIRE(!nya_train_device_read(d,status,0,&tag,4) && !tag);
+        for (size_t b=0;b<3;++b) {
+            size_t count=n*(b<2?cols[b]:width); const float *reference=b<2?expected[b]:nya_train_parameter_gradient(px);
+            REQUIRE(!nya_train_device_read(d,b<2?by[b]:dx,0,actual,count*4));
+            for (size_t j=0;j<count;++j) {
+                double error=fabs((double)actual[j]-reference[j])/(1+fabs(reference[j]));
+                if (!isfinite(actual[j]) || error>1e-5) fprintf(stderr,"QK component=%zu index=%zu CPU=%.9g GPU=%.9g error=%.9g\n",b,j,(double)reference[j],(double)actual[j],error);
+                REQUIRE(isfinite(actual[j]) && error<=1e-5);
+                if (error>maximum[b]) maximum[b]=error;
+            }
+        }
+    }
+    nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
+    printf("{\"component\":\"frozen-qk-rope\",\"tokens\":%zu,\"inputs\":%zu,\"heads\":[%zu,%zu],\"dimension\":%zu,\"types\":[%u,%u],\"microbatches\":2,\"max_scaled_errors\":[%.9g,%.9g,%.9g],\"tolerance\":1e-5,\"peak_bytes\":%zu,\"live_bytes\":%zu,\"uploads\":%llu,\"downloads\":%llu,\"timing_accepted\":false,\"ms\":[",n,width,heads[0],heads[1],dim,weights[0]->type,weights[1]->type,maximum[0],maximum[1],maximum[2],stats.peak_bytes,stats.used_bytes,(unsigned long long)stats.uploads,(unsigned long long)stats.downloads);
+    for (size_t k=0;k<5;++k) printf("%s%.9f",k?",":"",times[k]);
+    printf("]}\n");
+    for (size_t b=0;b<2;++b) { free(seed[b]); free(expected[b]); }
+    free(x); free(freq); free(actual); nya_train_parameter_free(px); nya_train_device_free(d); return 0;
+}
 int main(int argc,char **argv)
 {
     nya_train_device *d=NULL;
@@ -250,6 +344,9 @@ int main(int argc,char **argv)
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
+    if (!strcmp(argv[2],"qkrope8") || !strcmp(argv[2],"qkrope64")) {
+        int result=qk_rope(m,!strcmp(argv[2],"qkrope8")?8u:64u); nya_llm_free(m); return result;
+    }
     if (!strcmp(argv[2],"ffn8") || !strcmp(argv[2],"ffn64") || !strcmp(argv[2],"rmsffn8") || !strcmp(argv[2],"rmsffn64") ||
         !strcmp(argv[2],"embedffn8") || !strcmp(argv[2],"embedffn64")) {
         int embedded=!strncmp(argv[2],"embed",5), normalized=embedded || !strncmp(argv[2],"rms",3);

@@ -1,6 +1,7 @@
 # Runtime benchmark evidence
 
-**Training:** [September 29 resident embeddings and ordered matrix gradients](TRAINING_EMBEDDING_20260929.md),
+**Training:** [October 5 resident RoPE and large-angle CPU correction](TRAINING_ROPE_20261005.md),
+[September 29 resident embeddings and ordered matrix gradients](TRAINING_EMBEDDING_20260929.md),
 [September 29 resident RMSNorm](TRAINING_NORM_20260929.md),
 [September 29 resident activations and gated FFN](TRAINING_ELEMENTWISE_20260929.md),
 [September 28 resident finite checks](TRAINING_FINITE_20260928.md),

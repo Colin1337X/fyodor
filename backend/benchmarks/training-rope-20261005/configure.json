@@ -1,0 +1,123 @@
+[
+  {
+    "command": [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "-S",
+      "backend",
+      "-B",
+      "build-cpu",
+      "-G",
+      "MinGW Makefiles",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "-DCMAKE_MAKE_PROGRAM=C:/Users/Colin/fyodor/.tools/w64devkit/bin/mingw32-make.exe",
+      "-DNYA_C_STANDARD=17",
+      "-DNYA_ENABLE_CUDA=OFF",
+      "-DNYA_ENABLE_ONNXRUNTIME=OFF",
+      "-DNYA_ENABLE_SANITIZERS=OFF",
+      "-DNYA_ENABLE_VULKAN=OFF",
+      "-DNYA_WARNINGS_AS_ERRORS=ON"
+    ],
+    "exit_code": 0,
+    "log": "build-cpu-configure-1.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "-S",
+      "backend",
+      "-B",
+      "build-cuda",
+      "-G",
+      "MinGW Makefiles",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "-DCMAKE_MAKE_PROGRAM=C:/Users/Colin/fyodor/.tools/w64devkit/bin/mingw32-make.exe",
+      "-DNYA_CUDA_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_cudart-windows-x86_64-13.1.80-archive/include",
+      "-DNYA_CUDA_NVRTC_LIBRARY=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/bin/x64/nvrtc64_130_0.dll",
+      "-DNYA_C_STANDARD=17",
+      "-DNYA_ENABLE_CUDA=ON",
+      "-DNYA_ENABLE_ONNXRUNTIME=OFF",
+      "-DNYA_ENABLE_SANITIZERS=OFF",
+      "-DNYA_ENABLE_VULKAN=ON",
+      "-DNYA_NVRTC_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/include",
+      "-DNYA_WARNINGS_AS_ERRORS=ON",
+      "-DVulkan_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/vulkan-headers/Vulkan-Headers-vulkan-sdk-1.4.357.0/include",
+      "-DVulkan_LIBRARY=C:/Windows/System32/vulkan-1.dll"
+    ],
+    "exit_code": 0,
+    "log": "build-cuda-configure.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "-S",
+      "backend",
+      "-B",
+      "build-cuda-c23",
+      "-G",
+      "MinGW Makefiles",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "-DCMAKE_MAKE_PROGRAM=C:/Users/Colin/fyodor/.tools/w64devkit/bin/mingw32-make.exe",
+      "-DNYA_CUDA_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_cudart-windows-x86_64-13.1.80-archive/include",
+      "-DNYA_CUDA_NVRTC_LIBRARY=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/bin/x64/nvrtc64_130_0.dll",
+      "-DNYA_C_STANDARD=23",
+      "-DNYA_ENABLE_CUDA=ON",
+      "-DNYA_ENABLE_ONNXRUNTIME=OFF",
+      "-DNYA_ENABLE_SANITIZERS=OFF",
+      "-DNYA_ENABLE_VULKAN=ON",
+      "-DNYA_NVRTC_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/include",
+      "-DNYA_WARNINGS_AS_ERRORS=ON",
+      "-DVulkan_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/vulkan-headers/Vulkan-Headers-vulkan-sdk-1.4.357.0/include",
+      "-DVulkan_LIBRARY=C:/Windows/System32/vulkan-1.dll"
+    ],
+    "exit_code": 0,
+    "log": "build-cuda-c23-configure.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "-S",
+      "backend",
+      "-B",
+      "build-ort",
+      "-G",
+      "MinGW Makefiles",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "-DCMAKE_MAKE_PROGRAM=C:/Users/Colin/fyodor/.tools/w64devkit/bin/mingw32-make.exe",
+      "-DNYA_C_STANDARD=23",
+      "-DNYA_ENABLE_CUDA=OFF",
+      "-DNYA_ENABLE_ONNXRUNTIME=ON",
+      "-DNYA_ENABLE_SANITIZERS=OFF",
+      "-DNYA_ENABLE_VULKAN=OFF",
+      "-DNYA_ONNXRUNTIME_ROOT=C:/Users/Colin/fyodor/build/_deps/nya_onnxruntime_sdk-src",
+      "-DNYA_WARNINGS_AS_ERRORS=ON"
+    ],
+    "exit_code": 0,
+    "log": "build-ort-configure.log"
+  },
+  {
+    "command": [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+      "-S",
+      "backend",
+      "-B",
+      "build-sanitize",
+      "-G",
+      "MinGW Makefiles",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/llvm-mingw/llvm-mingw-20260826-ucrt-x86_64/bin/clang.exe",
+      "-DCMAKE_MAKE_PROGRAM=mingw32-make",
+      "-DNYA_C_STANDARD=17",
+      "-DNYA_ENABLE_CUDA=OFF",
+      "-DNYA_ENABLE_ONNXRUNTIME=OFF",
+      "-DNYA_ENABLE_SANITIZERS=ON",
+      "-DNYA_ENABLE_VULKAN=OFF",
+      "-DNYA_WARNINGS_AS_ERRORS=ON"
+    ],
+    "exit_code": 0,
+    "log": "build-sanitize-configure.log"
+  }
+]

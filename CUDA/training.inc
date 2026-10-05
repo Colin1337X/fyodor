@@ -13,7 +13,7 @@ typedef struct nya_cuda_train_buffer {
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back;
+    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -120,6 +120,7 @@ static void *nya_ct_create(size_t capacity)
         t->cuda->function_get(&t->rms_dw,t->cuda->module,"nya_train_rms_dw") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->embedding,t->cuda->module,"nya_train_embedding") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->embedding_back,t->cuda->module,"nya_train_embedding_back") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->rope,t->cuda->module,"nya_train_rope") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
     t->stats.capacity_bytes = capacity;
@@ -321,6 +322,27 @@ static nya_cuda_train_buffer *nya_ct_view(nya_cuda_train *t, nya_train_view view
     *count = view.rows*view.columns;
     return *count <= buffer->bytes/4 ? buffer : NULL;
 }
+static int nya_ct_rope(void *context, nya_train_buffer destination, nya_train_view source,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half, int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    size_t count=0;
+    nya_cuda_train_buffer *src=nya_ct_view(t,source,&count), *dst=nya_ct_find(t,destination);
+    nya_cuda_train_buffer *freq=nya_ct_find(t,frequencies);
+    if (!src || !dst || !freq || !heads || !dimension || dimension%2 ||
+        heads>SIZE_MAX/dimension || heads*dimension!=source.columns ||
+        dimension/2>freq->bytes/4 || count>dst->bytes/4 ||
+        destination==source.buffer || destination==frequencies ||
+        (split_half!=0 && split_half!=1) || (backward!=0 && backward!=1))
+        return nya_ct_error(t,"invalid training RoPE descriptor",0);
+    size_t pairs=count/2, blocks=pairs/256+(pairs%256!=0);
+    if (blocks>(size_t)t->cuda->grid_limit) return nya_ct_error(t,"training RoPE grid too large",0);
+    unsigned long long n=pairs, columns=source.columns, dim=dimension;
+    void *args[]={&src->memory,&freq->memory,&dst->memory,&n,&columns,&dim,&split_half,&backward};
+    if (nya_ct_enter(t)) return -1;
+    return nya_ct_leave(t,nya_ct_launch(t,t->rope,(unsigned)blocks,1,256,1,args));
+}
 static int nya_ct_binary(void *context, nya_train_buffer out_a, nya_train_buffer out_b,
     nya_train_view a, nya_train_view b, nya_train_buffer dy, unsigned operation, int backward)
 {
@@ -452,6 +474,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope};
     return &api;
 }

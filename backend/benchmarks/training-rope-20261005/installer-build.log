@@ -1,0 +1,23 @@
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.0
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+
+> fyodor-desktop@0.3.0 desktop:build
+> npm run prepare:sidecar && tauri build --bundles nsis
+
+
+> fyodor-desktop@0.3.0 prepare:sidecar
+> node scripts/prepare-sidecar.mjs
+
+Prepared fyodor-backend from C:\Users\Colin\.codex\worktrees\resident-training\fyodor\build-cuda\fyodor-backend.exe
+Prepared fyodor-train from C:\Users\Colin\.codex\worktrees\resident-training\fyodor\build-cpu\fyodor-train.exe
+Prepared optional cuBLAS and cuBLASLt (native CUDA remains available without them).
+file:///C:/Users/Colin/.codex/worktrees/resident-training/fyodor/frontend/scripts/prepare-sidecar.mjs:41
+  if(!await exists(license))throw new Error('Optional CUTLASS package is missing CUTLASS-LICENSE.txt; reconfigure its standalone CMake build.');
+                                  ^
+
+Error: Optional CUTLASS package is missing CUTLASS-LICENSE.txt; reconfigure its standalone CMake build.
+    at file:///C:/Users/Colin/.codex/worktrees/resident-training/fyodor/frontend/scripts/prepare-sidecar.mjs:41:35
+
+Node.js v25.5.0

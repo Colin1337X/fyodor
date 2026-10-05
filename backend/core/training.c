@@ -10,6 +10,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* MinGW's static trigonometric routines can lose argument-reduction accuracy
+   for huge finite angles. The already-linked Windows CRT imports retain it.
+   Keep the ordinary-angle path and non-MinGW platforms on standard C math. */
+#if defined(__MINGW32__)
+extern double (*__imp_cos)(double);
+extern double (*__imp_sin)(double);
+#endif
+static void tr_rope_trig(double angle, double *co, double *si)
+{
+#if defined(__MINGW32__)
+    if (fabs(angle) >= 0x1p16) { *co=__imp_cos(angle); *si=__imp_sin(angle); return; }
+#endif
+    *co=cos(angle); *si=sin(angle);
+}
+
 enum nya_train_op { TR_INPUT, TR_LEAF, TR_ADD, TR_MUL, TR_SCALE, TR_LINEAR,
     TR_GELU, TR_SILU, TR_RMS, TR_EMBED, TR_LOGP, TR_DPO, TR_RESHAPE, TR_ROPE, TR_ATTENTION, TR_MAPPED_LINEAR,
     TR_SOFTCAP, TR_SLICE };
@@ -494,7 +509,8 @@ nya_train_tensor *nya_train_rope(nya_train_tensor *x, size_t heads, size_t dimen
     for (size_t n = 0; n < x->rows; ++n) for (size_t h = 0; h < heads; ++h) for (size_t j = 0; j < dimension / 2; ++j) {
         size_t i = n * x->columns + h * dimension + (split_half ? j : 2 * j);
         size_t k = i + (split_half ? dimension / 2 : 1);
-        double angle = (double)n * frequencies[j], co = cos(angle), si = sin(angle);
+        double angle = (double)n * frequencies[j], co, si;
+        tr_rope_trig(angle,&co,&si);
         t->data[i] = (float)((double)x->data[i] * co - (double)x->data[k] * si);
         t->data[k] = (float)((double)x->data[k] * co + (double)x->data[i] * si);
     }
@@ -732,7 +748,8 @@ int nya_train_backward(nya_train_tensor *loss)
             if (a->gradient != NULL) for (size_t n = 0; n < a->rows; ++n) for (size_t h = 0; h < heads; ++h)
                 for (size_t j = 0; j < dimension / 2; ++j) {
                     size_t i = n * a->columns + h * dimension + (split ? j : 2 * j), k = i + (split ? dimension / 2 : 1);
-                    double angle = (double)n * t->saved[j], co = cos(angle), si = sin(angle);
+                    double angle = (double)n * t->saved[j], co, si;
+                    tr_rope_trig(angle,&co,&si);
                     a->gradient[i] += (float)((double)t->gradient[i] * co + (double)t->gradient[k] * si);
                     a->gradient[k] += (float)((double)t->gradient[k] * co - (double)t->gradient[i] * si);
                 }
