@@ -545,6 +545,107 @@ static int loss_head(const nya_llm_context *model,size_t n,int paired)
     for (size_t b=0;b<branches;++b) { free(x[b]); free(expected[b]); nya_train_parameter_free(parameters[b]); }
     free(actual); free(labels); free(mask); nya_train_device_free(d); return 0;
 }
+/* Real frozen vocabulary weights with trainable rank-four LoRA matrices.
+   CPU and GPU run the same 32-step trajectory; no full-model claim is made. */
+static int optimizer_head(const nya_llm_context *model,size_t n)
+{
+    nya_train_device *d=NULL;
+    const nya_llm_tensor *w=model->output?model->output:model->token_embedding;
+    REQUIRE(w && w->dimensions[0] && w->dimensions[1]);
+    size_t width=(size_t)w->dimensions[0],vocab=(size_t)w->dimensions[1],rank=4;
+    REQUIRE(n && width<=SIZE_MAX/4/n && vocab<=UINT32_MAX && vocab<=SIZE_MAX/4/n && width<=SIZE_MAX/16 && vocab<=SIZE_MAX/16);
+    size_t sizes[]={rank*width,vocab*rank},logits_count=n*vocab;
+    float *input=malloc(n*width*4),*initial=malloc(sizes[0]*4),*base=malloc(logits_count*4),*actual=malloc((sizes[0]>sizes[1]?sizes[0]:sizes[1])*4);
+    uint32_t *labels=malloc(n*4); unsigned char *mask=malloc(n); REQUIRE(input && initial && base && actual && labels && mask);
+    for (size_t i=0;i<n*width;++i) input[i]=(float)((int)(i%71)-35)/64;
+    for (size_t i=0;i<sizes[0];++i) initial[i]=(float)((int)(i%31)-15)/256;
+    for (size_t i=0;i<n;++i) { mask[i]=(unsigned char)(i%3?1:0); labels[i]=mask[i]?(uint32_t)(i*937%vocab):UINT32_MAX; }
+    nya_train_parameter *parameters[]={nya_train_parameter_create(rank,width,initial),nya_train_parameter_create(vocab,rank,NULL)};
+    nya_train_executor *executor=nya_train_executor_create(6); REQUIRE(parameters[0] && parameters[1] && executor);
+    nya_train_graph *g=nya_train_graph_create_for_evaluation(128*1024*1024,executor); REQUIRE(g);
+    nya_train_tensor *frozen=nya_train_linear_mapped(nya_train_input(g,n,width,input),w); REQUIRE(frozen);
+    memcpy(base,nya_train_data(frozen),logits_count*4); nya_train_graph_free(g);
+    d=nya_train_device_create("cuda",128*1024*1024); REQUIRE(d);
+    nya_train_adamw_tensor tensors[2];
+    for (size_t p=0;p<2;++p) {
+        tensors[p]=(nya_train_adamw_tensor){nya_train_device_alloc(d,sizes[p]*4),nya_train_device_alloc(d,sizes[p]*4),
+            nya_train_device_alloc(d,sizes[p]*4),nya_train_device_alloc(d,sizes[p]*4),sizes[p]};
+        REQUIRE(tensors[p].values && tensors[p].gradient && tensors[p].moment && tensors[p].variance);
+    }
+    REQUIRE(!nya_train_device_write(d,tensors[0].values,0,initial,sizes[0]*4));
+    nya_train_optimizer_plan plan=nya_train_device_adamw_plan(d,tensors,2); REQUIRE(plan);
+    nya_train_buffer step=nya_train_device_alloc(d,8),status=nya_train_device_alloc(d,4),norm=nya_train_device_alloc(d,8);
+    nya_train_buffer bw=nya_train_device_alloc(d,w->data_size),x=nya_train_device_alloc(d,n*width*4),bl=nya_train_device_alloc(d,n*4),bm=nya_train_device_alloc(d,n);
+    nya_train_buffer bbase=nya_train_device_alloc(d,logits_count*4),low=nya_train_device_alloc(d,n*rank*4),branch=nya_train_device_alloc(d,logits_count*4);
+    nya_train_buffer scaled=nya_train_device_alloc(d,logits_count*4),logits=nya_train_device_alloc(d,logits_count*4),dl=nya_train_device_alloc(d,logits_count*4);
+    nya_train_buffer db=nya_train_device_alloc(d,logits_count*4),da=nya_train_device_alloc(d,n*rank*4);
+    nya_train_buffer loss=nya_train_device_alloc(d,4),loss_state=nya_train_device_alloc(d,nya_train_loss_state_bytes(n)),seed=nya_train_device_alloc(d,4);
+    REQUIRE(step && status && norm && bw && x && bl && bm && bbase && low && branch && scaled && logits && dl && db && da && loss && loss_state && seed);
+    float one=1;
+    REQUIRE(!nya_train_device_write(d,bw,0,w->data,w->data_size) && !nya_train_device_write(d,x,0,input,n*width*4) &&
+        !nya_train_device_write(d,bl,0,labels,n*4) && !nya_train_device_write(d,bm,0,mask,n) && !nya_train_device_write(d,seed,0,&one,4));
+    REQUIRE(!nya_train_device_linear(d,bbase,bw,w->type,vocab,width,x,n));
+    nya_train_adamw optimizer; nya_train_adamw_defaults(&optimizer); optimizer.learning_rate=0.04f; optimizer.weight_decay=0.01f;
+    double maximum[3]={0},times[32]; float losses[32],cpu_losses[32];
+    for (size_t iteration=0;iteration<32;++iteration) {
+        for (size_t p=0;p<2;++p) nya_train_zero_grad(parameters[p]);
+        g=nya_train_graph_create_with_executor(256*1024*1024,executor); REQUIRE(g);
+        nya_train_tensor *a=nya_train_linear(nya_train_input(g,n,width,input),nya_train_leaf(g,parameters[0]));
+        nya_train_tensor *b=nya_train_linear(a,nya_train_leaf(g,parameters[1]));
+        nya_train_tensor *output=nya_train_add(nya_train_input(g,n,vocab,base),nya_train_scale(b,0.5f));
+        nya_train_tensor *objective=nya_train_cross_entropy(output,labels,mask,n); REQUIRE(objective);
+        cpu_losses[iteration]=*nya_train_data(objective); REQUIRE(!nya_train_backward(objective)); nya_train_graph_free(g);
+        optimizer.learning_rate*=0.98f;
+        char error[256]; REQUIRE(!nya_train_adamw_step(&optimizer,parameters,2,error,sizeof(error)));
+        REQUIRE(!nya_train_device_finish(d));
+        nya_train_device_stats before,after; nya_train_device_get_stats(d,&before);
+        double start=tr_seconds();
+        for (size_t p=0;p<2;++p) REQUIRE(!nya_train_device_zero(d,tensors[p].gradient));
+        REQUIRE(!nya_train_device_zero(d,dl) && !nya_train_device_zero(d,da));
+        REQUIRE(!nya_train_device_linear(d,low,tensors[0].values,0,rank,width,x,n));
+        REQUIRE(!nya_train_device_linear(d,branch,tensors[1].values,0,vocab,rank,low,n));
+        REQUIRE(!nya_train_device_unary(d,scaled,branch,logits_count,NYA_TRAIN_UNARY_SCALE,0.5));
+        REQUIRE(!nya_train_device_binary(d,logits,(nya_train_view){bbase,n,vocab},(nya_train_view){scaled,n,vocab},NYA_TRAIN_BINARY_ADD));
+        REQUIRE(!nya_train_device_loss(d,loss,loss_state,(nya_train_view){logits,n,vocab},bl,bm,NYA_TRAIN_LOSS_CE));
+        REQUIRE(!nya_train_device_check_finite(d,status,loss,1,11));
+        REQUIRE(!nya_train_device_loss_backward(d,dl,loss_state,(nya_train_view){logits,n,vocab},bl,bm,seed));
+        REQUIRE(!nya_train_device_unary(d,db,dl,logits_count,NYA_TRAIN_UNARY_SCALE,0.5));
+        REQUIRE(!nya_train_device_linear_dw(d,tensors[1].gradient,low,db,vocab,rank,n));
+        REQUIRE(!nya_train_device_linear_dx(d,da,tensors[1].values,0,vocab,rank,db,n));
+        REQUIRE(!nya_train_device_linear_dw(d,tensors[0].gradient,x,da,rank,width,n));
+        nya_train_adamw_config config={optimizer.learning_rate,optimizer.beta1,optimizer.beta2,optimizer.epsilon,optimizer.weight_decay,optimizer.max_grad_norm};
+        REQUIRE(!nya_train_device_adamw(d,plan,config,step,status,norm,17) && !nya_train_device_finish(d));
+        times[iteration]=(tr_seconds()-start)*1000;
+        nya_train_device_get_stats(d,&after);
+        REQUIRE(after.kernel_launches==before.kernel_launches+21 && after.used_bytes==before.used_bytes && after.uploads==before.uploads &&
+            after.downloads==before.downloads && after.synchronizations==before.synchronizations+1);
+        uint64_t actual_step=0; uint32_t tag=99;
+        REQUIRE(!nya_train_device_read(d,step,0,&actual_step,8) && actual_step==iteration+1 && !nya_train_device_read(d,status,0,&tag,4) && !tag);
+        REQUIRE(!nya_train_device_read(d,loss,0,&losses[iteration],4));
+        double loss_error=fabs((double)losses[iteration]-cpu_losses[iteration])/(1+fabs(cpu_losses[iteration]));
+        REQUIRE(isfinite(losses[iteration]) && loss_error<=1e-5); if (loss_error>maximum[0]) maximum[0]=loss_error;
+        for (size_t p=0;p<2;++p) for (size_t grad=0;grad<2;++grad) {
+            REQUIRE(!nya_train_device_read(d,grad?tensors[p].gradient:tensors[p].values,0,actual,sizes[p]*4));
+            const float *reference=grad?nya_train_parameter_gradient(parameters[p]):nya_train_parameter_data(parameters[p]);
+            for (size_t i=0;i<sizes[p];++i) {
+                double delta=fabs((double)actual[i]-reference[i])/(1+fabs(reference[i]));
+                if (!isfinite(actual[i]) || delta>1e-5) fprintf(stderr,"iteration=%zu parameter=%zu grad=%zu index=%zu CPU=%.9g GPU=%.9g error=%.9g\n",iteration,p,grad,i,(double)reference[i],(double)actual[i],delta);
+                REQUIRE(isfinite(actual[i]) && delta<=1e-5); if (delta>maximum[1+grad]) maximum[1+grad]=delta;
+            }
+        }
+    }
+    REQUIRE(losses[31]<losses[0]*0.9f);
+    nya_train_device_stats stats; nya_train_device_get_stats(d,&stats);
+    printf("{\"component\":\"real-vocabulary-lora-adamw\",\"tokens\":%zu,\"width\":%zu,\"vocabulary\":%zu,\"rank\":%zu,\"steps\":32,\"max_scaled_loss_error\":%.9g,\"max_scaled_parameter_error\":%.9g,\"max_scaled_gradient_error\":%.9g,\"tolerance\":1e-5,\"optimizer_plan_bytes\":%zu,\"peak_bytes\":%zu,\"live_bytes\":%zu,\"uploads\":%llu,\"downloads\":%llu,\"timing_accepted\":false,\"losses\":[",n,width,vocab,rank,maximum[0],maximum[1],maximum[2],nya_train_adamw_plan_bytes(tensors,2),stats.peak_bytes,stats.used_bytes,(unsigned long long)stats.uploads,(unsigned long long)stats.downloads);
+    for (size_t i=0;i<32;++i) printf("%s%.9g",i?",":"",(double)losses[i]);
+    printf("],\"cpu_losses\":[");
+    for (size_t i=0;i<32;++i) printf("%s%.9g",i?",":"",(double)cpu_losses[i]);
+    printf("],\"step_ms\":[");
+    for (size_t i=0;i<32;++i) printf("%s%.9f",i?",":"",times[i]);
+    printf("]}\n");
+    free(input); free(initial); free(base); free(actual); free(labels); free(mask);
+    nya_train_parameter_free(parameters[0]); nya_train_parameter_free(parameters[1]); nya_train_executor_free(executor); nya_train_device_free(d); return 0;
+}
 int main(int argc,char **argv)
 {
     nya_train_device *d=NULL;
@@ -554,6 +655,9 @@ int main(int argc,char **argv)
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];
     if (nya_llm_load(argv[1],(uint64_t)size,&m,error,sizeof(error))) { fprintf(stderr,"%s\n",error); return 1; }
+    if (!strcmp(argv[2],"adamw8") || !strcmp(argv[2],"adamw64")) {
+        int result=optimizer_head(m,!strcmp(argv[2],"adamw8")?8u:64u); nya_llm_free(m); return result;
+    }
     if (!strcmp(argv[2],"loss8") || !strcmp(argv[2],"loss64") || !strcmp(argv[2],"dpo8") || !strcmp(argv[2],"dpo64")) {
         int result=loss_head(m,(!strcmp(argv[2],"loss8") || !strcmp(argv[2],"dpo8"))?8u:64u,!strncmp(argv[2],"dpo",3)); nya_llm_free(m); return result;
     }

@@ -9,12 +9,15 @@ typedef struct nya_cuda_train_buffer {
     CUdeviceptr memory;
     size_t bytes;
     size_t index_count, index_rows, index_groups;
+    size_t optimizer_count, optimizer_elements, optimizer_chunks;
+    nya_train_buffer *optimizer_inputs;
 } nya_cuda_train_buffer;
 typedef struct nya_cuda_train {
     nya_cuda_context *cuda;
     CUdeviceptr arena;
-    CUfunction zero, dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope, attention, attention_prepare, attention_dq, attention_dkv;
+    CUfunction zero, forward[31], dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope, attention, attention_prepare, attention_dq, attention_dkv;
     CUfunction loss_rows, loss_reduce, loss_back, dpo, dpo_back;
+    CUfunction adamw_norm, adamw_prepare, adamw_stage, adamw_commit, adamw_finish;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -73,7 +76,7 @@ static int nya_ct_launch(nya_cuda_train *t, CUfunction f, unsigned gx, unsigned 
 static nya_cuda_train_buffer *nya_ct_find(nya_cuda_train *t, nya_train_buffer id)
 {
     if (id) for (size_t i = 0; i < t->stats.buffers; ++i)
-        if (t->buffers[i].id == id && !t->buffers[i].index_count) return &t->buffers[i];
+        if (t->buffers[i].id == id && !t->buffers[i].index_count && !t->buffers[i].optimizer_count) return &t->buffers[i];
     return NULL;
 }
 static void nya_ct_destroy(void *context)
@@ -87,6 +90,7 @@ static void nya_ct_destroy(void *context)
         t->cuda->pop(&previous);
     }
     nya_cuda_free(t->cuda);
+    for (size_t i=0;i<t->stats.buffers;++i) free(t->buffers[i].optimizer_inputs);
     free(t);
 }
 static void *nya_ct_create(size_t capacity)
@@ -111,8 +115,15 @@ static void *nya_ct_create(size_t capacity)
         char name[48];
         snprintf(name,sizeof(name),"nya_train_dx_%u",types[i]);
         if (t->cuda->function_get(&t->dx[types[i]],t->cuda->module,name) != CUDA_SUCCESS) goto done;
+        snprintf(name,sizeof(name),"nya_train_forward_%u",types[i]);
+        if (t->cuda->function_get(&t->forward[types[i]],t->cuda->module,name) != CUDA_SUCCESS) goto done;
     }
     if (t->cuda->function_get(&t->zero,t->cuda->module,"nya_train_zero") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->adamw_norm,t->cuda->module,"nya_train_adamw_norm") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->adamw_prepare,t->cuda->module,"nya_train_adamw_prepare") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->adamw_stage,t->cuda->module,"nya_train_adamw_stage") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->adamw_commit,t->cuda->module,"nya_train_adamw_commit") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->adamw_finish,t->cuda->module,"nya_train_adamw_finish") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->loss_rows,t->cuda->module,"nya_train_loss_rows") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->loss_reduce,t->cuda->module,"nya_train_loss_reduce") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->loss_back,t->cuda->module,"nya_train_loss_back") != CUDA_SUCCESS ||
@@ -196,9 +207,10 @@ static int nya_ct_scratch_end(void *context, nya_train_scope scope)
     nya_cuda_train *t = context;
     if (t->stats.failed) return -1;
     if (!scope || scope != t->scope) return nya_ct_error(t,"invalid training scratch scope",0);
-    /* No memory is freed and no device work is submitted here. cuLaunchKernel
+    /* No device memory is freed and no device work is submitted here. cuLaunchKernel
        already copied queued argument values; every later arena use (including
        allocation zeroing) follows prior consumers on this device's one stream. */
+    for (size_t i=t->scope_buffers;i<t->stats.buffers;++i) free(t->buffers[i].optimizer_inputs);
     t->stats.used_bytes = t->scope_bytes;
     t->stats.buffers = t->scope_buffers;
     t->scope = 0;
@@ -562,6 +574,104 @@ static int nya_ct_dpo(void *context, nya_train_buffer out_a, nya_train_buffer ou
     }
     return nya_ct_leave(t,result);
 }
+static nya_train_optimizer_plan nya_ct_adamw_plan(void *context, const nya_train_adamw_tensor *tensors, size_t count)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return 0;
+    if (!tensors || !count || count>NYA_TRAIN_BUFFERS/4) {
+        nya_ct_error(t,"invalid AdamW tensor list",0); return 0;
+    }
+    size_t bytes=nya_train_adamw_plan_bytes(tensors,count),total=0,chunks=0;
+    unsigned char seen[NYA_TRAIN_BUFFERS]={0};
+    if (!bytes) { nya_ct_error(t,"AdamW plan size overflow",0); return 0; }
+    for (size_t i=0;i<count;++i) {
+        const nya_train_adamw_tensor *p=&tensors[i];
+        nya_train_buffer ids[]={p->values,p->gradient,p->moment,p->variance};
+        for (size_t j=0;j<4;++j) {
+            nya_cuda_train_buffer *b=nya_ct_find(t,ids[j]);
+            if (!b || p->count>b->bytes/4 || seen[b-t->buffers]) {
+                nya_ct_error(t,"invalid or aliased AdamW tensor storage",0); return 0;
+            }
+            seen[b-t->buffers]=1;
+        }
+        total+=p->count; chunks+=p->count/2048+(p->count%2048!=0);
+    }
+    if (chunks>(size_t)t->cuda->grid_limit) { nya_ct_error(t,"AdamW grid too large",0); return 0; }
+    size_t metadata_bytes=count*48+chunks*16;
+    uint64_t *metadata=malloc(metadata_bytes);
+    nya_train_buffer *inputs=malloc(count*4*sizeof(*inputs));
+    if (!metadata || !inputs) {
+        free(metadata); free(inputs); nya_ct_error(t,"AdamW host metadata allocation failed",0); return 0;
+    }
+    size_t offset=0,chunk=0;
+    for (size_t i=0;i<count;++i) {
+        const nya_train_adamw_tensor *p=&tensors[i];
+        nya_train_buffer ids[]={p->values,p->gradient,p->moment,p->variance};
+        for (size_t j=0;j<4;++j) {
+            metadata[i*6+j]=(uint64_t)nya_ct_find(t,ids[j])->memory;
+            inputs[i*4+j]=ids[j];
+        }
+        metadata[i*6+4]=p->count; metadata[i*6+5]=offset; offset+=p->count;
+        for (size_t start=0;start<p->count;) {
+            metadata[count*6+chunk*2]=i; metadata[count*6+chunk*2+1]=start; ++chunk;
+            if (p->count-start<=2048) break;
+            start+=2048;
+        }
+    }
+    nya_train_buffer id=nya_ct_alloc(t,bytes);
+    if (!id || nya_ct_transfer(t,id,0,metadata,metadata_bytes,1)) {
+        free(metadata); free(inputs); return 0;
+    }
+    free(metadata);
+    nya_cuda_train_buffer *b=nya_ct_find(t,id);
+    b->optimizer_count=count; b->optimizer_elements=total; b->optimizer_chunks=chunks; b->optimizer_inputs=inputs;
+    return id;
+}
+static int nya_ct_adamw(void *context, nya_train_optimizer_plan plan, nya_train_adamw_config config,
+    nya_train_buffer step, nya_train_buffer status, nya_train_buffer norm, uint32_t tag)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    nya_cuda_train_buffer *p=NULL,*s=nya_ct_find(t,step),*f=nya_ct_find(t,status),*n=nya_ct_find(t,norm);
+    if (plan) for (size_t i=0;i<t->stats.buffers;++i)
+        if (t->buffers[i].id==plan && t->buffers[i].optimizer_count) { p=&t->buffers[i]; break; }
+    if (!p || !s || s->bytes<8 || !f || f->bytes<4 || !n || n->bytes<8 || !tag ||
+        step==status || step==norm || status==norm ||
+        !isfinite(config.learning_rate) || config.learning_rate<=0 ||
+        !isfinite(config.beta1) || config.beta1<0 || config.beta1>=1 ||
+        !isfinite(config.beta2) || config.beta2<0 || config.beta2>=1 ||
+        !isfinite(config.epsilon) || config.epsilon<=0 ||
+        !isfinite(config.weight_decay) || config.weight_decay<0 ||
+        !isfinite(config.max_grad_norm) || config.max_grad_norm<0)
+        return nya_ct_error(t,"invalid AdamW step descriptor or settings",0);
+    for (size_t i=0;i<p->optimizer_count*4;++i)
+        if (step==p->optimizer_inputs[i] || status==p->optimizer_inputs[i] || norm==p->optimizer_inputs[i])
+            return nya_ct_error(t,"AdamW step state aliases a parameter tensor",0);
+    unsigned long long count=p->optimizer_count,chunks=p->optimizer_chunks,total=p->optimizer_elements;
+    CUdeviceptr mapping=p->memory+count*48,partials=mapping+chunks*16;
+    CUdeviceptr scalar=partials+chunks*8,next=scalar+32;
+    double lr=config.learning_rate,b1=config.beta1,b2=config.beta2,eps=config.epsilon,wd=config.weight_decay,limit=config.max_grad_norm;
+    if (nya_ct_enter(t)) return -1;
+    void *norm_args[]={&p->memory,&mapping,&partials,&f->memory,&tag};
+    int result=nya_ct_launch(t,t->adamw_norm,(unsigned)chunks,1,256,1,norm_args);
+    if (!result) {
+        void *args[]={&partials,&scalar,&s->memory,&f->memory,&chunks,&limit,&b1,&b2,&tag};
+        result=nya_ct_launch(t,t->adamw_prepare,1,1,1,1,args);
+    }
+    if (!result) {
+        void *args[]={&p->memory,&mapping,&scalar,&next,&f->memory,&total,&lr,&b1,&b2,&eps,&wd,&tag};
+        result=nya_ct_launch(t,t->adamw_stage,(unsigned)chunks,1,256,1,args);
+    }
+    if (!result) {
+        void *args[]={&p->memory,&mapping,&next,&f->memory,&total};
+        result=nya_ct_launch(t,t->adamw_commit,(unsigned)chunks,1,256,1,args);
+    }
+    if (!result) {
+        void *args[]={&scalar,&s->memory,&f->memory,&n->memory};
+        result=nya_ct_launch(t,t->adamw_finish,1,1,1,1,args);
+    }
+    return nya_ct_leave(t,result);
+}
 static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_buffer a, nya_train_buffer b,
     unsigned type, size_t outputs, size_t inputs, size_t tokens, unsigned operation)
 {
@@ -591,7 +701,7 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
     size_t need_a = operation == 2 ? xbytes : wbytes, need_b = operation == 0 ? xbytes : ybytes;
     if (dst->bytes < need_dst || aa->bytes < need_a || bb->bytes < need_b)
         return nya_ct_error(t,"training matrix buffer too small",0);
-    unsigned tile = operation == 0 && tokens >= 32 && outputs >= 32 ? t->cuda->gemm_tile : 32;
+    unsigned tile = 32;
     size_t gx = ((operation == 0 ? outputs : inputs)+tile-1)/tile;
     size_t gy = ((operation == 2 ? outputs : tokens)+tile-1)/tile;
     if (gx > (size_t)t->cuda->grid_limit || gy > 65535)
@@ -599,7 +709,7 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
     unsigned o = (unsigned)outputs, i = (unsigned)inputs, n = (unsigned)tokens;
     unsigned long long columns = inputs, stride = row_bytes;
     void *args[] = {&aa->memory,&bb->memory,&dst->memory,&columns,&stride,&o,&n};
-    CUfunction kernel = operation == 0 ? (tile == 64 ? t->cuda->gemm_large[type] : t->cuda->gemm[type]) :
+    CUfunction kernel = operation == 0 ? t->forward[type] :
         operation == 1 ? t->dx[type] : t->dw;
     if (operation == 2) { args[3] = &i; args[4] = &o; args[5] = &n; }
     if (nya_ct_enter(t)) return -1;
@@ -611,6 +721,6 @@ const nya_train_device_interface *nya_cuda_training_device(void)
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo,nya_ct_adamw_plan,nya_ct_adamw};
     return &api;
 }

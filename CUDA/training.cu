@@ -1,6 +1,96 @@
 /* Native training derivatives. Each output has one writer, so accumulation is
    stream ordered without floating-point atomics. Packed frozen weights stay
    compressed for dX. These are original Fyodor kernels. */
+/* Original multi-tensor AdamW kernels. Immutable metadata maps each block to
+   a 2048-element parameter chunk, following the scheduling idea studied in
+   PyTorch MultiTensorApply. Unlike its in-place fused update, Fyodor stages
+   every proposed value/moment before a separate globally guarded commit. */
+extern "C" __global__ void nya_train_adamw_norm(const unsigned long long *tensors,
+    const unsigned long long *mapping, double *partials, unsigned *status, unsigned tag)
+{
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start;
+    if (count>2048) count=2048;
+    const float *gradient=reinterpret_cast<const float *>(tensor[1])+start;
+    unsigned lane=threadIdx.x;
+    __shared__ double sums[256];
+    double square=0; int bad=0;
+    for (unsigned long long i=lane;i<count;i+=256) {
+        double g=gradient[i];
+        if (!isfinite(g)) bad=1;
+        else square=__dadd_rn(square,__dmul_rn(g,g));
+    }
+    if (__syncthreads_or(bad) && !lane) atomicCAS(status,0u,tag);
+    sums[lane]=square; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) sums[lane]=__dadd_rn(sums[lane],sums[lane+stride]);
+        __syncthreads();
+    }
+    if (!lane) partials[blockIdx.x]=sums[0];
+}
+extern "C" __global__ void nya_train_adamw_prepare(const double *partials, double *scalar,
+    const unsigned long long *step, unsigned *status, unsigned long long chunks,
+    double limit, double beta1, double beta2, unsigned tag)
+{
+    if (*status) return;
+    if (*step==~0ull) { atomicCAS(status,0u,tag); return; }
+    double square=0;
+    for (unsigned long long i=0;i<chunks;++i) square=__dadd_rn(square,partials[i]);
+    double norm=sqrt(square),c1=1.0-pow(beta1,(double)(*step+1)),c2=1.0-pow(beta2,(double)(*step+1));
+    if (!isfinite(norm) || !isfinite(c1) || c1<=0 || !isfinite(c2) || c2<=0) { atomicCAS(status,0u,tag); return; }
+    scalar[0]=norm; scalar[1]=limit>0 && norm>limit ? limit/norm : 1.0;
+    scalar[2]=c1; scalar[3]=c2;
+}
+extern "C" __global__ void nya_train_adamw_stage(const unsigned long long *tensors,
+    const unsigned long long *mapping, const double *scalar, float *next, unsigned *status,
+    unsigned long long total, double lr, double beta1, double beta2, double epsilon, double decay, unsigned tag)
+{
+    /* Other blocks may publish failure concurrently. Use an atomic read and
+       block-uniform branch; partial scratch writes are never committed. */
+    __shared__ unsigned skip;
+    if (!threadIdx.x) skip=atomicAdd(status,0u);
+    __syncthreads();
+    if (skip) return;
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start,offset=tensor[5]+start;
+    if (count>2048) count=2048;
+    const float *w=reinterpret_cast<const float *>(tensor[0])+start;
+    const float *g=reinterpret_cast<const float *>(tensor[1])+start;
+    const float *m=reinterpret_cast<const float *>(tensor[2])+start;
+    const float *v=reinterpret_cast<const float *>(tensor[3])+start;
+    int bad=0;
+    for (unsigned long long i=threadIdx.x;i<count;i+=256) {
+        double grad=__dmul_rn((double)g[i],scalar[1]);
+        double moment=__dadd_rn(__dmul_rn(beta1,(double)m[i]),__dmul_rn(1.0-beta1,grad));
+        double variance=__dadd_rn(__dmul_rn(beta2,(double)v[i]),__dmul_rn(__dmul_rn(1.0-beta2,grad),grad));
+        double value=__dsub_rn(__dmul_rn((double)w[i],1.0-__dmul_rn(lr,decay)),
+            __dmul_rn(lr,moment/scalar[2])/(sqrt(variance/scalar[3])+epsilon));
+        double largest=(double)__int_as_float(0x7f7fffff);
+        if (!isfinite(moment) || !isfinite(variance) || !isfinite(value) ||
+            fabs(moment)>largest || variance<0 || variance>largest || fabs(value)>largest) bad=1;
+        else { next[offset+i]=(float)value; next[total+offset+i]=(float)moment; next[2*total+offset+i]=(float)variance; }
+    }
+    if (bad) atomicCAS(status,0u,tag);
+}
+extern "C" __global__ void nya_train_adamw_commit(const unsigned long long *tensors,
+    const unsigned long long *mapping, const float *next, const unsigned *status, unsigned long long total)
+{
+    if (*status) return;
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start,offset=tensor[5]+start;
+    if (count>2048) count=2048;
+    float *w=reinterpret_cast<float *>(tensor[0])+start;
+    float *m=reinterpret_cast<float *>(tensor[2])+start;
+    float *v=reinterpret_cast<float *>(tensor[3])+start;
+    for (unsigned long long i=threadIdx.x;i<count;i+=256) {
+        w[i]=next[offset+i]; m[i]=next[total+offset+i]; v[i]=next[2*total+offset+i];
+    }
+}
+extern "C" __global__ void nya_train_adamw_finish(const double *scalar, unsigned long long *step,
+    const unsigned *status, double *norm)
+{
+    if (!*status) { ++*step; *norm=scalar[0]; }
+}
 /* Stable hard-label log softmax: double reductions, O(rows) saved state.
    Inspired by the row/block reduction organization studied in PyTorch's
    SoftMax.cu; original implementation, preserving Fyodor masking/precision. */
@@ -253,6 +343,48 @@ extern "C" __global__ void nya_train_binary(const float *a, const float *b, cons
             out_b[i] = nya_train_binary_gradient(a,b,dy,out_b[i],i,ar,ac,br,bc,rows,cols,operation,1,0);
     }
 }
+/* Match CPU training forward semantics: dense F32 uses ordered double dots;
+   mapped lower-precision formats use ordered F32 products/additions, including
+   Q4_0's interleaved nibble order. Inference retains its separate faster kernels.
+   AdamW can amplify otherwise tiny forward differences near zero gradients. */
+__device__ __forceinline__ void nya_train_forward(const unsigned char *w, const float *x, float *y,
+    unsigned long long columns, unsigned long long row_bytes, unsigned rows, unsigned tokens, unsigned TYPE)
+{
+    __shared__ float weights[32][33],inputs[32][33];
+    unsigned lane=threadIdx.y*32+threadIdx.x,row=blockIdx.x*32+threadIdx.x,token=blockIdx.y*32+threadIdx.y;
+    double precise[4]={0}; float sum[4]={0};
+    for (unsigned long long base=0;base<columns;base+=32) {
+        #pragma unroll
+        for (unsigned slot=0;slot<4;++slot) {
+            unsigned r=lane/32+slot*8,k=lane%32,wr=blockIdx.x*32+r,xr=blockIdx.y*32+r;
+            weights[r][k]=wr<rows && base+k<columns?nya_weight(w+(unsigned long long)wr*row_bytes,base+k,TYPE):0;
+            inputs[r][k]=xr<tokens && base+k<columns?x[(unsigned long long)xr*columns+base+k]:0;
+        }
+        __syncthreads();
+        #pragma unroll
+        for (unsigned j=0;j<32;++j) {
+            unsigned k=TYPE==2?j/2+(j%2)*16:j;
+            if (row<rows && base+k<columns) {
+                float weight=weights[threadIdx.x][k];
+                #pragma unroll
+                for (unsigned slot=0;slot<4;++slot) if (token+slot*8<tokens) {
+                    float input=inputs[threadIdx.y+slot*8][k];
+                    if (TYPE==0) precise[slot]=__dadd_rn(precise[slot],__dmul_rn((double)weight,(double)input));
+                    else sum[slot]=__fadd_rn(sum[slot],__fmul_rn(weight,input));
+                }
+            }
+        }
+        __syncthreads();
+    }
+    if (row<rows) {
+        #pragma unroll
+        for (unsigned slot=0;slot<4;++slot) if (token+slot*8<tokens)
+            y[(unsigned long long)(token+slot*8)*rows+row]=TYPE==0?(float)precise[slot]:sum[slot];
+    }
+}
+#define NYA_TRAIN_FORWARD(TYPE) extern "C" __global__ void nya_train_forward_##TYPE(const unsigned char *w,const float *x,float *y,unsigned long long c,unsigned long long s,unsigned o,unsigned n) { nya_train_forward(w,x,y,c,s,o,n,TYPE); }
+NYA_TRAIN_FORWARD(0) NYA_TRAIN_FORWARD(1) NYA_TRAIN_FORWARD(2) NYA_TRAIN_FORWARD(8) NYA_TRAIN_FORWARD(12) NYA_TRAIN_FORWARD(14) NYA_TRAIN_FORWARD(30)
+#undef NYA_TRAIN_FORWARD
 __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float *dy, float *dx,
     unsigned long long inputs, unsigned long long row_bytes, unsigned outputs, unsigned tokens, unsigned TYPE)
 {

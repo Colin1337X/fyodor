@@ -36,6 +36,26 @@ int nya_train_device_zero(nya_train_device *d, nya_train_buffer b)
 { return d ? d->api->zero(d->context,b) : -1; }
 int nya_train_device_finish(nya_train_device *d)
 { return d ? d->api->finish(d->context) : -1; }
+size_t nya_train_adamw_plan_bytes(const nya_train_adamw_tensor *tensors, size_t count)
+{
+    if (!tensors || !count || count>(SIZE_MAX-32)/48) return 0;
+    size_t total=0,chunks=0;
+    for (size_t i=0;i<count;++i) {
+        size_t n=tensors[i].count,c=n/2048+(n%2048!=0);
+        if (!n || n>SIZE_MAX-total || c>SIZE_MAX-chunks) return 0;
+        total+=n; chunks+=c;
+    }
+    size_t overhead=count*48+32;
+    if (chunks>(SIZE_MAX-overhead)/24) return 0;
+    overhead+=chunks*24;
+    return total>(SIZE_MAX-overhead)/12 ? 0 : overhead+total*12;
+}
+nya_train_optimizer_plan nya_train_device_adamw_plan(nya_train_device *d,
+    const nya_train_adamw_tensor *tensors, size_t count)
+{ return d ? d->api->adamw_plan(d->context,tensors,count) : 0; }
+int nya_train_device_adamw(nya_train_device *d, nya_train_optimizer_plan plan, nya_train_adamw_config config,
+    nya_train_buffer step, nya_train_buffer status, nya_train_buffer norm, uint32_t tag)
+{ return d ? d->api->adamw(d->context,plan,config,step,status,norm,tag) : -1; }
 nya_train_indices nya_train_device_indices(nya_train_device *d, const uint32_t *ids, size_t count, size_t rows)
 {
     if (!d) return 0;

@@ -1,6 +1,7 @@
 #include "training_device.h"
 #include "llm_internal.h"
 #include "training.h"
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,6 +61,16 @@ static int matrix(nya_train_device *d, unsigned type, size_t o, size_t i, size_t
         double sum=0, mag=0;
         for (size_t k=0; k<i; ++k) { double p=(double)nya_llm_tensor_value(&tensor,r*i+k)*x[t*i+k]; sum+=p; mag+=fabs(p); }
         CHECK(close_sum(sum,mag,actual[t*o+r]));
+        float ordered=(float)sum;
+        if (type) {
+            ordered=0;
+            for (size_t j=0;j<i;++j) {
+                size_t k=type==2?(j/32)*32+(j%32)/2+(j%2)*16:j;
+                volatile float product=nya_llm_tensor_value(&tensor,r*i+k)*x[t*i+k];
+                ordered+=product;
+            }
+        }
+        CHECK(!memcmp(&ordered,&actual[t*o+r],4));
     }
     CHECK(!nya_train_device_read(d,bdx,0,actual,nx*4+4) && actual[nx] == guard);
     for (size_t t = 0; t < n; ++t) for (size_t k = 0; k < i; ++k) {
@@ -108,6 +119,19 @@ static int autograd(nya_train_device *d)
     for (size_t k=0; k<20; ++k) CHECK(fabsf(actual[k]-nya_train_parameter_gradient(pw)[k])<1e-6f);
     nya_train_graph_free(g); nya_train_parameter_free(px); nya_train_parameter_free(pw);
     return 0;
+}
+static int precise_forward(nya_train_device *d)
+{
+    const float weights[10]={FLT_MAX,-FLT_MAX,FLT_MAX,-FLT_MAX,1,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,0};
+    const float x[15]={2,2,2,2,2,1,1,1,1,1,-2,-2,-2,-2,-2};
+    nya_train_graph *g=nya_train_graph_create(65536); CHECK(g);
+    nya_train_tensor *y=nya_train_linear(nya_train_input(g,3,5,x),nya_train_input(g,2,5,weights)); CHECK(y);
+    nya_train_buffer bw=nya_train_device_alloc(d,sizeof(weights)),bx=nya_train_device_alloc(d,sizeof(x)),by=nya_train_device_alloc(d,24);
+    CHECK(bw && bx && by && !nya_train_device_write(d,bw,0,weights,sizeof(weights)) && !nya_train_device_write(d,bx,0,x,sizeof(x)));
+    CHECK(!nya_train_device_linear(d,by,bw,0,2,5,bx,3));
+    float actual[6]; CHECK(!nya_train_device_read(d,by,0,actual,sizeof(actual)) && !memcmp(actual,nya_train_data(y),sizeof(actual)));
+    CHECK(actual[0]==2 && actual[1]==0 && actual[2]==1 && actual[3]==0 && actual[4]==-2 && actual[5]==0);
+    nya_train_graph_free(g); return 0;
 }
 static int scratch_lifetime(void)
 {
@@ -351,7 +375,7 @@ int main(int argc, char **argv)
     }
     CHECK(!matrix(d,0,33,65,17) && !matrix(d,30,31,33,65));
     CHECK(!matrix(d,0,8192,33,3) && !matrix(d,0,5,33,8192) && !matrix(d,1,33,8192,3));
-    CHECK(!autograd(d) && !nya_train_device_finish(d));
+    CHECK(!autograd(d) && !precise_forward(d) && !nya_train_device_finish(d));
     nya_train_device_get_stats(d,&after);
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
         (unsigned long long)after.kernel_launches,(unsigned long long)after.uploads,(unsigned long long)after.downloads);

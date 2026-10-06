@@ -519,8 +519,8 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 The [resident CUDA matrix foundation](benchmarks/TRAINING_DEVICE_20260927.md)
 provides private persistent buffers and matrix forward/input-gradient/weight-gradient
 kernels. It is not yet connected to the training graph; the CLI and UI still use
-CPU training. Complete graph execution, transactional optimizer and recovery
-semantics remain under development.
+CPU training. Complete graph execution, checkpoint ownership and public GPU
+training integration remain under development.
 Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
 so inference initialization does not compile training derivatives. The native
 training context does not load optional inference matrix libraries.
@@ -553,8 +553,14 @@ The real TinyLlama attention branch includes Q/K/V and output projections plus
 RoPE. Resident [masked cross-entropy, logprob and DPO](benchmarks/TRAINING_LOSS_20261006.md)
 now keep loss values, saved normalization and gradients on the device. The real
 TinyLlama vocabulary projection matches CPU autograd for CE and paired DPO
-without intermediate readbacks. Public training graph and transactional optimizer
-integration remain unfinished.
+without intermediate readbacks.
+Resident [transactional AdamW](benchmarks/TRAINING_OPTIMIZER_20261006.md) now
+stages all parameter and moment updates before committing a valid step. It
+supports global gradient clipping and a resident integer step counter. Real
+TinyLlama vocabulary-head LoRA trajectories match CPU updates; this validation
+also corrected training forward matrices to preserve CPU accumulation rules.
+Full graph/checkpoint ownership and public GPU training integration remain
+unfinished.
 
 `fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 

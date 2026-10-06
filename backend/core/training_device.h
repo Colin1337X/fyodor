@@ -12,6 +12,7 @@ typedef struct nya_train_device nya_train_device;
 typedef uint64_t nya_train_buffer;
 typedef uint64_t nya_train_scope;
 typedef uint64_t nya_train_indices;
+typedef uint64_t nya_train_optimizer_plan;
 typedef struct nya_train_device_stats {
     size_t capacity_bytes, used_bytes, buffers, peak_bytes;
     uint64_t kernel_launches, uploads, downloads, upload_bytes, download_bytes, synchronizations;
@@ -28,6 +29,40 @@ int nya_train_device_write(nya_train_device *device, nya_train_buffer buffer, si
 int nya_train_device_read(nya_train_device *device, nya_train_buffer buffer, size_t offset, void *destination, size_t bytes);
 int nya_train_device_zero(nya_train_device *device, nya_train_buffer buffer);
 int nya_train_device_finish(nya_train_device *device);
+
+/* Resident F32 AdamW. A sealed plan borrows distinct ordinary buffers for each
+   parameter's values, gradients, first and second moments. Creation copies
+   descriptors, uploads immutable chunk metadata and reserves transactional
+   staging. Source descriptors may be discarded afterward. The plan follows
+   scratch lifetime and cannot be accessed through ordinary buffer APIs.
+   bytes returns the plan arena requirement (excluding arena alignment padding)
+   or zero for invalid sizes/overflow. No implicit work occurs in this helper. */
+typedef struct nya_train_adamw_tensor {
+    nya_train_buffer values, gradient, moment, variance;
+    size_t count;
+} nya_train_adamw_tensor;
+typedef struct nya_train_adamw_config {
+    float learning_rate, beta1, beta2, epsilon, weight_decay, max_grad_norm;
+} nya_train_adamw_config;
+size_t nya_train_adamw_plan_bytes(const nya_train_adamw_tensor *tensors, size_t count);
+nya_train_optimizer_plan nya_train_device_adamw_plan(nya_train_device *device,
+    const nya_train_adamw_tensor *tensors, size_t count);
+/* Queue a complete step with no allocation, copy or fence. step is a resident
+   U64 completed-step counter; status a resident U32 first-failure tag; norm a
+   resident double. All three must be distinct and cannot alias plan tensors.
+   Caller resets status explicitly before an accumulation group, and may queue
+   finite checks before AdamW. A nonzero status skips the entire update. Invalid
+   gradients/updates or exhausted step counter set tag (which must be nonzero).
+   On numeric failure all values/moments/variance/step/norm remain unchanged;
+   gradients always remain unchanged. Success commits all tensors, increments
+   step and publishes the global gradient norm. Observe status/step explicitly
+   at the step boundary before reporting success or exporting/checkpointing.
+   Device/launch failure poisons the context: partial persistent writes cannot
+   be recovered in place, and reads/finish are rejected. Restore a checkpoint in
+   a new context. Numerical failure is recoverable after correcting inputs. */
+int nya_train_device_adamw(nya_train_device *device, nya_train_optimizer_plan plan,
+    nya_train_adamw_config config, nya_train_buffer step, nya_train_buffer status,
+    nya_train_buffer norm, uint32_t tag);
 
 /* Bind validated host token IDs to immutable resident metadata. This explicit
    setup allocates arena storage and uploads once; it uses host sorting/staging
@@ -169,7 +204,9 @@ int nya_train_device_attention_backward(nya_train_device *device, nya_train_buff
 
 /* Row-major W[outputs,inputs], X[tokens,inputs], Y[tokens,outputs]. Storage
    type IDs are the existing Fyodor/GGUF IDs. Activations/gradients are F32.
-   Linear overwrites Y; gradient operations accumulate each F32-rounded product
+   Linear overwrites Y, using CPU training's ordered double accumulation for F32
+   weights and ordered F32 products/additions for packed weights (Q4_0 interleaves
+   low/high nibbles). Gradient operations accumulate each F32-rounded product
    in CPU reduction order into initialized dX/dW, without fused multiply-add.
    Outputs must not alias inputs. No implicit transfers or fences occur here. */
 int nya_train_device_linear(nya_train_device *device, nya_train_buffer y, nya_train_buffer w,
