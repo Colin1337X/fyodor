@@ -15,6 +15,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
 | Models | Registry and runtime capability display, load/unload, compute selection | Complete model card/evaluation/lineage UI over agreed native registry metadata. |
+| Evaluations | Saved test definitions/results, 1–4 local model comparisons, literal/JSON checks, human verdicts/notes, exact revision references and package export | Saved evaluation datasets/mappings, immutable model/training lineage, native jobs/cancellation and genuine loss/perplexity; see `EVALUATIONS.md`. |
 | Datasets | Native persistence, corpus/SFT/DPO inspection, import/edit, seeded transforms, exact dedup, Writing/Explore/chat and permission-checked Context receipt ingestion, provenance and export | Arbitrary current full-resource Context ingestion, durable chats, native tokenizer validation, direct resource training and large/streaming datasets; see dataset/Context docs. |
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
@@ -94,3 +95,12 @@ Browser QA verifies included-prefix display, selection, denial after revocation
 without draft loss, explicit regrant/recovery, downloads and CLI provenance. The
 Context export completes one native CPT update. Current full-resource Context
 reads and direct dataset Training remain separate contracts.
+
+2026-10-06 Evaluation frontend adds seven domain checks (47 selected checks
+total). Real browser/native QA runs exact/manual/overflow cases on two loaded
+fixture copies, saves/reloads observations, edits verdicts with focus/count
+updates, recovers from an independent CAS conflict and downloads a package.
+Independent CLI exports verify definitions, exact source revision, native token
+counts, actual error rows and saved review notes. Light/dark/390px views have
+no page overflow. Native benchmark timing, loss, jobs and immutable model identity
+are not inferred from these frontend records.

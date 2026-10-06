@@ -27,6 +27,7 @@ client router, remote font dependency or server-rendered page.
 | `src/resource-text.js` | Complete-code-point UTF-8 title bounds | Shared by Writing imports and new/derived dataset titles. |
 | `src/context-workspace.js` | Source selection, explicit grants, search, generation receipts | Selected principal is an access label, not remote authentication. |
 | `src/context-receipt.js`, `src/context-receipt-view.js` | Exact receipt ranges/revisions and readable attribution | Native receipt authorization; no administrative fallback. See `CONTEXT_RECEIPTS.md`. |
+| `src/evaluation-data.js`, `src/evaluation-workspace.js` | Saved quality definitions/results, bounded checks, sequential local generation and human review | Existing generic store and generation; observed request timing is not native benchmark/loss. See `EVALUATIONS.md`. |
 | `src/api.js` | Authenticated local HTTP and compatible external endpoint requests | Keep protocol details here, never in rendering templates. |
 | `src/platform.js` | Tauri connection, native pickers and desktop commands | Browser mode must report unavailable desktop-only operations. |
 | `src/stream.js` | Bounded remote SSE decoding | Preserve cancellation and split UTF-8 behavior. |
@@ -45,11 +46,11 @@ then mounts the view inside `#workspace`. New views need an allowed persisted
 key, `meta` entry, render dispatch and navigation entry.
 
 Use/Create/Run/Serve navigation has Overview, Chat, Models, Writing, Explore,
-Resources, Datasets, Context, Playground, Training, Benchmarks, Logs and API access.
+Resources, Datasets, Context, Playground, Training, Evaluations, Benchmarks, Logs and API access.
 The top model selection is shared. Explore authoring does not use that selection.
 Writing/Context use local native generation, even when Chat's provider is remote.
 
-Resources, Writing, Context, Explore and Datasets own module-level state. Their mount
+Resources, Writing, Context, Explore, Datasets and Evaluations own module-level state. Their mount
 generation and active-view checks prevent an old asynchronous completion from
 painting into a different screen. Busy operations disable their controls. They
 can finish while another view is open; their state remains available on return.
@@ -73,7 +74,7 @@ their entire form on each token/log line.
 | Local bearer token | Connection returned by Tauri, cached in memory | Browser development uses Vite environment configuration. Do not print it. |
 | Remote API key | Memory unless user selects Remember | Remember writes the key into session localStorage. |
 
-Explore, Resources, Writing and Datasets warn on window unload with a dirty draft where
+Explore, Resources, Writing, Datasets and Evaluations warn on window unload with a dirty draft where
 the host supports the standard browser warning. Explore also blocks library,
 namespace and resource changes that would discard that draft. Switching application
 views retains its draft in memory. Other editors have their own dirty guards;
@@ -144,7 +145,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 
@@ -152,7 +153,7 @@ The browser test requires installed frontend dependencies, Node with global
 WebSocket, Windows Edge, `build-cpu/fyodor-backend.exe`, `build-cpu/fyodor.exe`
 plus `build-cpu/fyodor-train.exe` and the trained tiny fixture at
 `build-cpu/backend/test_models/pretraining.trained.gguf`. It owns a temporary
-database, model copy, private headless browser profile and Vite instance at
+database, two model copies, private headless browser profile and Vite instance at
 127.0.0.1:5179. It cleans those owned processes/files; it does not use the user's
 browser profile or production database. The browser connects as localhost for
 the allowed origin. A port collision is a test setup failure, not permission to

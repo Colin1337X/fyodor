@@ -476,3 +476,27 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   Context reads, direct Training/materialization, evaluations, Explore play,
   agents/workflows, remote nodes and platform/accessibility validation remain
   part of the active full goal. No backend implementation changed here.
+
+## Frontend Evaluation definitions and saved results (2026-10-06)
+
+- Added a separate model-quality view over existing local generation/resource
+  APIs. Definitions persist exact raw prompts/settings and bounded literal/JSON
+  checks; real runs compare up to four loaded models and preserve native counters,
+  actual errors, request latency, partial-stop status and exact definition revision.
+- Results require explicit Save. Human verdicts/notes use revision CAS, retain
+  edits on conflict and update comparison counts/focus immediately. Native package
+  exports and saved reload work independently of the browser. No metrics, loss,
+  model identity or backend job capabilities are invented.
+- Separated domain/scheduling/controller/test modules, formatted new code, retained
+  rationale in comments and thoroughly documented schema/lifecycle/API/bounds,
+  model observation limits, truncation, timing, concurrency, recovery and handoff
+  in frontend/docs/EVALUATIONS.md and the architecture/delivery map.
+- Production build and 47 selected frontend checks pass. Real browser/native
+  integration covers two fixture model selections, exact/manual/context-overflow
+  outcomes, counters, saved reload, review focus/counts, independent CAS conflict,
+  recovery and downloaded package. Separate CLI exports verify saved provenance
+  and results; light/dark/390px screenshots are retained.
+- Saved evaluation datasets/mappings, native evaluation jobs/loss, immutable
+  model/training lineage, Explore play, agents/workflows, remote nodes and final
+  platform/accessibility validation remain in the active full goal. No backend
+  implementation changed in this milestone.

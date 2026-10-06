@@ -15,12 +15,15 @@ try{
   assert.equal(ready[0],'FYODOR_READY');base='http://127.0.0.1:'+ready[2];token=ready[3];
   const loaded=await fetch(base+'/api/v1/model/load',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({path:modelPath})});
   assert.ok(loaded.ok);assert.ok((await loaded.json()).model.generation_supported);
+  const comparisonPath=path.join(folder,'comparison.trained.gguf');await copyFile(modelPath,comparisonPath);
+  const comparison=await fetch(base+'/api/v1/model/load',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({path:comparisonPath})});
+  assert.ok(comparison.ok);assert.ok((await comparison.json()).model.generation_supported);
   vite=spawn(process.execPath,[path.resolve('frontend/node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port','5179','--strictPort'],{cwd:path.resolve('frontend'),windowsHide:true,env:{...process.env,VITE_FYODOR_URL:base,VITE_FYODOR_TOKEN:token},stdio:'ignore'});
   for(let i=0;i<100;++i){try{if((await fetch('http://127.0.0.1:5179/')).ok)break;}catch{}await new Promise(r=>setTimeout(r,50));}
   const evidence=path.join(folder,'evidence.json');
   const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
-  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri}=JSON.parse(await readFile(evidence,'utf8'));
+  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,evaluation_definition_uri,evaluation_run_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
   const receipt=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','context','receipt',principal,receipt_id],{windowsHide:true,encoding:'utf8'}));
@@ -57,6 +60,15 @@ try{
   assert.equal(contextOrigin.receipt_source.length,3);assert.ok(contextOrigin.receipt_source.original_length>3);
   execFileSync(path.resolve('build-cpu/fyodor-train.exe'),['--mode','cpt','--base',modelPath,'--rank','0','--steps','1','--threads','1','--data',evidence+'.context.txt','--output',path.join(folder,'context-source-trained.gguf')],{windowsHide:true,encoding:'utf8',stdio:'pipe'});
   console.log('Permission-checked Context receipt source export completed a native CPT update');
+  const evaluation=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',evaluation_definition_uri],{windowsHide:true,encoding:'utf8'}));
+  assert.equal(JSON.parse(evaluation.content).cases.length,3);
+  const result=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',evaluation_run_uri],{windowsHide:true,encoding:'utf8'}));
+  assert.equal(result.title,'Independent title');assert.equal(result.metadata.evaluation_studio.kind,'run');
+  const run=JSON.parse(result.content);assert.equal(run.definition.uri,evaluation_definition_uri);assert.equal(run.definition.revision,'1');assert.equal(run.models.length,2);
+  assert.deepEqual(run.results.map(row=>row.status),['pass','pass','error','pass','unreviewed','error']);
+  assert.equal(run.results[1].review_note,'<script>inert</script> reviewed');
+  assert.deepEqual(run.results.map(row=>row.generated_tokens),[2,2,null,2,2,null]);
+  console.log('Evaluation definitions, real two-model outputs, errors and reviewed results persist through independent native CLI export');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});

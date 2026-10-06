@@ -52,7 +52,7 @@ An optional OpenAI-compatible remote endpoint supports agent tool calls for loca
 ## Current interface
 
 Navigation groups Overview/Chat/Models under Use; Writing, Explore, Resources,
-Datasets, Context, Playground and Training under Create; Benchmarks/Logs under Run; and API access under Serve. The sidebar
+Datasets, Context, Playground and Training under Create; Evaluations/Benchmarks/Logs under Run; and API access under Serve. The sidebar
 collapses to icons; Ctrl/Cmd+backslash toggles it. Narrow windows use a keyboard
 accessible navigation overlay, with Escape to close it. The header preserves
 the selected model; the footer reports its actual compute provider and activity.
@@ -95,6 +95,9 @@ Maintenance and integration documentation:
 - [Context receipt inspection and ingestion](docs/CONTEXT_RECEIPTS.md): readable
   source usage, exact UTF-8/revision handling, permission-checked receipt sources
   and remaining full-resource/materialization requirements.
+- [Evaluations](docs/EVALUATIONS.md): persisted test definitions/results, local
+  model comparisons, actual counters, bounded checks and human review. Request
+  timing remains distinct from native benchmarks and Training validation loss.
 - [Frontend delivery map](docs/ROADMAP.md): implemented coverage, remaining work
   and contract checklist.
 
