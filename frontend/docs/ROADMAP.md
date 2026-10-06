@@ -12,10 +12,10 @@ separates usable frontend behavior from planned screens and required contracts.
 | Chat | Stored conversations, JSON import/export, safe code, regenerate/edit, remote streaming/Stop | Native local streaming/cancel contract and richer agent execution UI. |
 | Writing | Editor-first studio, focus mode, live counts, session story guidance, document/note/character/project editing, folders, history, lore links, model preview, accepted receipt provenance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md`. |
 | Resources | Paged local library, package import/export, edit/delete/history | Typed catalog filters and richer navigation across every resource family. |
-| Context | Explicit grants/revocation, selected layers, search, generation and actual receipts | Human-readable source inspection, shared workspace/session coordination, automatic retrieval UX. |
+| Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
 | Models | Registry and runtime capability display, load/unload, compute selection | Complete model card/evaluation/lineage UI over agreed native registry metadata. |
-| Datasets | Native resource persistence, corpus/SFT/DPO inspection, strict UTF-8 import, record editing, seeded transforms/splits, exact dedup, source-preserving Writing/Explore/chat corpus/SFT ingestion, provenance and file export | Permission-scoped Context ingestion, durable chat identity, native tokenizer validation, direct resource training and large/streaming datasets; see `DATASET_STUDIO.md` and `DATASET_SOURCES.md`. |
+| Datasets | Native persistence, corpus/SFT/DPO inspection, import/edit, seeded transforms, exact dedup, Writing/Explore/chat and permission-checked Context receipt ingestion, provenance and export | Arbitrary current full-resource Context ingestion, durable chats, native tokenizer validation, direct resource training and large/streaming datasets; see dataset/Context docs. |
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
 | Logs/API | Logs with filters and API route presentation | Authenticated remote pairing/capability/session UI, WSS lifecycle. |
@@ -27,7 +27,7 @@ separates usable frontend behavior from planned screens and required contracts.
    from `main.js` and `resources.js`, retain behavior coverage and shared tokens.
    Improve source inspection and context receipts without exposing engineering notes
    as primary product text.
-2. Extend Dataset Studio with permission-scoped Context ingestion and direct training once native
+2. Extend Dataset Studio with current full-resource Context ingestion and direct training once native
    revision materialization, permission and tokenizer contracts are agreed.
    Basic editing/inspection/transforms use existing resource storage; file-path
    Training remains the usable launch path.
@@ -88,3 +88,9 @@ after an independent writer advances a source head, mixed-library selection,
 dirty guards, delimiter policy, actual corpus/SFT downloads and unchanged chats.
 Separate CLI exports confirm provenance and the exports complete native CPT/SFT
 updates. See `DATASET_SOURCES.md` for snapshot/hash semantics and native boundaries.
+
+2026-10-06 Context receipt inspection/ingestion adds five checks (40 total).
+Browser QA verifies included-prefix display, selection, denial after revocation
+without draft loss, explicit regrant/recovery, downloads and CLI provenance. The
+Context export completes one native CPT update. Current full-resource Context
+reads and direct dataset Training remain separate contracts.

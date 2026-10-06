@@ -20,7 +20,7 @@ try{
   const evidence=path.join(folder,'evidence.json');
   const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
-  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri}=JSON.parse(await readFile(evidence,'utf8'));
+  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
   const receipt=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','context','receipt',principal,receipt_id],{windowsHide:true,encoding:'utf8'}));
@@ -50,6 +50,13 @@ try{
     execFileSync(path.resolve('build-cpu/fyodor-train.exe'),['--mode',mode,'--base',modelPath,'--rank','0','--steps','1','--threads','1','--data',file,'--output',path.join(folder,mode+'-source-trained.gguf')],{windowsHide:true,encoding:'utf8',stdio:'pipe'});
   }
   console.log('Writing/Explore CPT and local-chat SFT exports completed native training updates');
+  const contextData=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',context_dataset_uri],{windowsHide:true,encoding:'utf8'}));
+  assert.equal(contextData.content,'<sc');
+  const contextOrigin=contextData.provenance.dataset_studio.sources[0];
+  assert.equal(contextOrigin.receipt_id,receipt_id);assert.equal(contextOrigin.principal,principal);assert.equal(contextOrigin.uri,uri);assert.equal(contextOrigin.revision,'3');
+  assert.equal(contextOrigin.receipt_source.length,3);assert.ok(contextOrigin.receipt_source.original_length>3);
+  execFileSync(path.resolve('build-cpu/fyodor-train.exe'),['--mode','cpt','--base',modelPath,'--rank','0','--steps','1','--threads','1','--data',evidence+'.context.txt','--output',path.join(folder,'context-source-trained.gguf')],{windowsHide:true,encoding:'utf8',stdio:'pipe'});
+  console.log('Permission-checked Context receipt source export completed a native CPT update');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});

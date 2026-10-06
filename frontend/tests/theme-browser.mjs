@@ -108,11 +108,20 @@ try {
     await waitFor('!!document.querySelector("#context-exact-prompt")');
     assert.equal(await evaluate('document.querySelector("#context-exact-prompt").textContent'),'<sc\n\na');
     assert.equal(await evaluate('JSON.parse(document.querySelector("#context-sources").textContent)[0].layer'),'session');
+    assert.equal(await evaluate('document.querySelector(".context-source-details").textContent.includes("Prefix included")'),true);
+    assert.equal(await evaluate('document.querySelector(".context-source-details pre").textContent'),'<sc');
     const receipt_id=await evaluate('document.querySelector("#context-receipt-id").value');
     assert.equal(await evaluate('document.querySelectorAll("[data-receipt-id]").length'),1);
     const principal=await evaluate('localStorage.getItem("fyodor-context-identity")');
     const contextCapture=await call('Page.captureScreenshot',{format:'png'},sessionId);
     await writeFile(path.join(output,'context.png'),Buffer.from(contextCapture.data,'base64'));
+    for(const [theme,width,label] of [['fyodor',1280,'context-sources'],['fyodor-dark',1280,'context-sources-dark'],['fyodor',390,'context-sources-mobile']]){
+      await evaluate(`window.fyodorAppearance.set({theme:${JSON.stringify(theme)}});document.querySelector('.context-source-details').scrollIntoView({block:'center'})`);
+      await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false},sessionId);await new Promise(r=>setTimeout(r,250));
+      assert.equal(await evaluate('document.documentElement.scrollWidth>innerWidth || document.querySelector(".stage>main").scrollWidth>document.querySelector(".stage>main").clientWidth'),false);
+      await writeFile(path.join(output,label+'.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'},sessionId)).data,'base64'));
+    }
+    await call('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false},sessionId);
     await reload();
     await waitFor('!!document.querySelector("[data-context-uri]:not(:disabled)")');
     await waitFor('!!document.querySelector("[data-receipt-id]:not(:disabled)")');
@@ -469,7 +478,45 @@ try {
     let chatDownload;
     for(let i=0;i<100;i++){try{chatDownload=await readFile(path.join(profile,'Chat training examples · dataset.tsv'),'utf8');break;}catch{}await new Promise(r=>setTimeout(r,50));}
     assert.equal(chatDownload,'a b\tc');await writeFile(process.env.FYODOR_RESOURCE_QA+'.chat.tsv',chatDownload);
-    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri}));
+    // Context ingestion reads the included receipt slice through fresh native
+    // authorization; a revoked source blocks creation even after UI selection.
+    await evaluate('document.querySelector("[data-source=clear]").click()');
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===0 && !document.querySelector("#dataset-source-kind").disabled');
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-kind");n.value="context";n.dispatchEvent(new Event("change"));})()');
+    await waitFor(`!!document.querySelector('[data-source-receipt="'+${JSON.stringify(receipt_id)}+'"]:not(:disabled)')`);
+    assert.equal(await evaluate('document.querySelector("#dataset-source-principal").value'),principal);
+    await evaluate(`document.querySelector('[data-source-receipt="'+${JSON.stringify(receipt_id)}+'"]').click()`);
+    await waitFor('!!document.querySelector("[data-source-key^=context]:not(:disabled)")');
+    await evaluate('document.querySelector("[data-source-key^=context]").click()');
+    await waitFor('document.querySelectorAll(".dataset-source-selection li").length===1');
+    await evaluate('(()=>{const n=document.querySelector("#dataset-source-mode");n.value="cpt";n.dispatchEvent(new Event("change"));})()');
+    // Editing the ID field must not relabel source rows from the loaded receipt.
+    await evaluate(`(()=>{const n=document.querySelector('#dataset-source-receipt');n.value=${JSON.stringify(principal)};n.dispatchEvent(new Event('input'));})()`);
+    assert.equal(await evaluate('document.querySelector(".dataset-source-selection").textContent.includes('+JSON.stringify(receipt_id)+')'),true);
+    await evaluate(`(async()=>{const {backend}=await import('/src/api.js');await backend.contextPermissions('workspace',${JSON.stringify(principal)},${JSON.stringify(uri)},0);})()`);
+    await evaluate('document.querySelector("[data-source=build]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Context access denied")');
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),'a b\tc');
+    await evaluate(`(async()=>{const {backend}=await import('/src/api.js');await backend.contextPermissions('workspace',${JSON.stringify(principal)},${JSON.stringify(uri)},5);})()`);
+    for(const [theme,width,label] of [['fyodor',1280,'datasets-context'],['fyodor-dark',1280,'datasets-context-dark'],['fyodor',390,'datasets-context-mobile']]){
+      await evaluate(`window.fyodorAppearance.set({theme:${JSON.stringify(theme)}});document.querySelector('.stage>main').scrollTop=0`);
+      await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false},sessionId);await new Promise(r=>setTimeout(r,250));
+      assert.equal(await evaluate('document.documentElement.scrollWidth>innerWidth || document.querySelector(".stage>main").scrollWidth>document.querySelector(".stage>main").clientWidth'),false);
+      await writeFile(path.join(output,label+'.png'),Buffer.from((await call('Page.captureScreenshot',{format:'png'},sessionId)).data,'base64'));
+    }
+    await evaluate('document.querySelector("[data-source=build]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Source dataset draft prepared")');
+    assert.equal(await evaluate('document.querySelector("#dataset-content").value'),'<sc');
+    await evaluate('document.querySelector("[data-dataset=save]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Dataset saved")');
+    const context_dataset_uri=await evaluate('Array.from(document.querySelectorAll("[data-dataset-uri]")).find(n=>n.querySelector("b").textContent.startsWith("Context · ")).dataset.datasetUri');
+    await evaluate('document.querySelector("[data-dataset=export]").click()');
+    // A long typed URI is sanitized/shortened by the shared download-name helper.
+    const contextFilename=await evaluate(`(async()=>{const {writingDownloadName}=await import('/src/writing-files.js');return writingDownloadName(document.querySelector('#dataset-title').value,'txt');})()`);
+    let contextDownload;
+    for(let i=0;i<100;i++){try{contextDownload=await readFile(path.join(profile,contextFilename),'utf8');break;}catch{}await new Promise(r=>setTimeout(r,50));}
+    assert.equal(contextDownload,'<sc');await writeFile(process.env.FYODOR_RESOURCE_QA+'.context.txt',contextDownload);
+    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri}));
 
 
 

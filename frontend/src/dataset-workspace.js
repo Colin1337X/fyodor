@@ -8,7 +8,7 @@ const state = {namespace:'workspace',items:[],next:'',draft:null,revision:'0',mo
 let mount=0,repaint=()=>{};
 window.addEventListener('beforeunload',event=>{if(state.dirty||state.parts.some(part=>!part.revision)){event.preventDefault();event.returnValue='';}});
 
-export function datasetWorkspace(root, prepareTraining = null, getChats = () => []) {
+export function datasetWorkspace(root, prepareTraining = null, getChats = () => [], getContextPrincipal = () => '') {
   const generation=++mount;
   const current=()=>generation===mount&&document.body.dataset.view==='datasets';
   function paint(){
@@ -58,7 +58,7 @@ export function datasetWorkspace(root, prepareTraining = null, getChats = () => 
       });
     });
     inspect();
-    datasetSourcePicker(root.querySelector('#dataset-source-picker'),{namespace:state.namespace,busy:state.busy,api:backend,run,repaint:paint,getChats,onDraft:async build=>{
+    datasetSourcePicker(root.querySelector('#dataset-source-picker'),{namespace:state.namespace,busy:state.busy,api:backend,run,repaint:paint,getChats,getContextPrincipal,onDraft:async build=>{
       requireClean();
       const draft=await build();
       // Build completely before replacing the editor. Failed reads/mappings

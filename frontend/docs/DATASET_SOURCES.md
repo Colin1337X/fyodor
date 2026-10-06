@@ -2,7 +2,8 @@
 
 Status: 2026-10-06. This is the implemented **frontend** source composer. It uses
 the existing authenticated local administrative resource API and local chat
-state. It does not implement the separately owned native Context ingestion or
+state. Context receipt sources use the existing permission-enforced read described
+in [Context receipts](CONTEXT_RECEIPTS.md). It does not implement a new native ingestion or
 dataset materialization service. General Studio formats, persistence and
 Training handoff are documented in [Dataset Studio](DATASET_STUDIO.md).
 
@@ -35,6 +36,7 @@ do not move focus into a different application view.
 | Writing | Saved documents, notes, characters and projects | Namespace, canonical typed URI, exact decimal-string revision and display title. |
 | Explore | Saved worlds and world lore | Same revision reference; world saves/gameplay state are excluded. |
 | Local chats | The frontend's current saved message arrays | A copied role/text array, window-local ID, title and creation timestamp. |
+| Context receipts | Selected prefixes actually used in an accessible request | Receipt ID, identity/namespace, source index/URI/revision; freshly authorized on creation. |
 
 Unsaved Writing/Explore editor text is not ingested. Save it first. Selecting a
 project copies that project's own text, not its descendants or linked lore.
@@ -168,12 +170,13 @@ and its immutable history rather than expanding every prior source recursively.
 
 This is an explicit local human authoring operation. Resource reads are local
 administrator API calls; visible resources are not proof of principal/model read
-permission. The picker does not use Context selections or claim permission-scoped
-ingestion. Context's permission query followed by an administrative read would
-introduce a revocation race, so it is not used as a substitute for native enforcement.
+permission. The distinct Context receipt branch performs a fresh native
+permission-enforced read before extracting selected included prefixes; see
+`CONTEXT_RECEIPTS.md`. A permission query followed by an administrative get
+would introduce a revocation race and is never used as a substitute.
 
 Backend-owned work still includes a native atomic permission/revision read or
-dataset-ingestion service for selected Unified Context resources, durable native
+dataset-ingestion service for arbitrary current full Context resources, durable native
 chat identities/snapshots, large jobs/cancellation, lineage/run records, tokenizer
 validation and direct dataset-revision Training materialization. Document exact
 schemas, permission/revocation rules and migration of this versioned annotation
@@ -191,7 +194,7 @@ derived datasets. Implementation rationale stays in these sources and docs.
 Six domain tests cover exact revision strings beyond JS integer precision,
 Unicode/CRLF corpus bytes/ranges/hashes, explicit delimiter policy, chat snapshot
 immutability/pair exclusion, source failures/size/provenance bounds, sparse paging
-and complete-code-point title bounds. The selected frontend suite has 35 checks.
+and complete-code-point title bounds. Five Context checks bring the suite to 40.
 
 The Windows browser flow selects Writing revision 2 plus Explore lore revision 1,
 advances the Writing head independently, verifies revision-2 output, checks dirty

@@ -3,6 +3,7 @@
 // model access from a visible source, create grants, or invent native chat IDs.
 import {datasetLimit, inspectDataset, newDataset} from './dataset-data.js';
 import {exploreKind} from './explore-data.js';
+import {contextSourceKey,readContextSource} from './context-receipt.js';
 
 const uuid = '[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}';
 const writing = new RegExp(`^fyodor://writing/(documents|notes|characters|projects)/${uuid}$`);
@@ -60,7 +61,7 @@ export async function datasetFromSources(api, sources, {mode='cpt',delimiterPoli
   if (!['pretrain','cpt','sft'].includes(mode)) throw Error('Source ingestion supports corpus or SFT. DPO needs explicit chosen/rejected records.');
   if (!['reject','spaces'].includes(delimiterPolicy) || typeof prompt!=='string') throw Error('Choose a supported field mapping.');
   if (!sources.length || sources.length>sourceLimit) throw Error('Select 1–32 sources.');
-  const seen = new Set(), pieces = [], provenanceSources = [];
+  const seen = new Set(), pieces = [], provenanceSources = [], receiptCache = new Map();
   let bytes = 0, records = 0;
   const append = text => {
     const start = bytes + (pieces.length ? (mode==='sft'?1:2) : 0);
@@ -70,11 +71,17 @@ export async function datasetFromSources(api, sources, {mode='cpt',delimiterPoli
     return {byte_start:start,byte_length:length};
   };
   for (const selected of sources) {
-    const key = selected.kind==='local-chat' ? 'chat:'+selected.local_id : selected.namespace+':'+selected.uri;
+    const key = selected.kind==='context-receipt'?contextSourceKey(selected):selected.kind==='local-chat' ? 'chat:'+selected.local_id : selected.namespace+':'+selected.uri;
     if (seen.has(key)) throw Error('A source was selected more than once.');
     seen.add(key);
     let texts, origin;
-    if (selected.kind==='local-chat') {
+    if (selected.kind==='context-receipt') {
+      const row=await readContextSource(api,selected,receiptCache);
+      texts=[mode==='sft'?field(prompt,delimiterPolicy)+'\t'+field(row.content,delimiterPolicy):row.content];
+      origin={kind:'context-receipt',namespace:selected.namespace,principal:selected.principal,receipt_id:selected.receipt_id,
+        uri:row.uri,revision:row.revision,content_sha256:await digest(row.content),receipt_source:{index:row.index,offset:row.offset,
+          length:row.length,original_length:row.original_length,layer:row.layer}};
+    } else if (selected.kind==='local-chat') {
       const chat = chatSource({id:selected.local_id,title:selected.title,created:selected.created_ms,messages:selected.messages});
       const indices=[]; texts=[];
       if (mode==='sft') {
@@ -114,7 +121,7 @@ export async function datasetFromSources(api, sources, {mode='cpt',delimiterPoli
   const content=pieces.join(mode==='sft'?'\n':'\n\n');
   const report=inspectDataset(content,mode);
   if (report.issues.length) throw Error(report.issues[0].message);
-  const provenance={dataset_studio:{version:1,operation:'source-ingestion',output_sha256:await digest(content),mapping:mode==='sft'?'resource-prompt-content;adjacent-user-assistant':'resource-content;role-labelled-chat',
+  const provenance={dataset_studio:{version:1,operation:'source-ingestion',output_sha256:await digest(content),mapping:(mode==='sft'?'resource-prompt-content;adjacent-user-assistant':'resource-content;role-labelled-chat')+(sources.some(source=>source.kind==='context-receipt')?';receipt-source-prefix':''),
     delimiter_policy:mode==='sft'?delimiterPolicy:'preserve',...(mode==='sft'?{resource_prompt:prompt}:{}),sources:provenanceSources}};
   if (encoder.encode(JSON.stringify(provenance)).length>65536) throw Error('Source provenance exceeds 64 KiB. Select fewer chat messages/sources.');
   return newDataset(mode,sources.length===1?sources[0].title+' · dataset':'Selected sources · dataset',content,provenance);

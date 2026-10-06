@@ -26,6 +26,7 @@ client router, remote font dependency or server-rendered page.
 | `src/dataset-sources.js`, `src/dataset-source-picker.js` | Source snapshots, explicit mappings/provenance and source selection controls | Parent owns busy state/editor replacement; see `DATASET_SOURCES.md` for administrative/Context boundary. |
 | `src/resource-text.js` | Complete-code-point UTF-8 title bounds | Shared by Writing imports and new/derived dataset titles. |
 | `src/context-workspace.js` | Source selection, explicit grants, search, generation receipts | Selected principal is an access label, not remote authentication. |
+| `src/context-receipt.js`, `src/context-receipt-view.js` | Exact receipt ranges/revisions and readable attribution | Native receipt authorization; no administrative fallback. See `CONTEXT_RECEIPTS.md`. |
 | `src/api.js` | Authenticated local HTTP and compatible external endpoint requests | Keep protocol details here, never in rendering templates. |
 | `src/platform.js` | Tauri connection, native pickers and desktop commands | Browser mode must report unavailable desktop-only operations. |
 | `src/stream.js` | Bounded remote SSE decoding | Preserve cancellation and split UTF-8 behavior. |
@@ -143,7 +144,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 

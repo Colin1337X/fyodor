@@ -10,6 +10,8 @@ read-only. This milestone does not add a dataset job/materialization backend.
 - Import strict UTF-8 `.txt`/`.tsv` files into new unsaved resources.
 - Select saved Writing/Explore revisions and local chat snapshots, map them to
   corpus/SFT drafts and preserve provenance; see [Source ingestion](DATASET_SOURCES.md).
+- Select included Context receipt sources through freshly permission-checked
+  reads; see [Context receipts](CONTEXT_RECEIPTS.md).
 - Edit title/content; inspect format issues and the first 50 filtered records.
 - See bytes, record/nonempty-line counts and exact duplicate counts.
 - Filter, sample, shuffle and remove exact duplicates into a new derived draft.
@@ -19,7 +21,7 @@ read-only. This milestone does not add a dataset job/materialization backend.
 - Export and open Training with the chosen mode; explicitly select the downloaded
   file in the native Training form.
 
-Permission-scoped Unified Context ingestion, automatic native file
+Arbitrary current full-resource Context ingestion, automatic native file
 materialization and persisted run/evaluation linkage remain open. They are
 requirements of the full product brief, not implied by the current dataset editor.
 
@@ -175,7 +177,7 @@ Native contracts still needed:
 - Dataset-revision materialization into managed training/validation files, exact
   provenance, cleanup/lifetime, permission checks and failure reporting.
 - Validation against the selected native tokenizer/context/architecture.
-- Permission-scoped ingestion from selected Context resources, durable native
+- Principal-scoped ingestion of arbitrary current full Context resources, durable native
   chat snapshots and source/lineage services. The current human-selected
   Writing/Explore/chat frontend mappings are documented in `DATASET_SOURCES.md`.
 - Atomic/recoverable derived dataset jobs, split linkage and job/run identities.
@@ -189,7 +191,7 @@ source resources when adding ingestion.
 
 Five unit tests cover native structural grammar edge cases, bounds, import
 decoding, mode annotation, deterministic sampling/splits, exact dedup/filter and
-sparse catalog paging. Six source-domain checks bring the selected suite to 35.
+sparse catalog paging. Six source-domain and five Context checks bring the suite to 40.
 
 The Windows headless browser flow creates/saves an SFT dataset, derives an exact
 deduplicated copy, verifies its source remains unchanged, saves both split copies,

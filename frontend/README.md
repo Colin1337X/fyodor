@@ -92,6 +92,9 @@ Maintenance and integration documentation:
 - [Dataset sources](docs/DATASET_SOURCES.md): Writing/Explore revision selection,
   local chat snapshots, explicit corpus/SFT mapping, hashes and native Context
   ingestion requirements.
+- [Context receipt inspection and ingestion](docs/CONTEXT_RECEIPTS.md): readable
+  source usage, exact UTF-8/revision handling, permission-checked receipt sources
+  and remaining full-resource/materialization requirements.
 - [Frontend delivery map](docs/ROADMAP.md): implemented coverage, remaining work
   and contract checklist.
 

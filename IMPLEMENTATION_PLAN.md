@@ -454,3 +454,25 @@ results and platform/hardware skips; do not borrow previous reports' counts.
 - Shared UTF-8 title bounds prevent derived Unicode names exceeding the native
   title limit. Maintenance contracts and limitations live in
   frontend/docs/DATASET_SOURCES.md and the architecture/delivery map.
+
+## Frontend Context receipt inspection and ingestion (2026-10-06)
+
+- Verified existing native receipt access: original identity/namespace plus
+  current READ on every source in one SQL snapshot. Frontend selects included
+  sources through fresh native reads, with no administrative fallback/new API.
+- Added pure exact-revision/UTF-8 range validation and render-only attribution.
+  Context shows included/truncated/omitted/empty usage and actual source text;
+  original prompt/metadata/source JSON remain inspectable. Large revisions retain
+  exact source lexemes or fail on unsupported engines rather than rounding.
+- Dataset mapping copies selected prefixes, excluding instructions/output. It
+  records receipt/principal/source revision, original/included ranges, layers
+  and hashes, rechecks access and preserves drafts on denial. Reads are separate
+  from later Save/Training; already disclosed text cannot be recalled.
+- Build, 40 selected frontend checks and real browser/native integration pass.
+  Revocation after selection blocks creation and preserves the prior draft;
+  explicit regrant recovers. CLI provenance/export bytes agree, and the Context
+  corpus completes one native CPT update. Light/dark/mobile images are retained.
+- Thorough docs are in frontend/docs/CONTEXT_RECEIPTS.md. Arbitrary current full
+  Context reads, direct Training/materialization, evaluations, Explore play,
+  agents/workflows, remote nodes and platform/accessibility validation remain
+  part of the active full goal. No backend implementation changed here.
