@@ -156,19 +156,11 @@ export function evaluateOutput(output, check) {
     reason: passed ? "Check passed." : "Output did not match the check.",
   };
 }
-export function validateDefinition(value) {
-  if (
-    !keys(value, ["schema", "kind", "settings", "cases"]) ||
-    value.schema !== 1 ||
-    value.kind !== "definition" ||
-    !Array.isArray(value.cases) ||
-    value.cases.length > 32
-  )
-    throw Error(
-      "Expected Evaluation definition schema 1 with at most 32 cases.",
-    );
+export function validateEvaluationCases(items, limit = 32) {
+  if (!Array.isArray(items) || items.length > limit)
+    throw Error(`Expected at most ${limit} test cases.`);
   const seen = new Set();
-  const cases = value.cases.map((item) => {
+  return items.map((item) => {
     if (
       !keys(item, ["id", "label", "prompt", "check"]) ||
       !caseId(item.id) ||
@@ -180,11 +172,19 @@ export function validateDefinition(value) {
     text(item.prompt, 16384, "Case prompt");
     return { ...item, check: validateCheck(item.check) };
   });
+}
+export function validateDefinition(value) {
+  if (
+    !keys(value, ["schema", "kind", "settings", "cases"]) ||
+    value.schema !== 1 ||
+    value.kind !== "definition"
+  )
+    throw Error("Expected Evaluation definition schema 1.");
   return {
     schema: 1,
     kind: "definition",
     settings: evaluationSettings(value.settings),
-    cases,
+    cases: validateEvaluationCases(value.cases),
   };
 }
 export function newEvaluationCase() {

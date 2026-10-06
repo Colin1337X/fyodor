@@ -19,6 +19,11 @@ its actual loss/validation telemetry. The broader product brief remains open.
 6. For human-review cases, select Pass, Fail or Needs review. Add notes to any
    row and save a new revision. Export the saved native resource package.
 
+Reusable test datasets now author/import/export cases and supply exact saved
+revision ranges or seeded samples to definitions. Saved training text/TSV can
+also become tests through explicit mappings. See `EVALUATION_DATASETS.md` for
+format, provenance and edit/hash semantics; test collections do not run directly.
+
 Every selected model receives the same definition revision, raw prompts and
 settings. Cases run sequentially in definition order, with models in registry
 order. A fresh generation call is made for each case. There is no implicit chat
@@ -37,6 +42,7 @@ requests remain. A stopped run can contain zero observations and still be saved.
 | --- | --- | --- |
 | `src/evaluation-data.js` | Versioned formats, correctness checks, bounds, model snapshots, sequential scheduling and filtered catalog paging | DOM, native inference, permissions, database or native jobs |
 | `src/evaluation-workspace.js` | Library/editor state, save/reload/copy/export, model selection, review controls and live results | New endpoints, loss calculation, model hashes or durable autosave |
+| `src/evaluation-datasets.js`, `src/evaluation-dataset-picker.js`, `src/evaluation-editor.js` | Reusable cases, exact dataset revision mapping, selection and shared case rendering | Trainer semantics changes, ground-truth inference or native evaluation schema |
 | `src/api.js` | Existing authenticated resource/model/runtime/generation transport | Evaluation business rules |
 | `tests/evaluation.test.mjs` | Behavior boundaries through injected generation and clocks | Evidence of actual native inference |
 | `tests/evaluation-browser.mjs` | Evaluation flow in the private Edge/native harness | User browser state or production data |
@@ -242,8 +248,9 @@ high-contrast, keyboard-order and actual Tauri-window audits remain open.
 
 ## Backend and broader frontend handoff
 
-The next contracts/features include saved evaluation datasets and explicit
-dataset-to-case mappings, native tokenization validation, immutable model and
+Saved evaluation datasets and explicit dataset-to-case mappings now use existing
+generic storage; their format remains frontend-owned. Next contracts include
+native tokenization validation, immutable model and
 training-run identities, permitted exact revision materialization, native
 execution/cancellation/events, large result paging, reproducible settings/version
 attestation and genuine native loss/perplexity support. Quality definitions/runs

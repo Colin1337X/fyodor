@@ -28,6 +28,7 @@ client router, remote font dependency or server-rendered page.
 | `src/context-workspace.js` | Source selection, explicit grants, search, generation receipts | Selected principal is an access label, not remote authentication. |
 | `src/context-receipt.js`, `src/context-receipt-view.js` | Exact receipt ranges/revisions and readable attribution | Native receipt authorization; no administrative fallback. See `CONTEXT_RECEIPTS.md`. |
 | `src/evaluation-data.js`, `src/evaluation-workspace.js` | Saved quality definitions/results, bounded checks, sequential local generation and human review | Existing generic store and generation; observed request timing is not native benchmark/loss. See `EVALUATIONS.md`. |
+| `src/evaluation-datasets.js`, `src/evaluation-dataset-picker.js`, `src/evaluation-editor.js` | Reusable test collections, strict file interchange, exact source revisions and explicit mappings; shared paged case markup | Parent owns writes/editor replacement; no implicit correctness or trainer-format reinterpretation. See `EVALUATION_DATASETS.md`. |
 | `src/api.js` | Authenticated local HTTP and compatible external endpoint requests | Keep protocol details here, never in rendering templates. |
 | `src/platform.js` | Tauri connection, native pickers and desktop commands | Browser mode must report unavailable desktop-only operations. |
 | `src/stream.js` | Bounded remote SSE decoding | Preserve cancellation and split UTF-8 behavior. |
@@ -145,7 +146,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs frontend/tests/evaluation-datasets.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 

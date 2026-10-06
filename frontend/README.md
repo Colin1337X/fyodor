@@ -98,6 +98,9 @@ Maintenance and integration documentation:
 - [Evaluations](docs/EVALUATIONS.md): persisted test definitions/results, local
   model comparisons, actual counters, bounded checks and human review. Request
   timing remains distinct from native benchmarks and Training validation loss.
+- [Evaluation datasets](docs/EVALUATION_DATASETS.md): reusable paged cases, UTF-8
+  JSON interchange, exact training/test dataset revisions, explicit mappings,
+  consecutive ranges and seeded sampling with construction provenance.
 - [Frontend delivery map](docs/ROADMAP.md): implemented coverage, remaining work
   and contract checklist.
 

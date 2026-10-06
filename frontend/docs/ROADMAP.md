@@ -15,7 +15,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
 | Models | Registry and runtime capability display, load/unload, compute selection | Complete model card/evaluation/lineage UI over agreed native registry metadata. |
-| Evaluations | Saved test definitions/results, 1–4 local model comparisons, literal/JSON checks, human verdicts/notes, exact revision references and package export | Saved evaluation datasets/mappings, immutable model/training lineage, native jobs/cancellation and genuine loss/perplexity; see `EVALUATIONS.md`. |
+| Evaluations | Saved definitions/results/test datasets, paged cases and JSON interchange, explicit saved dataset mappings/range/sample selection, 1–4 local model comparisons, literal/JSON checks, human review and package export | Canonical native Evaluation schema, immutable model/training lineage, native jobs/cancellation and genuine loss/perplexity; see Evaluation docs. |
 | Datasets | Native persistence, corpus/SFT/DPO inspection, import/edit, seeded transforms, exact dedup, Writing/Explore/chat and permission-checked Context receipt ingestion, provenance and export | Arbitrary current full-resource Context ingestion, durable chats, native tokenizer validation, direct resource training and large/streaming datasets; see dataset/Context docs. |
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
@@ -104,3 +104,13 @@ Independent CLI exports verify definitions, exact source revision, native token
 counts, actual error rows and saved review notes. Light/dark/390px views have
 no page overflow. Native benchmark timing, loss, jobs and immutable model identity
 are not inferred from these frontend records.
+
+2026-10-06 Evaluation datasets add six behavior checks (53 selected checks total).
+Saved collections support 512 cases with paged editing, strict case JSON import
+and current-case download. Explicit training/test dataset mappings read selected
+historical revisions, record source/construction hashes and select ranges or
+seeded samples. Browser/native QA verifies two independent source-head advances,
+second-page edit/reload, file interchange, unknown-format/dirty recovery and real
+generation from sampled cases. CLI exports inspect exact references, hashes,
+selected case IDs and outputs. Canonical native evaluation jobs/loss and stable
+model/training lineage remain open.

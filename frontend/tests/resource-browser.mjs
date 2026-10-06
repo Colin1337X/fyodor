@@ -23,7 +23,7 @@ try{
   const evidence=path.join(folder,'evidence.json');
   const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
-  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,evaluation_definition_uri,evaluation_run_uri}=JSON.parse(await readFile(evidence,'utf8'));
+  const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,evaluation_definition_uri,evaluation_run_uri,evaluation_source_uri,evaluation_case_dataset_uri,evaluation_imported_dataset_uri,evaluation_mapped_definition_uri,evaluation_mapped_run_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
   const receipt=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','context','receipt',principal,receipt_id],{windowsHide:true,encoding:'utf8'}));
@@ -69,6 +69,25 @@ try{
   assert.equal(run.results[1].review_note,'<script>inert</script> reviewed');
   assert.deepEqual(run.results.map(row=>row.generated_tokens),[2,2,null,2,2,null]);
   console.log('Evaluation definitions, real two-model outputs, errors and reviewed results persist through independent native CLI export');
+  const exportResource=uri=>JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
+  const trainingSource=exportResource(evaluation_source_uri);assert.equal(trainingSource.content,'a\tWRONG');
+  const testDataset=exportResource(evaluation_case_dataset_uri),testCases=JSON.parse(testDataset.content).cases;
+  assert.equal(testDataset.metadata.evaluation_dataset.version,1);assert.equal(testCases.length,40);assert.equal(testCases[20].label,'<script>inert</script> test case');
+  assert.ok(testCases.every(item=>item.prompt==='a'&&item.check.type==='exact'&&item.check.expected==='bc'));
+  const testOrigin=testDataset.provenance.evaluation_studio;
+  assert.equal(testOrigin.source.uri,evaluation_source_uri);assert.equal(testOrigin.source.revision,'1');assert.equal(testOrigin.mapping,'prompt-completion-exact');
+  assert.equal(testOrigin.source.content_sha256,createHash('sha256').update(Array.from({length:40},()=> 'a\tbc').join('\n')).digest('hex'));
+  assert.deepEqual(testOrigin.source_records,Array.from({length:40},(_,i)=>({line:i+1})));
+  const initialCases=structuredClone(testCases);initialCases[20].label='Record 21';assert.equal(testOrigin.mapped_cases_sha256,createHash('sha256').update(JSON.stringify(initialCases)).digest('hex'));
+  const importedCases=exportResource(evaluation_imported_dataset_uri);assert.ok(JSON.parse(importedCases.content).cases.every(item=>item.prompt==='b'));
+  assert.equal(importedCases.provenance.evaluation_studio.operation,'case-file-import');
+  const mapped=exportResource(evaluation_mapped_definition_uri),definition=JSON.parse(mapped.content),mapping=mapped.provenance.evaluation_studio;
+  assert.equal(mapping.source.uri,evaluation_imported_dataset_uri);assert.equal(mapping.source.revision,'1');assert.equal(mapping.source.content_sha256,createHash('sha256').update(JSON.stringify({schema:1,kind:'evaluation-dataset',cases:testCases})).digest('hex'));
+  assert.deepEqual(mapping.selection,{method:'sample',seed:7,count:2,algorithm:'mulberry32-fisher-yates-v1'});assert.ok(definition.cases.every(item=>item.prompt==='a'&&item.check.expected==='bc'));
+  assert.deepEqual(definition.cases,mapping.source_records.map(row=>testCases[row.case_index]));
+  const mappedRun=JSON.parse(exportResource(evaluation_mapped_run_uri).content);assert.equal(mappedRun.definition.uri,evaluation_mapped_definition_uri);assert.equal(mappedRun.definition.revision,'1');
+  assert.deepEqual(mappedRun.results.map(row=>({status:row.status,text:row.text,generated_tokens:row.generated_tokens})),Array.from({length:4},()=>({status:'pass',text:'bc',generated_tokens:2})));
+  console.log('Historical SFT -> reusable test dataset -> file interchange -> sampled definition -> real evaluation results verified through native CLI persistence');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});

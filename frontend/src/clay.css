@@ -168,9 +168,15 @@ input, select, textarea { color: var(--text); }
 .evaluation-workspace .resource-editor > label input { display: block; width: 100%; margin-top: 6px; }
 .evaluation-case, .evaluation-result { padding: 18px 0; border-top: 1px solid var(--line); }
 .evaluation-case label, .evaluation-result > label { display: block; margin: 12px 0; }
+.evaluation-case .resource-toolbar label { flex: 1; min-width: 140px; }
 .evaluation-case textarea, .evaluation-case label > input, .evaluation-result textarea { display: block; width: 100%; margin-top: 6px; }
 .evaluation-case textarea, .evaluation-output { font-family: var(--mono); }
 .evaluation-launch, .evaluation-live { margin-top: var(--space); }
+.evaluation-dataset-picker { margin: var(--space) 0; }
+.evaluation-dataset-picker summary { cursor: pointer; }
+.evaluation-dataset-picker .resource-list { max-height: 260px; overflow: auto; }
+.evaluation-dataset-picker .resource-list button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.evaluation-dataset-picker .config-grid { margin: 20px 0; }
 .evaluation-launch .resource-list { max-height: 260px; overflow: auto; }
 .evaluation-launch .resource-list span, .evaluation-run-details dd { overflow-wrap: anywhere; min-width: 0; }
 .evaluation-run-details dt { margin-top: 10px; font-size: 12px; color: var(--muted); }
@@ -190,6 +196,11 @@ input, select, textarea { color: var(--text); }
 @media (max-width: 850px) {
   .resource-columns { grid-template-columns: 1fr; }
   .writing-workspace #resource-content { min-height: 45vh; padding: 16px; }
+}
+
+@media (max-width: 560px) {
+  .evaluation-dataset-picker .config-grid { grid-template-columns: 1fr; }
+  .evaluation-dataset-picker .resource-list { max-height: 180px; }
 }
 
 @media (forced-colors: active) {

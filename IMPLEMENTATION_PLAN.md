@@ -500,3 +500,30 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   model/training lineage, Explore play, agents/workflows, remote nodes and final
   platform/accessibility validation remain in the active full goal. No backend
   implementation changed in this milestone.
+
+## Frontend reusable Evaluation datasets and mappings (2026-10-06)
+
+- Added persisted test collections at typed dataset URIs with a versioned
+  frontend annotation, 512-case/1 MiB bounds, paged editing, exact case identity,
+  literal/structured checks, strict UTF-8 JSON import and current-case download.
+- Extracted shared case rendering and isolated dataset domain/picker modules.
+  The source panel stays near the editor, collapses after preparation and restores
+  focus. New drafts require explicit Save; invalid imports/mappings and CAS
+  conflicts retain editor state. Rationale remains in comments and thorough docs.
+- Explicitly map saved training text/TSV or reusable tests into a definition or
+  new test collection. Range/seeded selection pins exact historical revisions;
+  source bytes, source indices, mapping algorithm and initial construction hashes
+  are recorded without interpreting DPO preferences as correctness. Manual edits
+  preserve construction origin rather than pretending its hash describes current
+  content. Definition settings and source-selection seed remain separate.
+- Production build, 53 selected frontend checks and real browser/native QA pass.
+  A 40-row SFT source maps from revision 1 after its live head advances; the second
+  test page is edited/saved/reloaded and case JSON downloads/imports intact.
+  A second independently advanced test source still supplies its selected
+  historical cases to a sampled definition, which executes real two-model calls.
+  Independent CLI exports verify references, hashes, IDs, review text and native
+  counters/results. Light/dark/390px editor/selection evidence is retained.
+- Native Evaluation schemas/jobs/cancel/events/loss, immutable model/training
+  lineage, Explore play, agents/workflows, remote nodes and complete platform/
+  accessibility audits remain within the active full goal. This milestone uses
+  existing native contracts and does not implement backend services.

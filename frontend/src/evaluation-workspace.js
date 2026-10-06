@@ -4,6 +4,22 @@
 import { backend } from "./api.js";
 import { escapeHtml as esc } from "./message.js";
 import { writingDownloadName } from "./writing-files.js";
+import { isDataset, datasetPage } from "./dataset-data.js";
+import {
+  evaluationDatasetCaseLimit,
+  validateEvaluationDataset,
+  parseEvaluationDataset,
+  newEvaluationDataset,
+  decodeEvaluationDataset,
+} from "./evaluation-datasets.js";
+import {
+  evaluationEditor,
+  evaluationCasePageSize,
+} from "./evaluation-editor.js";
+import {
+  evaluationDatasetPicker,
+  selectEvaluationDataset,
+} from "./evaluation-dataset-picker.js";
 import {
   checkTypes,
   defaultEvaluationSettings,
@@ -21,6 +37,8 @@ const state = {
   namespace: "workspace",
   items: [],
   next: "",
+  libraryKind: "evaluations",
+  casePage: 0,
   models: [],
   selected: new Set(),
   resource: null,
@@ -53,7 +71,9 @@ export function evaluationWorkspace(root, preferredModel) {
       throw Error("Save or discard the current changes and results first.");
   };
   async function load(after = "") {
-    const page = await evaluationPage(backend, state.namespace, after);
+    const page = await (
+      state.libraryKind === "datasets" ? datasetPage : evaluationPage
+    )(backend, state.namespace, after);
     state.items = page.resources;
     state.next = page.next;
   }
@@ -85,19 +105,63 @@ export function evaluationWorkspace(root, preferredModel) {
   function paint() {
     if (!current()) return;
     const d = state.value,
-      definition = d?.kind === "definition";
+      definition = d?.kind === "definition",
+      caseEditor = definition || d?.kind === "evaluation-dataset";
     root.innerHTML = `<section class="resource-workspace evaluation-workspace"><header class="view-heading"><div><p class="eyebrow">MODEL QUALITY</p><h1>Evaluations</h1><p class="muted">Save test cases, compare local models and review their actual outputs.</p></div></header>
-      <div class="resource-toolbar"><label>Namespace<input id="evaluation-namespace" maxlength="64" value="${esc(state.namespace)}"></label><button data-evaluation="refresh">Refresh library</button><button data-evaluation="new">New evaluation</button><button data-evaluation="discard">Discard editor / results</button></div>
+      <div class="resource-toolbar"><label>Namespace<input id="evaluation-namespace" maxlength="64" value="${esc(state.namespace)}"></label><label>Library<select id="evaluation-library"><option value="evaluations" ${state.libraryKind === "evaluations" ? "selected" : ""}>Evaluations and results</option><option value="datasets" ${state.libraryKind === "datasets" ? "selected" : ""}>Saved datasets</option></select></label><button data-evaluation="refresh">Refresh library</button><button data-evaluation="new">New evaluation</button><button data-evaluation="new-dataset">New test dataset</button><button data-evaluation="import-cases">Import test cases</button><input id="evaluation-cases-file" type="file" accept=".json,application/json" hidden><button data-evaluation="discard">Discard editor / results</button></div>
       <p role="status" aria-live="polite" class="${state.error ? "danger-action" : "muted"}">${esc(state.error || state.notice || (state.busy ? "Working…" : ""))}</p>
-      <div class="resource-columns"><section aria-label="Evaluation library"><ul class="resource-list">${state.items.map((item) => `<li><button data-evaluation-uri="${esc(item.uri)}" aria-pressed="${state.resource?.uri === item.uri}"><b>${esc(item.title || "Untitled evaluation")}</b><small>Revision ${esc(item.revision)}</small></button></li>`).join("") || '<li class="muted">No evaluations on this page.</li>'}</ul><button data-evaluation="next" ${state.next ? "" : "disabled"}>Next page</button></section>
+      <section id="evaluation-dataset-picker"></section><div class="resource-columns"><section aria-label="Evaluation library"><ul class="resource-list">${state.items.map((item) => `<li><button data-evaluation-uri="${esc(item.uri)}" aria-pressed="${state.resource?.uri === item.uri}"><b>${esc(item.title || "Untitled evaluation")}</b><small>Revision ${esc(item.revision)}</small></button></li>`).join("") || `<li class="muted">No ${state.libraryKind === "datasets" ? "saved datasets" : "evaluations"} on this page.</li>`}</ul><button data-evaluation="next" ${state.next ? "" : "disabled"}>Next page</button></section>
       <section class="panel resource-editor">${
         d
-          ? `<p id="evaluation-save-state" class="fine-print">${state.revision === "0" ? "New definition" : "Revision " + esc(state.revision)}${state.dirty ? " · Unsaved changes" : ""}</p><label>Title<input id="evaluation-title" maxlength="1024" value="${esc(state.resource.title)}"></label><div class="resource-toolbar"><button class="primary" data-evaluation="save">Save ${definition ? "definition" : "review"}</button>${state.revision !== "0" ? '<button data-evaluation="reload">Reload saved version</button><button data-evaluation="export">Export package</button>' : ""}${definition ? '<button data-evaluation="copy">Create definition copy</button>' : ""}</div>
-        ${definition ? definitionMarkup(d) : '<h2>Saved results</h2><p class="muted">Compare the saved outputs and add your review notes.</p><div id="evaluation-saved-results"></div>'}`
+          ? `<p id="evaluation-save-state" class="fine-print">${state.revision === "0" ? "New draft" : "Revision " + esc(state.revision)}${state.dirty ? " · Unsaved changes" : ""}</p><label>Title<input id="evaluation-title" maxlength="1024" value="${esc(state.resource.title)}"></label><div class="resource-toolbar"><button class="primary" data-evaluation="save">Save ${definition ? "definition" : caseEditor ? "test dataset" : "review"}</button>${state.revision !== "0" ? '<button data-evaluation="reload">Reload saved version</button><button data-evaluation="export">Export package</button>' : ""}${caseEditor ? '<button data-evaluation="copy">Create copy</button><button data-evaluation="download-cases">Download test cases</button>' : ""}</div>
+        ${caseEditor ? evaluationEditor(d, state.casePage) : '<h2>Saved results</h2><p class="muted">Compare the saved outputs and add your review notes.</p><div id="evaluation-saved-results"></div>'}`
           : '<h2>Start an evaluation</h2><p class="muted">Create a definition and add your test cases.</p>'
       }</section></div>
       ${definition ? `<section class="panel evaluation-launch"><h2>Compare loaded models</h2><div class="resource-toolbar"><button data-evaluation="models">Refresh models</button><button class="primary" data-evaluation="run">Run saved test cases</button></div><ul class="resource-list">${state.models.map((model) => `<li><label class="check"><input type="checkbox" data-evaluation-model="${model.id}" ${state.selected.has(model.id) ? "checked" : ""}><span>${esc(modelName(model))}<small>${esc(model.architecture || model.format)} · ${esc(model.path)}</small></span></label></li>`).join("") || '<li class="muted">Load a local generation model to run these tests.</li>'}</ul><p class="muted">Choose up to four models. Each receives the same saved raw prompts and settings.</p></section>` : ""}
       <section id="evaluation-live" class="panel evaluation-live" ${state.pending || state.running ? "" : "hidden"}></section></section>`;
+    root.querySelector("#evaluation-library").addEventListener(
+      "change",
+      (event) =>
+        void run(async () => {
+          state.libraryKind = event.target.value;
+          await load();
+        }),
+    );
+    root
+      .querySelector("#evaluation-cases-file")
+      .addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+        void run(async () => {
+          requireClean();
+          if (file.size > 1024 * 1024)
+            throw Error("Test-case imports must be 1 MiB or smaller.");
+          const bytes = new Uint8Array(await file.arrayBuffer()),
+            value = decodeEvaluationDataset(bytes, file.name);
+          const digest = await crypto.subtle.digest("SHA-256", bytes);
+          const provenance = {
+            evaluation_studio: {
+              version: 1,
+              operation: "case-file-import",
+              filename: file.name.slice(0, 512),
+              file_bytes: bytes.length,
+              file_sha256: Array.from(new Uint8Array(digest), (byte) =>
+                byte.toString(16).padStart(2, "0"),
+              ).join(""),
+            },
+          };
+          adoptDraft(
+            newEvaluationDataset(
+              file.name.replace(/\.json$/i, ""),
+              value.cases,
+              provenance,
+            ),
+          );
+          await load();
+          state.notice = "Test cases imported as a new draft.";
+        });
+      });
     root
       .querySelectorAll("[data-evaluation]")
       .forEach((control) =>
@@ -180,55 +244,59 @@ export function evaluationWorkspace(root, preferredModel) {
     root.querySelectorAll("[data-case-remove]").forEach((control) =>
       control.addEventListener("click", () => {
         state.value.cases.splice(Number(control.dataset.caseRemove), 1);
+        state.casePage = Math.min(
+          state.casePage,
+          Math.max(
+            0,
+            Math.ceil(state.value.cases.length / evaluationCasePageSize) - 1,
+          ),
+        );
         dirty();
         paint();
+        const index = Math.min(
+          Number(control.dataset.caseRemove),
+          state.value.cases.length - 1,
+        );
+        (
+          root.querySelector(
+            `[data-case-index="${index}"][data-case-field=label]`,
+          ) || root.querySelector("[data-evaluation=case]")
+        )?.focus();
       }),
     );
     if (state.busy)
       root
         .querySelectorAll("button,input,textarea,select")
         .forEach((control) => (control.disabled = true));
-    if (d && !definition)
+    if (d?.kind === "run")
       results(root.querySelector("#evaluation-saved-results"), d, true);
     live();
+    evaluationDatasetPicker(root.querySelector("#evaluation-dataset-picker"), {
+      namespace: state.namespace,
+      api: backend,
+      busy: state.busy,
+      run,
+      repaint,
+      getSettings: () =>
+        state.value?.kind === "definition"
+          ? state.value.settings
+          : defaultEvaluationSettings(),
+      onDraft: async (prepare) => {
+        requireClean();
+        const resource = await prepare();
+        adoptDraft(resource);
+        await load();
+        state.notice = "Test draft prepared. Review it before saving.";
+      },
+    });
   }
   function dirty() {
     state.dirty = true;
     const target = root.querySelector("#evaluation-save-state");
     if (target)
       target.textContent =
-        (state.revision === "0"
-          ? "New definition"
-          : "Revision " + state.revision) + " · Unsaved changes";
-  }
-  function definitionMarkup(d) {
-    return `<h2>Generation settings</h2><div class="config-grid">${[
-      ["temperature", "Temperature", 0, 5, 0.01],
-      ["top_p", "Top P", 0.000001, 1, 0.01],
-      ["top_k", "Top K", 0, 1000000, 1],
-      ["max_tokens", "Maximum new tokens", 1, 4096, 1],
-      ["seed", "Seed", 0, Number.MAX_SAFE_INTEGER, 1],
-    ]
-      .map(
-        ([key, label, min, max, step]) =>
-          `<label>${label}<input type="number" data-evaluation-setting="${key}" value="${esc(d.settings[key])}" min="${min}" max="${max}" step="${step}"></label>`,
-      )
-      .join("")}</div>
-      <h2>Test cases · ${d.cases.length} / 32</h2>${d.cases
-        .map(
-          (item, index) =>
-            `<article class="evaluation-case"><div class="resource-toolbar"><label>Label<input data-case-index="${index}" data-case-field="label" value="${esc(item.label)}"></label><button data-case-remove="${index}">Remove case</button></div><label>Raw prompt<textarea data-case-index="${index}" data-case-field="prompt" rows="3">${esc(item.prompt)}</textarea></label><label>Correctness check<select data-case-index="${index}" data-case-field="type">${Object.entries(
-              checkTypes,
-            )
-              .map(
-                ([key, label]) =>
-                  `<option value="${key}" ${item.check.type === key ? "selected" : ""}>${label}</option>`,
-              )
-              .join(
-                "",
-              )}</select></label>${["exact", "contains", "pointer"].includes(item.check.type) ? `<label>${item.check.type === "pointer" ? "Expected JSON value" : "Expected text"}<textarea data-case-index="${index}" data-case-field="expected" rows="2">${esc(item.check.expected)}</textarea></label>` : ""}${item.check.type === "pointer" ? `<label>JSON pointer<input data-case-index="${index}" data-case-field="pointer" value="${esc(item.check.pointer)}" placeholder="/answer"></label>` : ""}</article>`,
-        )
-        .join("")}<button data-evaluation="case">Add test case</button>`;
+        (state.revision === "0" ? "New draft" : "Revision " + state.revision) +
+        " · Unsaved changes";
   }
   function results(target, value, review) {
     target.innerHTML = `<p class="muted">${value.status} · ${value.results.length} / ${value.planned} requests recorded${value.stop_reason ? " · " + esc(value.stop_reason) : ""}</p><p class="fine-print">Latency includes local request, queue, tokenization, inference and response decoding. Observed tokens/s uses that elapsed time.</p>
@@ -323,13 +391,38 @@ export function evaluationWorkspace(root, preferredModel) {
         .querySelectorAll("button")
         .forEach((control) => (control.disabled = true));
   }
+  function adoptDraft(resource) {
+    state.value = isDataset(resource.uri)
+      ? parseEvaluationDataset(resource)
+      : parseEvaluation(resource);
+    state.resource = resource;
+    state.revision = "0";
+    state.dirty = true;
+    state.casePage = 0;
+    state.libraryKind = isDataset(resource.uri) ? "datasets" : "evaluations";
+  }
   async function open(uri) {
     const loaded = await backend.resource(state.namespace, uri);
-    const value = parseEvaluation(loaded.resource);
+    if (
+      isDataset(uri) &&
+      loaded.resource.metadata?.evaluation_dataset === undefined
+    ) {
+      await selectEvaluationDataset(
+        backend,
+        { ...loaded.resource, revision: loaded.revision },
+        state.namespace,
+      );
+      state.notice = "Dataset selected. Choose its test mapping below.";
+      return;
+    }
+    const value = isDataset(uri)
+      ? parseEvaluationDataset(loaded.resource)
+      : parseEvaluation(loaded.resource);
     state.resource = loaded.resource;
     state.value = value;
     state.revision = loaded.revision;
     state.dirty = false;
+    state.casePage = 0;
   }
   async function execute() {
     requireClean();
@@ -384,6 +477,18 @@ export function evaluationWorkspace(root, preferredModel) {
     }
   }
   async function action(name) {
+    // File dialogs need the user click and an enabled input, before busy repaint.
+    if (name === "import-cases") {
+      if (state.busy) return;
+      try {
+        requireClean();
+        root.querySelector("#evaluation-cases-file").click();
+      } catch (error) {
+        state.error = error.message;
+        paint();
+      }
+      return;
+    }
     await run(async () => {
       if (name === "new") {
         requireClean();
@@ -400,6 +505,13 @@ export function evaluationWorkspace(root, preferredModel) {
         );
         state.revision = "0";
         state.dirty = true;
+        state.casePage = 0;
+        state.libraryKind = "evaluations";
+        await load();
+      } else if (name === "new-dataset") {
+        requireClean();
+        adoptDraft(newEvaluationDataset());
+        await load();
       } else if (name === "discard") {
         state.value = null;
         state.resource = null;
@@ -410,30 +522,58 @@ export function evaluationWorkspace(root, preferredModel) {
       } else if (name === "refresh") await load();
       else if (name === "next" && state.next) await load(state.next);
       else if (name === "models") await models();
+      else if (name === "cases-prev")
+        state.casePage = Math.max(0, state.casePage - 1);
+      else if (name === "cases-next")
+        state.casePage = Math.min(
+          Math.max(
+            0,
+            Math.ceil(state.value.cases.length / evaluationCasePageSize) - 1,
+          ),
+          state.casePage + 1,
+        );
       else if (name === "case") {
-        if (state.value.cases.length >= 32)
-          throw Error("Definitions support at most 32 cases.");
+        const limit =
+          state.value.kind === "definition" ? 32 : evaluationDatasetCaseLimit;
+        if (state.value.cases.length >= limit)
+          throw Error(`This editor supports at most ${limit} cases.`);
         state.value.cases.push(newEvaluationCase());
+        state.casePage =
+          state.value.kind === "definition"
+            ? 0
+            : Math.floor(
+                (state.value.cases.length - 1) / evaluationCasePageSize,
+              );
         dirty();
       } else if (name === "copy") {
         if (state.pending) throw Error("Save or discard results first.");
-        const value = validateDefinition(state.value);
-        state.resource = evaluationResource(
-          "definition",
-          state.resource.title + " · copy",
-          value,
-          {
-            evaluation_studio: {
-              version: 1,
-              source: {
-                namespace: state.namespace,
-                uri: state.resource.uri,
-                revision: state.revision,
-              },
-              edited: state.dirty,
+        const dataset = state.value.kind === "evaluation-dataset",
+          value = dataset
+            ? validateEvaluationDataset(state.value)
+            : validateDefinition(state.value);
+        const provenance = {
+          evaluation_studio: {
+            version: 1,
+            source: {
+              namespace: state.namespace,
+              uri: state.resource.uri,
+              revision: state.revision,
             },
+            edited: state.dirty,
           },
-        );
+        };
+        state.resource = dataset
+          ? newEvaluationDataset(
+              state.resource.title + " · copy",
+              value.cases,
+              provenance,
+            )
+          : evaluationResource(
+              "definition",
+              state.resource.title + " · copy",
+              value,
+              provenance,
+            );
         state.value = value;
         state.revision = "0";
         state.dirty = true;
@@ -441,7 +581,9 @@ export function evaluationWorkspace(root, preferredModel) {
         const value =
           state.value.kind === "definition"
             ? validateDefinition(state.value)
-            : validateRun(state.value);
+            : state.value.kind === "evaluation-dataset"
+              ? validateEvaluationDataset(state.value)
+              : validateRun(state.value);
         const resource = { ...state.resource, content: JSON.stringify(value) };
         const saved = await (
           state.revision === "0" ? backend.saveResource : backend.updateResource
@@ -450,13 +592,41 @@ export function evaluationWorkspace(root, preferredModel) {
         state.value = value;
         state.revision = saved.revision;
         state.dirty = false;
+        state.libraryKind = isDataset(state.resource.uri)
+          ? "datasets"
+          : "evaluations";
         await load();
-        state.notice = "Evaluation saved.";
+        state.notice =
+          state.value.kind === "evaluation-dataset"
+            ? "Test dataset saved."
+            : "Evaluation saved.";
       } else if (name === "reload") {
         if (state.pending)
           throw Error("Save or discard results before reloading.");
         await open(state.resource.uri);
         state.notice = "Saved version loaded.";
+      } else if (name === "download-cases") {
+        const value = validateEvaluationDataset({
+          schema: 1,
+          kind: "evaluation-dataset",
+          cases: state.value.cases,
+        });
+        const url = URL.createObjectURL(
+            // Compact output keeps every valid download within the import cap.
+            new Blob([JSON.stringify(value)], {
+              type: "application/json",
+            }),
+          ),
+          link = document.createElement("a");
+        link.href = url;
+        link.download = writingDownloadName(
+          state.resource.title,
+          "txt",
+        ).replace(/\.txt$/, ".cases.json");
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        state.notice =
+          "Current test cases downloaded. Saved data stays unchanged.";
       } else if (name === "export") {
         if (state.dirty)
           throw Error("Save changes before exporting a package.");
@@ -491,10 +661,21 @@ export function evaluationWorkspace(root, preferredModel) {
         state.dirty = false;
         state.pending = null;
         state.pendingResource = null;
+        state.libraryKind = "evaluations";
         await load();
         state.notice = "Evaluation results saved.";
       }
     });
+    if (current() && ["case", "cases-prev", "cases-next"].includes(name)) {
+      const selector =
+        name === "case"
+          ? `[data-case-index="${state.value.cases.length - 1}"][data-case-field=label]`
+          : `[data-evaluation="${name}"]:not(:disabled)`;
+      (
+        root.querySelector(selector) ||
+        root.querySelector("[data-case-field=label]")
+      )?.focus();
+    }
   }
   repaint = paint;
   paint();
