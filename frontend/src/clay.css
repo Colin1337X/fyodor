@@ -92,6 +92,17 @@ input, select, textarea { color: var(--text); }
 .resource-history li { display: grid; gap: 6px; }
 .resource-history li small { color: var(--muted); }
 .resource-history pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.revision-comparison { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+.revision-comparison summary { cursor: pointer; font-weight: 600; }
+.revision-title-change { padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
+.resource-history .revision-lines { display: block; list-style: none; margin: 12px 0; padding: 0; max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+.resource-history .revision-lines li { display: grid; grid-template-columns: 72px 78px minmax(0, 1fr); gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.revision-lines code { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; }
+.revision-line-number, .revision-line-kind, .revision-cr { color: var(--muted); font-size: 11px; }
+.revision-lines .revision-added { border-left: 4px solid var(--success); background: var(--hover); }
+.revision-lines .revision-removed { border-left: 4px solid var(--danger); }
+.resource-history .revision-lines .revision-omitted { display: block; color: var(--muted); font-size: 12px; }
+@media (max-width: 600px) { .resource-history .revision-lines li { grid-template-columns: 62px minmax(0, 1fr); } .revision-lines code { grid-column: 1 / -1; } }
 [role='status']:empty { display: none; }
 .explore-breadcrumb { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 20px 0; }
 .explore-breadcrumb button { max-width: 100%; overflow-wrap: anywhere; }

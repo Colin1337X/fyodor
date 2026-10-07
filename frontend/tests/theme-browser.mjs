@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {evaluationBrowser} from './evaluation-browser.mjs';
 import {evaluationDatasetsBrowser} from './evaluation-datasets-browser.mjs';
 import {switcherBrowser} from './switcher-browser.mjs';
+import {revisionComparisonBrowser} from './revision-comparison-browser.mjs';
 const profile=await mkdtemp(path.join(tmpdir(),'fyodor-theme-'));
 const output=path.resolve('frontend/qa/themes');await mkdir(output,{recursive:true});
 const browser=spawn(process.env.FYODOR_EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
@@ -95,6 +96,9 @@ try {
     await waitFor('!!document.querySelector("#resource-history-content")');
     assert.equal(await evaluate('document.querySelector("#resource-history-content").textContent'),'<script>inert</script> saved from desktop');
     assert.equal(await evaluate('document.querySelector(".resource-history script")'),null);
+    await evaluate('document.querySelector(".revision-comparison").open=true');
+    await waitFor('document.querySelector(".revision-comparison-body").textContent.includes("1 added lines · 1 removed lines")');
+    assert.equal(await evaluate('document.querySelector("#resource-content").value'),'second revision');
     await evaluate('document.querySelector("[data-resource=copy-history]").click()');
     await waitFor('document.querySelector("[role=status]")?.textContent.includes("unsaved editor")');
     await evaluate('document.querySelector("[data-resource=save]").click()');
@@ -237,6 +241,9 @@ try {
     await waitFor('document.querySelectorAll("[data-explore-revision]").length===2 && !document.querySelector("#explore-title").disabled');
     await evaluate('document.querySelector(\'[data-explore-revision="1"]\').click()');
     await waitFor('!!document.querySelector("#explore-history-content") && !document.querySelector("#explore-title").disabled');
+    await evaluate('document.querySelector(".revision-comparison").open=true');
+    await waitFor('document.querySelector(".revision-comparison-body").textContent.includes("1 added lines · 1 removed lines")');
+    assert.equal(await evaluate('document.querySelector("#explore-content").value'),'<script>inert</script> A world of sea glass.');
     await evaluate('document.querySelector("[data-explore=restore-text]").click();');
     await waitFor('document.querySelector(".fine-print")?.textContent.includes("Unsaved changes")');
     assert.equal(await evaluate('document.querySelector("#explore-content").value'),'A world of sea glass.');
@@ -522,6 +529,7 @@ try {
     const evaluations=await evaluationBrowser({evaluate,waitFor,reload,call,sessionId,output,profile});
     const evaluationDatasets=await evaluationDatasetsBrowser({evaluate,waitFor,reload,call,sessionId,output,profile});
     const switcher=await switcherBrowser({evaluate,waitFor,call,sessionId,output,sourceUri:evaluationDatasets.evaluation_source_uri});
+    await revisionComparisonBrowser({evaluate,waitFor,call,sessionId,output,writingUri:writing_uri});
     await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,...evaluations,...evaluationDatasets,...switcher}));
 
 

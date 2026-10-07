@@ -1,6 +1,6 @@
 # Writing UX: Snep reference and Fyodor adaptation
 
-Updated 2026-10-06 following the user's request to inspect
+Updated 2026-10-07 following the user's request to inspect
 `C:/Users/Colin/snep`. Reference files consulted were its `README.md`,
 `index.html`, `styles.css`, relevant portions of `main.js` and license. The
 reference calls itself Cherenkov: a framework-free story workspace. It was
@@ -47,6 +47,11 @@ Words are whitespace-separated groups; characters are Unicode code points.
 This is a simple prose count, not language-specific segmentation or a model-token
 estimate. Save state updates immediately when the title or content changes.
 Saving is still explicit; there is no autosave claim.
+
+Historical previews offer a read-only comparison with the current editor,
+including unsaved text. Added/removed lines and title changes update without
+replacing the textarea; existing copy/save guards remain active. See
+[comparison semantics and limits](REVISION_COMPARISON.md).
 
 ## Markdown and plain-text interchange
 

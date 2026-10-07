@@ -31,7 +31,8 @@ export function installSwitcher({
     busy = false,
     generation = 0,
     returnFocus = null,
-    selection = null;
+    selection = null,
+    focusPending = false;
   function controls() {
     dialog.querySelector("#switcher-resource-controls").hidden =
       mode !== "resources";
@@ -141,12 +142,32 @@ export function installSwitcher({
       errorMessage(error.message);
     }
   }
+  function restoreFocus() {
+    const target =
+      returnFocus?.isConnected &&
+      !returnFocus.disabled &&
+      !returnFocus.closest("[inert]")
+        ? returnFocus
+        : button;
+    target.focus();
+    if (selection && target === returnFocus)
+      try {
+        target.setSelectionRange(
+          selection.start,
+          selection.end,
+          selection.direction,
+        );
+      } catch {}
+  }
   function open() {
     if (dialog.open) {
       query.focus();
       return;
     }
     if (document.querySelector("dialog[open]")) return;
+    // Native close restores the element before its queued close event. Restore
+    // our saved caret before a same-task reopen captures that element again.
+    if (focusPending) restoreFocus();
     returnFocus = document.activeElement;
     selection =
       returnFocus && typeof returnFocus.selectionStart === "number"
@@ -164,6 +185,7 @@ export function installSwitcher({
     items = [];
     next = "";
     dialog.showModal();
+    focusPending = true;
     commands();
     query.focus();
   }
@@ -177,21 +199,8 @@ export function installSwitcher({
     if (dialog.open) return;
     generation++;
     busy = false;
-    const target =
-      returnFocus?.isConnected &&
-      !returnFocus.disabled &&
-      !returnFocus.closest("[inert]")
-        ? returnFocus
-        : button;
-    target.focus();
-    if (selection && target === returnFocus)
-      try {
-        target.setSelectionRange(
-          selection.start,
-          selection.end,
-          selection.direction,
-        );
-      } catch {}
+    focusPending = false;
+    restoreFocus();
   });
   dialog.querySelectorAll("[data-switcher-mode]").forEach((n) =>
     n.addEventListener("click", () => {
@@ -226,6 +235,13 @@ export function installSwitcher({
     .addEventListener("click", () => void search());
   dialog.addEventListener("keydown", (event) => {
     if (event.isComposing) return;
+    // A populated native search field can consume Escape to clear itself.
+    // The modal's advertised shortcut must dismiss it on the first press.
+    if (event.key === "Escape") {
+      event.preventDefault();
+      dialog.close();
+      return;
+    }
     if (event.target === query) {
       if (event.key === "Enter") {
         event.preventDefault();

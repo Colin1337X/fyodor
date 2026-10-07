@@ -1,6 +1,7 @@
 import {backend} from './api.js';
 import {escapeHtml as esc} from './message.js';
 import {exploreKind, explorePage, newExploreResource} from './explore-data.js';
+import {installRevisionComparison} from './revision-comparison.js';
 
 // Drafts live in memory, separate from canonical resources. Updates send only
 // title/text so native metadata, provenance and integer precision stay intact.
@@ -67,6 +68,7 @@ export function exploreWorkspace(root) {
       });
     });
     if (state.busy) root.querySelectorAll('button,input,textarea').forEach(control => control.disabled = true);
+    installRevisionComparison(root,{current,getSnapshot:()=>state.preview&&({saved:state.preview.resource,draft:state.draft,savedRevision:state.preview.revision,editorRevision:state.revision,dirty:state.dirty})});
   }
 
   function requireClean() {

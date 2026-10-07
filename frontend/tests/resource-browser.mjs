@@ -89,6 +89,7 @@ try{
   assert.deepEqual(mappedRun.results.map(row=>({status:row.status,text:row.text,generated_tokens:row.generated_tokens})),Array.from({length:4},()=>({status:'pass',text:'bc',generated_tokens:2})));
   console.log('Historical SFT -> reusable test dataset -> file interchange -> sampled definition -> real evaluation results verified through native CLI persistence');
   console.log('Quick switcher keyboard/focus, retained drafts, title search, exact revision inspection and stale-write guards passed');
+  console.log('Resources/Explore/Writing revision comparisons, live draft focus, dirty-copy guards and exact saved reload passed');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});

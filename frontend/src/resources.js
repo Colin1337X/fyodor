@@ -5,6 +5,7 @@ import {decodeWritingFile, downloadWritingText, writingFileLimit} from './writin
 import {contextIdentity} from './context-workspace.js';
 import {escapeHtml as esc} from './message.js';
 import {resourceNavigationReference} from './switcher-data.js';
+import {installRevisionComparison} from './revision-comparison.js';
 // Resource edits use CAS in the native store. Parent links and accepted receipts
 // are preserved there; never round-trip arbitrary metadata through JS numbers.
 // Context grants are explicit and do not inherit from folder membership.
@@ -66,6 +67,7 @@ export function resourceWorkspace(root,view='resources',modelId=null){
     function markEdited(){state.dirty=true;root.querySelector('.resource-editor .fine-print').textContent=(state.revision==='0'?'New resource':'Revision '+state.revision)+' · Unsaved changes';}
     root.querySelector('#resource-title')?.addEventListener('input',event=>{state.draft.title=event.target.value;markEdited();});
     root.querySelector('#resource-content')?.addEventListener('input',event=>{state.draft.content=event.target.value;markEdited();const count=root.querySelector('#writing-count');if(count)count.textContent=writingStatsLabel(state.draft.content);});
+    installRevisionComparison(root,{current,getSnapshot:()=>state.preview&&({saved:state.preview.resource,draft:state.draft,savedRevision:state.preview.revision,editorRevision:state.revision,dirty:state.dirty})});
     if(writing&&d){
       root.querySelector('[data-resource="save"]').title='Save (Ctrl/Cmd+S)';
       root.querySelector('.resource-editor').addEventListener('keydown',event=>{

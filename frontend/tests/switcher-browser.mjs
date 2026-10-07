@@ -239,6 +239,7 @@ export async function switcherBrowser({
     ),
   );
   await press("Escape", "Escape", 27);
+  await waitFor('!document.querySelector("#quick-switcher").open');
   await evaluate('document.querySelector("[data-resource=discard]").click()');
   await evaluate('document.querySelector("[data-view=writing]").click()');
   await waitFor(

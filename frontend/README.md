@@ -78,6 +78,10 @@ Writing also imports UTF-8 Markdown/plain text into new drafts and exports curre
 drafts as `.md`/`.txt`; saved JSON packages remain a separate format. Ctrl/Cmd+S
 saves from the editor, and explicit saved-version reload handles concurrent edits.
 
+Writing, Resources and Explore revision previews offer a bounded read-only
+comparison against the current editor, including unsaved text. See
+[revision comparison](docs/REVISION_COMPARISON.md).
+
 Explore now authors worlds and their lore through the existing native resource
 store. It includes title/text editing, revision previews, conflict recovery,
 export and deletion confirmation. Gameplay, canonical state, saves and branches

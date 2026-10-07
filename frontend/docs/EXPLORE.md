@@ -24,6 +24,10 @@ Lore created here appears in Writing's lore browser. Linking it does not grant
 model access: use the separate Writing access action or Context grants. Explore
 authoring itself is local administrative editing and performs no model generation.
 
+Since 2026-10-07, historical previews also offer a read-only line/title comparison
+against the current editor. Existing restore/save behavior remains explicit; see
+[comparison workflow and limits](REVISION_COMPARISON.md).
+
 There is no Play button, invented game transcript, fake save status or mocked
 canonical state. World description is authored text. It is not automatically
 treated as a narrator instruction, scenario schema or executable script.

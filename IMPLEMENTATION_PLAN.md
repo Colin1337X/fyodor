@@ -554,3 +554,32 @@ results and platform/hardware skips; do not borrow previous reports' counts.
 - The full goal remains active: native Evaluation jobs/loss/lineage, Explore
   play, agents/workflows, remote nodes and complete platform/accessibility audits
   remain open. This desktop switcher does not implement the native C TUI palette.
+
+## Frontend authoring revision comparison (2026-10-07)
+
+- Writing, Resources and Explore share a read-only comparison of a selected
+  saved preview against the current editor, including unsaved title/text. Exact
+  line operations expose additions/removals, source line numbers, CRLF differences
+  and omitted unchanged context. Existing copy/save/CAS behavior stays explicit.
+- Bounded UTF-8/line input, trimmed equal edges, a hard changed-region LCS cell
+  budget and capped rendered rows prevent unbounded comparison work. Unsupported
+  sizes report their limitation rather than fabricate counts or a truncated diff.
+- Comparison runs only in an open disclosure; debounced input updates its own
+  body without replacing the editor. Per-paint listeners and mount checks prevent
+  a queued refresh from painting another workspace. Rationale is in code comments;
+  frontend/docs/REVISION_COMPARISON.md documents exact semantics, algorithm,
+  bounds, lifecycle, maintenance boundaries and reproducible verification.
+- Fixed two browser-observed switcher focus issues: populated search fields now
+  dismiss on the first Escape, and immediate close/reopen preserves the original
+  caret before queued native close events arrive. The harness asserts dismissal
+  before continuing, preventing programmatic clicks behind a modal from masking
+  an unfinished interaction.
+- Production build, 62 selected frontend checks and real browser/native QA pass.
+  Resources/Explore comparisons preserve editor text; native text insertion in
+  Writing verifies live counts/title changes, inert markup, selection retention,
+  dirty-copy rejection, navigation during queued refresh and exact saved reload.
+  Independent native CLI exports and earlier dataset/training/evaluation flows
+  pass. Light/dark/390px comparison evidence was visually inspected and retained.
+- No backend implementation changed. Native Evaluation jobs/loss/lineage,
+  Explore play, agents/workflows, remote nodes and full platform/accessibility
+  audits remain open within the active full goal.

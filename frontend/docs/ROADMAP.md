@@ -10,7 +10,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | --- | --- | --- |
 | Shell/appearance | Grouped navigation, shared model selector, responsive overlay, named themes, clay material, preferences, keyboard quick switcher and explicit saved-title search | Full keyboard/screen-reader/zoom audit and final cross-platform packaging QA; see `QUICK_SWITCHER.md`. |
 | Chat | Stored conversations, JSON import/export, safe code, regenerate/edit, remote streaming/Stop | Native local streaming/cancel contract and richer agent execution UI. |
-| Writing | Editor-first studio, focus mode, live counts, session story guidance, document/note/character/project editing, folders, history, lore links, model preview, accepted receipt provenance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md`. |
+| Writing | Editor-first studio, focus mode, live counts, session story guidance, document/note/character/project editing, folders, history/comparison, lore links, model preview, accepted receipt provenance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md`. |
 | Resources | Paged local library, package import/export, edit/delete/history | Typed catalog filters and richer navigation across every resource family. |
 | Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
@@ -122,3 +122,12 @@ modal isolation, explicit title search, exact historical opening after a head
 advance, stale-save retention and dirty inspector rejection. Light/dark/390px
 evidence is retained. See `QUICK_SWITCHER.md` for bounds, catalog permission
 semantics and remaining platform/accessibility audits.
+
+2026-10-07 Read-only revision comparison adds four domain checks (62 selected
+frontend checks total). Production build and owned browser/native workflows pass
+for Resources, Explore and Writing: exact line/title comparison, live unsaved
+updates, caret retention, inert text, dirty-copy rejection, leaving during queued
+refresh and exact saved reload. Light/dark/390px evidence was visually inspected.
+The same run now verifies populated-search Escape dismissal and immediate-reopen
+caret preservation in the switcher. See `REVISION_COMPARISON.md` for exact bounds
+and remaining audits; backend services are unchanged.

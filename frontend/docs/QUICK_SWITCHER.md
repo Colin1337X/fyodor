@@ -25,6 +25,9 @@ Navigation can replace the previous editor, so a disconnected node is not focuse
 Opening the switcher closes narrow navigation. It cannot open over another
 modal, including Settings. IME composition and Alt/Shift-modified Ctrl/Cmd+K are
 ignored. Existing shell shortcuts do not intercept keys while a modal is open.
+Escape is handled explicitly so a populated search field cannot consume the
+first press just to clear itself. Immediate close/reopen restores the saved caret
+before capturing the next focus return; queued close events cannot reset it.
 The switcher is a navigation aid, not a text editor or generation action.
 
 ## Saved title search
