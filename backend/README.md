@@ -559,6 +559,13 @@ stages all parameter and moment updates before committing a valid step. It
 supports global gradient clipping and a resident integer step counter. Real
 TinyLlama vocabulary-head LoRA trajectories match CPU updates; this validation
 also corrected training forward matrices to preserve CPU accumulation rules.
+The private [resident session bridge](benchmarks/TRAINING_SESSION_20261006.md)
+now leases parameters exclusively, rejects stale CPU access, and snapshots all
+four parameter arrays for portable checkpointing or an atomic handoff back to
+CPU. A fresh GPU session resumes the same accumulated training trajectory with
+byte-identical final checkpoints. Freeing an undetached session discards its GPU
+updates and retains the original CPU recovery snapshot. This is ownership and
+checkpoint integration; public graph execution and CLI/UI training still use CPU.
 Full graph/checkpoint ownership and public GPU training integration remain
 unfinished.
 

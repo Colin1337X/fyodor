@@ -1,5 +1,6 @@
 #include "training.h"
 #include "training_internal.h"
+#include "training_parameter.h"
 #include "train_clock.h"
 #include "train_executor.h"
 #include "cpu_kernels.h"
@@ -29,11 +30,6 @@ enum nya_train_op { TR_INPUT, TR_LEAF, TR_ADD, TR_MUL, TR_SCALE, TR_LINEAR,
     TR_GELU, TR_SILU, TR_RMS, TR_EMBED, TR_LOGP, TR_DPO, TR_RESHAPE, TR_ROPE, TR_ATTENTION, TR_MAPPED_LINEAR,
     TR_SOFTCAP, TR_SLICE };
 
-struct nya_train_parameter {
-    size_t rows, columns, count;
-    float *data, *gradient, *moment, *variance;
-};
-
 struct nya_train_tensor {
     nya_train_graph *graph;
     struct nya_train_tensor *previous, *a, *b, *c;
@@ -48,6 +44,7 @@ struct nya_train_tensor {
     const nya_llm_tensor *mapped;
     double scalar;
     int borrowed;
+    nya_train_parameter *parameter;
 };
 
 struct nya_train_graph {
@@ -164,6 +161,7 @@ void nya_train_graph_free(nya_train_graph *g)
     while (t != NULL) {
         nya_train_tensor *previous = t->previous;
         if (!t->borrowed) { free(t->data); free(t->gradient); }
+        if (t->parameter) { --t->parameter->cpu_leaves; nya_train_parameter_free(t->parameter); }
         free(t->indices); free(t->mask); free(t->saved); free(t->scratch); free(t); t = previous;
     }
     free(g->mapped_scratch); free(g);
@@ -179,7 +177,7 @@ nya_train_parameter *nya_train_parameter_create(size_t rows, size_t columns, con
     if (initial != NULL) for (size_t i = 0; i < count; ++i) if (!isfinite(initial[i])) return NULL;
     nya_train_parameter *p = (nya_train_parameter *)calloc(1, sizeof(*p));
     if (p == NULL) return NULL;
-    p->rows = rows; p->columns = columns; p->count = count;
+    p->rows = rows; p->columns = columns; p->count = count; p->references = 1;
     p->data = (float *)calloc(count, sizeof(float)); p->gradient = (float *)calloc(count, sizeof(float));
     p->moment = (float *)calloc(count, sizeof(float)); p->variance = (float *)calloc(count, sizeof(float));
     if (p->data == NULL || p->gradient == NULL || p->moment == NULL || p->variance == NULL) {
@@ -192,11 +190,12 @@ nya_train_parameter *nya_train_parameter_create(size_t rows, size_t columns, con
 void nya_train_parameter_free(nya_train_parameter *p)
 {
     if (p == NULL) return;
+    if (--p->references != 0) return;
     free(p->data); free(p->gradient); free(p->moment); free(p->variance); free(p);
 }
-float *nya_train_parameter_data(nya_train_parameter *p) { return p == NULL ? NULL : p->data; }
-const float *nya_train_parameter_gradient(const nya_train_parameter *p) { return p == NULL ? NULL : p->gradient; }
-void nya_train_zero_grad(nya_train_parameter *p) { if (p != NULL) memset(p->gradient, 0, p->count * sizeof(float)); }
+float *nya_train_parameter_data(nya_train_parameter *p) { return p == NULL || p->resident_owner ? NULL : p->data; }
+const float *nya_train_parameter_gradient(const nya_train_parameter *p) { return p == NULL || p->resident_owner ? NULL : p->gradient; }
+void nya_train_zero_grad(nya_train_parameter *p) { if (p != NULL && !p->resident_owner) memset(p->gradient, 0, p->count * sizeof(float)); }
 
 nya_train_tensor *nya_train_input(nya_train_graph *g, size_t rows, size_t columns, const float *data)
 {
@@ -210,9 +209,12 @@ nya_train_tensor *nya_train_input(nya_train_graph *g, size_t rows, size_t column
 nya_train_tensor *nya_train_leaf(nya_train_graph *g, nya_train_parameter *p)
 {
     if (p == NULL) { tr_error(g, "missing training parameter"); return NULL; }
+    if (p->resident_owner) { tr_error(g, "training parameter is owned by a resident session"); return NULL; }
+    if (p->references == SIZE_MAX || p->cpu_leaves == SIZE_MAX) { tr_error(g, "too many parameter references"); return NULL; }
     nya_train_tensor *t = tr_node(g, p->rows, p->columns, 1, 1);
     if (t == NULL) return NULL;
     t->operation = TR_LEAF; t->data = p->data; t->gradient = g->evaluation ? NULL : p->gradient;
+    t->parameter = p; ++p->references; ++p->cpu_leaves;
     return tr_finite(t);
 }
 const float *nya_train_data(const nya_train_tensor *t) { return t == NULL ? NULL : t->data; }
@@ -904,7 +906,7 @@ int nya_train_adamw_step(nya_train_adamw *o, nya_train_parameter *const *paramet
         !isfinite(o->beta2) || o->beta2 < 0 || o->beta2 >= 1 || !isfinite(o->epsilon) || o->epsilon <= 0 ||
         !isfinite(o->weight_decay) || o->weight_decay < 0 || !isfinite(o->max_grad_norm) || o->max_grad_norm < 0) goto fail;
     for (size_t p = 0; p < count; ++p) {
-        if (parameters[p] == NULL || parameters[p]->count > SIZE_MAX - total) goto fail;
+        if (parameters[p] == NULL || parameters[p]->resident_owner || parameters[p]->count > SIZE_MAX - total) goto fail;
         for (size_t j = 0; j < p; ++j) if (parameters[j] == parameters[p]) goto fail;
         total += parameters[p]->count;
         for (size_t i = 0; i < parameters[p]->count; ++i) {
@@ -1009,7 +1011,7 @@ static int tr_checkpoint(FILE *file, int writing, nya_train_adamw *optimizer,
     if (file == NULL || optimizer == NULL || parameters == NULL || count == 0 ||
         sizeof(float) != 4 || FLT_MANT_DIG != 24 || FLT_MAX_EXP != 128) return -1;
     for (size_t p = 0; p < count; ++p) {
-        if (parameters[p] == NULL || parameters[p]->count > SIZE_MAX - total) return -1;
+        if (parameters[p] == NULL || parameters[p]->resident_owner || parameters[p]->count > SIZE_MAX - total) return -1;
         for (size_t j = 0; j < p; ++j) if (parameters[p] == parameters[j]) return -1;
         total += parameters[p]->count;
     }

@@ -527,6 +527,9 @@ int nya_train_decoder_export(nya_train_decoder *m, FILE *f, char *error, size_t 
         decoder_error(error,capacity,"export requires an imported tokenizer or the 259-token byte vocabulary"); return -1;
     }
     if (ftell(f) != 0) { decoder_error(error,capacity,"GGUF export requires a binary stream positioned at its beginning"); return -1; }
+    for (size_t i = 0; i < m->parameter_count; ++i) if (nya_train_parameter_data(m->parameters[i]) == NULL) {
+        decoder_error(error,capacity,"detach the resident training session before exporting model parameters"); return -1;
+    }
     if (m->source != NULL && m->source->is_gemma) {
         if (decoder_export_gemma(m,f) == 0) return 0;
         decoder_error(error,capacity,"Gemma GGUF export failed; discard the incomplete output stream"); return -1;
