@@ -1,12 +1,14 @@
 import"./styles.css";
 import './clay.css';
-import {resourceWorkspace} from './resources.js';
+import {resourceWorkspace,queueResourceInspection} from './resources.js';
 import {exploreWorkspace} from './explore-workspace.js';
 import {datasetWorkspace} from './dataset-workspace.js';
 import {evaluationWorkspace} from './evaluation-workspace.js';
 import {contextWorkspace,contextIdentity} from './context-workspace.js';
 import {appearanceControls,syncAppearanceColors} from './appearance-controls.js';
-import {icon, navigationMarkup} from './icons.js';
+import {icon, navigationMarkup,navigationGroups} from './icons.js';
+import {installSwitcher} from './switcher.js';
+import {switcherItems} from './switcher-data.js';
 import {messageBody} from './message.js';
 import {benchmarkMarkup, parseBenchmark} from './benchmark.js';
 import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from './training-metrics.js';
@@ -71,7 +73,7 @@ const chat=()=>s.chats.find(c=>c.id===s.active)||s.chats[0];
 
 root.innerHTML=`<div class="app-shell"><aside class="rail"><button class="wordmark" data-view="workspace" aria-label="Fyodor overview"><span>F</span><b>fyodor</b></button><nav aria-label="Workspaces">${navigationMarkup()}</nav><div class="rail-bottom"><button id="collapse-sidebar" aria-label="Toggle sidebar" title="Toggle sidebar">${icon('sidebar')}<span>Collapse sidebar</span></button><div class="rail-status"><i></i><span id="engine-state">starting</span></div></div></aside>
 <aside class="history-panel"><div class="history-head"><b>Chats</b><button id="new-chat" aria-label="New conversation">+</button></div><label class="search">⌕<input id="chat-search" placeholder="Search chats"></label><div id="history"></div><div class="history-tools"><button id="import-chat">import</button><button id="export-chat">export</button><input type="file" id="import-file" accept=".json" hidden></div></aside>
-<section class="stage"><header><button class="mobile-menu" aria-label="Open navigation">${icon('menu')}</button><div><b id="view-title"></b><span id="view-meta"></span></div><span class="provider-pill" id="provider-pill"></span><select id="global-model" aria-label="Active model"></select><button class="load-model">Load model</button><button class="settings-button" id="open-settings" aria-label="Settings">${icon('settings')}</button></header><main id="workspace" aria-label="Workspace"></main><footer><span><i class="dot"></i><b id="footer-engine">backend</b></span><span id="footer-stat">0 models</span></footer></section></div><div class="scrim"></div><dialog id="settings" aria-label="Settings"></dialog><div id="toast" role="status" aria-live="polite"></div>`;
+<section class="stage"><header><button class="mobile-menu" aria-label="Open navigation">${icon('menu')}</button><div><b id="view-title"></b><span id="view-meta"></span></div><span class="provider-pill" id="provider-pill"></span><select id="global-model" aria-label="Active model"></select><button class="load-model">Load model</button><button class="settings-button" id="open-switcher" aria-label="Quick switcher" title="Quick switcher (Ctrl/Cmd+K)">${icon('search')}</button><button class="settings-button" id="open-settings" aria-label="Settings">${icon('settings')}</button></header><main id="workspace" aria-label="Workspace"></main><footer><span><i class="dot"></i><b id="footer-engine">backend</b></span><span id="footer-stat">0 models</span></footer></section></div><div class="scrim"></div><dialog id="settings" aria-label="Settings"></dialog><div id="toast" role="status" aria-live="polite"></div>`;
 const viewRoot=document.querySelector("#workspace");
 const narrowNavigation=matchMedia('(max-width:940px)');
 function syncNavigation(){
@@ -83,6 +85,23 @@ function syncNavigation(){
 }
 new MutationObserver(syncNavigation).observe(document.body,{attributes:true,attributeFilter:['class']});
 narrowNavigation.addEventListener('change',syncNavigation);syncNavigation();
+function navigate(view){
+  if(!Object.hasOwn(meta,view))throw Error('Choose an available workspace.');
+  s.view=view;document.body.classList.remove('menu-open');syncNavigation();render();if(view==='logs')refreshLogs();
+}
+installSwitcher({button:document.querySelector('#open-switcher'),api:backend,getItems:()=>switcherItems(navigationGroups,s.chats),
+  onOpen:()=>{document.body.classList.remove('menu-open');syncNavigation();},
+  openResource:reference=>{queueResourceInspection(reference);navigate('resources');},
+  execute:item=>{
+    if(item.kind==='view')navigate(item.id);
+    else if(item.kind==='chat'){if(!s.chats.some(chat=>chat.id===item.id))throw Error('This conversation is no longer available.');s.active=item.id;navigate('chat');}
+    else if(item.kind==='action'){
+      if(item.id==='new-chat'){newChat();render();}
+      else if(item.id==='settings')openSettings();
+      else if(item.id==='sidebar')document.querySelector('#collapse-sidebar').click();
+    }
+  }
+});
 
 function history(){const q=s.query.toLowerCase(),list=s.chats.filter(c=>!q||c.title.toLowerCase().includes(q));document.querySelector("#history").innerHTML=list.map(c=>`<button class="history-item ${c.id===s.active?"active":""}" data-chat="${c.id}"><span>${esc(c.title)}</span><small>${c.messages.length} messages</small></button>`).join("")||'<p class="no-results">No matching chats.</p>'}
 function modelOptions(){if(s.provider.type==="openai")return `<option value="remote">${esc(s.provider.model||"Set endpoint model")}</option>`;return '<option value="">No model</option>'+s.models.filter(m=>m.generation_supported).map(m=>`<option value="${mid(m)}" ${mid(m)===s.selected?"selected":""}>${esc(mname(m))}</option>`).join("")}
@@ -163,6 +182,8 @@ function updateLogOutput(){
   n.scrollTop=ui.logPaused?scroll:n.scrollHeight;
 }
 
+// Both the header and quick switcher use the same Settings initialization path.
+function openSettings(){settingsView();appearanceSettings()}
 function settingsView(){
   const d=document.querySelector("#settings");d.innerHTML=`<form method="dialog" class="settings-card"><header><div><label>CONFIGURATION</label><h2>Settings</h2></div><button value="close">×</button></header><div class="settings-grid"><label class="field">provider<select id="provider-type"><option value="local">local C runtime</option><option value="openai">OpenAI-compatible endpoint</option></select></label><label class="field remote-setting">base URL<input id="provider-endpoint" value="${esc(s.provider.endpoint)}" placeholder="https://api.openai.com/v1"></label><label class="field remote-setting">API key<input id="provider-key" type="password" value="${esc(s.provider.apiKey)}" autocomplete="off"></label><label class="field remote-setting">model ID<div class="path-field"><input id="provider-model" value="${esc(s.provider.model)}" placeholder="gpt-5"><button type="button" id="test-provider">test</button></div></label><label class="check"><input id="remember-key" type="checkbox" ${s.provider.remember?"checked":""}> remember API key on this device</label><hr><label class="check"><input id="agent-enabled" type="checkbox" ${s.agent.enabled?"checked":""}> enable Agent mode</label><label class="field">maximum agent turns<input id="agent-turns" type="number" min="1" max="24" value="${s.agent.maxTurns}"></label><p class="settings-note">Agent tools can read model status and local time.</p></div><footer><button value="close">cancel</button><button type="button" id="save-settings" class="blue-action">save configuration</button></footer></form>`;d.querySelector("#provider-type").value=s.provider.type;toggleRemoteSettings();d.showModal();
 }
@@ -345,7 +366,7 @@ document.addEventListener("click",async event=>{
   if(event.target.closest("#run-lab")){const p=document.querySelector("#lab-prompt").value.trim();if(p)generate(p,"lab")}
   if(event.target.closest("[data-copy-lab]"))navigator.clipboard.writeText(s.labAnswer?.text||"");
   if(event.target.closest(".mobile-menu")){document.body.classList.toggle("menu-open");syncNavigation();if(document.body.classList.contains('menu-open'))document.querySelector('.rail nav button').focus();}if(event.target.closest(".scrim")){document.body.classList.remove("menu-open");syncNavigation();document.querySelector('.mobile-menu').focus();}
-  if(event.target.closest("#open-settings")){settingsView();appearanceSettings()}if(event.target.closest("#provider-type"))toggleRemoteSettings();
+  if(event.target.closest("#open-settings"))openSettings();if(event.target.closest("#provider-type"))toggleRemoteSettings();
   if(event.target.closest("#save-settings")&&!s.busy){s.provider.type=document.querySelector("#provider-type").value;s.provider.endpoint=document.querySelector("#provider-endpoint").value.trim();s.provider.apiKey=document.querySelector("#provider-key").value.trim();s.provider.model=document.querySelector("#provider-model").value.trim();s.provider.remember=document.querySelector("#remember-key").checked;s.provider.stream=document.querySelector('#remote-stream').checked;s.agent.enabled=document.querySelector("#agent-enabled").checked;s.agent.maxTurns=Math.max(1,Math.min(24,+document.querySelector("#agent-turns").value||6));save();document.querySelector("#settings").close();render()}
   if(event.target.closest("#test-provider"))try{const p={type:"openai",endpoint:document.querySelector("#provider-endpoint").value,apiKey:document.querySelector("#provider-key").value};const result=await backend.openaiModels(p);toast(`connected · ${result.data?.length||0} models`,"success")}catch(error){toast(error.message,"error")}
   const pick=event.target.closest("[data-pick]")?.dataset.pick;if(pick){let path;if(pick==="data"||pick==="evalData")path=await chooseDataset();else if(pick==="output")path=await chooseOutput();else if(pick==="checkpoint"||pick==="resume")path=await chooseCheckpoint(pick==="checkpoint");else path=await chooseModel();if(path){s.training[pick]=path;trainingView()}}
@@ -377,7 +398,7 @@ document.addEventListener("change",event=>{
   if(event.target.id==="system-prompt"){s.params.system=event.target.value;save()}
   if(event.target.id==="import-file"&&event.target.files[0]){if(event.target.files[0].size>4*1024*1024){toast("Chat imports are limited to 4 MiB.","error");return;}const reader=new FileReader();reader.onload=()=>{try{const c=normalizeChat(JSON.parse(reader.result),id());s.chats.unshift(c);s.active=c.id;s.view="chat";render()}catch{toast("invalid chat file","error")}};reader.readAsText(event.target.files[0])}
 });
-document.addEventListener("keydown",event=>{if(event.key==='Escape'){document.body.classList.remove('menu-open');syncNavigation();if(narrowNavigation.matches)document.querySelector('.mobile-menu').focus();}if(event.key==='Tab'&&narrowNavigation.matches&&document.body.classList.contains('menu-open')){const nodes=[...document.querySelectorAll('.rail button,.history-panel button,.history-panel input')].filter(n=>!n.disabled&&n.offsetParent!==null),first=nodes[0],last=nodes.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}if((event.ctrlKey||event.metaKey)&&event.key==='\\'){event.preventDefault();document.querySelector('#collapse-sidebar').click()}if(event.target.id==="prompt"&&event.key==="Enter"&&!event.shiftKey&&!event.isComposing){event.preventDefault();event.target.form.requestSubmit()}});
+document.addEventListener("keydown",event=>{if(event.defaultPrevented||document.querySelector('dialog[open]'))return;if(event.key==='Escape'){document.body.classList.remove('menu-open');syncNavigation();if(narrowNavigation.matches)document.querySelector('.mobile-menu').focus();}if(event.key==='Tab'&&narrowNavigation.matches&&document.body.classList.contains('menu-open')){const nodes=[...document.querySelectorAll('.rail button,.history-panel button,.history-panel input')].filter(n=>!n.disabled&&n.offsetParent!==null),first=nodes[0],last=nodes.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}if((event.ctrlKey||event.metaKey)&&event.key==='\\'){event.preventDefault();document.querySelector('#collapse-sidebar').click()}if(event.target.id==="prompt"&&event.key==="Enter"&&!event.shiftKey&&!event.isComposing){event.preventDefault();event.target.form.requestSubmit()}});
 document.addEventListener("submit",async event=>{
   if(event.target.matches(".composer")){event.preventDefault();const p=event.target.prompt.value.trim();if(p&&!s.busy){if(Number.isInteger(ui.editIndex)&&ui.editChatId===chat().id)chat().messages.splice(ui.editIndex);delete ui.editIndex;delete ui.editChatId;generate(p)}return}
   if(event.target.id==="training-form"){event.preventDefault();collectTraining();try{await invokeDesktop("start_training",{args:{...s.training,...(s.training.mode==="pretrain"?{rank:0,base:""}:{})}});log("training run launched","trainer");toast("training started","success");await refreshTraining()}catch(error){toast(error.message,"error");log(error.message,"trainer")}}

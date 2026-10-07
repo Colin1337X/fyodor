@@ -527,3 +527,30 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   lineage, Explore play, agents/workflows, remote nodes and complete platform/
   accessibility audits remain within the active full goal. This milestone uses
   existing native contracts and does not implement backend services.
+
+## Frontend keyboard navigation and saved-title search (2026-10-07)
+
+- Added a claymorphic native-modal quick switcher using shared sidebar workspace
+  definitions, existing conversations and common actions. Keyboard navigation,
+  editor caret restoration, rapid reopen and Settings modal isolation preserve
+  the authoring flow; window-local drafts remain intact across navigation.
+- Saved-title/URI search is explicit and bounded, reads only catalog headers and
+  records exact namespace/URI/revision references. Sparse paging retains the
+  complete final page and exposes continuation without inferring global totals.
+  Administrative catalog access does not create or imply Context grants.
+- Queued Resources inspection verifies the requested historical revision before
+  adopting it. Busy/dirty guards retain edits, and saving an old snapshot still
+  uses native revision CAS. No backend API or service implementation changed.
+- Separated matching/paging and modal controller modules. Rationale is in code
+  comments; frontend/docs/QUICK_SWITCHER.md thoroughly records matching, limits,
+  focus/search lifecycle, concurrency, provenance/permission semantics, module
+  boundaries, verification setup and remaining audits.
+- Production build, 58 selected frontend checks and real browser/native QA pass.
+  Browser tests exercise native Enter activation, caret restoration, retained
+  Writing text, existing chats/Settings, exact historical reads after independent
+  advancement, stale saves and dirty rejection. Independent native CLI exports
+  and previous dataset/training/evaluation workflows pass in the same harness.
+  Light/dark/390px switcher screenshots were visually inspected and retained.
+- The full goal remains active: native Evaluation jobs/loss/lineage, Explore
+  play, agents/workflows, remote nodes and complete platform/accessibility audits
+  remain open. This desktop switcher does not implement the native C TUI palette.

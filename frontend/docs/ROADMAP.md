@@ -1,6 +1,6 @@
 # Frontend delivery map
 
-Updated 2026-10-06. Frontend work is prioritized; another agent owns backend
+Updated 2026-10-07. Frontend work is prioritized; another agent owns backend
 implementation. The original product brief remains the wider target. This map
 separates usable frontend behavior from planned screens and required contracts.
 
@@ -8,7 +8,7 @@ separates usable frontend behavior from planned screens and required contracts.
 
 | Area | Usable now | Still open |
 | --- | --- | --- |
-| Shell/appearance | Grouped navigation, shared model selector, responsive overlay, named themes, clay material, preferences | Full keyboard/screen-reader/zoom audit and final cross-platform packaging QA. |
+| Shell/appearance | Grouped navigation, shared model selector, responsive overlay, named themes, clay material, preferences, keyboard quick switcher and explicit saved-title search | Full keyboard/screen-reader/zoom audit and final cross-platform packaging QA; see `QUICK_SWITCHER.md`. |
 | Chat | Stored conversations, JSON import/export, safe code, regenerate/edit, remote streaming/Stop | Native local streaming/cancel contract and richer agent execution UI. |
 | Writing | Editor-first studio, focus mode, live counts, session story guidance, document/note/character/project editing, folders, history, lore links, model preview, accepted receipt provenance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md`. |
 | Resources | Paged local library, package import/export, edit/delete/history | Typed catalog filters and richer navigation across every resource family. |
@@ -114,3 +114,11 @@ second-page edit/reload, file interchange, unknown-format/dirty recovery and rea
 generation from sampled cases. CLI exports inspect exact references, hashes,
 selected case IDs and outputs. Canonical native evaluation jobs/loss and stable
 model/training lineage remain open.
+
+2026-10-07 Quick switcher adds five domain checks (58 selected frontend checks
+total). Production build and owned browser/native integration pass, including
+real keyboard activation/focus restoration, retained Writing drafts, Settings
+modal isolation, explicit title search, exact historical opening after a head
+advance, stale-save retention and dirty inspector rejection. Light/dark/390px
+evidence is retained. See `QUICK_SWITCHER.md` for bounds, catalog permission
+semantics and remaining platform/accessibility audits.

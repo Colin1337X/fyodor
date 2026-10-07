@@ -57,6 +57,11 @@ collapses to icons; Ctrl/Cmd+backslash toggles it. Narrow windows use a keyboard
 accessible navigation overlay, with Escape to close it. The header preserves
 the selected model; the footer reports its actual compute provider and activity.
 
+The header search button or Ctrl/Cmd+K opens a keyboard quick switcher for
+workspaces, conversations and common actions. Explicit saved-title search opens
+exact resource revisions with existing edit protection. See the
+[workflow, bounds and verification](docs/QUICK_SWITCHER.md).
+
 Settings offers the named Fyodor, Strawberry, Mint, Lavender and Catppuccin
 palettes, system selection and retained legacy palettes. Claymorphic panels,
 controls and recessed fields share semantic CSS tokens. Radius, fonts, spacing,

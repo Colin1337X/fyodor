@@ -1,6 +1,7 @@
 // A single stroke system keeps controls legible at small sizes. All paths are
 // static application data; no model output is ever treated as SVG markup.
 const paths = {
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
   evaluations: '<path d="M9 3h6v4H9zM9 5H5v16h14V5h-4M8 12l2 2 5-5M8 18h8"/>',
   datasets: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/>',
   explore: '<circle cx="12" cy="12" r="9"/><path d="m16 8-3 5-5 3 3-5 5-3Z"/>',
@@ -18,10 +19,10 @@ const paths = {
   benchmark: '<path d="M4 19a10 10 0 1 1 16 0M12 13l5-6M8 19h8"/><circle cx="12" cy="13" r="2"/>',
 };
 export const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.workspace}</svg>`;
-export function navigationMarkup() {
-  const groups = [['Use', [['workspace','Overview'],['chat','Chat'],['models','Models']]],
+export const navigationGroups = [['Use', [['workspace','Overview'],['chat','Chat'],['models','Models']]],
     ['Create', [['writing','Writing'],['explore','Explore'],['datasets','Datasets'],['resources','Resources'],['context','Context'],['playground','Playground'],['training','Training']]],
     ['Run', [['evaluations','Evaluations'],['benchmark','Benchmarks'],['logs','Logs']]], ['Serve', [['api','API access']]]];
-  return groups.map(([title, entries]) => `<div class="nav-group"><label>${title}</label>${entries.map(([key,label]) =>
+export function navigationMarkup() {
+  return navigationGroups.map(([title, entries]) => `<div class="nav-group"><label>${title}</label>${entries.map(([key,label]) =>
     `<button data-view="${key}" title="${label}" aria-label="${label}">${icon(key)}<span>${label}</span></button>`).join('')}</div>`).join('');
 }

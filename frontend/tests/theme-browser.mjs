@@ -6,6 +6,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {evaluationBrowser} from './evaluation-browser.mjs';
 import {evaluationDatasetsBrowser} from './evaluation-datasets-browser.mjs';
+import {switcherBrowser} from './switcher-browser.mjs';
 const profile=await mkdtemp(path.join(tmpdir(),'fyodor-theme-'));
 const output=path.resolve('frontend/qa/themes');await mkdir(output,{recursive:true});
 const browser=spawn(process.env.FYODOR_EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
@@ -520,7 +521,8 @@ try {
     assert.equal(contextDownload,'<sc');await writeFile(process.env.FYODOR_RESOURCE_QA+'.context.txt',contextDownload);
     const evaluations=await evaluationBrowser({evaluate,waitFor,reload,call,sessionId,output,profile});
     const evaluationDatasets=await evaluationDatasetsBrowser({evaluate,waitFor,reload,call,sessionId,output,profile});
-    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,...evaluations,...evaluationDatasets}));
+    const switcher=await switcherBrowser({evaluate,waitFor,call,sessionId,output,sourceUri:evaluationDatasets.evaluation_source_uri});
+    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,...evaluations,...evaluationDatasets,...switcher}));
 
 
 

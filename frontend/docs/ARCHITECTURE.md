@@ -125,6 +125,12 @@ contrast for every combination of user-provided custom colors.
 
 ## Accessibility and untrusted content
 
+The [quick switcher](QUICK_SWITCHER.md) shares sidebar navigation definitions,
+uses a native modal and separates pure matching/catalog paging from shell actions.
+Explicit saved-title search queues guarded exact-revision Resources inspection;
+it does not create Context permissions. Its documentation records focus lifetime,
+search bounds, continuation, concurrency and remaining platform audits.
+
 - Native buttons, inputs, selects, labels, details and dialogs carry interactions.
 - Active navigation exposes `aria-current`; Explore selected library cards expose
   `aria-pressed`. Status/errors use a status region; Explore adds live announcement.
@@ -146,7 +152,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs frontend/tests/evaluation-datasets.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs frontend/tests/evaluation-datasets.test.mjs frontend/tests/switcher.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 

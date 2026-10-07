@@ -4,13 +4,20 @@ import {arrangeWritingStudio, writingStatsLabel, writingGuidanceKey, writingProm
 import {decodeWritingFile, downloadWritingText, writingFileLimit} from './writing-files.js';
 import {contextIdentity} from './context-workspace.js';
 import {escapeHtml as esc} from './message.js';
+import {resourceNavigationReference} from './switcher-data.js';
 // Resource edits use CAS in the native store. Parent links and accepted receipts
 // are preserved there; never round-trip arbitrary metadata through JS numbers.
 // Context grants are explicit and do not inherit from folder membership.
 // The C Writing provider adds readable ancestors in one authorized snapshot;
 // client selections must not enumerate or duplicate that hierarchy.
-const newState=()=>({guidance:new Map(),focus:false,items:[],projects:[],loreItems:[],loreNext:'',loreTitles:new Map(),loreOpen:false,folder:null,namespace:'workspace',next:'',draft:null,revision:'0',dirty:false,busy:false,error:'',notice:'',history:[],historyNext:'0',preview:null,instructions:'',budget:4096,tokens:32,context:new Set(),generated:null,receipt:null,accepted:null});
+const newState=()=>({pendingOpen:null,guidance:new Map(),focus:false,items:[],projects:[],loreItems:[],loreNext:'',loreTitles:new Map(),loreOpen:false,folder:null,namespace:'workspace',next:'',draft:null,revision:'0',dirty:false,busy:false,error:'',notice:'',history:[],historyNext:'0',preview:null,instructions:'',budget:4096,tokens:32,context:new Set(),generated:null,receipt:null,accepted:null});
 const states={resources:newState(),writing:newState()};
+export function queueResourceInspection(reference){
+  const ref=resourceNavigationReference(reference,reference?.namespace),state=states.resources;
+  if(state.busy||state.pendingOpen)throw Error('Wait for the resource inspector to finish its current operation.');
+  if(state.dirty)throw Error('Save or discard changes in Resources before opening another saved resource.');
+  state.pendingOpen=ref;
+}
 window.addEventListener('beforeunload',event=>{
   if(Object.values(states).some(state=>state.dirty)){event.preventDefault();event.returnValue='';}
 });
@@ -197,5 +204,17 @@ export function resourceWorkspace(root,view='resources',modelId=null){
       else if(name==='delete'&&state.draft){if(state.dirty)throw Error('Save or discard unsaved edits before deleting.');await backend.deleteResource(state.namespace,state.draft.uri,state.revision);state.draft=null;state.dirty=false;await load();state.notice='Resource deleted; revision history is retained.';}
     });
   }
-  repaint=paint;paint();if(!state.busy)void run(()=>load());
+  repaint=paint;paint();if(!state.busy){
+    const requested=state.pendingOpen;state.pendingOpen=null;
+    void run(async()=>{
+      if(!requested){await load();return;}
+      const loaded=await backend.resource(requested.namespace,requested.uri,requested.revision);
+      if(loaded.deleted||loaded.resource?.uri!==requested.uri||loaded.revision!==requested.revision)throw Error('The selected saved revision is unavailable. Search again.');
+      // Adopt only after successful exact-revision validation. Other authoring
+      // views retain their own drafts; native CAS still guards an old snapshot.
+      state.namespace=requested.namespace;state.folder=null;state.draft=loaded.resource;state.revision=loaded.revision;state.dirty=false;
+      state.history=[];state.preview=null;state.generated=null;state.receipt=null;state.accepted=null;
+      await load();await history();state.notice='Selected saved revision opened.';
+    }).then(()=>{if(document.body.dataset.view==='resources'&&state.draft?.uri===requested?.uri&&!state.busy)document.querySelector('#resource-content')?.focus();});
+  }
 }

@@ -70,7 +70,7 @@ try{
   assert.deepEqual(run.results.map(row=>row.generated_tokens),[2,2,null,2,2,null]);
   console.log('Evaluation definitions, real two-model outputs, errors and reviewed results persist through independent native CLI export');
   const exportResource=uri=>JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
-  const trainingSource=exportResource(evaluation_source_uri);assert.equal(trainingSource.content,'a\tWRONG');
+  const trainingSource=exportResource(evaluation_source_uri);assert.equal(trainingSource.content,'a\tAFTER');
   const testDataset=exportResource(evaluation_case_dataset_uri),testCases=JSON.parse(testDataset.content).cases;
   assert.equal(testDataset.metadata.evaluation_dataset.version,1);assert.equal(testCases.length,40);assert.equal(testCases[20].label,'<script>inert</script> test case');
   assert.ok(testCases.every(item=>item.prompt==='a'&&item.check.type==='exact'&&item.check.expected==='bc'));
@@ -88,6 +88,7 @@ try{
   const mappedRun=JSON.parse(exportResource(evaluation_mapped_run_uri).content);assert.equal(mappedRun.definition.uri,evaluation_mapped_definition_uri);assert.equal(mappedRun.definition.revision,'1');
   assert.deepEqual(mappedRun.results.map(row=>({status:row.status,text:row.text,generated_tokens:row.generated_tokens})),Array.from({length:4},()=>({status:'pass',text:'bc',generated_tokens:2})));
   console.log('Historical SFT -> reusable test dataset -> file interchange -> sampled definition -> real evaluation results verified through native CLI persistence');
+  console.log('Quick switcher keyboard/focus, retained drafts, title search, exact revision inspection and stale-write guards passed');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
