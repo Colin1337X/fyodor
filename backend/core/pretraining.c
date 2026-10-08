@@ -1,5 +1,6 @@
 #include "pretraining.h"
 #include "training_internal.h"
+#include "training_graph_device.h"
 #include "model.h"
 
 #include <math.h>
@@ -254,6 +255,45 @@ nya_train_parameter *const *nya_train_decoder_parameters(nya_train_decoder *m, s
 const nya_train_decoder_config *nya_train_decoder_configuration(const nya_train_decoder *m)
 {
     return m == NULL ? NULL : &m->config;
+}
+
+int nya_train_decoder_prepare_resident(nya_train_decoder *m,nya_train_session *session,char *error,size_t capacity)
+{
+    if (!m || !session) { decoder_error(error,capacity,"missing resident decoder or session"); return -1; }
+    for (size_t i=0;i<m->parameter_count;++i) {
+        nya_train_adamw_tensor tensor;
+        if (nya_train_session_parameter(session,m->parameters[i],&tensor)) {
+            decoder_error(error,capacity,nya_train_session_error(session)); return -1;
+        }
+    }
+    for (size_t i=0;i<m->weight_count;++i) {
+        const nya_decoder_weight *weight=m->weights+i;
+        const nya_llm_tensor *frozen=weight->frozen;
+        if (weight->weight || !frozen) continue;
+        if (m->source && m->source->is_gemma && !decoder_gemma_used(m->source,frozen)) continue;
+        nya_train_buffer buffer=0;
+        if (frozen->dimension_count==1) {
+            size_t count=(size_t)frozen->dimensions[0];
+            if (!count || count>SIZE_MAX/sizeof(float)) { decoder_error(error,capacity,"invalid resident model vector"); return -1; }
+            float *values=malloc(count*sizeof(float));
+            if (!values) { decoder_error(error,capacity,"resident model vector staging allocation failed"); return -1; }
+            for (size_t k=0;k<count;++k) values[k]=nya_llm_tensor_value(frozen,k);
+            int valid=1;
+            for (size_t k=0;k<count;++k) if (!isfinite(values[k])) { valid=0; break; }
+            if (valid) buffer=nya_train_session_register(session,frozen,values,count*sizeof(float));
+            free(values);
+            if (!valid) { decoder_error(error,capacity,"non-finite resident model vector"); return -1; }
+        } else if (frozen->dimension_count==2) {
+            buffer=nya_train_session_register(session,frozen,frozen->data,frozen->data_size);
+        } else {
+            /* Imported Gemma can contain non-training tensors. Only model
+               vectors/matrices enter the current supported decoder graph. */
+            continue;
+        }
+        if (!buffer) { decoder_error(error,capacity,nya_train_session_error(session)); return -1; }
+    }
+    if (error && capacity) error[0]='\0';
+    return 0;
 }
 
 int nya_train_decoder_tokenize(nya_train_decoder *m, const char *text,

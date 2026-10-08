@@ -4,6 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct session_constant {
+    struct session_constant *next;
+    const void *key;
+    size_t bytes;
+    nya_train_buffer buffer;
+} session_constant;
+
 struct nya_train_session {
     nya_train_device *device;
     nya_train_parameter **parameters;
@@ -13,7 +20,10 @@ struct nya_train_session {
     nya_train_buffer step, status, norm;
     nya_train_adamw optimizer;
     nya_train_adamw_config pending_settings;
-    int leased, pending;
+    int leased, pending, graph_failed;
+    size_t references;
+    nya_train_scope graph_scope;
+    session_constant *constants;
     char error[160];
 };
 
@@ -45,8 +55,11 @@ static void session_unlease(nya_train_session *s)
 void nya_train_session_free(nya_train_session *s)
 {
     if (!s) return;
+    if (s->references && --s->references) return;
     nya_train_device_free(s->device);
     session_unlease(s);
+    session_constant *constant=s->constants;
+    while (constant) { session_constant *next=constant->next; free(constant); constant=next; }
     free(s->tensors); free(s->parameters); free(s);
 }
 const char *nya_train_session_error(const nya_train_session *s)
@@ -81,6 +94,7 @@ nya_train_session *nya_train_session_create(const char *backend,size_t capacity,
     if (total>SIZE_MAX/(4*sizeof(float))) goto fail;
     failure="resident session host allocation failed";
     s=calloc(1,sizeof(*s)); if (!s) goto fail;
+    s->references=1;
     s->parameters=malloc(count*sizeof(*s->parameters)); s->tensors=calloc(count,sizeof(*s->tensors));
     if (!s->parameters || !s->tensors) goto fail;
     memcpy(s->parameters,parameters,count*sizeof(*parameters)); s->count=count; s->elements=total; s->optimizer=*optimizer;
@@ -112,15 +126,15 @@ fail:
 
 int nya_train_session_zero_grad(nya_train_session *s)
 {
-    if (!session_valid(s) || s->pending) return session_error(s,"observe the pending update before resetting gradients");
+    if (!session_valid(s) || s->pending || s->graph_scope) return session_error(s,"finish the graph and observe the update before resetting gradients");
     for (size_t i=0;i<s->count;++i) if (nya_train_device_zero(s->device,s->tensors[i].gradient))
         return session_error(s,nya_train_device_error(s->device));
     if (nya_train_device_zero(s->device,s->status)) return session_error(s,nya_train_device_error(s->device));
-    s->error[0]='\0'; return 0;
+    s->graph_failed=0; s->error[0]='\0'; return 0;
 }
 int nya_train_session_step(nya_train_session *s,nya_train_adamw_config settings)
 {
-    if (!session_valid(s) || s->pending || !settings_valid(settings))
+    if (!session_valid(s) || s->pending || s->graph_scope || s->graph_failed || !settings_valid(settings))
         return session_error(s,"invalid settings or update still awaiting observation");
     if (nya_train_device_adamw(s->device,s->plan,settings,s->step,s->status,s->norm,1))
         return session_error(s,nya_train_device_error(s->device));
@@ -128,7 +142,7 @@ int nya_train_session_step(nya_train_session *s,nya_train_adamw_config settings)
 }
 int nya_train_session_observe(nya_train_session *s,nya_train_session_metrics *metrics)
 {
-    if (!session_valid(s) || !metrics) return session_error(s,"missing session or metrics destination");
+    if (!session_valid(s) || !metrics || s->graph_failed) return session_error(s,"missing metrics destination or graph failed; reset gradients");
     nya_train_session_metrics m={0};
     if (nya_train_device_read(s->device,s->status,0,&m.status,4) || nya_train_device_read(s->device,s->step,0,&m.step,8) ||
         nya_train_device_read(s->device,s->norm,0,&m.gradient_norm,8)) return session_error(s,nya_train_device_error(s->device));
@@ -183,7 +197,7 @@ static int snapshot_read(nya_train_session *s,session_snapshot *snapshot)
 int nya_train_session_checkpoint_write(nya_train_session *s,FILE *file)
 {
     session_snapshot snapshot={0}; int result=-1;
-    if (!session_valid(s) || !file) return session_error(s,"missing session or checkpoint stream");
+    if (!session_valid(s) || !file || s->graph_scope) return session_error(s,"missing checkpoint stream or graph still active");
     if (!snapshot_read(s,&snapshot)) {
         result=nya_train_checkpoint_write(file,&s->optimizer,snapshot.parameters,s->count);
         if (result) session_error(s,"resident checkpoint write failed; discard incomplete stream");
@@ -193,7 +207,7 @@ int nya_train_session_checkpoint_write(nya_train_session *s,FILE *file)
 int nya_train_session_detach(nya_train_session *s,nya_train_adamw *optimizer)
 {
     session_snapshot snapshot={0};
-    if (!session_valid(s) || !optimizer) return session_error(s,"missing session or optimizer destination");
+    if (!session_valid(s) || !optimizer || s->graph_scope) return session_error(s,"missing optimizer destination or graph still active");
     if (snapshot_read(s,&snapshot)) { snapshot_free(&snapshot); return -1; }
     for (size_t i=0;i<s->count;++i) {
         nya_train_parameter *to=s->parameters[i], *from=snapshot.parameters[i]; size_t bytes=to->count*sizeof(float);
@@ -203,4 +217,53 @@ int nya_train_session_detach(nya_train_session *s,nya_train_adamw *optimizer)
     *optimizer=s->optimizer; snapshot_free(&snapshot);
     nya_train_device_free(s->device); s->device=NULL;
     session_unlease(s); s->error[0]='\0'; return 0;
+}
+
+nya_train_scope nya_train_session_graph_begin(nya_train_session *s)
+{
+    if (!session_valid(s) || s->pending || s->graph_scope || s->graph_failed || s->references==SIZE_MAX) {
+        session_error(s,"session already has an active graph or unobserved update"); return 0;
+    }
+    nya_train_scope scope=nya_train_device_scratch_begin(s->device);
+    if (!scope) { session_error(s,nya_train_device_error(s->device)); return 0; }
+    s->graph_scope=scope; ++s->references; return scope;
+}
+int nya_train_session_graph_end(nya_train_session *s,nya_train_scope scope)
+{
+    if (!session_valid(s) || !scope || s->graph_scope!=scope) return session_error(s,"invalid session graph scope");
+    int result=nya_train_device_scratch_end(s->device,scope);
+    if (result) session_error(s,nya_train_device_error(s->device));
+    s->graph_scope=0; nya_train_session_free(s); return result;
+}
+void nya_train_session_graph_fail(nya_train_session *s)
+{ if (s) { s->graph_failed=1; session_error(s,"resident graph failed; reset gradients before retrying"); } }
+int nya_train_session_parameter(nya_train_session *s,const nya_train_parameter *p,nya_train_adamw_tensor *t)
+{
+    if (!session_valid(s) || !p || !t) return session_error(s,"invalid graph parameter binding");
+    for (size_t i=0;i<s->count;++i) if (s->parameters[i]==p) { *t=s->tensors[i]; return 0; }
+    return session_error(s,"graph parameter does not belong to this session");
+}
+nya_train_buffer nya_train_session_lookup(nya_train_session *s,const void *key,size_t bytes)
+{
+    if (session_valid(s) && key && bytes) for (session_constant *c=s->constants;c;c=c->next)
+        if (c->key==key && c->bytes==bytes) return c->buffer;
+    session_error(s,"model constant was not registered with this session"); return 0;
+}
+nya_train_buffer nya_train_session_register(nya_train_session *s,const void *key,const void *data,size_t bytes)
+{
+    if (!session_valid(s) || !key || !data || !bytes || s->graph_scope || s->pending) {
+        session_error(s,"register immutable model constants before graph execution"); return 0;
+    }
+    for (session_constant *c=s->constants;c;c=c->next) if (c->key==key) {
+        if (c->bytes==bytes) return c->buffer;
+        session_error(s,"model constant key was reused with a different extent"); return 0;
+    }
+    session_constant *c=calloc(1,sizeof(*c));
+    if (!c) { session_error(s,"model constant metadata allocation failed"); return 0; }
+    c->buffer=nya_train_device_alloc(s->device,bytes);
+    if (!c->buffer || nya_train_device_write(s->device,c->buffer,0,data,bytes)) {
+        session_error(s,nya_train_device_error(s->device)); free(c); return 0;
+    }
+    c->key=key; c->bytes=bytes; c->next=s->constants; s->constants=c;
+    return c->buffer;
 }

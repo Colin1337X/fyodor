@@ -1,0 +1,25 @@
+[
+  {
+    "name": "model-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-test-training-graph",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "gemma-ple",
+    "command": [
+      "build-cuda/nya-test-training-graph.exe",
+      "--gemma",
+      "build-cuda/test_models/tiny-gemma4.gguf.1",
+      "build-cuda/training-graph-gemma-ple"
+    ],
+    "exit_code": 1
+  }
+]

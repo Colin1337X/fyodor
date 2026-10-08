@@ -1,6 +1,7 @@
 #include "training.h"
 #include "training_internal.h"
 #include "training_parameter.h"
+#include "training_graph_device.h"
 #include "train_clock.h"
 #include "train_executor.h"
 #include "cpu_kernels.h"
@@ -45,6 +46,9 @@ struct nya_train_tensor {
     double scalar;
     int borrowed;
     nya_train_parameter *parameter;
+    struct nya_train_tensor *next;
+    nya_train_buffer device_data, device_gradient, state, metadata, extra, workspace;
+    double reference_chosen, reference_rejected;
 };
 
 struct nya_train_graph {
@@ -57,7 +61,17 @@ struct nya_train_graph {
     float *mapped_scratch;
     double forward_linear, forward_mapped, backward_seconds[TR_SLICE + 1];
     char error[160];
+    nya_train_session *session;
+    nya_train_device *device;
+    nya_train_scope scope;
+    nya_train_buffer seed;
+    nya_train_tensor *first, *executed;
 };
+
+static int tr_gradient(const nya_train_tensor *t) { return t && (t->gradient || t->device_gradient); }
+static int tr_gpu_backward(nya_train_tensor *loss);
+static const float *tr_gpu_data(nya_train_tensor *t);
+static nya_train_tensor *tr_gpu_prepare(nya_train_tensor *t);
 
 static void tr_error(nya_train_graph *g, const char *text)
 {
@@ -82,27 +96,68 @@ static void *tr_alloc(nya_train_graph *g, size_t count, size_t width)
     return p;
 }
 
+static nya_train_buffer tr_gpu_alloc(nya_train_graph *g,size_t count,size_t width)
+{
+    if (!g || g->error[0]) return 0;
+    if (!count || !width || count>SIZE_MAX/width || count*width>g->limit-g->used) {
+        tr_error(g,"resident graph memory budget exceeded"); return 0;
+    }
+    nya_train_buffer buffer=nya_train_device_alloc(g->device,count*width);
+    if (!buffer) tr_error(g,nya_train_device_error(g->device));
+    else { g->used+=count*width; ++g->allocations; }
+    return buffer;
+}
+static nya_train_buffer tr_gpu_upload(nya_train_graph *g,const void *data,size_t count,size_t width)
+{
+    nya_train_buffer buffer=tr_gpu_alloc(g,count,width);
+    if (buffer && nya_train_device_write(g->device,buffer,0,data,count*width)) {
+        tr_error(g,nya_train_device_error(g->device)); return 0;
+    }
+    return buffer;
+}
+static nya_train_indices tr_gpu_indices(nya_train_graph *g,const uint32_t *ids,size_t count,size_t rows)
+{
+    /* Upper bound includes one group per token; the sealed map may be smaller
+       when IDs repeat. Charge this conservative bound to the graph budget. */
+    if (g->error[0]) return 0;
+    if (!count || count>(SIZE_MAX-4)/16 || count*16+4>g->limit-g->used) {
+        tr_error(g,"resident token map exceeds graph memory budget"); return 0;
+    }
+    nya_train_indices map=nya_train_device_indices(g->device,ids,count,rows);
+    if (!map) tr_error(g,nya_train_device_error(g->device));
+    else { g->used+=count*16+4; ++g->allocations; }
+    return map;
+}
+
 static nya_train_tensor *tr_node(nya_train_graph *g, size_t rows, size_t columns, int gradient, int borrowed)
 {
     if (g == NULL) return NULL;
     if (g->evaluation) gradient = 0;
-    if (g->backward || rows == 0 || columns == 0 || rows > SIZE_MAX / columns) {
+    if (g->backward || rows == 0 || columns == 0 || rows > SIZE_MAX / columns || rows*columns>SIZE_MAX/sizeof(float)) {
         tr_error(g, "invalid tensor shape or graph already used for backward"); return NULL;
     }
     nya_train_tensor *t = (nya_train_tensor *)tr_alloc(g, 1, sizeof(*t));
     if (t == NULL) return NULL;
     t->graph = g; t->rows = rows; t->columns = columns; t->count = rows * columns;
-    t->previous = g->last; g->last = t; t->borrowed = borrowed;
+    t->previous = g->last;
+    if (g->last) g->last->next=t; else g->first=t;
+    g->last = t; t->borrowed = borrowed;
     if (!borrowed) {
+        if (g->device) {
+            t->device_data=tr_gpu_alloc(g,t->count,4);
+            if (gradient) t->device_gradient=tr_gpu_alloc(g,t->count,4);
+            return t->device_data && (!gradient || t->device_gradient) ? t : NULL;
+        }
         t->data = (float *)tr_alloc(g, t->count, sizeof(float));
         if (gradient) t->gradient = (float *)tr_alloc(g, t->count, sizeof(float));
-        if (t->data == NULL || (gradient && t->gradient == NULL)) return NULL;
+        if (t->data == NULL || (gradient && !tr_gradient(t))) return NULL;
     }
     return t;
 }
 
 static nya_train_tensor *tr_finite(nya_train_tensor *t)
 {
+    if (t && t->graph->device) return t;
     if (t != NULL) for (size_t i = 0; i < t->count; ++i) if (!isfinite(t->data[i])) {
         tr_error(t->graph, "training operation produced a non-finite value"); return NULL;
     }
@@ -133,6 +188,20 @@ nya_train_graph *nya_train_graph_create_for_evaluation(size_t limit, nya_train_e
     return g;
 }
 
+nya_train_graph *nya_train_graph_create_resident(size_t limit,nya_train_session *session,int evaluation)
+{
+    if (!session || (evaluation!=0 && evaluation!=1)) return NULL;
+    nya_train_graph *g=nya_train_graph_create(limit);
+    if (!g) return NULL;
+    g->scope=nya_train_session_graph_begin(session);
+    if (!g->scope) { free(g); return NULL; }
+    g->session=session; g->device=nya_train_session_device(session); g->evaluation=evaluation; g->profile=0;
+    float one=1;
+    g->seed=tr_gpu_upload(g,&one,1,4);
+    if (!g->seed) { nya_train_graph_free(g); return NULL; }
+    return g;
+}
+
 /* Avoid worker wakeups for small operations. Compare the product without
    overflowing, even for shape descriptors close to SIZE_MAX. */
 static int tr_parallel_work(size_t rows, size_t columns, size_t tokens)
@@ -160,9 +229,13 @@ void nya_train_graph_free(nya_train_graph *g)
     nya_train_tensor *t = g->last;
     while (t != NULL) {
         nya_train_tensor *previous = t->previous;
-        if (!t->borrowed) { free(t->data); free(t->gradient); }
+        if (g->device || !t->borrowed) { free(t->data); free(t->gradient); }
         if (t->parameter) { --t->parameter->cpu_leaves; nya_train_parameter_free(t->parameter); }
         free(t->indices); free(t->mask); free(t->saved); free(t->scratch); free(t); t = previous;
+    }
+    if (g->session) {
+        if (g->error[0] || (!g->evaluation && !g->backward)) nya_train_session_graph_fail(g->session);
+        nya_train_session_graph_end(g->session,g->scope);
     }
     free(g->mapped_scratch); free(g);
 }
@@ -202,6 +275,11 @@ nya_train_tensor *nya_train_input(nya_train_graph *g, size_t rows, size_t column
     if (data == NULL) { tr_error(g, "missing training input"); return NULL; }
     nya_train_tensor *t = tr_node(g, rows, columns, 0, 0);
     if (t == NULL) return NULL;
+    if (g->device) {
+        for (size_t i=0;i<t->count;++i) if (!isfinite(data[i])) { tr_error(g,"non-finite resident graph input"); return NULL; }
+        if (nya_train_device_write(g->device,t->device_data,0,data,t->count*4)) { tr_error(g,nya_train_device_error(g->device)); return NULL; }
+        return t;
+    }
     memcpy(t->data, data, t->count * sizeof(float));
     return tr_finite(t);
 }
@@ -209,6 +287,14 @@ nya_train_tensor *nya_train_input(nya_train_graph *g, size_t rows, size_t column
 nya_train_tensor *nya_train_leaf(nya_train_graph *g, nya_train_parameter *p)
 {
     if (p == NULL) { tr_error(g, "missing training parameter"); return NULL; }
+    if (g && g->device) {
+        nya_train_adamw_tensor binding;
+        if (nya_train_session_parameter(g->session,p,&binding)) { tr_error(g,nya_train_session_error(g->session)); return NULL; }
+        nya_train_tensor *t=tr_node(g,p->rows,p->columns,1,1);
+        if (!t) return NULL;
+        t->operation=TR_LEAF; t->device_data=binding.values; t->device_gradient=g->evaluation?0:binding.gradient;
+        return t;
+    }
     if (p->resident_owner) { tr_error(g, "training parameter is owned by a resident session"); return NULL; }
     if (p->references == SIZE_MAX || p->cpu_leaves == SIZE_MAX) { tr_error(g, "too many parameter references"); return NULL; }
     nya_train_tensor *t = tr_node(g, p->rows, p->columns, 1, 1);
@@ -217,7 +303,8 @@ nya_train_tensor *nya_train_leaf(nya_train_graph *g, nya_train_parameter *p)
     t->parameter = p; ++p->references; ++p->cpu_leaves;
     return tr_finite(t);
 }
-const float *nya_train_data(const nya_train_tensor *t) { return t == NULL ? NULL : t->data; }
+const float *nya_train_data(const nya_train_tensor *t)
+{ return t == NULL ? NULL : t->graph->device ? tr_gpu_data((nya_train_tensor *)t) : t->data; }
 size_t nya_train_rows(const nya_train_tensor *t) { return t == NULL ? 0 : t->rows; }
 size_t nya_train_columns(const nya_train_tensor *t) { return t == NULL ? 0 : t->columns; }
 
@@ -235,9 +322,10 @@ static nya_train_tensor *tr_binary(nya_train_tensor *a, nya_train_tensor *b, enu
         tr_error(a->graph, "incompatible binary tensor shapes or graphs"); return NULL;
     }
     size_t rows = a->rows > b->rows ? a->rows : b->rows, columns = a->columns > b->columns ? a->columns : b->columns;
-    nya_train_tensor *t = tr_node(a->graph, rows, columns, a->gradient != NULL || b->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(a->graph, rows, columns, tr_gradient(a) || tr_gradient(b), 0);
     if (t == NULL) return NULL;
     t->a = a; t->b = b; t->operation = op;
+    if (t->graph->device) return tr_gpu_prepare(t);
     for (size_t i = 0; i < rows; ++i) for (size_t j = 0; j < columns; ++j) {
         float x = a->data[tr_index(a, i, j)], y = b->data[tr_index(b, i, j)];
         t->data[i * columns + j] = op == TR_ADD ? x + y : x * y;
@@ -251,9 +339,10 @@ static nya_train_tensor *tr_unary(nya_train_tensor *a, enum nya_train_op op, dou
 {
     if (a == NULL) return NULL;
     if (!isfinite(scalar)) { tr_error(a->graph, "non-finite operation parameter"); return NULL; }
-    nya_train_tensor *t = tr_node(a->graph, a->rows, a->columns, a->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(a->graph, a->rows, a->columns, tr_gradient(a), 0);
     if (t == NULL) return NULL;
     t->a = a; t->operation = op; t->scalar = scalar;
+    if (t->graph->device) return tr_gpu_prepare(t);
     for (size_t i = 0; i < a->count; ++i) {
         double x = a->data[i];
         if (op == TR_SCALE) t->data[i] = (float)(x * scalar);
@@ -279,9 +368,10 @@ nya_train_tensor *nya_train_slice_columns(nya_train_tensor *a, size_t first, siz
     if (first >= a->columns || count == 0 || count > a->columns-first) {
         tr_error(a->graph,"invalid column slice"); return NULL;
     }
-    nya_train_tensor *t = tr_node(a->graph,a->rows,count,a->gradient != NULL,0);
+    nya_train_tensor *t = tr_node(a->graph,a->rows,count,tr_gradient(a),0);
     if (t == NULL) return NULL;
     t->operation = TR_SLICE; t->a = a; t->dimensions[0] = first;
+    if (t->graph->device) return tr_gpu_prepare(t);
     for (size_t i = 0; i < a->rows; ++i)
         memcpy(t->data+i*count,a->data+i*a->columns+first,count*sizeof(float));
     return t;
@@ -322,9 +412,10 @@ nya_train_tensor *nya_train_linear(nya_train_tensor *x, nya_train_tensor *w)
 {
     if (x == NULL || w == NULL) return NULL;
     if (x->graph != w->graph || x->columns != w->columns) { tr_error(x->graph, "invalid linear weight shape"); return NULL; }
-    nya_train_tensor *t = tr_node(x->graph, x->rows, w->rows, x->gradient != NULL || w->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(x->graph, x->rows, w->rows, tr_gradient(x) || tr_gradient(w), 0);
     if (t == NULL) return NULL;
     t->a = x; t->b = w; t->operation = TR_LINEAR;
+    if (t->graph->device) return tr_gpu_prepare(t);
     double start = t->graph->profile ? tr_seconds() : 0;
     nya_train_execute(t->graph->executor,tr_linear_forward,t,
         w->rows > 1 && tr_parallel_work(w->rows,x->columns,x->rows));
@@ -403,10 +494,11 @@ nya_train_tensor *nya_train_linear_mapped(nya_train_tensor *x, const nya_llm_ten
         rows * (x->columns / block * block_bytes) != w->data_size) {
         tr_error(x->graph, "frozen matrix extent or block alignment is invalid"); return NULL;
     }
-    nya_train_tensor *t = tr_node(x->graph, x->rows, rows, x->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(x->graph, x->rows, rows, tr_gradient(x), 0);
     if (t == NULL) return NULL;
     t->a = x; t->mapped = w; t->operation = TR_MAPPED_LINEAR;
-    if (x->gradient != NULL && x->columns > x->graph->mapped_columns) x->graph->mapped_columns = x->columns;
+    if (t->graph->device) return tr_gpu_prepare(t);
+    if (tr_gradient(x) && x->columns > x->graph->mapped_columns) x->graph->mapped_columns = x->columns;
     double start = t->graph->profile ? tr_seconds() : 0;
     tr_mapped_job job = {t,block,block_bytes,x->rows >= 4 ? nya_cpu_select_decode() : NULL};
     nya_train_execute(t->graph->executor,tr_mapped_forward,&job,
@@ -423,6 +515,11 @@ nya_train_tensor *nya_train_embedding_mapped(nya_train_graph *g, const nya_llm_t
     for (size_t i = 0; i < count; ++i) if (ids[i] >= w->dimensions[1]) { tr_error(g, "frozen embedding ID out of range"); return NULL; }
     nya_train_tensor *t = tr_node(g, count, (size_t)w->dimensions[0], 0, 0);
     if (t == NULL) return NULL;
+    if (g->device) {
+        t->mapped=w; t->operation=TR_EMBED;
+        t->metadata=tr_gpu_indices(g,ids,count,(size_t)w->dimensions[1]);
+        return tr_gpu_prepare(t);
+    }
     for (size_t i = 0; i < count; ++i) for (size_t j = 0; j < t->columns; ++j)
         t->data[i * t->columns + j] = nya_llm_tensor_value(w, (size_t)ids[i] * t->columns + j);
     return tr_finite(t);
@@ -433,8 +530,13 @@ nya_train_tensor *nya_train_constant_mapped(nya_train_graph *g, const nya_llm_te
     if (w == NULL || !w->bound || w->data == NULL || w->dimension_count != 1 || w->dimensions[0] > SIZE_MAX) {
         tr_error(g, "invalid frozen normalization vector"); return NULL;
     }
-    nya_train_tensor *t = tr_node(g, 1, (size_t)w->dimensions[0], 0, 0);
+    nya_train_tensor *t = tr_node(g, 1, (size_t)w->dimensions[0], 0, g && g->device);
     if (t == NULL) return NULL;
+    if (g->device) {
+        t->device_data=nya_train_session_lookup(g->session,w,t->count*4);
+        if (!t->device_data) { tr_error(g,nya_train_session_error(g->session)); return NULL; }
+        return t;
+    }
     for (size_t i = 0; i < t->count; ++i) t->data[i] = nya_llm_tensor_value(w, i);
     return tr_finite(t);
 }
@@ -445,9 +547,10 @@ nya_train_tensor *nya_train_rms_norm(nya_train_tensor *x, nya_train_tensor *w, f
     if (!isfinite(epsilon) || epsilon <= 0 || (w != NULL && (w->graph != x->graph || w->rows != 1 || w->columns != x->columns))) {
         tr_error(x->graph, "invalid RMSNorm parameters"); return NULL;
     }
-    nya_train_tensor *t = tr_node(x->graph, x->rows, x->columns, x->gradient != NULL || (w != NULL && w->gradient != NULL), 0);
+    nya_train_tensor *t = tr_node(x->graph, x->rows, x->columns, tr_gradient(x) || (w != NULL && tr_gradient(w)), 0);
     if (t == NULL) return NULL;
     t->a = x; t->b = w; t->operation = TR_RMS; t->scalar = epsilon;
+    if (t->graph->device) return tr_gpu_prepare(t);
     for (size_t row = 0; row < x->rows; ++row) {
         double square = 0.0;
         for (size_t j = 0; j < x->columns; ++j) { double v = x->data[row * x->columns + j]; square += v * v; }
@@ -463,9 +566,13 @@ nya_train_tensor *nya_train_embedding(nya_train_tensor *table, const uint32_t *i
     if (table == NULL) return NULL;
     if (ids == NULL || count == 0) { tr_error(table->graph, "invalid embedding IDs"); return NULL; }
     for (size_t i = 0; i < count; ++i) if (ids[i] >= table->rows) { tr_error(table->graph, "embedding ID out of range"); return NULL; }
-    nya_train_tensor *t = tr_node(table->graph, count, table->columns, table->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(table->graph, count, table->columns, tr_gradient(table), 0);
     if (t == NULL) return NULL;
     t->a = table; t->operation = TR_EMBED;
+    if (t->graph->device) {
+        t->metadata=tr_gpu_indices(t->graph,ids,count,table->rows);
+        return tr_gpu_prepare(t);
+    }
     if (!t->graph->evaluation) {
         t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
         if (t->indices == NULL) return NULL;
@@ -481,9 +588,10 @@ nya_train_tensor *nya_train_reshape(nya_train_tensor *x, size_t rows, size_t col
     if (rows == 0 || columns == 0 || rows > SIZE_MAX / columns || rows * columns != x->count) {
         tr_error(x->graph, "reshape changes the tensor element count"); return NULL;
     }
-    nya_train_tensor *t = tr_node(x->graph, rows, columns, x->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(x->graph, rows, columns, tr_gradient(x), 0);
     if (t == NULL) return NULL;
     t->a = x; t->operation = TR_RESHAPE;
+    if (t->graph->device) return tr_gpu_prepare(t);
     memcpy(t->data, x->data, x->count * sizeof(float));
     return t;
 }
@@ -499,10 +607,14 @@ nya_train_tensor *nya_train_rope(nya_train_tensor *x, size_t heads, size_t dimen
     for (size_t i = 0; i < dimension / 2; ++i) if (!isfinite(frequencies[i])) {
         tr_error(x->graph, "non-finite rotary frequency"); return NULL;
     }
-    nya_train_tensor *t = tr_node(x->graph, x->rows, x->columns, x->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(x->graph, x->rows, x->columns, tr_gradient(x), 0);
     if (t == NULL) return NULL;
     t->a = x; t->operation = TR_ROPE; t->dimensions[0] = heads;
     t->dimensions[1] = dimension; t->dimensions[2] = (size_t)split_half;
+    if (t->graph->device) {
+        t->metadata=tr_gpu_upload(t->graph,frequencies,dimension/2,4);
+        return tr_gpu_prepare(t);
+    }
     if (!t->graph->evaluation) {
         t->saved = (float *)tr_alloc(x->graph, dimension / 2, sizeof(float));
         if (t->saved == NULL) return NULL;
@@ -531,14 +643,19 @@ nya_train_tensor *nya_train_attention(nya_train_tensor *q, nya_train_tensor *k,
         tr_error(q->graph, "invalid grouped-query attention shapes"); return NULL;
     }
     nya_train_tensor *t = tr_node(q->graph, q->rows, q->columns,
-        q->gradient != NULL || k->gradient != NULL || v->gradient != NULL, 0);
+        tr_gradient(q) || tr_gradient(k) || tr_gradient(v), 0);
     if (t == NULL) return NULL;
     t->a = q; t->b = k; t->c = v; t->operation = TR_ATTENTION; t->scalar = scale;
     t->dimensions[0] = heads; t->dimensions[1] = kv_heads; t->dimensions[2] = dimension;
     size_t n = q->rows;
+    if (t->graph->device) {
+        t->dimensions[3]=window;
+        if (groups) t->metadata=tr_gpu_upload(t->graph,groups,n,4);
+        return tr_gpu_prepare(t);
+    }
     t->saved = (float *)tr_alloc(q->graph, q->graph->evaluation ? n : n * n * heads, sizeof(float));
     if (t->saved == NULL) return NULL;
-    if (t->gradient != NULL) {
+    if (tr_gradient(t)) {
         t->scratch = (double *)tr_alloc(q->graph,n,sizeof(double));
         if (t->scratch == NULL) return NULL;
     }
@@ -601,9 +718,15 @@ static nya_train_tensor *tr_logprob(nya_train_tensor *x, const uint32_t *labels,
         ++active;
     }
     if (active == 0) { tr_error(x->graph, "loss has no unmasked labels"); return NULL; }
-    nya_train_tensor *t = tr_node(x->graph, 1, 1, x->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(x->graph, 1, 1, tr_gradient(x), 0);
     if (t == NULL) return NULL;
     t->a = x; t->operation = TR_LOGP; t->scalar = mean_loss ? -1.0 / (double)active : 1.0;
+    if (t->graph->device) {
+        t->dimensions[0]=(size_t)mean_loss;
+        t->metadata=tr_gpu_upload(t->graph,labels,count,4);
+        if (mask) t->extra=tr_gpu_upload(t->graph,mask,count,1);
+        return tr_gpu_prepare(t);
+    }
     if (!t->graph->evaluation) {
         t->indices = (uint32_t *)tr_alloc(t->graph, count, sizeof(uint32_t));
         t->mask = (unsigned char *)tr_alloc(t->graph, count, 1);
@@ -637,9 +760,13 @@ nya_train_tensor *nya_train_dpo(nya_train_tensor *chosen, nya_train_tensor *reje
         !isfinite(ref_chosen) || !isfinite(ref_rejected) || !isfinite(beta) || beta <= 0) {
         tr_error(chosen->graph, "invalid DPO scalar inputs"); return NULL;
     }
-    nya_train_tensor *t = tr_node(chosen->graph, 1, 1, chosen->gradient != NULL || rejected->gradient != NULL, 0);
+    nya_train_tensor *t = tr_node(chosen->graph, 1, 1, tr_gradient(chosen) || tr_gradient(rejected), 0);
     if (t == NULL) return NULL;
     t->a = chosen; t->b = rejected; t->operation = TR_DPO;
+    if (t->graph->device) {
+        t->reference_chosen=ref_chosen; t->reference_rejected=ref_rejected; t->scalar=beta;
+        return tr_gpu_prepare(t);
+    }
     double margin = (double)beta * (((double)chosen->data[0] - rejected->data[0]) - (ref_chosen - ref_rejected));
     if (!isfinite(margin)) { tr_error(t->graph, "DPO margin overflow"); return NULL; }
     /* softplus(-margin) and its derivative remain finite at extreme margins. */
@@ -711,8 +838,9 @@ static void tr_mapped_backward(void *argument, size_t worker, size_t workers)
 int nya_train_backward(nya_train_tensor *loss)
 {
     if (loss == NULL) return -1;
+    if (loss->graph->device) return tr_gpu_backward(loss);
     nya_train_graph *g = loss->graph;
-    if (g->backward || g->error[0] != '\0' || loss->count != 1 || loss->gradient == NULL) {
+    if (g->backward || g->error[0] != '\0' || loss->count != 1 || !tr_gradient(loss)) {
         tr_error(g, "backward requires an unused graph and a differentiable scalar loss"); return -1;
     }
     g->backward = 1; loss->gradient[0] += 1.0f;
@@ -731,23 +859,23 @@ int nya_train_backward(nya_train_tensor *loss)
        reference existing nodes. Reverse traversal therefore handles branches
        and shared parameters without recursion or an extra sorting allocation. */
     for (nya_train_tensor *t = g->last; t != NULL; t = t->previous) {
-        if (t->gradient == NULL) continue;
+        if (!tr_gradient(t)) continue;
         double start = g->profile ? tr_seconds() : 0;
         for (size_t i = 0; i < t->count; ++i) if (!isfinite(t->gradient[i])) { tr_error(g, "non-finite training gradient"); return -1; }
         nya_train_tensor *a = t->a, *b = t->b;
         switch (t->operation) {
         case TR_INPUT: case TR_LEAF: break;
         case TR_SLICE:
-            if (a->gradient != NULL) for (size_t row = 0; row < t->rows; ++row)
+            if (tr_gradient(a)) for (size_t row = 0; row < t->rows; ++row)
                 for (size_t col = 0; col < t->columns; ++col)
                     a->gradient[row*a->columns+t->dimensions[0]+col] += t->gradient[row*t->columns+col];
             break;
         case TR_RESHAPE:
-            if (a->gradient != NULL) for (size_t i = 0; i < t->count; ++i) a->gradient[i] += t->gradient[i];
+            if (tr_gradient(a)) for (size_t i = 0; i < t->count; ++i) a->gradient[i] += t->gradient[i];
             break;
         case TR_ROPE: {
             size_t heads = t->dimensions[0], dimension = t->dimensions[1]; int split = t->dimensions[2] != 0;
-            if (a->gradient != NULL) for (size_t n = 0; n < a->rows; ++n) for (size_t h = 0; h < heads; ++h)
+            if (tr_gradient(a)) for (size_t n = 0; n < a->rows; ++n) for (size_t h = 0; h < heads; ++h)
                 for (size_t j = 0; j < dimension / 2; ++j) {
                     size_t i = n * a->columns + h * dimension + (split ? j : 2 * j), k = i + (split ? dimension / 2 : 1);
                     double angle = (double)n * t->saved[j], co, si;
@@ -777,9 +905,9 @@ int nya_train_backward(nya_train_tensor *loss)
                     double ds = probability[col] * (dp - average) * t->scalar;
                     for (size_t j = 0; j < dimension; ++j) {
                         size_t qi = row * a->columns + head * dimension + j, ki = col * b->columns + kh * dimension + j;
-                        if (a->gradient != NULL) a->gradient[qi] += (float)(ds * b->data[ki]);
-                        if (b->gradient != NULL) b->gradient[ki] += (float)(ds * a->data[qi]);
-                        if (v->gradient != NULL) v->gradient[ki] += probability[col] * dy[j];
+                        if (tr_gradient(a)) a->gradient[qi] += (float)(ds * b->data[ki]);
+                        if (tr_gradient(b)) b->gradient[ki] += (float)(ds * a->data[qi]);
+                        if (tr_gradient(v)) v->gradient[ki] += probability[col] * dy[j];
                     }
                 }
             }
@@ -789,12 +917,12 @@ int nya_train_backward(nya_train_tensor *loss)
             for (size_t row = 0; row < t->rows; ++row) for (size_t col = 0; col < t->columns; ++col) {
                 size_t ia = tr_index(a, row, col), ib = tr_index(b, row, col);
                 float dy = t->gradient[row * t->columns + col];
-                if (a->gradient != NULL) a->gradient[ia] += dy * (t->operation == TR_ADD ? 1.0f : b->data[ib]);
-                if (b->gradient != NULL) b->gradient[ib] += dy * (t->operation == TR_ADD ? 1.0f : a->data[ia]);
+                if (tr_gradient(a)) a->gradient[ia] += dy * (t->operation == TR_ADD ? 1.0f : b->data[ib]);
+                if (tr_gradient(b)) b->gradient[ib] += dy * (t->operation == TR_ADD ? 1.0f : a->data[ia]);
             }
             break;
         case TR_SCALE: case TR_GELU: case TR_SILU: case TR_SOFTCAP:
-            if (a->gradient != NULL) for (size_t i = 0; i < t->count; ++i) {
+            if (tr_gradient(a)) for (size_t i = 0; i < t->count; ++i) {
                 double x = a->data[i], derivative;
                 if (t->operation == TR_SCALE) derivative = t->scalar;
                 else if (t->operation == TR_SOFTCAP) {
@@ -811,10 +939,10 @@ int nya_train_backward(nya_train_tensor *loss)
             }
             break;
         case TR_LINEAR:
-            if (a->gradient == NULL || a->gradient != b->gradient) {
+            if (!tr_gradient(a) || a->gradient != b->gradient) {
                 int parallel = tr_parallel_work(b->rows,a->columns,a->rows);
-                if (a->gradient != NULL) nya_train_execute(g->executor,tr_linear_dx,t,parallel && a->rows > 1);
-                if (b->gradient != NULL) nya_train_execute(g->executor,tr_linear_dw,t,parallel && b->rows > 1);
+                if (tr_gradient(a)) nya_train_execute(g->executor,tr_linear_dx,t,parallel && a->rows > 1);
+                if (tr_gradient(b)) nya_train_execute(g->executor,tr_linear_dw,t,parallel && b->rows > 1);
                 break;
             }
             /* Distinct leaves can borrow the same parameter. Preserve the
@@ -822,13 +950,13 @@ int nya_train_backward(nya_train_tensor *loss)
             for (size_t n = 0; n < a->rows; ++n) for (size_t o = 0; o < b->rows; ++o) {
                 float dy = t->gradient[n * b->rows + o];
                 for (size_t i = 0; i < a->columns; ++i) {
-                    if (a->gradient != NULL) a->gradient[n * a->columns + i] += dy * b->data[o * b->columns + i];
-                    if (b->gradient != NULL) b->gradient[o * b->columns + i] += dy * a->data[n * a->columns + i];
+                    if (tr_gradient(a)) a->gradient[n * a->columns + i] += dy * b->data[o * b->columns + i];
+                    if (tr_gradient(b)) b->gradient[o * b->columns + i] += dy * a->data[n * a->columns + i];
                 }
             }
             break;
         case TR_MAPPED_LINEAR:
-            if (a->gradient != NULL && g->mapped_scratch != NULL) {
+            if (tr_gradient(a) && g->mapped_scratch != NULL) {
                 uint32_t type = t->mapped->type;
                 size_t block = type == NYA_LLM_TENSOR_Q4_0 || type == NYA_LLM_TENSOR_Q8_0 ? 32 :
                     type == NYA_LLM_TENSOR_Q4_K || type == NYA_LLM_TENSOR_Q6_K ? 256 : 1;
@@ -840,7 +968,7 @@ int nya_train_backward(nya_train_tensor *loss)
             }
             /* Backward multiplies by W, not W^T. Decode a scalar only as it is
                used; no dense copy or gradient of the frozen base is allocated. */
-            if (a->gradient != NULL) for (size_t o = 0; o < t->columns; ++o) for (size_t i = 0; i < a->columns; ++i) {
+            if (tr_gradient(a)) for (size_t o = 0; o < t->columns; ++o) for (size_t i = 0; i < a->columns; ++i) {
                 float weight = nya_llm_tensor_value(t->mapped, o * a->columns + i);
                 for (size_t n = 0; n < a->rows; ++n) a->gradient[n * a->columns + i] += t->gradient[n * t->columns + o] * weight;
             }
@@ -856,18 +984,18 @@ int nya_train_backward(nya_train_tensor *loss)
                 double inverse = 1.0 / sqrt(square / (double)a->columns + t->scalar);
                 for (size_t j = 0; j < a->columns; ++j) {
                     size_t i = row * a->columns + j;
-                    if (a->gradient != NULL) a->gradient[i] += (float)(inverse * ((double)t->gradient[i] * (b == NULL ? 1.0 : b->data[j]) -
+                    if (tr_gradient(a)) a->gradient[i] += (float)(inverse * ((double)t->gradient[i] * (b == NULL ? 1.0 : b->data[j]) -
                         (double)a->data[i] * inverse * inverse * dot / (double)a->columns));
-                    if (b != NULL && b->gradient != NULL) b->gradient[j] += (float)((double)t->gradient[i] * a->data[i] * inverse);
+                    if (b != NULL && tr_gradient(b)) b->gradient[j] += (float)((double)t->gradient[i] * a->data[i] * inverse);
                 }
             }
             break;
         case TR_EMBED:
-            if (a->gradient != NULL) for (size_t row = 0; row < t->rows; ++row) for (size_t j = 0; j < t->columns; ++j)
+            if (tr_gradient(a)) for (size_t row = 0; row < t->rows; ++row) for (size_t j = 0; j < t->columns; ++j)
                 a->gradient[(size_t)t->indices[row] * t->columns + j] += t->gradient[row * t->columns + j];
             break;
         case TR_LOGP:
-            if (a->gradient != NULL) for (size_t row = 0; row < a->rows; ++row) {
+            if (tr_gradient(a)) for (size_t row = 0; row < a->rows; ++row) {
                 if (!t->mask[row]) continue;
                 double maximum = a->data[row * a->columns], sum = 0.0;
                 for (size_t j = 1; j < a->columns; ++j) if (a->data[row * a->columns + j] > maximum) maximum = a->data[row * a->columns + j];
@@ -879,8 +1007,8 @@ int nya_train_backward(nya_train_tensor *loss)
             }
             break;
         case TR_DPO:
-            if (a->gradient != NULL) a->gradient[0] += (float)((double)t->gradient[0] * t->scalar);
-            if (b->gradient != NULL) b->gradient[0] -= (float)((double)t->gradient[0] * t->scalar);
+            if (tr_gradient(a)) a->gradient[0] += (float)((double)t->gradient[0] * t->scalar);
+            if (tr_gradient(b)) b->gradient[0] -= (float)((double)t->gradient[0] * t->scalar);
             break;
         }
         if (g->profile) g->backward_seconds[t->operation] += tr_seconds()-start;
@@ -1077,4 +1205,182 @@ int nya_train_checkpoint_read(FILE *file, nya_train_adamw *optimizer,
     nya_train_parameter *const *parameters, size_t count)
 {
     return tr_checkpoint(file, 0, optimizer, parameters, count);
+}
+
+
+static nya_train_view tr_gpu_view(const nya_train_tensor *t)
+{ return (nya_train_view){t->device_data,t->rows,t->columns}; }
+static nya_train_unary_op tr_gpu_unary(enum nya_train_op operation)
+{
+    return operation==TR_SILU?NYA_TRAIN_UNARY_SILU:operation==TR_GELU?NYA_TRAIN_UNARY_GELU:
+        operation==TR_SOFTCAP?NYA_TRAIN_UNARY_SOFTCAP:NYA_TRAIN_UNARY_SCALE;
+}
+static nya_train_attention_desc tr_gpu_attention(const nya_train_tensor *t)
+{
+    return (nya_train_attention_desc){tr_gpu_view(t->a),tr_gpu_view(t->b),tr_gpu_view(t->c),
+        t->dimensions[0],t->dimensions[1],t->dimensions[2],t->dimensions[3],(float)t->scalar,t->metadata};
+}
+static nya_train_tensor *tr_gpu_prepare(nya_train_tensor *t)
+{
+    nya_train_graph *g=t->graph;
+    if (g->error[0]) return NULL;
+    switch (t->operation) {
+    case TR_LINEAR:
+        if (t->a->device_gradient && t->a->device_gradient==t->b->device_gradient) {
+            tr_error(g,"resident linear does not support aliased input/weight gradients"); return NULL;
+        }
+        break;
+    case TR_MAPPED_LINEAR:
+        t->extra=nya_train_session_lookup(g->session,t->mapped,t->mapped->data_size);
+        if (!t->extra) tr_error(g,nya_train_session_error(g->session));
+        break;
+    case TR_EMBED:
+        if (t->mapped) {
+            t->extra=nya_train_session_lookup(g->session,t->mapped,t->mapped->data_size);
+            if (!t->extra) tr_error(g,nya_train_session_error(g->session));
+        }
+        if (!t->metadata) tr_error(g,"missing resident embedding map");
+        break;
+    case TR_RMS:
+        t->state=tr_gpu_alloc(g,t->rows,8);
+        break;
+    case TR_ATTENTION: {
+        nya_train_buffer gradients[]={t->a->device_gradient,t->b->device_gradient,t->c->device_gradient};
+        for (size_t i=0;i<3;++i) for (size_t j=0;j<i;++j) if (gradients[i] && gradients[i]==gradients[j]) {
+            tr_error(g,"resident attention requires distinct query/key/value gradients"); return NULL;
+        }
+        t->state=tr_gpu_alloc(g,t->rows*t->dimensions[0],16);
+        if (t->device_gradient) t->workspace=tr_gpu_alloc(g,nya_train_attention_workspace_bytes(t->rows,t->dimensions[0]),1);
+        break;
+    }
+    case TR_LOGP:
+        t->state=tr_gpu_alloc(g,nya_train_loss_state_bytes(t->a->rows),1);
+        break;
+    case TR_DPO:
+        t->state=tr_gpu_alloc(g,1,8);
+        break;
+    default: break;
+    }
+    return g->error[0]?NULL:t;
+}
+
+int nya_train_graph_forward_resident(nya_train_graph *g)
+{
+    if (!g || !g->device || g->error[0]) return -1;
+    nya_train_device *d=g->device;
+    for (nya_train_tensor *t=g->executed?g->executed->next:g->first;t;t=t->next) {
+        nya_train_tensor *a=t->a,*b=t->b;
+        int result=0;
+        switch (t->operation) {
+        case TR_INPUT: case TR_LEAF: break;
+        case TR_ADD: case TR_MUL:
+            result=nya_train_device_binary(d,t->device_data,tr_gpu_view(a),tr_gpu_view(b),
+                t->operation==TR_ADD?NYA_TRAIN_BINARY_ADD:NYA_TRAIN_BINARY_MUL); break;
+        case TR_SCALE: case TR_GELU: case TR_SILU: case TR_SOFTCAP:
+            result=nya_train_device_unary(d,t->device_data,a->device_data,t->count,tr_gpu_unary(t->operation),t->scalar); break;
+        case TR_RESHAPE:
+            result=nya_train_device_unary(d,t->device_data,a->device_data,t->count,NYA_TRAIN_UNARY_SCALE,1); break;
+        case TR_SLICE:
+            result=nya_train_device_slice(d,t->device_data,a->device_data,a->rows,a->columns,t->dimensions[0],t->columns,0); break;
+        case TR_LINEAR:
+            result=nya_train_device_linear(d,t->device_data,b->device_data,0,b->rows,a->columns,a->device_data,a->rows); break;
+        case TR_MAPPED_LINEAR:
+            result=nya_train_device_linear(d,t->device_data,t->extra,t->mapped->type,t->columns,a->columns,a->device_data,a->rows); break;
+        case TR_RMS:
+            result=nya_train_device_rms_norm(d,t->device_data,t->state,tr_gpu_view(a),b?b->device_data:0,(float)t->scalar); break;
+        case TR_EMBED:
+            result=nya_train_device_embedding(d,t->device_data,t->mapped?t->extra:a->device_data,
+                t->mapped?t->mapped->type:0,t->columns,t->metadata); break;
+        case TR_ROPE:
+            result=nya_train_device_rope(d,t->device_data,tr_gpu_view(a),t->dimensions[0],t->dimensions[1],t->metadata,(int)t->dimensions[2]); break;
+        case TR_ATTENTION:
+            result=nya_train_device_attention(d,t->device_data,t->state,tr_gpu_attention(t)); break;
+        case TR_LOGP:
+            result=nya_train_device_loss(d,t->device_data,t->state,tr_gpu_view(a),t->metadata,t->extra,
+                t->dimensions[0]?NYA_TRAIN_LOSS_CE:NYA_TRAIN_LOSS_LOGPROB); break;
+        case TR_DPO:
+            result=nya_train_device_dpo(d,t->device_data,t->state,a->device_data,b->device_data,t->reference_chosen,t->reference_rejected,(float)t->scalar); break;
+        }
+        if (result || nya_train_device_check_finite(d,nya_train_session_status(g->session),t->device_data,t->count,(uint32_t)t->operation+2)) {
+            tr_error(g,nya_train_device_error(d)); return -1;
+        }
+        g->executed=t;
+    }
+    return 0;
+}
+static const float *tr_gpu_data(nya_train_tensor *t)
+{
+    nya_train_graph *g=t->graph;
+    if (nya_train_graph_forward_resident(g)) return NULL;
+    uint32_t status=0;
+    if (nya_train_device_read(g->device,nya_train_session_status(g->session),0,&status,4)) {
+        tr_error(g,nya_train_device_error(g->device)); return NULL;
+    }
+    if (status) { tr_error(g,"resident training operation produced a non-finite value"); return NULL; }
+    if (!t->data) {
+        t->data=tr_alloc(g,t->count,4);
+        if (!t->data) return NULL;
+        if (nya_train_device_read(g->device,t->device_data,0,t->data,t->count*4)) {
+            tr_error(g,nya_train_device_error(g->device)); return NULL;
+        }
+    }
+    return t->data;
+}
+static int tr_gpu_backward(nya_train_tensor *loss)
+{
+    nya_train_graph *g=loss->graph; nya_train_device *d=g->device;
+    if (g->backward || g->evaluation || g->error[0] || loss->count!=1 || !loss->device_gradient) {
+        tr_error(g,"resident backward requires an unused graph and a differentiable scalar loss"); return -1;
+    }
+    if (nya_train_graph_forward_resident(g)) return -1;
+    g->backward=1;
+    if (nya_train_device_unary_backward(d,loss->device_gradient,g->seed,g->seed,1,NYA_TRAIN_UNARY_SCALE,1)) {
+        tr_error(g,nya_train_device_error(d)); return -1;
+    }
+    for (nya_train_tensor *t=g->last;t;t=t->previous) {
+        if (!t->device_gradient) continue;
+        nya_train_tensor *a=t->a,*b=t->b;
+        int result=nya_train_device_check_finite(d,nya_train_session_status(g->session),t->device_gradient,t->count,(uint32_t)t->operation+32);
+        if (result) { tr_error(g,nya_train_device_error(d)); return -1; }
+        switch (t->operation) {
+        case TR_INPUT: case TR_LEAF: break;
+        case TR_ADD: case TR_MUL:
+            result=nya_train_device_binary_backward(d,a->device_gradient,b->device_gradient,tr_gpu_view(a),tr_gpu_view(b),t->device_gradient,
+                t->operation==TR_ADD?NYA_TRAIN_BINARY_ADD:NYA_TRAIN_BINARY_MUL); break;
+        case TR_SCALE: case TR_GELU: case TR_SILU: case TR_SOFTCAP:
+            if (a->device_gradient) result=nya_train_device_unary_backward(d,a->device_gradient,a->device_data,t->device_gradient,t->count,tr_gpu_unary(t->operation),t->scalar);
+            break;
+        case TR_RESHAPE:
+            if (a->device_gradient) result=nya_train_device_unary_backward(d,a->device_gradient,a->device_data,t->device_gradient,t->count,NYA_TRAIN_UNARY_SCALE,1);
+            break;
+        case TR_SLICE:
+            if (a->device_gradient) result=nya_train_device_slice(d,a->device_gradient,t->device_gradient,a->rows,a->columns,t->dimensions[0],t->columns,1);
+            break;
+        case TR_LINEAR:
+            if (a->device_gradient) result=nya_train_device_linear_dx(d,a->device_gradient,b->device_data,0,b->rows,a->columns,t->device_gradient,a->rows);
+            if (!result && b->device_gradient) result=nya_train_device_linear_dw(d,b->device_gradient,a->device_data,t->device_gradient,b->rows,a->columns,a->rows);
+            break;
+        case TR_MAPPED_LINEAR:
+            if (a->device_gradient) result=nya_train_device_linear_dx(d,a->device_gradient,t->extra,t->mapped->type,t->columns,a->columns,t->device_gradient,a->rows);
+            break;
+        case TR_RMS:
+            result=nya_train_device_rms_norm_backward(d,a->device_gradient,b?b->device_gradient:0,t->state,tr_gpu_view(a),b?b->device_data:0,t->device_gradient); break;
+        case TR_EMBED:
+            if (a && a->device_gradient) result=nya_train_device_embedding_backward(d,a->device_gradient,t->device_gradient,t->columns,t->metadata);
+            break;
+        case TR_ROPE:
+            if (a->device_gradient) result=nya_train_device_rope_backward(d,a->device_gradient,(nya_train_view){t->device_gradient,t->rows,t->columns},
+                t->dimensions[0],t->dimensions[1],t->metadata,(int)t->dimensions[2]);
+            break;
+        case TR_ATTENTION:
+            result=nya_train_device_attention_backward(d,a->device_gradient,b->device_gradient,t->c->device_gradient,t->state,t->device_gradient,t->workspace,tr_gpu_attention(t)); break;
+        case TR_LOGP:
+            if (a->device_gradient) result=nya_train_device_loss_backward(d,a->device_gradient,t->state,tr_gpu_view(a),t->metadata,t->extra,t->device_gradient);
+            break;
+        case TR_DPO:
+            result=nya_train_device_dpo_backward(d,a->device_gradient,b->device_gradient,t->state,t->device_gradient); break;
+        }
+        if (result) { tr_error(g,nya_train_device_error(d)); return -1; }
+    }
+    return 0;
 }

@@ -135,7 +135,7 @@ static int precise_forward(nya_train_device *d)
 }
 static int scratch_lifetime(void)
 {
-    nya_train_device *d=nya_train_device_create("cuda",2*1024*1024);
+    nya_train_device *d=nya_train_device_create("cuda",(size_t)NYA_TRAIN_BUFFER_LIMIT*256+1024);
     CHECK(d);
     nya_train_buffer w=nya_train_device_alloc(d,4), x=nya_train_device_alloc(d,4), grad=nya_train_device_alloc(d,4);
     float weight=3, input=2, value;
@@ -179,9 +179,9 @@ static int scratch_lifetime(void)
     CHECK(nya_train_device_alloc(other,17));
     nya_train_device_free(other); /* Active scope and queued zero work. */
     CHECK(!nya_train_device_alloc(d,SIZE_MAX));
-    for (size_t k=3;k<4096;++k) CHECK(nya_train_device_alloc(d,4));
+    for (size_t k=3;k<NYA_TRAIN_BUFFER_LIMIT;++k) CHECK(nya_train_device_alloc(d,4));
     CHECK(!nya_train_device_alloc(d,4));
-    nya_train_device_get_stats(d,&after); CHECK(after.buffers==4096 && !after.failed);
+    nya_train_device_get_stats(d,&after); CHECK(after.buffers==NYA_TRAIN_BUFFER_LIMIT && !after.failed);
     CHECK(!nya_train_device_scratch_end(d,scope));
     /* Recover both table slots and byte capacity, and zero reused storage. */
     nya_train_buffer fresh=nya_train_device_alloc(d,268); CHECK(fresh);

@@ -1,0 +1,49 @@
+[
+  {
+    "name": "aligned-configure",
+    "command": [
+      "cmake",
+      "-S",
+      "backend",
+      "-B",
+      "build-cuda"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "aligned-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-test-training-graph",
+      "nya-test-training-device",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "aligned-focused",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "-R",
+      "training-graph",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "tinyllama-aligned",
+    "command": [
+      "build-cuda/nya-test-training-graph.exe",
+      "--model",
+      ".tools/tinyllama-q4_k_m.gguf",
+      "D:/fyodor-validation/resident-training-graph-20261007/tinyllama-aligned"
+    ],
+    "exit_code": 0
+  }
+]

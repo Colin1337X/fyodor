@@ -57,4 +57,18 @@ int nya_train_session_observe(nya_train_session *session, nya_train_session_metr
    atomic replacement. File write failures may leave a partial stream. */
 int nya_train_session_checkpoint_write(nya_train_session *session, FILE *file);
 int nya_train_session_detach(nya_train_session *session, nya_train_adamw *optimizer);
+
+/* Internal graph integration. A graph retains the session and occupies its
+   single scratch scope. Update/reset/checkpoint/detach reject an active graph.
+   Register immutable model data before beginning a graph; keys and extents
+   identify bindings for the session lifetime, and repeated registration reuses
+   the original copy. Lookup never uploads. Caller owns model/key lifetime. */
+nya_train_scope nya_train_session_graph_begin(nya_train_session *session);
+int nya_train_session_graph_end(nya_train_session *session, nya_train_scope scope);
+void nya_train_session_graph_fail(nya_train_session *session);
+int nya_train_session_parameter(nya_train_session *session, const nya_train_parameter *parameter,
+    nya_train_adamw_tensor *tensor);
+nya_train_buffer nya_train_session_register(nya_train_session *session, const void *key,
+    const void *data, size_t bytes);
+nya_train_buffer nya_train_session_lookup(nya_train_session *session, const void *key, size_t bytes);
 #endif

@@ -1,6 +1,15 @@
 /* Native training derivatives. Each output has one writer, so accumulation is
    stream ordered without floating-point atomics. Packed frozen weights stay
    compressed for dX. These are original Fyodor kernels. */
+extern "C" __global__ void nya_train_slice(float *destination,const float *source,
+    unsigned long long elements,unsigned long long columns,unsigned long long first,unsigned long long count,int backward)
+{
+    unsigned long long i=(unsigned long long)blockIdx.x*blockDim.x+threadIdx.x;
+    if (i>=elements) return;
+    unsigned long long j=i/count*columns+first+i%count;
+    if (backward) destination[j]=__fadd_rn(destination[j],source[i]);
+    else destination[i]=source[j];
+}
 /* Original multi-tensor AdamW kernels. Immutable metadata maps each block to
    a 2048-element parameter chunk, following the scheduling idea studied in
    PyTorch MultiTensorApply. Unlike its in-place fused update, Fyodor stages

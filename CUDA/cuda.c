@@ -267,7 +267,10 @@ static nya_cuda_context *nya_cuda_create_for(int training)
     snprintf(architecture, sizeof(architecture), "--gpu-architecture=compute_%d", selected);
     const char *reference = getenv("NYA_CUDA_REFERENCE");
     c->reference = reference != NULL && strcmp(reference, "1") == 0;
-    const char *options[] = {architecture, "--std=c++11", c->reference ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
+    /* Training follows separate CPU products/additions. FMA contraction in a
+       cancelling gradient can become a material AdamW trajectory difference.
+       Inference retains its existing independently selected compilation. */
+    const char *options[] = {architecture, "--std=c++11", (training || c->reference) ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
     const unsigned char *source = training ? nya_cuda_training_source : nya_cuda_source;
     const char *source_name = training ? "fyodor_training.cu" : "fyodor_inference.cu";
     if (c->program_create(&program, (const char *)source, source_name, 0, NULL, NULL) != NVRTC_SUCCESS) goto failure;

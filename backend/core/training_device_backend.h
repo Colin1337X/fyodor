@@ -37,5 +37,7 @@ typedef struct nya_train_device_interface {
     nya_train_optimizer_plan (*adamw_plan)(void *context, const nya_train_adamw_tensor *tensors, size_t count);
     int (*adamw)(void *context, nya_train_optimizer_plan plan, nya_train_adamw_config config,
         nya_train_buffer step, nya_train_buffer status, nya_train_buffer norm, uint32_t tag);
+    int (*slice)(void *context, nya_train_buffer destination, nya_train_buffer source,
+        size_t rows, size_t columns, size_t first, size_t count, int backward);
 } nya_train_device_interface;
 #endif

@@ -3,7 +3,7 @@
 #include <stdatomic.h>
 #include <errno.h>
 #include <math.h>
-#define NYA_TRAIN_BUFFERS 4096
+#define NYA_TRAIN_BUFFERS NYA_TRAIN_BUFFER_LIMIT
 typedef struct nya_cuda_train_buffer {
     nya_train_buffer id;
     CUdeviceptr memory;
@@ -18,6 +18,7 @@ typedef struct nya_cuda_train {
     CUfunction zero, forward[31], dx[31], dw, check_finite, unary, binary, rms, rms_dx, rms_dw, embedding, embedding_back, rope, attention, attention_prepare, attention_dq, attention_dkv;
     CUfunction loss_rows, loss_reduce, loss_back, dpo, dpo_back;
     CUfunction adamw_norm, adamw_prepare, adamw_stage, adamw_commit, adamw_finish;
+    CUfunction slice;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -119,6 +120,7 @@ static void *nya_ct_create(size_t capacity)
         if (t->cuda->function_get(&t->forward[types[i]],t->cuda->module,name) != CUDA_SUCCESS) goto done;
     }
     if (t->cuda->function_get(&t->zero,t->cuda->module,"nya_train_zero") != CUDA_SUCCESS ||
+        t->cuda->function_get(&t->slice,t->cuda->module,"nya_train_slice") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->adamw_norm,t->cuda->module,"nya_train_adamw_norm") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->adamw_prepare,t->cuda->module,"nya_train_adamw_prepare") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->adamw_stage,t->cuda->module,"nya_train_adamw_stage") != CUDA_SUCCESS ||
@@ -716,11 +718,30 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
     unsigned bx = tile == 64 ? 16 : 32;
     return nya_ct_leave(t,nya_ct_launch(t,kernel,(unsigned)gx,(unsigned)gy,bx,256/bx,args));
 }
+static int nya_ct_slice(void *context,nya_train_buffer destination,nya_train_buffer source,
+    size_t rows,size_t columns,size_t first,size_t count,int backward)
+{
+    nya_cuda_train *t=context;
+    if (t->stats.failed) return -1;
+    nya_cuda_train_buffer *dst=nya_ct_find(t,destination), *src=nya_ct_find(t,source);
+    if (!dst || !src || dst==src || !rows || !columns || !count || first>=columns || count>columns-first ||
+        rows>SIZE_MAX/4/columns || (backward!=0 && backward!=1))
+        return nya_ct_error(t,"invalid training column slice descriptor",0);
+    size_t full=rows*columns*4,part=rows*count*4,elements=rows*count;
+    if (dst->bytes<(backward?full:part) || src->bytes<(backward?part:full))
+        return nya_ct_error(t,"training column slice buffer too small",0);
+    size_t blocks=elements/256+(elements%256!=0);
+    if (blocks>(size_t)t->cuda->grid_limit) return nya_ct_error(t,"training column slice grid too large",0);
+    unsigned long long n=elements,c=columns,f=first,k=count;
+    void *args[]={&dst->memory,&src->memory,&n,&c,&f,&k,&backward};
+    if (nya_ct_enter(t)) return -1;
+    return nya_ct_leave(t,nya_ct_launch(t,t->slice,(unsigned)blocks,1,256,1,args));
+}
 const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo,nya_ct_adamw_plan,nya_ct_adamw};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo,nya_ct_adamw_plan,nya_ct_adamw,nya_ct_slice};
     return &api;
 }

@@ -564,12 +564,17 @@ now leases parameters exclusively, rejects stale CPU access, and snapshots all
 four parameter arrays for portable checkpointing or an atomic handoff back to
 CPU. A fresh GPU session resumes the same accumulated training trajectory with
 byte-identical final checkpoints. Freeing an undetached session discards its GPU
-updates and retains the original CPU recovery snapshot. This is ownership and
-checkpoint integration; public graph execution and CLI/UI training still use CPU.
-Full graph/checkpoint ownership and public GPU training integration remain
-unfinished.
+updates and retains the original CPU recovery snapshot.
+The private [resident decoder graph](benchmarks/TRAINING_GRAPH_20261007.md) now
+connects these kernels into complete CUDA forward/backward execution for dense
+LLaMA and supported imported Gemma decoders, including masked CE and paired DPO.
+Frozen packed weights upload once per session; graph construction prepares
+metadata before execution. Random-model pretraining supports portable checkpoints,
+exact fresh-session resume, evaluation and export through this private interface.
+Public CLI/UI training still uses CPU; device selection and performance tuning
+remain unfinished.
 
-`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
+`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, public GPU training integration, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
 The CLI uses persistent native C CPU workers for sufficiently large dense and
 mapped matrix operations. `--threads 0` (default) chooses host cores, capped at

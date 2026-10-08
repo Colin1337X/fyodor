@@ -13,6 +13,9 @@ typedef uint64_t nya_train_buffer;
 typedef uint64_t nya_train_scope;
 typedef uint64_t nya_train_indices;
 typedef uint64_t nya_train_optimizer_plan;
+/* Bounded descriptor capacity includes persistent parameters/model bindings
+   and both branches of a DPO graph. Byte capacity is still caller-selected. */
+#define NYA_TRAIN_BUFFER_LIMIT 16384
 typedef struct nya_train_device_stats {
     size_t capacity_bytes, used_bytes, buffers, peak_bytes;
     uint64_t kernel_launches, uploads, downloads, upload_bytes, download_bytes, synchronizations;
@@ -29,6 +32,11 @@ int nya_train_device_write(nya_train_device *device, nya_train_buffer buffer, si
 int nya_train_device_read(nya_train_device *device, nya_train_buffer buffer, size_t offset, void *destination, size_t bytes);
 int nya_train_device_zero(nya_train_device *device, nya_train_buffer buffer);
 int nya_train_device_finish(nya_train_device *device);
+/* Copy a contiguous column interval from each F32 row. Backward accumulates
+   into that interval of the full row. Buffers must be distinct; dispatch adds
+   no allocation, copy to host or fence. */
+int nya_train_device_slice(nya_train_device *device, nya_train_buffer destination,
+    nya_train_buffer source, size_t rows, size_t columns, size_t first, size_t count, int backward);
 
 /* Resident F32 AdamW. A sealed plan borrows distinct ordinary buffers for each
    parameter's values, gradients, first and second moments. Creation copies

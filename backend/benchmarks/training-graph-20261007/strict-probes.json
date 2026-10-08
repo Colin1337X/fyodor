@@ -1,0 +1,35 @@
+[
+  {
+    "name": "strict-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-test-training-graph",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "gemma-ple-strict",
+    "command": [
+      "build-cuda/nya-test-training-graph.exe",
+      "--gemma",
+      "build-cuda/test_models/tiny-gemma4.gguf.1",
+      "build-cuda/training-graph-gemma-ple-strict"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "tinyllama",
+    "command": [
+      "build-cuda/nya-test-training-graph.exe",
+      "--model",
+      ".tools/tinyllama-q4_k_m.gguf",
+      "build-cuda/training-graph-tinyllama"
+    ],
+    "exit_code": 1
+  }
+]
