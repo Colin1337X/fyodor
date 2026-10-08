@@ -31,6 +31,11 @@ On Windows, the backend and trainer are supervised child processes with `CREATE_
 
 The workspace shows loaded models, runtime capabilities, and explicit CPU/CUDA/Vulkan controls. Provider selection is validated by the backend. Dense CUDA inference can use resident plans; selecting CUDA alone does not guarantee every architecture is accelerated. The API panel links the native, OpenAI-compatible and Anthropic-compatible routes. See [the backend API documentation](../backend/README.md#http-api-version-1) for request examples and compatibility limits.
 
+Inspect opens reported model metadata and native execution shape without changing
+the active model. Its raw tokenizer tool shows actual counts/IDs and downloads
+complete validated results. See [model inspection](docs/MODEL_INSPECTION.md) for
+bounds, observation lifetime and remaining registry contracts.
+
 Chat preserves conversation history and supports bounded JSON import/export. Playground exposes sampling and speculative-decoding settings. Training runs the native CLI for random-init pretraining, CPT, SFT and DPO, with full weights or LoRA as appropriate; dataset/output paths refer to local files. Training currently executes on CPU. The native trainer accepts Unicode paths for datasets, base models, checkpoints, resume files and output models on Windows, including Korean and emoji filenames.
 
 “Sequences / pairs per update” controls gradient accumulation (1–1024, default

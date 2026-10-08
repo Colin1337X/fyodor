@@ -1,6 +1,6 @@
 # Frontend delivery map
 
-Updated 2026-10-07. Frontend work is prioritized; another agent owns backend
+Updated 2026-10-08. Frontend work is prioritized; another agent owns backend
 implementation. The original product brief remains the wider target. This map
 separates usable frontend behavior from planned screens and required contracts.
 
@@ -14,7 +14,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Resources | Paged local library, package import/export, edit/delete/history | Typed catalog filters and richer navigation across every resource family. |
 | Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
-| Models | Registry and runtime capability display, load/unload, compute selection | Complete model card/evaluation/lineage UI over agreed native registry metadata. |
+| Models | Registry/runtime capability display, load/unload, compute selection, loaded-file/native shape inspector and explicit native tokenizer/download | Stable identity, quantization metadata, aliases/tags/last-used and complete evaluation/lineage UI over agreed native registry metadata; see `MODEL_INSPECTION.md`. |
 | Evaluations | Saved definitions/results/test datasets, paged cases and JSON interchange, explicit saved dataset mappings/range/sample selection, 1–4 local model comparisons, literal/JSON checks, human review and package export | Canonical native Evaluation schema, immutable model/training lineage, native jobs/cancellation and genuine loss/perplexity; see Evaluation docs. |
 | Datasets | Native persistence, corpus/SFT/DPO inspection, import/edit, seeded transforms, exact dedup, Writing/Explore/chat and permission-checked Context receipt ingestion, provenance and export | Arbitrary current full-resource Context ingestion, durable chats, native tokenizer validation, direct resource training and large/streaming datasets; see dataset/Context docs. |
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
@@ -131,3 +131,12 @@ refresh and exact saved reload. Light/dark/390px evidence was visually inspected
 The same run now verifies populated-search Escape dismissal and immediate-reopen
 caret preservation in the switcher. See `REVISION_COMPARISON.md` for exact bounds
 and remaining audits; backend services are unchanged.
+
+2026-10-08 Loaded model inspection adds five boundary checks (67 selected frontend
+checks total). Production build and owned browser/native integration pass for
+registry/shape presentation, actual tokenizer counts/IDs, short and complete
+over-256-ID downloads, edit invalidation, NUL rejection, focus/cleared dismissal,
+unchanged global model selection and delayed native response replacement.
+Light/dark/390px metadata/tokenizer evidence is retained. The inspector uses
+existing APIs; runtime IDs remain process observations, and complete immutable
+model registry/lineage and platform/accessibility audits remain open.

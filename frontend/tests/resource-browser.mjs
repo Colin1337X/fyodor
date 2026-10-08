@@ -90,6 +90,7 @@ try{
   console.log('Historical SFT -> reusable test dataset -> file interchange -> sampled definition -> real evaluation results verified through native CLI persistence');
   console.log('Quick switcher keyboard/focus, retained drafts, title search, exact revision inspection and stale-write guards passed');
   console.log('Resources/Explore/Writing revision comparisons, live draft focus, dirty-copy guards and exact saved reload passed');
+  console.log('Native model inspection/tokenizer, exact token download, input invalidation, modal focus and delayed-response replacement passed');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});

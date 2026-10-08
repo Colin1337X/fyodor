@@ -53,6 +53,8 @@ export const backend = {
   unloadModel: model_id => post("/api/v1/model/unload", { model_id }),
   setCompute: (model_id, compute) => post("/api/v1/model/compute", { model_id, compute }),
   generate: payload => post("/api/v1/generate", payload),
+  modelInfo: model_id => post('/api/v1/model/info',{model_id}),
+  tokenize: (model_id,text) => post('/api/v1/tokenize',{model_id,text}),
   openaiModels: provider => external(provider, "/models"),
   openaiChat: (provider, payload, options) => external(provider, "/chat/completions", payload, options),
 };

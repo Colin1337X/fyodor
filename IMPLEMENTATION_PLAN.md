@@ -583,3 +583,34 @@ results and platform/hardware skips; do not borrow previous reports' counts.
 - No backend implementation changed. Native Evaluation jobs/loss/lineage,
   Explore play, agents/workflows, remote nodes and full platform/accessibility
   audits remain open within the active full goal.
+
+## Frontend loaded model inspection and tokenizer (2026-10-08)
+
+- Added a claymorphic native-modal inspector from Overview/Models. It presents
+  real loaded-file metadata and native context/vocabulary/shape information;
+  unknown values stay unknown and observed runtime IDs are not promoted to stable
+  model identities. Inspect does not change the selected model or compute provider.
+- Added explicit raw native tokenization with UTF-8/NUL input bounds, exact model/
+  count/uint32-ID validation, bounded displayed prefix and complete JSON download.
+  Editing invalidates old results. Submitted text/results are not persisted to
+  session storage or native resources; closing clears their DOM/state.
+- Extracted validation/markup and modal lifetime into maintainable modules,
+  leaving requests at the frontend API boundary. Request tickets discard closed/
+  replaced observations; modal focus returns to its connected origin. Sticky
+  Close stays visible on long narrow inspections. Capability-specific registry
+  notes distinguish tensor execution from native text generation.
+- Thorough documentation in frontend/docs/MODEL_INSPECTION.md records routes,
+  observation and numeric precision limits, tokenizer special-token/template
+  semantics, exact bounds/export schema, lifecycle/concurrency, permissions,
+  verification and backend registry handoff. Rationale remains in code comments.
+- Production build, 67 selected frontend checks and actual browser/native QA pass.
+  Independent native responses confirm shape/token IDs; real short/long downloads
+  preserve all IDs despite the 256-ID display limit. Editing/NUL recovery,
+  Escape/focus/cleared DOM, unchanged global selection and a delayed actual native
+  response released after model replacement are verified. Existing independent
+  CLI persistence and authoring/dataset/evaluation/training workflows still pass.
+  Light/dark/390px inspector/tokenizer evidence was visually reviewed and retained.
+- Backend implementation is unchanged. Stable model identity, quantization
+  metadata, aliases/tags/last-used, canonical evaluation/training lineage, native
+  jobs/loss, Explore play, agents/workflows, remote nodes and final platform/
+  accessibility audits remain in the active full goal.

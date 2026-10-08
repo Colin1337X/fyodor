@@ -9,6 +9,7 @@ import {appearanceControls,syncAppearanceColors} from './appearance-controls.js'
 import {icon, navigationMarkup,navigationGroups} from './icons.js';
 import {installSwitcher} from './switcher.js';
 import {switcherItems} from './switcher-data.js';
+import {installModelInspector} from './model-inspector.js';
 import {messageBody} from './message.js';
 import {benchmarkMarkup, parseBenchmark} from './benchmark.js';
 import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from './training-metrics.js';
@@ -75,6 +76,7 @@ root.innerHTML=`<div class="app-shell"><aside class="rail"><button class="wordma
 <aside class="history-panel"><div class="history-head"><b>Chats</b><button id="new-chat" aria-label="New conversation">+</button></div><label class="search">⌕<input id="chat-search" placeholder="Search chats"></label><div id="history"></div><div class="history-tools"><button id="import-chat">import</button><button id="export-chat">export</button><input type="file" id="import-file" accept=".json" hidden></div></aside>
 <section class="stage"><header><button class="mobile-menu" aria-label="Open navigation">${icon('menu')}</button><div><b id="view-title"></b><span id="view-meta"></span></div><span class="provider-pill" id="provider-pill"></span><select id="global-model" aria-label="Active model"></select><button class="load-model">Load model</button><button class="settings-button" id="open-switcher" aria-label="Quick switcher" title="Quick switcher (Ctrl/Cmd+K)">${icon('search')}</button><button class="settings-button" id="open-settings" aria-label="Settings">${icon('settings')}</button></header><main id="workspace" aria-label="Workspace"></main><footer><span><i class="dot"></i><b id="footer-engine">backend</b></span><span id="footer-stat">0 models</span></footer></section></div><div class="scrim"></div><dialog id="settings" aria-label="Settings"></dialog><div id="toast" role="status" aria-live="polite"></div>`;
 const viewRoot=document.querySelector("#workspace");
+const modelInspector=installModelInspector({api:backend,getState:()=>s});
 const narrowNavigation=matchMedia('(max-width:940px)');
 function syncNavigation(){
   const open=narrowNavigation.matches&&document.body.classList.contains('menu-open');
@@ -341,6 +343,7 @@ document.addEventListener("click",async event=>{
   const code=event.target.closest('[data-copy-code]');if(code){await navigator.clipboard.writeText(code.closest('.code-block').querySelector('code').textContent);toast('Code copied');return;}
   const edit=event.target.closest('[data-edit]');if(edit&&!s.busy){const index=+edit.dataset.edit;chat().draft=chat().messages[index].text;ui.editIndex=index;ui.editChatId=chat().id;chatView();document.querySelector('#prompt').focus();return;}
   if(event.target.closest("[data-refresh]")){await refresh();return;}
+  const inspect=event.target.closest('[data-inspect]');if(inspect){try{await modelInspector.open(Number(inspect.dataset.inspect),inspect)}catch(error){toast(error.message,'error')}return;}
   const compute=event.target.closest("[data-compute]");if(compute&&!compute.disabled){await setCompute(+compute.dataset.id,compute.dataset.compute);return;}
   const url=event.target.closest("[data-copy-url]");if(url){await navigator.clipboard.writeText(s.baseUrl+url.dataset.copyUrl);toast("URL copied");return;}
   if(event.target.closest("[data-copy-token]")){const c=await getBackendConnection();if(c.token){await navigator.clipboard.writeText(c.token);toast("Local token copied");}return;}
