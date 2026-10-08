@@ -20,7 +20,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
 | Logs/API | Logs with filters and API route presentation | Authenticated remote pairing/capability/session UI, WSS lifecycle. |
-| Agents/workflows | Existing Chat endpoint tools/settings | Full persisted agent/workflow editor, permissions, runs and pause/resume/status. |
+| Agents/workflows | Existing Chat endpoint tools/settings; dedicated saved endpoint profiles, explicit read-only choices/limits, bounded real tool loop, Stop and native run history/export | Canonical native agents and execution grants, local tool calling, Context attribution, durable jobs/pause/resume, authenticated nodes and workflow editor/execution. See `AGENTS.md`. |
 
 ## Recommended frontend sequence
 
@@ -35,7 +35,7 @@ separates usable frontend behavior from planned screens and required contracts.
 3. Integrate Explore gameplay once save/state/action contracts exist. Build the
    transcript and state inspector first, then timeline/branches and conditional
    lore. Preserve the authoring service independently of runtime play.
-4. Build model/evaluation/run and agent/workflow views using real persisted records.
+4. Extend model/evaluation/run and agent/workflow views using real persisted records.
    Avoid sample cards presented as a live registry or fabricated successful jobs.
 5. Add remote connection/pairing and recovery after the backend specifies auth,
    capability grants/revocation, WSS events, reconnect and cancel semantics.
@@ -140,3 +140,15 @@ unchanged global model selection and delayed native response replacement.
 Light/dark/390px metadata/tokenizer evidence is retained. The inspector uses
 existing APIs; runtime IDs remain process observations, and complete immutable
 model registry/lineage and platform/accessibility audits remain open.
+
+2026-10-08 Agents adds eight boundary checks (75 selected frontend checks total).
+Production build and owned browser/native integration pass for saved profiles,
+default-denied tool choices, exact start-revision/CAS recovery, endpoint binding,
+actual native runtime observation, inert result, explicit run persistence/reload,
+pending-result guards and aborted HTTP request with unknown usage retained.
+Independent native CLI exports verify the profile/run parent, pinned definition,
+observed native JSON and stopped run. The remote endpoint is an authored protocol
+fixture, not model-quality evidence. Light/dark/390px profile/result evidence is
+retained and visually inspected. No backend source changed. Canonical native
+Agent/workflow services, Context/resource execution permissions, local tool
+planning, job recovery and platform/accessibility verification remain open.

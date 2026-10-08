@@ -56,8 +56,14 @@ An optional OpenAI-compatible remote endpoint supports agent tool calls for loca
 
 ## Current interface
 
+Agents saves endpoint profiles with explicit read-only tool choices and execution
+limits. Runs show actual observations and reported usage, support Stop, and can
+be saved/reloaded through the native resource store. Profiles start with no tools
+enabled. See [the workflow, record formats, permission boundary and native service
+handoff](docs/AGENTS.md); canonical native agents/workflows remain pending.
+
 Navigation groups Overview/Chat/Models under Use; Writing, Explore, Resources,
-Datasets, Context, Playground and Training under Create; Evaluations/Benchmarks/Logs under Run; and API access under Serve. The sidebar
+Datasets, Context, Playground and Training under Create; Agents/Evaluations/Benchmarks/Logs under Run; and API access under Serve. The sidebar
 collapses to icons; Ctrl/Cmd+backslash toggles it. Narrow windows use a keyboard
 accessible navigation overlay, with Escape to close it. The header preserves
 the selected model; the footer reports its actual compute provider and activity.

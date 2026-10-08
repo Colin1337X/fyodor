@@ -614,3 +614,39 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   metadata, aliases/tags/last-used, canonical evaluation/training lineage, native
   jobs/loss, Explore play, agents/workflows, remote nodes and final platform/
   accessibility audits remain in the active full goal.
+
+## Frontend saved Agents and bounded endpoint execution (2026-10-08)
+
+- Added a dedicated claymorphic Agents workspace in shared navigation/quick
+  switcher. Saved profiles have instructions, endpoint/model binding, individually
+  allowed read-only tools (none by default), sampling and execution budgets.
+  Backend sources remain under the other agent's ownership and are unchanged.
+- Real complete-response endpoint calls run a bounded sequential loop. Only
+  runtime status, loaded model basenames and client time are available. Whole
+  batches reject unauthorized/malformed/over-budget calls before any local read;
+  no shell, resource/Context, filesystem, arbitrary HTTP or node tool is exposed.
+- Existing native agent/agent_run identities, parent validation and resource CAS
+  persist profiles and explicitly saved results. Start re-reads the saved head;
+  an independently edited profile blocks until Reload. Run records pin the exact
+  revision and definition, observations, endpoint-reported counters and client
+  request timing. Missing metrics stay null. Stop aborts endpoint fetch and stops
+  scheduling; already-started native reads may finish, with no remote stop claim.
+- Maintainable data/runner/controller modules isolate validation, execution and
+  presentation. Draft/result guards and active-mount checks preserve work across
+  workspace switches. Run history is read-only; package export uses existing
+  native transport. Comments and thorough frontend/docs/AGENTS.md document closed
+  schemas, bounds, credential/permission boundaries, concurrency, lifecycle,
+  verification and the canonical native service/workflow handoff.
+- Production build and 75 selected frontend checks pass. Owned browser/native
+  integration verifies real resource/CAS writes, native read output forwarded to
+  an authored HTTP tool-call fixture, inert responses, save/reload, stale-profile
+  rejection, unsaved-result protection and actual pending-request abort.
+  Independent native CLI exports verify parent/revision/counters/observations and
+  stopped status. The fixture is protocol evidence, not remote-model intelligence
+  or performance evidence. Existing training/evaluation/authoring regressions pass.
+  Six light/dark/390px profile/result captures were visually reviewed and retained.
+- The matrix now captures other screenshots privately and only copies new Agent
+  evidence after success, avoiding tracked-image churn/file sharing interference.
+- Full native agents/workflows, execution grants/Context receipts, local tool
+  calling, durable jobs/pause/resume, nodes, Explore gameplay and final platform/
+  accessibility audits remain requirements of the active full product goal.

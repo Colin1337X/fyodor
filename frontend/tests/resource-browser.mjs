@@ -5,9 +5,11 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {agentEndpointFixture} from './agent-endpoint-fixture.mjs';
 const folder=await mkdtemp(path.join(tmpdir(),'fyodor-resource-browser-'));
-const database=path.join(folder,'workspace.db');let vite,server,token,base;
+const database=path.join(folder,'workspace.db');let vite,server,token,base,agentEndpoint;
 try{
+  agentEndpoint=await agentEndpointFixture();
   const modelPath=path.join(folder,'pretraining.trained.gguf');
   await copyFile(path.resolve('build-cpu/backend/test_models/pretraining.trained.gguf'),modelPath);
   server=spawn(path.resolve('build-cpu/fyodor-backend.exe'),['--port','0'],{cwd:folder,env:{...process.env,FYODOR_STORE_PATH:database,NYA_COMPUTE:'cpu'},windowsHide:true,stdio:['ignore','pipe','ignore']});
@@ -21,8 +23,9 @@ try{
   vite=spawn(process.execPath,[path.resolve('frontend/node_modules/vite/bin/vite.js'),'--host','127.0.0.1','--port','5179','--strictPort'],{cwd:path.resolve('frontend'),windowsHide:true,env:{...process.env,VITE_FYODOR_URL:base,VITE_FYODOR_TOKEN:token},stdio:'ignore'});
   for(let i=0;i<100;++i){try{if((await fetch('http://127.0.0.1:5179/')).ok)break;}catch{}await new Promise(r=>setTimeout(r,50));}
   const evidence=path.join(folder,'evidence.json');
-  const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence},stdio:'inherit'});
+  const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence,FYODOR_AGENT_ENDPOINT:agentEndpoint.endpoint,FYODOR_QA_OUTPUT:path.join(folder,'screenshots')},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
+  assert.deepEqual(agentEndpoint.errors,[]);assert.equal(agentEndpoint.observations.length,1);assert.equal(agentEndpoint.delayed,1);
   const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,evaluation_definition_uri,evaluation_run_uri,evaluation_source_uri,evaluation_case_dataset_uri,evaluation_imported_dataset_uri,evaluation_mapped_definition_uri,evaluation_mapped_run_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
@@ -91,8 +94,20 @@ try{
   console.log('Quick switcher keyboard/focus, retained drafts, title search, exact revision inspection and stale-write guards passed');
   console.log('Resources/Explore/Writing revision comparisons, live draft focus, dirty-copy guards and exact saved reload passed');
   console.log('Native model inspection/tokenizer, exact token download, input invalidation, modal focus and delayed-response replacement passed');
+  const agentEvidence=JSON.parse(await readFile(evidence,'utf8'));
+  const agent=exportResource(agentEvidence.agent_uri),agentRun=exportResource(agentEvidence.agent_run_uri),agentStopped=exportResource(agentEvidence.agent_stopped_uri);
+  assert.equal(agent.metadata.agent_studio.kind,'definition');assert.deepEqual(JSON.parse(agent.content).tools,['runtime_status']);
+  const observed=JSON.parse(agentRun.content);assert.equal(observed.status,'completed');assert.equal(observed.agent.uri,agentEvidence.agent_uri);assert.equal(observed.agent.revision,'2');
+  assert.equal(observed.output,'<script>Runtime reviewed</script>');assert.deepEqual(observed.steps.map(item=>item.tokens),[2,null,5]);
+  assert.deepEqual(JSON.parse(observed.steps[1].text),agentEndpoint.observations[0]);assert.equal(JSON.stringify(observed).includes('agent-fixture-key'),false);
+  const stoppedRun=JSON.parse(agentStopped.content);assert.equal(stoppedRun.status,'stopped');assert.equal(stoppedRun.steps[0].tokens,null);assert.equal(stoppedRun.agent.revision,'2');
+  console.log('Agent endpoint protocol, native read-only observation, stale-profile guard, Stop and independent native run export passed');
+  // Keep only this checkpoint's new evidence. The full palette/workflow matrix
+  // runs privately rather than overwriting unrelated tracked images mid-test.
+  for(const label of ['agents','agents-dark','agents-mobile'])for(const area of ['profile','result'])await copyFile(path.join(folder,'screenshots',label+'-'+area+'.png'),path.resolve('frontend/qa/themes',label+'-'+area+'.png'));
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
+  if(agentEndpoint)await agentEndpoint.close();
   if(server&&base&&token)await fetch(base+'/api/v1/shutdown',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'}).catch(()=>{});
   for(const child of [vite,server])if(child&&child.exitCode===null){child.kill();await new Promise(resolve=>{child.once('exit',resolve);setTimeout(resolve,2000);});}
   assert.ok(path.resolve(folder).startsWith(path.resolve(tmpdir())+path.sep+'fyodor-resource-browser-'));

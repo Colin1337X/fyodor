@@ -176,6 +176,28 @@ input, select, textarea { color: var(--text); }
 .dataset-receipt-history { margin: 16px 0; }
 .dataset-receipt-history summary { cursor: pointer; }
 .evaluation-workspace .resource-editor > label { display: block; margin-bottom: 16px; }
+.agent-editor > label, .agent-launch > label { display: grid; gap: 8px; margin: 18px 0; }
+.agent-workspace input:not([type='checkbox']), .agent-workspace textarea { width: 100%; min-width: 0; }
+.agent-workspace .config-grid { margin: 20px 0; }
+.agent-workspace .config-grid label { display: grid; gap: 8px; min-width: 0; }
+.agent-workspace .resource-list button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.agent-workspace .resource-list button[aria-pressed='true'] { background: var(--hover); box-shadow: var(--clay-inset); }
+.agent-tool-list { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0; }
+.agent-limits { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.agent-run-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: var(--space); margin-top: var(--space); }
+.agent-run-grid > section { min-width: 0; }
+.agent-result { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 18px; }
+.agent-result-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.agent-result-heading h2, .agent-result-heading h3 { overflow-wrap: anywhere; min-width: 0; }
+.agent-result pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 280px; overflow: auto; }
+.agent-result p { overflow-wrap: anywhere; }
+.agent-steps summary { cursor: pointer; margin-top: 16px; }
+.agent-steps ol { padding-left: 24px; }
+.agent-steps li { margin: 18px 0; }
+.agent-steps small { display: block; margin-top: 6px; color: var(--muted); }
+.agent-history .resource-list { max-height: 480px; overflow: auto; }
+@media (max-width: 850px) { .agent-run-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .agent-workspace .config-grid { grid-template-columns: minmax(0, 1fr); } }
 .evaluation-workspace .resource-editor > label input { display: block; width: 100%; margin-top: 6px; }
 .evaluation-case, .evaluation-result { padding: 18px 0; border-top: 1px solid var(--line); }
 .evaluation-case label, .evaluation-result > label { display: block; margin: 12px 0; }
