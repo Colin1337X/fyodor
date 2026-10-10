@@ -40,7 +40,7 @@ export async function agentEndpointFixture() {
         ["runtime_status"],
       );
       const input = body.messages.find((item) => item.role === "user").content;
-      if (input === "Stop this request") {
+      if (input.startsWith("Stop this request")) {
         delayed++;
         const timer = setTimeout(() => {
           timers.delete(timer);

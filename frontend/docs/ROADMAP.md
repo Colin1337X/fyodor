@@ -1,6 +1,6 @@
 # Frontend delivery map
 
-Updated 2026-10-08. Frontend work is prioritized; another agent owns backend
+Updated 2026-10-10. Frontend work is prioritized; another agent owns backend
 implementation. The original product brief remains the wider target. This map
 separates usable frontend behavior from planned screens and required contracts.
 
@@ -20,7 +20,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | Training | Native file paths, modes/parameters, logs/loss/validation telemetry, stop/save; explicit Dataset Studio export/mode handoff | Managed dataset materialization, curated run/evaluation history and richer reproducible launch flow. |
 | Benchmarks | Import measured reports and view metrics | Native job orchestration if/when an agreed service exposes it. |
 | Logs/API | Logs with filters and API route presentation | Authenticated remote pairing/capability/session UI, WSS lifecycle. |
-| Agents/workflows | Existing Chat endpoint tools/settings; dedicated saved endpoint profiles, explicit read-only choices/limits, bounded real tool loop, Stop and native run history/export | Canonical native agents and execution grants, local tool calling, Context attribution, durable jobs/pause/resume, authenticated nodes and workflow editor/execution. See `AGENTS.md`. |
+| Agents/workflows | Dedicated saved endpoint profiles, explicit read-only choices/limits, bounded actual tool loop, Stop and run history/export; ordered Workflow editor with stable input links, native generation/check/Agent composition, persisted actual outputs and pinned profile review | Canonical native agents/workflows and run identities, catalog filters, execution grants/Context attribution, local tool calling, durable jobs/pause/resume, authenticated nodes and branch/parallel execution. See `AGENTS.md` and `WORKFLOWS.md`. |
 
 ## Recommended frontend sequence
 
@@ -152,3 +152,16 @@ fixture, not model-quality evidence. Light/dark/390px profile/result evidence is
 retained and visually inspected. No backend source changed. Canonical native
 Agent/workflow services, Context/resource execution permissions, local tool
 planning, job recovery and platform/accessibility verification remain open.
+
+2026-10-10 Workflow foundation adds eight boundary checks (83 selected frontend
+checks total). Production build and owned browser/native integration pass for
+stable input wiring, dependency-safe edits, native keyboard caret retention,
+exact-revision native catalog classification, CAS/stale-head recovery, pinned
+Agent review, actual local generation → output check → saved Agent composition,
+inert outputs, explicit save/reload, and pending HTTP abort with native completed
+output retained. Independent native CLI exports and a separate generation request
+verify references/bindings/outputs/counters. The endpoint is an authored protocol
+fixture. Six light/dark/390px captures were visually reviewed and retained.
+The test uses installed Chrome after the former Edge path became unavailable,
+with a private profile and bounded startup diagnostics. No backend code changed;
+canonical workflow/run/job/catalog/permission/node contracts remain open.

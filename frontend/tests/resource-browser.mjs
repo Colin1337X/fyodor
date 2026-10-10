@@ -25,7 +25,7 @@ try{
   const evidence=path.join(folder,'evidence.json');
   const child=spawn(process.execPath,['frontend/tests/theme-browser.mjs'],{windowsHide:true,env:{...process.env,FYODOR_PREVIEW:'http://localhost:5179/',FYODOR_RESOURCE_QA:evidence,FYODOR_AGENT_ENDPOINT:agentEndpoint.endpoint,FYODOR_QA_OUTPUT:path.join(folder,'screenshots')},stdio:'inherit'});
   assert.equal(await new Promise(resolve=>child.once('exit',resolve)),0);
-  assert.deepEqual(agentEndpoint.errors,[]);assert.equal(agentEndpoint.observations.length,1);assert.equal(agentEndpoint.delayed,1);
+  assert.deepEqual(agentEndpoint.errors,[]);assert.equal(agentEndpoint.observations.length,2);assert.equal(agentEndpoint.delayed,2);
   const {uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,evaluation_definition_uri,evaluation_run_uri,evaluation_source_uri,evaluation_case_dataset_uri,evaluation_imported_dataset_uri,evaluation_mapped_definition_uri,evaluation_mapped_run_uri}=JSON.parse(await readFile(evidence,'utf8'));
   const record=JSON.parse(execFileSync(path.resolve('build-cpu/fyodor.exe'),['--store',database,'--namespace','workspace','resource','export',uri],{windowsHide:true,encoding:'utf8'}));
   assert.equal(record.title,'Browser document');assert.equal(record.content,'<script>inert</script> saved from desktop');
@@ -102,9 +102,19 @@ try{
   assert.deepEqual(JSON.parse(observed.steps[1].text),agentEndpoint.observations[0]);assert.equal(JSON.stringify(observed).includes('agent-fixture-key'),false);
   const stoppedRun=JSON.parse(agentStopped.content);assert.equal(stoppedRun.status,'stopped');assert.equal(stoppedRun.steps[0].tokens,null);assert.equal(stoppedRun.agent.revision,'2');
   console.log('Agent endpoint protocol, native read-only observation, stale-profile guard, Stop and independent native run export passed');
+  const workflow=exportResource(agentEvidence.workflow_uri),workflowResult=exportResource(agentEvidence.workflow_run_uri),workflowStopped=exportResource(agentEvidence.workflow_stopped_uri);
+  assert.equal(workflow.metadata.workflow_studio.kind,'definition');assert.deepEqual(JSON.parse(workflow.content).steps.map(item=>item.operation),['generate','check','agent']);
+  const flow=JSON.parse(workflowResult.content);assert.equal(flow.status,'completed');assert.equal(flow.workflow.uri,agentEvidence.workflow_uri);assert.equal(flow.workflow.revision,'2');assert.equal(workflowResult.metadata.workflow_studio.workflow,agentEvidence.workflow_uri);
+  assert.deepEqual(flow.steps.map(item=>item.input),['a','bc','bc']);assert.equal(flow.steps[0].generated_tokens,2);assert.equal(flow.steps[0].output,'bc');assert.equal(flow.steps[1].output,'bc');
+  const independentGeneration=await fetch(base+'/api/v1/generate',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({model_id:flow.model.process_id,prompt:'a',...flow.definition.steps[0].config})});assert.ok(independentGeneration.ok);
+  const independentOutput=await independentGeneration.json();assert.equal(flow.steps[0].prompt_tokens,independentOutput.prompt_tokens);assert.equal(flow.steps[0].generated_tokens,independentOutput.generated_tokens);assert.equal(flow.steps[0].output,independentOutput.text);
+  assert.equal(flow.steps[2].agent_run.agent.uri,agentEvidence.agent_uri);assert.equal(flow.steps[2].agent_run.agent.revision,'2');assert.deepEqual(JSON.parse(flow.steps[2].agent_run.steps[1].text),agentEndpoint.observations[1]);assert.equal(flow.output,'<script>Runtime reviewed</script>');
+  assert.equal(JSON.stringify(flow).includes('agent-fixture-key'),false);
+  const flowStopped=JSON.parse(workflowStopped.content);assert.equal(flowStopped.status,'stopped');assert.equal(flowStopped.workflow.revision,'3');assert.equal(flowStopped.output,'bc');assert.equal(flowStopped.steps[2].agent_run.status,'stopped');assert.equal(flowStopped.steps[2].agent_run.steps[0].tokens,null);
+  console.log('Workflow native generation -> check -> saved Agent composition, input bindings, exact references, Stop and independent native run export passed');
   // Keep only this checkpoint's new evidence. The full palette/workflow matrix
   // runs privately rather than overwriting unrelated tracked images mid-test.
-  for(const label of ['agents','agents-dark','agents-mobile'])for(const area of ['profile','result'])await copyFile(path.join(folder,'screenshots',label+'-'+area+'.png'),path.resolve('frontend/qa/themes',label+'-'+area+'.png'));
+  for(const label of ['workflows','workflows-dark','workflows-mobile'])for(const area of ['definition','result'])await copyFile(path.join(folder,'screenshots',label+'-'+area+'.png'),path.resolve('frontend/qa/themes',label+'-'+area+'.png'));
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(agentEndpoint)await agentEndpoint.close();

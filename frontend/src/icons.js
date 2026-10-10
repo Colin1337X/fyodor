@@ -1,6 +1,7 @@
 // A single stroke system keeps controls legible at small sizes. All paths are
 // static application data; no model output is ever treated as SVG markup.
 const paths = {
+  workflows: '<rect x="3" y="3" width="6" height="6" rx="2"/><rect x="15" y="15" width="6" height="6" rx="2"/><path d="M9 6h9v9M6 9v9h9"/>',
   agents: '<rect x="4" y="7" width="16" height="14" rx="4"/><path d="M12 3v4M8 12h.01M16 12h.01M8 17h8M1 12h3m16 0h3"/>',
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
   evaluations: '<path d="M9 3h6v4H9zM9 5H5v16h14V5h-4M8 12l2 2 5-5M8 18h8"/>',
@@ -22,7 +23,7 @@ const paths = {
 export const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.workspace}</svg>`;
 export const navigationGroups = [['Use', [['workspace','Overview'],['chat','Chat'],['models','Models']]],
     ['Create', [['writing','Writing'],['explore','Explore'],['datasets','Datasets'],['resources','Resources'],['context','Context'],['playground','Playground'],['training','Training']]],
-    ['Run', [['agents','Agents'],['evaluations','Evaluations'],['benchmark','Benchmarks'],['logs','Logs']]], ['Serve', [['api','API access']]]];
+    ['Run', [['agents','Agents'],['workflows','Workflows'],['evaluations','Evaluations'],['benchmark','Benchmarks'],['logs','Logs']]], ['Serve', [['api','API access']]]];
 export function navigationMarkup() {
   return navigationGroups.map(([title, entries]) => `<div class="nav-group"><label>${title}</label>${entries.map(([key,label]) =>
     `<button data-view="${key}" title="${label}" aria-label="${label}">${icon(key)}<span>${label}</span></button>`).join('')}</div>`).join('');

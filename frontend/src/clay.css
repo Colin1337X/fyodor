@@ -196,6 +196,29 @@ input, select, textarea { color: var(--text); }
 .agent-steps li { margin: 18px 0; }
 .agent-steps small { display: block; margin-top: 6px; color: var(--muted); }
 .agent-history .resource-list { max-height: 480px; overflow: auto; }
+.workflow-workspace .resource-list button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.workflow-workspace .resource-list button[aria-pressed='true'] { background: var(--hover); box-shadow: var(--clay-inset); }
+.workflow-workspace input:not([type='checkbox']), .workflow-workspace textarea, .workflow-workspace select { width: 100%; min-width: 0; }
+.workflow-editor > label, .workflow-launch > label, .workflow-step > label { display: grid; gap: 8px; margin: 18px 0; }
+.workflow-step { padding: 20px 0; border-top: 1px solid var(--line); }
+.workflow-step-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.workflow-step-heading > label { display: grid; gap: 8px; flex: 1; min-width: 120px; }
+.workflow-step-heading > b { display: grid; place-items: center; border-radius: var(--radius); padding: 10px 14px; background: var(--hover); box-shadow: var(--clay-inset); }
+.workflow-workspace .config-grid { margin: 20px 0; }
+.workflow-workspace .config-grid > label { display: grid; gap: 8px; min-width: 0; }
+.workflow-sampling { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.workflow-run-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: var(--space); margin-top: var(--space); }
+.workflow-run-grid > section { min-width: 0; }
+.workflow-results { padding-top: 18px; margin-top: 20px; border-top: 1px solid var(--line); }
+.workflow-workspace p, .workflow-step-heading h2, .workflow-step-heading h3 { overflow-wrap: anywhere; }
+.workflow-workspace pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 260px; overflow: auto; }
+.workflow-trace summary, .workflow-step summary { cursor: pointer; margin-top: 12px; }
+.workflow-trace ol, .workflow-trace ul { padding-left: 24px; }
+.workflow-trace li { margin: 18px 0; }
+.workflow-trace small { display: block; color: var(--muted); margin-top: 6px; }
+.workflow-history .resource-list { max-height: 480px; overflow: auto; }
+@media (max-width: 850px) { .workflow-run-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .workflow-workspace .config-grid { grid-template-columns: minmax(0, 1fr); } .workflow-step-heading > label { flex-basis: calc(100% - 50px); } }
 @media (max-width: 850px) { .agent-run-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) { .agent-workspace .config-grid { grid-template-columns: minmax(0, 1fr); } }
 .evaluation-workspace .resource-editor > label input { display: block; width: 100%; margin-top: 6px; }

@@ -5,6 +5,7 @@ import {exploreWorkspace} from './explore-workspace.js';
 import {datasetWorkspace} from './dataset-workspace.js';
 import {evaluationWorkspace} from './evaluation-workspace.js';
 import {agentWorkspace} from './agent-workspace.js';
+import {workflowWorkspace} from './workflow-workspace.js';
 import {contextWorkspace,contextIdentity} from './context-workspace.js';
 import {appearanceControls,syncAppearanceColors} from './appearance-controls.js';
 import {icon, navigationMarkup,navigationGroups} from './icons.js';
@@ -26,7 +27,7 @@ import{chooseCheckpoint,chooseDataset,chooseModel,chooseOutput,getBackendConnect
 let persisted={};
 try { persisted=JSON.parse(localStorage.getItem("fyodor-state")||"{}")||{}; } catch {}
 if(typeof persisted!=="object"||Array.isArray(persisted))persisted={};
-if(!["workspace","resources","writing","explore","datasets","evaluations","agents","context","models","chat","playground","training","logs","api","benchmark"].includes(persisted.view))persisted.view="workspace";
+if(!["workspace","resources","writing","explore","datasets","evaluations","agents","workflows","context","models","chat","playground","training","logs","api","benchmark"].includes(persisted.view))persisted.view="workspace";
 const restored=[];
 for(const entry of Array.isArray(persisted.chats)?persisted.chats.slice(0,300):[]) {
   try { const c=normalizeChat(entry,crypto.randomUUID());if(entry.id===persisted.active)persisted.active=c.id;restored.push(c); } catch {}
@@ -59,7 +60,7 @@ if(!["local","openai"].includes(s.provider.type))s.provider.type="local";
 s.agent.maxTurns=Math.max(1,Math.min(24,Math.trunc(s.agent.maxTurns)));
 // Window-only state never enters session storage or backend payloads.
 const ui={benchmarks:[],logPaused:false,error:'',messageLimit:80};
-const meta={agents:["Agents","profiles, tools and run history"],evaluations:["Evaluations","saved tests and model quality"],datasets:["Datasets","prepare training data"],explore:["Explore","worlds and lore"],writing:["Writing","local text, characters and revisions"],context:["Context","permission-checked generation and receipts"],resources:["Resources","local documents and notes"],models:["Models","local registry and compute"],benchmark:["Benchmarks","measured runtime results"],api:["API access","local REST interfaces"],workspace:["Overview","models and activity"],chat:["Chat","conversation"],playground:["Playground","generation controls"],training:["Training","train with your data"],logs:["Logs","engine and trainer"]};
+const meta={workflows:["Workflows","steps, checks and saved results"],agents:["Agents","profiles, tools and run history"],evaluations:["Evaluations","saved tests and model quality"],datasets:["Datasets","prepare training data"],explore:["Explore","worlds and lore"],writing:["Writing","local text, characters and revisions"],context:["Context","permission-checked generation and receipts"],resources:["Resources","local documents and notes"],models:["Models","local registry and compute"],benchmark:["Benchmarks","measured runtime results"],api:["API access","local REST interfaces"],workspace:["Overview","models and activity"],chat:["Chat","conversation"],playground:["Playground","generation controls"],training:["Training","train with your data"],logs:["Logs","engine and trainer"]};
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const id=()=>crypto.randomUUID?.()||Date.now()+Math.random()+"";
 const mid=m=>m.id??m.model_id;
@@ -120,7 +121,7 @@ function render(){
   document.querySelector('#footer-stat').textContent=`${s.models.length} models · ${activeRuntime?.compute?.toUpperCase()||'no active compute'}${s.busy?' · generating':s.actionBusy?' · loading':s.trainStatus.running?' · training':''}`;
   document.querySelector('#global-model').disabled=s.busy||s.actionBusy;
   document.querySelectorAll('.stage>header .load-model').forEach(n=>n.disabled=s.actionBusy||s.busy);
-  history();({workspace,resources:()=>resourceWorkspace(viewRoot),writing:()=>resourceWorkspace(viewRoot,'writing',s.selected),explore:()=>exploreWorkspace(viewRoot),datasets:()=>datasetWorkspace(viewRoot,prepareDatasetTraining,()=>s.chats,contextIdentity),evaluations:()=>evaluationWorkspace(viewRoot,s.selected),agents:()=>agentWorkspace(viewRoot,()=>s.provider),context:()=>contextWorkspace(viewRoot,s.selected),models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
+  history();({workspace,resources:()=>resourceWorkspace(viewRoot),writing:()=>resourceWorkspace(viewRoot,'writing',s.selected),explore:()=>exploreWorkspace(viewRoot),datasets:()=>datasetWorkspace(viewRoot,prepareDatasetTraining,()=>s.chats,contextIdentity),evaluations:()=>evaluationWorkspace(viewRoot,s.selected),agents:()=>agentWorkspace(viewRoot,()=>s.provider),workflows:()=>workflowWorkspace(viewRoot,()=>s.provider,s.selected),context:()=>contextWorkspace(viewRoot,s.selected),models:()=>{viewRoot.innerHTML=workspaceMarkup(s,true)},benchmark:()=>{viewRoot.innerHTML=benchmarkMarkup(ui.benchmarks)},chat:chatView,playground,training:trainingView,logs:logsView,api:()=>viewRoot.innerHTML=apiMarkup(s)}[s.view]||workspace)();save();paintRanges();
 }
 function prepareDatasetTraining({mode}){
   // Until the native service materializes a resource revision as a training

@@ -62,8 +62,14 @@ be saved/reloaded through the native resource store. Profiles start with no tool
 enabled. See [the workflow, record formats, permission boundary and native service
 handoff](docs/AGENTS.md); canonical native agents/workflows remain pending.
 
+Workflows connects ordered text, native generation, output checks and saved Agent
+steps with explicit input links. Saved runs retain actual outputs, reported
+counters and pinned revisions; Stop prevents further scheduling. See [the workflow
+guide and native service handoff](docs/WORKFLOWS.md). Execution currently lives in
+the window; durable jobs, nodes and canonical workflow services remain pending.
+
 Navigation groups Overview/Chat/Models under Use; Writing, Explore, Resources,
-Datasets, Context, Playground and Training under Create; Agents/Evaluations/Benchmarks/Logs under Run; and API access under Serve. The sidebar
+Datasets, Context, Playground and Training under Create; Agents/Workflows/Evaluations/Benchmarks/Logs under Run; and API access under Serve. The sidebar
 collapses to icons; Ctrl/Cmd+backslash toggles it. Narrow windows use a keyboard
 accessible navigation overlay, with Escape to close it. The header preserves
 the selected model; the footer reports its actual compute provider and activity.

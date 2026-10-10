@@ -650,3 +650,44 @@ results and platform/hardware skips; do not borrow previous reports' counts.
 - Full native agents/workflows, execution grants/Context receipts, local tool
   calling, durable jobs/pause/resume, nodes, Explore gameplay and final platform/
   accessibility audits remain requirements of the active full product goal.
+
+## Frontend practical Workflow foundation (2026-10-09)
+
+- Added a claymorphic Workflows workspace with ordered stable-ID steps, explicit
+  earlier-output/run-input links, literal prefix/suffix composition, native local
+  generation settings, reused literal/JSON checks and pinned saved Agent profiles.
+  Removal/reordering rejects broken dependencies while retaining the draft.
+- Actual sequential execution uses existing native generation and the bounded
+  endpoint Agent runner. Whole-run and step-time profile checks block stale
+  references; endpoint credentials are copied only into run-local memory and are
+  not serialized. No shell, filesystem, resource body, Context or node tool grant
+  is inferred. Agent profiles can be inspected at their pinned exact revision.
+- Native workflow resources persist definitions and explicit result records.
+  The native parser lacks workflow-run child identities, so result association is
+  versioned logical metadata, not a fabricated native parent/job. The title
+  catalog omits metadata; bounded exact-revision reads classify only workflow
+  identities, preserving complete-page matches and the actual continuation cursor.
+- Runs pin definition/input/observed local model and record actual ordered
+  outputs, native counters, client request time and nested Agent observations.
+  Missing counters remain null. Check failure stops downstream work. Stop aborts
+  endpoint fetch; an already-issued native generation can finish, retaining its
+  actual result before scheduling stops. No native/remote acknowledgement is claimed.
+- Data/runner/controller modules, source comments and thorough
+  frontend/docs/WORKFLOWS.md document closed formats, bounds, permissions,
+  credentials, catalog costs, concurrency, cancellation, verification and native
+  migration/service requirements. Product UI contains actions and results rather
+  than implementation commentary. No production dependency or backend source edit.
+- Production build and 83 selected frontend checks pass. Browser/native QA uses
+  actual tiny-GGUF generation, an exact check and real native tool data forwarded
+  through an authored endpoint protocol fixture. Native keyboard typing, stable
+  wiring, stale/CAS retention, pinned review, save/reload and pending-request abort
+  pass. Separate native CLI exports plus an independent generation request verify
+  exact revisions/input bindings/output/counters and stopped observations.
+  Six light/dark/390px definition/result captures were visually inspected.
+- Browser QA now finds an installed Edge/Chrome binary or explicit override and
+  reports bounded launch diagnostics. The old Edge-path attempt was excluded;
+  the actual passing run used owned headless Chrome with a private profile.
+- Canonical native workflows/run identities/catalog filters, execute/Context/
+  resource permissions, durable jobs/pause/resume/reconnect, node selection,
+  branches/parallelism, Explore gameplay and platform/accessibility/scale audits
+  remain part of the active full product goal.

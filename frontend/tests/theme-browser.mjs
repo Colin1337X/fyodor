@@ -1,6 +1,6 @@
 // Optional Windows browser QA: private Edge profile, no user browser state.
 import {spawn} from 'node:child_process';
-import {mkdtemp,readFile,writeFile,mkdir,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,writeFile,mkdir,rm,access} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -10,15 +10,24 @@ import {switcherBrowser} from './switcher-browser.mjs';
 import {revisionComparisonBrowser} from './revision-comparison-browser.mjs';
 import {modelInspectorBrowser} from './model-inspector-browser.mjs';
 import {agentBrowser} from './agent-browser.mjs';
+import {workflowBrowser} from './workflow-browser.mjs';
+// Use an installed Chromium browser without touching its normal profile. Keep
+// FYODOR_EDGE as the explicit binary override for existing CI/developer setups.
+let browserPath;
+for(const candidate of process.env.FYODOR_EDGE?[process.env.FYODOR_EDGE]:['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Google/Chrome/Application/chrome.exe']){
+  try{await access(candidate);browserPath=candidate;break;}catch{}
+}
+assert.ok(browserPath,'Install Edge/Chrome or set FYODOR_EDGE to an existing Chromium binary.');
 const profile=await mkdtemp(path.join(tmpdir(),'fyodor-theme-'));
 const output=path.resolve(process.env.FYODOR_QA_OUTPUT || 'frontend/qa/themes');await mkdir(output,{recursive:true});
-const browser=spawn(process.env.FYODOR_EDGE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-  ['--headless=new','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,'--remote-debugging-port=0'],{windowsHide:true,stdio:'ignore'});
+const browser=spawn(browserPath,
+  ['--headless=new','--no-first-run','--no-default-browser-check',`--user-data-dir=${profile}`,'--remote-debugging-port=0'],{windowsHide:true,stdio:['ignore','ignore','pipe']});
+let browserStartupError='';browser.stderr.on('data',part=>{browserStartupError=(browserStartupError+part).slice(-8192);});browser.once('error',error=>{browserStartupError=error.message;});
 let socket;
 try {
   let port;
-  for(let i=0;i<100;++i){try{port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];break;}catch{await new Promise(r=>setTimeout(r,100));}}
-  assert.ok(port,'Headless browser did not start');
+  for(let i=0;i<100;++i){try{port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];break;}catch{if(browser.exitCode!==null)break;await new Promise(r=>setTimeout(r,100));}}
+  assert.ok(port,'Headless browser did not start: '+browserStartupError.slice(-1000));
   const endpoint=await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
   socket=new WebSocket(endpoint.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
@@ -534,7 +543,8 @@ try {
     await revisionComparisonBrowser({evaluate,waitFor,call,sessionId,output,writingUri:writing_uri});
     await modelInspectorBrowser({evaluate,waitFor,call,sessionId,output,profile});
     const agents=await agentBrowser({evaluate,waitFor,reload,call,sessionId,output});
-    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,...evaluations,...evaluationDatasets,...switcher,...agents}));
+    const workflows=await workflowBrowser({evaluate,waitFor,reload,call,sessionId,output,agentUri:agents.agent_uri});
+    await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt,project_uri,lore_uri,world_uri,imported_uri,dataset_uri,derived_uri,corpus_uri,chat_dataset_uri,context_dataset_uri,...evaluations,...evaluationDatasets,...switcher,...agents,...workflows}));
 
 
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
+import { configureAgentFixture } from "./endpoint-browser-helpers.mjs";
 export async function agentBrowser({
   evaluate,
   waitFor,
@@ -21,13 +22,7 @@ export async function agentBrowser({
     evaluate(
       `(()=>{const n=document.querySelector(${JSON.stringify(selector)});n.value=${JSON.stringify(value)};n.dispatchEvent(new Event('input',{bubbles:true}));})()`,
     );
-  const configure = async () => {
-    await evaluate('document.querySelector("#open-settings").click()');
-    await evaluate(
-      `(()=>{const d=document.querySelector('#settings');d.querySelector('#provider-type').value='openai';d.querySelector('#provider-type').dispatchEvent(new Event('input',{bubbles:true}));d.querySelector('#provider-endpoint').value=${JSON.stringify(endpoint)};d.querySelector('#provider-model').value='fixture-agent-model';d.querySelector('#provider-key').value='agent-fixture-key';d.querySelector('#remember-key').checked=false;d.querySelector('#agent-enabled').checked=false;d.querySelector('#save-settings').click();})()`,
-    );
-    await waitFor('!document.querySelector("#settings").open');
-  };
+  const configure = () => configureAgentFixture({ evaluate, waitFor });
   await configure();
   await evaluate('document.querySelector("[data-view=agents]").click()');
   await click("new");
