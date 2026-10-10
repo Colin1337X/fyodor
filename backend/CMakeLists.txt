@@ -507,6 +507,13 @@ if(BUILD_TESTING)
         add_test(NAME train-evaluation COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_eval.py" "$<TARGET_FILE:fyodor-train>")
         set_tests_properties(train-evaluation PROPERTIES TIMEOUT 120)
+        if(NYA_CUDA_AVAILABLE)
+            foreach(workflow eval stop)
+                add_test(NAME train-cuda-${workflow} COMMAND "${Python3_EXECUTABLE}"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_${workflow}.py" "$<TARGET_FILE:fyodor-train>" --compute cuda)
+                set_tests_properties(train-cuda-${workflow} PROPERTIES TIMEOUT 180 SKIP_RETURN_CODE 77)
+            endforeach()
+        endif()
     endif()
     add_test(NAME validate-http-protocol COMMAND nya-test-server)
     add_test(NAME validate-compute COMMAND nya-test-compute)

@@ -39,5 +39,7 @@ typedef struct nya_train_device_interface {
         nya_train_buffer step, nya_train_buffer status, nya_train_buffer norm, uint32_t tag);
     int (*slice)(void *context, nya_train_buffer destination, nya_train_buffer source,
         size_t rows, size_t columns, size_t first, size_t count, int backward);
+    nya_train_mark (*mark)(void *context);
+    int (*elapsed)(void *context, nya_train_mark begin, nya_train_mark end, double *seconds);
 } nya_train_device_interface;
 #endif

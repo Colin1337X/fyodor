@@ -3,8 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Private building block for accelerator graph execution. This is not yet a
-   complete training backend. A device owns a bounded persistent arena; buffers
+/* Private storage and dispatch for accelerator graph execution.
+   A device owns a bounded persistent arena; buffers
    are zero-initialized and remain valid until device destruction or the end of
    their scratch scope. One caller
    serializes operations. Handles cannot be shared between devices. */
@@ -32,6 +32,16 @@ int nya_train_device_write(nya_train_device *device, nya_train_buffer buffer, si
 int nya_train_device_read(nya_train_device *device, nya_train_buffer buffer, size_t offset, void *destination, size_t bytes);
 int nya_train_device_zero(nya_train_device *device, nya_train_buffer buffer);
 int nya_train_device_finish(nya_train_device *device);
+/* Eight reusable stream-event slots. Marks use unique handles; recording a
+   ninth expires the oldest. Elapsed time requires both marks to have completed
+   (observe/finish explicitly first), never waits and leaves output unchanged on
+   failure. Recording allocates nothing and adds no transfer or host fence.
+   Device time includes intervening stream idle time, not CPU preparation. */
+typedef uint64_t nya_train_mark;
+nya_train_mark nya_train_device_mark(nya_train_device *device);
+int nya_train_device_elapsed(nya_train_device *device, nya_train_mark begin,
+    nya_train_mark end, double *seconds);
+
 /* Copy a contiguous column interval from each F32 row. Backward accumulates
    into that interval of the full row. Buffers must be distinct; dispatch adds
    no allocation, copy to host or fence. */

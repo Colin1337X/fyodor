@@ -291,6 +291,26 @@ static int finite_checks(void)
     nya_train_device_free(d);
     return 0;
 }
+static int timing_marks(void)
+{
+    nya_train_device *d=nya_train_device_create("cuda",65536),*other=nya_train_device_create("cuda",65536);CHECK(d && other);
+    double seconds=123;CHECK(!nya_train_device_mark(NULL) && nya_train_device_elapsed(NULL,1,2,&seconds)<0 && seconds==123);
+    CHECK(nya_train_device_elapsed(d,1,2,&seconds)<0 && seconds==123);
+    nya_train_buffer buffer=nya_train_device_alloc(d,4096);CHECK(buffer);
+    nya_train_device_stats before,after;nya_train_device_get_stats(d,&before);
+    nya_train_mark a=nya_train_device_mark(d);CHECK(a && !nya_train_device_zero(d,buffer));
+    nya_train_mark b=nya_train_device_mark(d);CHECK(b);
+    nya_train_device_get_stats(d,&after);
+    CHECK(after.synchronizations==before.synchronizations && after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && after.kernel_launches==before.kernel_launches+1);
+    CHECK(nya_train_device_elapsed(d,b,a,&seconds)<0 && nya_train_device_elapsed(d,a,a,&seconds)<0 && nya_train_device_elapsed(d,a,b,NULL)<0);
+    CHECK(nya_train_device_elapsed(other,a,b,&seconds)<0 && seconds==123 && nya_train_device_zero(d,a)<0);
+    CHECK(!nya_train_device_finish(d));nya_train_device_get_stats(d,&before);
+    CHECK(!nya_train_device_elapsed(d,a,b,&seconds) && isfinite(seconds) && seconds>=0);
+    nya_train_device_get_stats(d,&after);CHECK(after.synchronizations==before.synchronizations);
+    for(size_t i=0;i<8;++i)CHECK(nya_train_device_mark(d));
+    seconds=123;CHECK(nya_train_device_elapsed(d,a,b,&seconds)<0 && seconds==123);
+    nya_train_device_free(d);nya_train_device_free(other);return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
@@ -317,6 +337,7 @@ int main(int argc, char **argv)
         CHECK(b && nya_train_device_zero(d,b));
         nya_train_device_stats s; nya_train_device_get_stats(d,&s);
         CHECK(s.failed && s.kernel_launches==1 && nya_train_device_finish(d) && !nya_train_device_alloc(d,4));
+        double elapsed=123;CHECK(!nya_train_device_mark(d) && nya_train_device_elapsed(d,1,2,&elapsed)<0 && elapsed==123);
         CHECK(!nya_train_device_scratch_begin(d) && nya_train_device_scratch_end(d,scope));
         CHECK(nya_train_device_check_finite(d,b,b,1,1));
         nya_train_device_get_stats(d,&s); CHECK(s.buffers==1 && s.scratch_resets==0);
@@ -380,6 +401,7 @@ int main(int argc, char **argv)
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
         (unsigned long long)after.kernel_launches,(unsigned long long)after.uploads,(unsigned long long)after.downloads);
     nya_train_device_free(d);
-    int result=scratch_lifetime();
+    int result=timing_marks();
+    if(!result)result=scratch_lifetime();
     return result ? result : finite_checks();
 }

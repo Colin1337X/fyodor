@@ -7,6 +7,7 @@
 #include "file.h"
 #include "train_clock.h"
 #include "train_control.h"
+#include "training_graph_device.h"
 
 #include <errno.h>
 #include <inttypes.h>
@@ -34,20 +35,25 @@ typedef struct train_record {
 } train_record;
 
 typedef struct train_options {
-    const char *mode, *data, *output, *base, *checkpoint, *resume, *metrics, *eval_data;
+    const char *mode, *data, *output, *base, *checkpoint, *resume, *metrics, *eval_data, *compute;
     size_t steps, rank, memory, accumulate, control_stdin, threads, eval_every, eval_records;
     nya_train_executor *executor;
+    nya_train_session *session;
+    size_t device_memory;
     float rate, beta;
     nya_train_decoder_config config;
 } train_options;
 
 static void usage(void)
 {
-    puts("fyodor-train --mode pretrain|cpt|sft|dpo --data FILE --output MODEL.gguf\n"
+    puts("fyodor-train --capabilities  Report currently usable training devices as JSON\n"
+         "fyodor-train --mode pretrain|cpt|sft|dpo --data FILE --output MODEL.gguf\n"
          "  --base MODEL.gguf       Required for cpt/sft/dpo; dense LLaMA or Gemma 4\n"
          "  --rank N                LoRA rank (default 8); 0 trains all weights\n"
          "  --steps N --lr X        Updates and learning rate (default 100, 0.001)\n"
          "  --accumulate N          Sequences/pairs per update, 1..1024 (default 1)\n"
+         "  --compute cpu|cuda      Training device (default cpu); CUDA never silently falls back\n"
+         "  --device-memory-mib N   CUDA arena budget including persistent state (default 1024)\n"
          "  --threads N             CPU threads, 1..64; 0 selects host cores (default)\n"
          "  --context N             Corpus window; random model context (default 256)\n"
          "  --dimension N --ff N --layers N --heads N --kv-heads N --seed N\n"
@@ -63,7 +69,7 @@ static void usage(void)
          "Corpora are UTF-8 text. SFT lines: prompt<TAB>completion.\n"
          "DPO lines: prompt<TAB>chosen<TAB>rejected. Tabs/newlines delimit records.\n"
          "Outputs must be new paths. Resume with the SAME model/config/data/objective.\n"
-         "CPU training; accelerator backward, MoE/MTP/encoder training and distributed runs are pending.");
+         "CPU/CUDA training; MoE/MTP/encoder training and distributed runs are pending.");
 }
 
 static int integer(const char *text, size_t *value)
@@ -87,6 +93,7 @@ static int real(const char *text, float *value)
 static int options(int argc, char **argv, train_options *o)
 {
     memset(o,0,sizeof(*o)); nya_train_decoder_defaults(&o->config);
+    o->compute = "cpu"; o->device_memory = 1024U*1024U*1024U;
     o->mode = "pretrain"; o->steps = 100; o->rank = 8; o->rate = 0.001f;
     o->beta = 0.1f; o->memory = 256U*1024U*1024U; o->accumulate = 1; o->eval_every = 10;
     int evaluation_options = 0;
@@ -95,6 +102,7 @@ static int options(int argc, char **argv, train_options *o)
         if (i+1 >= argc) return -1;
         const char *value = argv[i+1]; size_t n;
         if (strcmp(key,"--mode") == 0) o->mode = value;
+        else if (strcmp(key,"--compute") == 0) o->compute = value;
         else if (strcmp(key,"--data") == 0) o->data = value;
         else if (strcmp(key,"--output") == 0) o->output = value;
         else if (strcmp(key,"--base") == 0) o->base = value;
@@ -114,6 +122,10 @@ static int options(int argc, char **argv, train_options *o)
             else if (strcmp(key,"--eval-records") == 0) { o->eval_records = n; evaluation_options = 1; }
             else if (strcmp(key,"--rank") == 0) o->rank = n;
             else if (strcmp(key,"--seed") == 0) o->config.seed = n;
+            else if (strcmp(key,"--device-memory-mib") == 0) {
+                if (!n || n > SIZE_MAX/(1024U*1024U)) return -1;
+                o->device_memory = n*1024U*1024U;
+            }
             else if (strcmp(key,"--memory-mib") == 0) {
                 if (n == 0 || n > SIZE_MAX/(1024U*1024U)) return -1;
                 o->memory = n*1024U*1024U;
@@ -129,6 +141,7 @@ static int options(int argc, char **argv, train_options *o)
             }
         }
     }
+    if (strcmp(o->compute,"cpu") && strcmp(o->compute,"cuda")) return -1;
     int pretrain = strcmp(o->mode,"pretrain") == 0;
     if (!pretrain && strcmp(o->mode,"cpt") != 0 && strcmp(o->mode,"sft") != 0 && strcmp(o->mode,"dpo") != 0) return -1;
     if (o->data == NULL || o->output == NULL || o->steps == 0 || o->rank > 256 ||
@@ -255,7 +268,8 @@ bad_record:
 }
 
 typedef struct train_metrics {
-    double loss, forward, backward, optimizer, elapsed;
+    double loss, forward, backward, optimizer, elapsed, preparation, gradient_norm;
+    size_t device_bytes, device_peak;
     size_t tokens, units, graph_bytes;
 } train_metrics;
 
@@ -302,7 +316,8 @@ static int evaluate(nya_train_decoder *model, const train_dataset *data,
             tokens += rejected;
         }
         if (!units || units > SIZE_MAX-m->units || tokens > SIZE_MAX-m->tokens) goto overflow;
-        nya_train_graph *g = nya_train_graph_create_for_evaluation(o->memory,o->executor);
+        nya_train_graph *g = o->session ? nya_train_graph_create_resident(o->memory,o->session,1) :
+            nya_train_graph_create_for_evaluation(o->memory,o->executor);
         nya_train_tensor *loss = sequence_loss(model,g,&sequence,data->dpo);
         if (data->dpo) {
             const train_record *record = &data->records[i];
@@ -310,7 +325,9 @@ static int evaluate(nya_train_decoder *model, const train_dataset *data,
                 record->reference_chosen,record->reference_rejected,o->beta);
         }
         if (!loss) { snprintf(error,capacity,"evaluation failed: %s",nya_train_error(g)); nya_train_graph_free(g); return -1; }
-        double weighted = (double)nya_train_data(loss)[0]*(double)units;
+        const float *value=nya_train_data(loss);
+        if(!value){snprintf(error,capacity,"evaluation failed: %s",nya_train_error(g));nya_train_graph_free(g);return -1;}
+        double weighted = (double)value[0]*(double)units;
         size_t memory = nya_train_memory_used(g);
         nya_train_graph_free(g);
         if (!isfinite(weighted) || !isfinite(m->loss+weighted)) goto overflow;
@@ -368,12 +385,16 @@ static int train_update(nya_train_decoder *model, const train_dataset *data,
     }
     size_t parameter_count;
     nya_train_parameter *const *parameters = nya_train_decoder_parameters(model,&parameter_count);
-    for (size_t i = 0; i < parameter_count; ++i) nya_train_zero_grad(parameters[i]);
+    if(o->session) {
+        if(nya_train_session_zero_grad(o->session)){snprintf(error,capacity,"%s",nya_train_session_error(o->session));return -1;}
+    } else for (size_t i = 0; i < parameter_count; ++i) nya_train_zero_grad(parameters[i]);
     index = first;
     for (size_t micro = 0; micro < o->accumulate; ++micro) {
         train_sequence sequence = batch_sequence(data,index);
         double weight = (double)(data->dpo ? 1 : sequence.supervised)/(double)m->units;
-        nya_train_graph *g = nya_train_graph_create_with_executor(o->memory,o->executor);
+        double preparation_start=tr_seconds();
+        nya_train_graph *g = o->session ? nya_train_graph_create_resident(o->memory,o->session,0) :
+            nya_train_graph_create_with_executor(o->memory,o->executor);
         double forward_start = tr_seconds();
         nya_train_tensor *loss = sequence_loss(model,g,&sequence,data->dpo);
         if (data->dpo) {
@@ -381,26 +402,65 @@ static int train_update(nya_train_decoder *model, const train_dataset *data,
             loss = nya_train_dpo(loss,sequence_loss(model,g,&record->rejected,1),
                 record->reference_chosen,record->reference_rejected,o->beta);
         }
-        if (loss != NULL) m->loss += (double)nya_train_data(loss)[0]*weight;
+        nya_train_tensor *unscaled=loss;
+        if (!o->session && loss != NULL) m->loss += (double)nya_train_data(loss)[0]*weight;
         /* Avoid an extra operation/rounding in the existing default path. */
         if (o->accumulate != 1) loss = nya_train_scale(loss,(float)weight);
+        nya_train_device *device=o->session?nya_train_session_device(o->session):NULL;
+        nya_train_mark begin=0,forward_end=0,backward_end=0;
+        int timed=0;
+        if(device && loss) {
+            m->preparation+=tr_seconds()-preparation_start;
+            begin=nya_train_device_mark(device);
+            timed=!begin || nya_train_graph_forward_resident(g);
+            if(!timed){forward_end=nya_train_device_mark(device);timed=!forward_end;}
+        }
         double backward_start = tr_seconds();
-        if (loss == NULL || nya_train_backward(loss) != 0) {
-            snprintf(error,capacity,"microbatch %zu: %s",micro+1,nya_train_error(g));
+        if (loss == NULL || timed || nya_train_backward(loss) != 0) {
+            snprintf(error,capacity,"microbatch %zu: %s",micro+1,timed?nya_train_device_error(device):nya_train_error(g));
             nya_train_graph_free(g);
-            for (size_t i = 0; i < parameter_count; ++i) nya_train_zero_grad(parameters[i]);
+            if(o->session)nya_train_session_zero_grad(o->session);
+            else for (size_t i = 0; i < parameter_count; ++i) nya_train_zero_grad(parameters[i]);
             return -1;
         }
-        m->forward += backward_start-forward_start;
-        m->backward += tr_seconds()-backward_start;
+        if(device) {
+            backward_end=nya_train_device_mark(device);
+            const float *value=backward_end?nya_train_data(unscaled):NULL;
+            double forward_seconds=0,backward_seconds=0;
+            if(!value || nya_train_device_elapsed(device,begin,forward_end,&forward_seconds) ||
+                nya_train_device_elapsed(device,forward_end,backward_end,&backward_seconds)) {
+                snprintf(error,capacity,"resident microbatch failed: %s; %s",nya_train_error(g),nya_train_device_error(device));
+                nya_train_graph_free(g);nya_train_session_zero_grad(o->session);return -1;
+            }
+            m->loss+=(double)*value*weight;m->forward+=forward_seconds;m->backward+=backward_seconds;
+        } else {
+            m->forward += backward_start-forward_start;
+            m->backward += tr_seconds()-backward_start;
+        }
         size_t bytes = nya_train_memory_used(g);
         if (bytes > m->graph_bytes) m->graph_bytes = bytes;
         nya_train_graph_free(g);
         index = index+1 == data->count ? 0 : index+1;
     }
     double optimizer_start = tr_seconds();
-    if (nya_train_adamw_step(optimizer,parameters,parameter_count,error,capacity) != 0) return -1;
-    double end = tr_seconds(); m->optimizer = end-optimizer_start; m->elapsed = end-start;
+    if(o->session) {
+        nya_train_device *device=nya_train_session_device(o->session);
+        nya_train_mark begin=nya_train_device_mark(device),end=0;
+        nya_train_adamw_config config={optimizer->learning_rate,optimizer->beta1,optimizer->beta2,
+            optimizer->epsilon,optimizer->weight_decay,optimizer->max_grad_norm};
+        nya_train_session_metrics metrics;
+        if(!begin || nya_train_session_step(o->session,config) || !(end=nya_train_device_mark(device)) ||
+            nya_train_session_observe(o->session,&metrics) || nya_train_device_elapsed(device,begin,end,&m->optimizer)) {
+            snprintf(error,capacity,"resident update failed: %s; %s",nya_train_session_error(o->session),nya_train_device_error(device));return -1;
+        }
+        optimizer->step=metrics.step;m->gradient_norm=metrics.gradient_norm;
+        nya_train_device_stats stats;nya_train_device_get_stats(device,&stats);
+        m->device_bytes=stats.used_bytes;m->device_peak=stats.peak_bytes;
+    } else {
+        if (nya_train_adamw_step(optimizer,parameters,parameter_count,error,capacity) != 0) return -1;
+        m->optimizer=tr_seconds()-optimizer_start;
+    }
+    m->elapsed = tr_seconds()-start;
     return 0;
 overflow:
     snprintf(error,capacity,"accumulation group has no supervised targets or its token count overflows");
@@ -470,6 +530,11 @@ static int run_checkpoint_header(FILE *file, int writing, uint64_t identity)
 static int train_main(int argc, char **argv)
 {
     train_options o;
+    if(argc==2 && !strcmp(argv[1],"--capabilities")) {
+        nya_train_device *device=nya_train_device_create("cuda",1024*1024);
+        int result=printf("{\"cpu\":true,\"cuda\":%s}\n",device?"true":"false")<0;
+        nya_train_device_free(device);return result;
+    }
     if (argc == 2 && strcmp(argv[1],"--help") == 0) { usage(); return 0; }
     if (options(argc,argv,&o) != 0) { usage(); return 2; }
     char error[256] = {0}; int result = 1;
@@ -515,10 +580,14 @@ static int train_main(int argc, char **argv)
         if (f != NULL) fclose(f);
         if (!loaded) { snprintf(error,sizeof(error),"checkpoint is unreadable, corrupt, legacy, or mismatches model/data/objective/context; CLI resume requires a matching NYARUN v1 checkpoint"); goto cleanup; }
     }
+    if(!strcmp(o.compute,"cuda")) {
+        o.session=nya_train_session_create("cuda",o.device_memory,&optimizer,parameters,parameter_count,error,sizeof(error));
+        if(!o.session || nya_train_decoder_prepare_resident(model,o.session,error,sizeof(error)))goto cleanup;
+    }
     if (o.metrics != NULL) {
         metrics = nya_file_create_exclusive(o.metrics);
         if (metrics == NULL) { snprintf(error,sizeof(error),"metrics output must be a new writable path"); goto cleanup; }
-        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads,validation_loss,eval_ms,eval_tokens,eval_units\n",metrics);
+        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads,validation_loss,eval_ms,eval_tokens,eval_units,compute,timing_source,preparation_ms,gradient_norm,device_used_bytes,device_peak_bytes,device_capacity_bytes\n",metrics);
     }
     if (o.eval_data != NULL) {
         train_evaluation evaluation;
@@ -543,19 +612,28 @@ static int train_main(int argc, char **argv)
             int failed = fprintf(metrics,"%" PRIu64 ",%.9g,%zu,%.6f,%.6f,%.6f,%.6f,%.6f,%zu,%zu,%zu,%zu",
                 optimizer.step,m.loss,m.tokens,m.forward*1000,m.backward*1000,m.optimizer*1000,m.elapsed*1000,
                 throughput,m.graph_bytes,o.accumulate,m.units,nya_train_executor_threads(o.executor)) < 0;
-            if (evaluated) failed |= fprintf(metrics,",%.9g,%.6f,%zu,%zu\n",evaluation.loss,evaluation.elapsed*1000,evaluation.tokens,evaluation.units) < 0;
-            else failed |= fputs(",,,,\n",metrics) == EOF;
+            if (evaluated) failed |= fprintf(metrics,",%.9g,%.6f,%zu,%zu",evaluation.loss,evaluation.elapsed*1000,evaluation.tokens,evaluation.units) < 0;
+            else failed |= fputs(",,,,",metrics) == EOF;
+            failed |= fprintf(metrics,",%s,%s",o.compute,o.session?"cuda_events":"cpu_wall")<0;
+            if(o.session)failed |= fprintf(metrics,",%.6f,%.9g,%zu,%zu,%zu\n",m.preparation*1000,m.gradient_norm,m.device_bytes,m.device_peak,o.device_memory)<0;
+            else failed |= fputs(",,,,,\n",metrics)==EOF;
             if (failed || fflush(metrics)) { snprintf(error,sizeof(error),"metrics write failed"); goto cleanup; }
         }
-        if (step == 0 || (step+1)%10 == 0 || step+1 == o.steps) {
-            if (printf("step=%" PRIu64 " loss=%.7f graph_bytes=%zu tokens_per_second=%.3f microbatches=%zu cpu_threads=%zu\n",
-                optimizer.step,m.loss,m.graph_bytes,throughput,o.accumulate,nya_train_executor_threads(o.executor)) < 0 || fflush(stdout) != 0) {
-                /* A disconnected pipe controller may also close the log
-                   reader. Keep the last state recoverable through its EOF. */
-                if (!o.control_stdin) { snprintf(error,sizeof(error),"progress output failed"); goto cleanup; }
+        if (o.session || step == 0 || (step+1)%10 == 0 || step+1 == o.steps) {
+            int failed=printf("step=%" PRIu64 " loss=%.7f graph_bytes=%zu tokens_per_second=%.3f microbatches=%zu cpu_threads=%zu compute=%s",
+                optimizer.step,m.loss,m.graph_bytes,throughput,o.accumulate,nya_train_executor_threads(o.executor),o.compute)<0;
+            if(o.session)failed |= printf(" timing_source=cuda_events forward_ms=%.6f backward_ms=%.6f optimizer_ms=%.6f preparation_ms=%.6f gradient_norm=%.9g device_used_bytes=%zu device_peak_bytes=%zu device_capacity_bytes=%zu",
+                m.forward*1000,m.backward*1000,m.optimizer*1000,m.preparation*1000,m.gradient_norm,m.device_bytes,m.device_peak,o.device_memory)<0;
+            failed |= putchar('\n')==EOF;
+            if ((failed || fflush(stdout) != 0) && !o.control_stdin) {
+                snprintf(error,sizeof(error),"progress output failed"); goto cleanup;
             }
         }
     }
+    /* Failed held-out forward work must not prevent saving the last completed
+       update. This only clears evaluation diagnostics; snapshots still validate
+       every persistent array and poisoned devices remain unrecoverable. */
+    if(evaluation_failed && o.session)nya_train_session_discard_evaluation(o.session);
     if (stopping) { printf("stopping step=%" PRIu64 " saving_outputs=1\n",optimizer.step); fflush(stdout); }
     /* Exclusive creation prevents an accidental overwrite of the user's base
        model or checkpoint. Failed writes remove only the file created here.
@@ -564,9 +642,12 @@ static int train_main(int argc, char **argv)
         FILE *f = nya_file_create_exclusive(o.checkpoint);
         if (f == NULL) { snprintf(error,sizeof(error),"checkpoint output must be a new writable path"); goto cleanup; }
         int written = run_checkpoint_header(f,1,identity);
-        if (written == 0) written = nya_train_checkpoint_write(f,&optimizer,parameters,parameter_count);
+        if (written == 0) written = o.session ? nya_train_session_checkpoint_write(o.session,f) : nya_train_checkpoint_write(f,&optimizer,parameters,parameter_count);
         if (fclose(f) != 0) written = -1;
         if (written != 0) { nya_file_remove(o.checkpoint); snprintf(error,sizeof(error),"checkpoint write failed"); goto cleanup; }
+    }
+    if(o.session && nya_train_session_detach(o.session,&optimizer)) {
+        snprintf(error,sizeof(error),"cannot export resident state: %s",nya_train_session_error(o.session));goto cleanup;
     }
     FILE *output = nya_file_create_exclusive(o.output);
     if (output == NULL) { snprintf(error,sizeof(error),"GGUF output must be a new writable path"); goto cleanup; }
@@ -580,6 +661,7 @@ cleanup:
     }
     if (result != 0) fprintf(stderr,"training failed: %s\n",error[0] == '\0' ? "allocation or dataset error" : error);
     dataset_free(&dataset); dataset_free(&validation); free(data); free(eval_text);
+    nya_train_session_free(o.session);
     nya_train_decoder_free(model); nya_model_registry_shutdown(&registry);
     nya_train_executor_free(o.executor);
     return result;

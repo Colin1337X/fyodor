@@ -19,6 +19,9 @@ typedef struct nya_cuda_train {
     CUfunction loss_rows, loss_reduce, loss_back, dpo, dpo_back;
     CUfunction adamw_norm, adamw_prepare, adamw_stage, adamw_commit, adamw_finish;
     CUfunction slice;
+    CUevent marks[8];
+    nya_train_mark mark_ids[8];
+    unsigned mark_cursor;
     nya_train_device_stats stats;
     nya_cuda_train_buffer buffers[NYA_TRAIN_BUFFERS];
     nya_train_scope scope;
@@ -87,6 +90,7 @@ static void nya_ct_destroy(void *context)
     if (t->cuda && t->arena && t->cuda->push(t->cuda->context) == CUDA_SUCCESS) {
         CUcontext previous;
         t->cuda->stream_sync(t->cuda->stream);
+        for (size_t i=0;i<8;++i) if(t->marks[i]) t->cuda->event_free(t->marks[i]);
         t->cuda->deallocate(t->arena);
         t->cuda->pop(&previous);
     }
@@ -146,6 +150,7 @@ static void *nya_ct_create(size_t capacity)
         t->cuda->function_get(&t->rope,t->cuda->module,"nya_train_rope") != CUDA_SUCCESS ||
         t->cuda->function_get(&t->dw,t->cuda->module,"nya_train_dw") != CUDA_SUCCESS ||
         t->cuda->allocate(&t->arena,capacity) != CUDA_SUCCESS) goto done;
+    for (size_t i=0;i<8;++i) if(t->cuda->event_create(&t->marks[i],0)!=CUDA_SUCCESS) goto done;
     t->stats.capacity_bytes = capacity;
     result = 0;
 done:
@@ -737,11 +742,39 @@ static int nya_ct_slice(void *context,nya_train_buffer destination,nya_train_buf
     if (nya_ct_enter(t)) return -1;
     return nya_ct_leave(t,nya_ct_launch(t,t->slice,(unsigned)blocks,1,256,1,args));
 }
+static nya_train_mark nya_ct_mark(void *context)
+{
+    nya_cuda_train *t=context;
+    if(t->stats.failed) return 0;
+    nya_train_mark id=nya_ct_id(t);if(!id || nya_ct_enter(t))return 0;
+    unsigned slot=t->mark_cursor;
+    int result=0;
+    if(t->cuda->event_record(t->marks[slot],t->cuda->stream)!=CUDA_SUCCESS)
+        result=nya_ct_error(t,"training timing event record failed",1);
+    if(nya_ct_leave(t,result))return 0;
+    t->mark_ids[slot]=id;t->mark_cursor=(slot+1)%8;return id;
+}
+static int nya_ct_elapsed(void *context,nya_train_mark begin,nya_train_mark end,double *seconds)
+{
+    nya_cuda_train *t=context;CUevent a=NULL,b=NULL;
+    if(t->stats.failed)return -1;
+    for(size_t i=0;i<8;++i){if(t->mark_ids[i]==begin)a=t->marks[i];if(t->mark_ids[i]==end)b=t->marks[i];}
+    if(!seconds || !begin || !end || begin>=end || !a || !b)
+        return nya_ct_error(t,"invalid or expired training timing marks",0);
+    if(nya_ct_enter(t))return -1;
+    float milliseconds=0;CUresult status=t->cuda->event_elapsed(&milliseconds,a,b);
+    int result=0;
+    if(status!=CUDA_SUCCESS) result=nya_ct_error(t,status==CUDA_ERROR_NOT_READY?
+        "training timing marks are not complete; observe explicitly":"training timing event query failed",status!=CUDA_ERROR_NOT_READY);
+    else if(!isfinite(milliseconds) || milliseconds<0) result=nya_ct_error(t,"invalid training elapsed time",1);
+    if(nya_ct_leave(t,result))return -1;
+    *seconds=(double)milliseconds/1000;return 0;
+}
 const nya_train_device_interface *nya_cuda_training_device(void)
 {
     static const nya_train_device_interface api = {nya_ct_create,nya_ct_destroy,nya_ct_get_error,nya_ct_stats,
         nya_ct_alloc,nya_ct_transfer,nya_ct_zero,nya_ct_finish,nya_ct_matrix,
         nya_ct_scratch_begin,nya_ct_scratch_end,nya_ct_check_finite,nya_ct_unary,nya_ct_binary,nya_ct_rms_norm,
-        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo,nya_ct_adamw_plan,nya_ct_adamw,nya_ct_slice};
+        nya_ct_indices,nya_ct_embedding,nya_ct_rope,nya_ct_attention,nya_ct_loss,nya_ct_dpo,nya_ct_adamw_plan,nya_ct_adamw,nya_ct_slice,nya_ct_mark,nya_ct_elapsed};
     return &api;
 }

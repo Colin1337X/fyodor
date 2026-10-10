@@ -193,7 +193,7 @@ nya_train_graph *nya_train_graph_create_resident(size_t limit,nya_train_session 
     if (!session || (evaluation!=0 && evaluation!=1)) return NULL;
     nya_train_graph *g=nya_train_graph_create(limit);
     if (!g) return NULL;
-    g->scope=nya_train_session_graph_begin(session);
+    g->scope=nya_train_session_graph_begin(session,evaluation);
     if (!g->scope) { free(g); return NULL; }
     g->session=session; g->device=nya_train_session_device(session); g->evaluation=evaluation; g->profile=0;
     float one=1;

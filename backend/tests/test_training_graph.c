@@ -111,6 +111,12 @@ static int lifecycle(const char *prefix)
     nya_train_graph *eval=nya_train_graph_create_resident(16*1024*1024,s,1);CHECK(eval);
     nya_train_tensor *eval_loss=nya_train_cross_entropy(nya_train_decoder_forward(gpu,eval,tokens,12),labels,NULL,12);CHECK(eval_loss && nya_train_data(eval_loss));
     nya_train_graph_free(eval);FILE *after_eval=tmpfile();CHECK(after_eval && !nya_train_session_checkpoint_write(s,after_eval) && same_file(resumed,after_eval));fclose(after_eval);
+    CHECK(!nya_train_graph_create_resident(1,s,1) && !nya_train_session_discard_evaluation(s));
+    eval=nya_train_graph_create_resident(65536,s,1);CHECK(eval);
+    float huge=0x1.fffffep127f;
+    nya_train_tensor *invalid=nya_train_scale(nya_train_input(eval,1,1,&huge),2);CHECK(invalid && !nya_train_data(invalid));
+    nya_train_graph_free(eval);CHECK(!nya_train_session_discard_evaluation(s));
+    after_eval=tmpfile();CHECK(after_eval && !nya_train_session_checkpoint_write(s,after_eval) && same_file(resumed,after_eval));fclose(after_eval);
     CHECK(!nya_train_session_detach(s,&initial) && initial.step==100);nya_train_session_free(s);
     snprintf(path,sizeof(path),"%s.trained.gguf",prefix);FILE *exported=fopen(path,"wb");CHECK(exported && !nya_train_decoder_export(gpu,exported,error,sizeof(error)) && !fclose(exported));
     nya_model_registry registry;nya_model_registry_init(&registry);const nya_model *model;
@@ -139,7 +145,7 @@ static int failures(int injected)
         CHECK(g && !nya_train_graph_create_resident(65536,s,0));
         CHECK(nya_train_session_zero_grad(s)<0 && nya_train_session_step(s,settings(o))<0 && nya_train_session_detach(s,&o)<0);
         nya_train_tensor *leaf=nya_train_leaf(g,p);CHECK(leaf && !nya_train_slice_columns(leaf,1,1));
-        nya_train_graph_free(g);CHECK(nya_train_session_step(s,settings(o))<0 && !nya_train_session_zero_grad(s));
+        nya_train_graph_free(g);CHECK(nya_train_session_discard_evaluation(s)<0 && nya_train_session_step(s,settings(o))<0 && !nya_train_session_zero_grad(s));
         g=nya_train_graph_create_resident(65536,s,0);CHECK(g);
         nya_train_tensor *loss=nya_train_scale(nya_train_leaf(g,p),3);CHECK(loss && !nya_train_backward(loss) && nya_train_data(loss)[0]==6);
         nya_train_graph_free(g);CHECK(!nya_train_session_step(s,settings(o)));

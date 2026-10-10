@@ -518,23 +518,22 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 
 The [resident CUDA matrix foundation](benchmarks/TRAINING_DEVICE_20260927.md)
 provides private persistent buffers and matrix forward/input-gradient/weight-gradient
-kernels. It is not yet connected to the training graph; the CLI and UI still use
-CPU training. Complete graph execution, checkpoint ownership and public GPU
-training integration remain under development.
+kernels. These now underpin complete resident graph/session execution and public
+CPU/CUDA training selection, described below.
 Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
 so inference initialization does not compile training derivatives. The native
 training context does not load optional inference matrix libraries.
 The private device also supports [reusable scratch scopes](benchmarks/TRAINING_SCRATCH_20260928.md).
 Ending a scope invalidates its temporary handles and recycles storage in stream
 order without adding a host fence; allocations preceding the scope survive.
-This prepares repeated graph execution while public training remains on CPU.
+Scratch scopes support repeated resident graph execution.
 Queued [finite checks](benchmarks/TRAINING_FINITE_20260928.md) can retain the
 first numerical failure in a four-byte device status across temporary-buffer
 reuse. They are private graph-building primitives, not a completed GPU trainer.
 Resident [elementwise forward/backward operations](benchmarks/TRAINING_ELEMENTWISE_20260929.md)
 now cover activations, scale, broadcast addition/multiplication and accumulating
 gradients. A composed gated branch and real TinyLlama frozen FFN match CPU
-autograd without intermediate host transfers; full GPU training remains unfinished.
+autograd without intermediate host transfers and feeds the decoder graph below.
 Resident [RMSNorm forward and backward](benchmarks/TRAINING_NORM_20260929.md)
 adds optional trainable normalization scales and caller-owned saved inverse state.
 The real-model normalized FFN probe checks full output, input-gradient and scale-gradient parity.
@@ -571,12 +570,15 @@ LLaMA and supported imported Gemma decoders, including masked CE and paired DPO.
 Frozen packed weights upload once per session; graph construction prepares
 metadata before execution. Random-model pretraining supports portable checkpoints,
 exact fresh-session resume, evaluation and export through this private interface.
-Public CLI/UI training still uses CPU; device selection and performance tuning
-remain unfinished.
+The [public CPU/CUDA trainer](benchmarks/TRAINING_CLI_CUDA_20261008.md) exposes
+this path through `--compute cuda`, including accumulation, evaluation, safe stop,
+checkpoint/resume and export. CPU remains the default. The desktop selects CUDA
+only when its bundled trainer reports it usable; unsupported GPU requests fail
+without CPU replay. `--device-memory-mib` separately bounds the resident arena.
 
-`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, public GPU training integration, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
+`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. CPU training uses the eager C autograd API in `include/training.h`; CUDA uses the private recorded graph/session implementation. The trainer has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
-The CLI uses persistent native C CPU workers for sufficiently large dense and
+With `--compute cpu`, the CLI uses persistent native C CPU workers for sufficiently large dense and
 mapped matrix operations. `--threads 0` (default) chooses host cores, capped at
 64; `--threads 1` is serial, and explicit counts 1–64 are supported. Windows
 auto selection counts physical cores; POSIX uses online processors. Thread

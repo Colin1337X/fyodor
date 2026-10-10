@@ -2,7 +2,7 @@ import"./styles.css";
 import {icon, navigationMarkup} from './icons.js';
 import {messageBody} from './message.js';
 import {benchmarkMarkup, parseBenchmark} from './benchmark.js';
-import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from './training-metrics.js';
+import {parseTrainingMetric, parseTrainingDeviceMetric, parseEvaluationMetric, currentTrainingLines} from './training-metrics.js';
 import{backend}from"./api.js";
 import {formatConversation, normalizeChat, generationOptions} from "./session.js";
 import {workspaceMarkup, apiMarkup} from "./workspace.js";
@@ -19,7 +19,7 @@ for(const entry of Array.isArray(persisted.chats)?persisted.chats.slice(0,300):[
 }
 persisted.chats=restored;
 const defaults={temperature:.8,top_p:.95,top_k:40,max_tokens:256,seed:"",system:"",frequency_penalty:0,presence_penalty:0,stop:"",draft_model_id:"",speculative_tokens:4};
-const trainingDefaults={mode:"pretrain",data:"",output:"",base:"",checkpoint:"",resume:"",steps:100,accumulate:1,threads:0,evalData:"",evalEvery:10,evalRecords:0,learningRate:.001,rank:0,beta:.1,context:256,dimension:64,feedForward:128,layers:2,heads:4,kvHeads:2,seed:42,memoryMib:256};
+const trainingDefaults={mode:"pretrain",data:"",output:"",base:"",checkpoint:"",resume:"",steps:100,accumulate:1,threads:0,evalData:"",evalEvery:10,evalRecords:0,learningRate:.001,rank:0,beta:.1,context:256,dimension:64,feedForward:128,layers:2,heads:4,kvHeads:2,seed:42,memoryMib:256,compute:"cpu",deviceMemoryMib:1024};
 // Restore only known primitive settings. Imported storage cannot introduce
 // arbitrary attribute strings where a numeric control is expected.
 function restoreSettings(defaults, value){
@@ -41,10 +41,11 @@ const s={
   agent:restoreSettings({enabled:false,maxTurns:6},persisted.agent),training:restoreSettings(trainingDefaults,persisted.training),
   trainStatus:{running:false,exitCode:null},logs:[],appLogs:[],busy:false,query:"",lastPrompt:"",labAnswer:null,
 };
+if(!["cpu","cuda"].includes(s.training.compute))s.training.compute="cpu";
 if(!["local","openai"].includes(s.provider.type))s.provider.type="local";
 s.agent.maxTurns=Math.max(1,Math.min(24,Math.trunc(s.agent.maxTurns)));
 // Window-only state never enters session storage or backend payloads.
-const ui={benchmarks:[],logPaused:false,error:'',messageLimit:80};
+const ui={benchmarks:[],logPaused:false,error:'',messageLimit:80,trainingDevices:null,trainingDevicesPending:false,trainingDevicesChecked:false,trainingDevicesError:''};
 const meta={models:["Models","local registry and compute"],benchmark:["Benchmarks","measured runtime results"],api:["API access","local REST interfaces"],workspace:["Overview","models and activity"],chat:["Chat","conversation"],playground:["Playground","generation controls"],training:["Training","native C trainer"],logs:["Logs","engine and trainer"]};
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const id=()=>crypto.randomUUID?.()||Date.now()+Math.random()+"";
@@ -119,10 +120,14 @@ function trainingView(){
   ${trainingInput("data","dataset")}${trainingInput("evalData","validation dataset (optional)")}${needsBase?trainingInput("base","base model"):""}${trainingInput("output","output GGUF")}${trainingInput("checkpoint","checkpoint (optional)")}${trainingInput("resume","resume checkpoint (optional)")}
   <div class="run-actions"><button class="blue-action" id="start-training" type="submit" ${s.trainStatus.running?"disabled":""}>start training ↗</button><button class="danger-action" id="stop-training" type="button" ${s.trainStatus.running&&!s.trainStatus.stopping?"":"disabled"}>stop &amp; save</button></div><p>Stop finishes the current update and saves the output model and optional checkpoint. Closing the app waits for saving.</p></section>
   <section class="panel training-config"><header><div><label>CONFIGURATION</label><h2>Optimizer + graph</h2></div></header><div class="config-grid">
-  ${trainingNumber("steps","optimizer updates",1)}${trainingNumber("evalEvery","evaluate every N updates",1)}${trainingNumber("evalRecords","validation records (0 = all)",0)}${trainingNumber("threads","CPU threads (0 = auto)",0,'max="64" step="1"')}${trainingNumber("accumulate","sequences / pairs per update",1,'max="1024" step="1"')}${trainingNumber("learningRate","learning rate",.000001,"step=\"0.0001\"")}${trainingNumber("rank","LoRA rank",0)}${trainingNumber("beta","DPO beta",.0001,"step=\"0.01\"")}${trainingNumber("context","context",1)}${trainingNumber("memoryMib","memory MiB",1)}
+  <label class="field">training device<select id="train-compute" data-train="compute"><option value="cpu">CPU</option><option value="cuda" disabled>CUDA</option></select></label><p id="training-device-note"></p>
+  ${s.training.compute==="cuda"?trainingNumber("deviceMemoryMib","GPU training budget (MiB)",1):""}${trainingNumber("steps","optimizer updates",1)}${trainingNumber("evalEvery","evaluate every N updates",1)}${trainingNumber("evalRecords","validation records (0 = all)",0)}${trainingNumber("threads","CPU threads (0 = auto)",0,'max="64" step="1"')}${trainingNumber("accumulate","sequences / pairs per update",1,'max="1024" step="1"')}${trainingNumber("learningRate","learning rate",.000001,"step=\"0.0001\"")}${trainingNumber("rank","LoRA rank",0)}${trainingNumber("beta","DPO beta",.0001,"step=\"0.01\"")}${trainingNumber("context","context",1)}${trainingNumber("memoryMib","memory MiB",1)}
   ${trainingNumber("dimension","dimension",1)}${trainingNumber("feedForward","feed-forward",1)}${trainingNumber("layers","layers",1)}${trainingNumber("heads","heads",1)}${trainingNumber("kvHeads","KV heads",1)}${trainingNumber("seed","seed",0)}</div>
-  <div class="training-note"><b>Gradient accumulation</b><p>Each update processes the selected number of sequences, or preference pairs for DPO, one at a time. Loss averages supervised tokens (DPO: pairs). Memory holds one sequence graph, or one pair.</p><b>Held-out evaluation</b><p>Optional validation uses the same data format, before training, at the selected interval, and at the end. A record limit selects a fixed prefix. Validation never updates weights; Stop can interrupt a validation pass between records.</p><b>Native limitations</b><p>CPU backward. Dense LLaMA and Gemma 4 imports. MoE, MTP training, encoders, mixed precision, and distributed runs are not implemented.</p></div></section></form></div>`;
+  <div class="training-note"><b>Gradient accumulation</b><p>Each update processes the selected number of sequences, or preference pairs for DPO, one at a time. Loss averages supervised tokens (DPO: pairs). Memory holds one sequence graph, or one pair.</p><b>Held-out evaluation</b><p>Optional validation uses the same data format, before training, at the selected interval, and at the end. A record limit selects a fixed prefix. Validation never updates weights; Stop can interrupt a validation pass between records.</p><b>Native limitations</b><p>CPU and CUDA forward/backward. CUDA availability comes from the bundled trainer. The GPU budget covers model weights and training buffers; driver memory is additional. Dense LLaMA and Gemma 4 imports. MoE, MTP training, encoders, mixed precision, and distributed runs are not implemented.</p></div></section></form></div>`;
   document.querySelector("#train-mode").value=s.training.mode;
+  document.querySelector("#train-compute").value=s.training.compute;
+  updateTrainingDevices();
+  if(window.__TAURI_INTERNALS__&&!ui.trainingDevicesChecked)refreshTrainingDevices();
   viewRoot.querySelector('.training-view').insertAdjacentHTML('beforeend','<section class="panel training-live" id="training-live" aria-label="Training telemetry"></section>');updateTrainingLive();
   if(!window.__TAURI_INTERNALS__){document.querySelector('#start-training').disabled=true;document.querySelector('#start-training').title='Training launches from the desktop app';}
 }
@@ -269,18 +274,34 @@ async function generate(prompt,source="chat"){
   }
 }
 
-async function refreshTraining(){if(!window.__TAURI_INTERNALS__)return;try{s.trainStatus=await invokeDesktop("training_status");if(s.view==="training"){const n=document.querySelector('.train-state');if(n){n.textContent=s.trainStatus.running?(s.trainStatus.stopping?'SAVING / STOPPING':'RUNNING'):s.trainStatus.exitCode==null?'IDLE':'EXIT '+s.trainStatus.exitCode;n.classList.toggle('running',s.trainStatus.running)}const start=document.querySelector('#start-training'),stop=document.querySelector('#stop-training');if(start)start.disabled=s.trainStatus.running;if(stop)stop.disabled=!s.trainStatus.running||s.trainStatus.stopping;await refreshLogs();updateTrainingLive()}}catch(error){log(error.message,"trainer")}}
+function updateTrainingDevices(){
+  const select=document.querySelector('#train-compute'),note=document.querySelector('#training-device-note');
+  if(select){const option=select.querySelector('[value="cuda"]');option.disabled=ui.trainingDevices?.cuda!==true;option.textContent=ui.trainingDevices?.cuda===true?'CUDA':ui.trainingDevicesPending?'CUDA (checking…)':'CUDA (unavailable)';}
+  if(note)note.textContent=ui.trainingDevicesError||(!window.__TAURI_INTERNALS__?'Device selection is available in the desktop app.':ui.trainingDevicesPending?'Checking the bundled trainer…':ui.trainingDevices?.cuda?'CUDA is available. Training stays on your selected device.':'The bundled trainer currently supports CPU training.');
+  const start=document.querySelector('#start-training');if(start)start.disabled=!window.__TAURI_INTERNALS__||s.trainStatus.running||(s.training.compute==='cuda'&&ui.trainingDevices?.cuda!==true);
+}
+async function refreshTrainingDevices(){
+  if(ui.trainingDevicesPending)return;
+  ui.trainingDevicesPending=true;ui.trainingDevicesChecked=true;updateTrainingDevices();
+  try{ui.trainingDevices=await invokeDesktop('training_capabilities');ui.trainingDevicesError='';}
+  catch(error){ui.trainingDevicesError=error.message;log(error.message,'trainer');}
+  finally{ui.trainingDevicesPending=false;updateTrainingDevices();}
+}
+async function refreshTraining(){if(!window.__TAURI_INTERNALS__)return;try{s.trainStatus=await invokeDesktop("training_status");if(s.view==="training"){const n=document.querySelector('.train-state');if(n){n.textContent=s.trainStatus.running?(s.trainStatus.stopping?'SAVING / STOPPING':'RUNNING'):s.trainStatus.exitCode==null?'IDLE':'EXIT '+s.trainStatus.exitCode;n.classList.toggle('running',s.trainStatus.running)}const start=document.querySelector('#start-training'),stop=document.querySelector('#stop-training');if(start)start.disabled=s.trainStatus.running||(s.training.compute==="cuda"&&ui.trainingDevices?.cuda!==true);if(stop)stop.disabled=!s.trainStatus.running||s.trainStatus.stopping;await refreshLogs();updateTrainingLive()}}catch(error){log(error.message,"trainer")}}
 async function refreshLogs(){if(window.__TAURI_INTERNALS__)try{s.logs=(await invokeDesktop("runtime_logs")).slice(-2000)}catch(error){log(error.message,"ui")}if(s.view==="logs")updateLogOutput()}
 function updateTrainingLive(){
   const n=document.querySelector('#training-live');if(!n)return;
   const lines=currentTrainingLines(s.logs),points=[];
-  for(const line of lines){const metric=parseTrainingMetric(line);if(metric)points.push(metric)}
+  for(const line of lines){const metric=parseTrainingMetric(line);if(metric)points.push({...metric,...parseTrainingDeviceMetric(line)})}
   const latest=points.at(-1),evaluation=lines.map(parseEvaluationMetric).filter(Boolean).at(-1);let chart='';
   if(points.length>1){const lo=Math.min(...points.map(p=>p.loss)),hi=Math.max(...points.map(p=>p.loss));const coords=points.map((p,i)=>`${(i/(points.length-1)*580+10).toFixed(2)},${(110-(p.loss-lo)/(hi-lo||1)*100).toFixed(2)}`).join(' ');chart=`<svg class="loss-chart" viewBox="0 0 600 120" role="img" aria-label="Training loss over recent logged steps"><polyline points="${coords}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`}
   const throughput=latest?.tokensPerSecond==null?'':` · ${latest.tokensPerSecond.toFixed(1)} tokens/s`;
   const threads=latest?.cpuThreads==null?'':` · ${latest.cpuThreads} CPU threads`;
   const memory=latest?.graphBytes==null?'':` · graph ${(latest.graphBytes/1048576).toFixed(1)} MiB`;
-  n.innerHTML=`<h2>${latest?`Step ${latest.step} · loss ${latest.loss.toFixed(6)}${throughput}${memory}${threads}`:'Run telemetry'}</h2>${chart}${evaluation?`<p>Validation loss ${evaluation.loss.toFixed(6)} · step ${evaluation.step}${evaluation.records==null?'':` · ${evaluation.records} records`}</p>`:''}<pre>${esc(lines.join('\n')||'Trainer output appears here during a desktop run.')}</pre>`;
+  const device=latest?.compute?` · ${latest.compute.toUpperCase()}`:'';
+  const resident=latest?.devicePeakBytes==null?'':` · GPU training peak ${(latest.devicePeakBytes/1048576).toFixed(1)} MiB`;
+  const norm=latest?.gradientNorm==null?'':` · gradient norm ${latest.gradientNorm.toPrecision(4)}`;
+  n.innerHTML=`<h2>${latest?`Step ${latest.step} · loss ${latest.loss.toFixed(6)}${throughput}${device}${memory}${resident}${norm}${threads}`:'Run telemetry'}</h2>${chart}${evaluation?`<p>Validation loss ${evaluation.loss.toFixed(6)} · step ${evaluation.step}${evaluation.records==null?'':` · ${evaluation.records} records`}</p>`:''}<pre>${esc(lines.join('\n')||'Trainer output appears here during a desktop run.')}</pre>`;
 }
 function collectTraining(){document.querySelectorAll("[data-train]").forEach(n=>{s.training[n.dataset.train]=n.type==="number"?+n.value:n.value});save()}
 
@@ -331,7 +352,7 @@ document.addEventListener("input",event=>{
   if(event.target.id==="chat-search"){s.query=event.target.value;history()}
   if(event.target.id==="lab-prompt"){s.lastPrompt=event.target.value;document.querySelector("#lab-count").textContent=event.target.value.length+" chars";}
   if(event.target.matches("[data-param]")){s.params[event.target.dataset.param]=event.target.type==="range"?+event.target.value:event.target.value;const out=document.querySelector("#"+event.target.dataset.param+"-out");if(out)out.value=event.target.value;paintRanges();save()}
-  if(event.target.matches("[data-train]")){collectTraining();if(event.target.id==="train-mode")trainingView()}
+  if(event.target.matches("[data-train]")){collectTraining();if(["train-mode","train-compute"].includes(event.target.id))trainingView()}
   if(event.target.id==="log-filter"){s.logFilter=event.target.value;logsView()}
   if(event.target.id==="provider-type")toggleRemoteSettings();
 });

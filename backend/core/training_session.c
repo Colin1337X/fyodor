@@ -20,7 +20,7 @@ struct nya_train_session {
     nya_train_buffer step, status, norm;
     nya_train_adamw optimizer;
     nya_train_adamw_config pending_settings;
-    int leased, pending, graph_failed;
+    int leased, pending, graph_failed, graph_evaluation, last_evaluation;
     size_t references;
     nya_train_scope graph_scope;
     session_constant *constants;
@@ -130,7 +130,7 @@ int nya_train_session_zero_grad(nya_train_session *s)
     for (size_t i=0;i<s->count;++i) if (nya_train_device_zero(s->device,s->tensors[i].gradient))
         return session_error(s,nya_train_device_error(s->device));
     if (nya_train_device_zero(s->device,s->status)) return session_error(s,nya_train_device_error(s->device));
-    s->graph_failed=0; s->error[0]='\0'; return 0;
+    s->graph_failed=0; s->last_evaluation=0; s->error[0]='\0'; return 0;
 }
 int nya_train_session_step(nya_train_session *s,nya_train_adamw_config settings)
 {
@@ -138,7 +138,7 @@ int nya_train_session_step(nya_train_session *s,nya_train_adamw_config settings)
         return session_error(s,"invalid settings or update still awaiting observation");
     if (nya_train_device_adamw(s->device,s->plan,settings,s->step,s->status,s->norm,1))
         return session_error(s,nya_train_device_error(s->device));
-    s->pending_settings=settings; s->pending=1; return 0;
+    s->pending_settings=settings; s->last_evaluation=0; s->pending=1; return 0;
 }
 int nya_train_session_observe(nya_train_session *s,nya_train_session_metrics *metrics)
 {
@@ -219,24 +219,31 @@ int nya_train_session_detach(nya_train_session *s,nya_train_adamw *optimizer)
     session_unlease(s); s->error[0]='\0'; return 0;
 }
 
-nya_train_scope nya_train_session_graph_begin(nya_train_session *s)
+nya_train_scope nya_train_session_graph_begin(nya_train_session *s,int evaluation)
 {
-    if (!session_valid(s) || s->pending || s->graph_scope || s->graph_failed || s->references==SIZE_MAX) {
+    if (!session_valid(s) || (evaluation!=0 && evaluation!=1) || s->pending || s->graph_scope || s->graph_failed || s->references==SIZE_MAX) {
         session_error(s,"session already has an active graph or unobserved update"); return 0;
     }
     nya_train_scope scope=nya_train_device_scratch_begin(s->device);
     if (!scope) { session_error(s,nya_train_device_error(s->device)); return 0; }
-    s->graph_scope=scope; ++s->references; return scope;
+    s->graph_scope=scope; s->graph_evaluation=evaluation; ++s->references; return scope;
 }
 int nya_train_session_graph_end(nya_train_session *s,nya_train_scope scope)
 {
     if (!session_valid(s) || !scope || s->graph_scope!=scope) return session_error(s,"invalid session graph scope");
     int result=nya_train_device_scratch_end(s->device,scope);
     if (result) session_error(s,nya_train_device_error(s->device));
-    s->graph_scope=0; nya_train_session_free(s); return result;
+    s->graph_scope=0; s->last_evaluation=s->graph_evaluation; nya_train_session_free(s); return result;
 }
 void nya_train_session_graph_fail(nya_train_session *s)
-{ if (s) { s->graph_failed=1; session_error(s,"resident graph failed; reset gradients before retrying"); } }
+{ if (s) { s->graph_failed=s->graph_evaluation?2:1; session_error(s,"resident graph failed; reset gradients before retrying"); } }
+int nya_train_session_discard_evaluation(nya_train_session *s)
+{
+    if(!session_valid(s) || s->pending || s->graph_scope || !s->last_evaluation || s->graph_failed==1)
+        return session_error(s,"only an ended evaluation can discard its diagnostic status");
+    if(nya_train_device_zero(s->device,s->status))return session_error(s,nya_train_device_error(s->device));
+    s->graph_failed=0;s->last_evaluation=0;s->error[0]='\0';return 0;
+}
 int nya_train_session_parameter(nya_train_session *s,const nya_train_parameter *p,nya_train_adamw_tensor *t)
 {
     if (!session_valid(s) || !p || !t) return session_error(s,"invalid graph parameter binding");

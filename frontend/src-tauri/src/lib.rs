@@ -81,6 +81,10 @@ struct TrainArgs {
     kv_heads: u32,
     seed: u32,
     memory_mib: u32,
+    #[serde(default = "default_training_compute")]
+    compute: String,
+    #[serde(default = "default_device_memory")]
+    device_memory_mib: u32,
 }
 
 #[derive(Serialize)]
@@ -90,6 +94,9 @@ struct TrainStatus {
     stopping: bool,
     exit_code: Option<i32>,
 }
+
+fn default_training_compute() -> String { "cpu".into() }
+fn default_device_memory() -> u32 { 1024 }
 
 fn default_accumulation() -> u32 {
     1
@@ -153,6 +160,13 @@ mod training_tests {
     }
 
     #[test]
+    fn bundled_training_capabilities() {
+        if let Some(executable)=std::env::var_os("FYODOR_TEST_TRAINER") {
+            let result=probe_training_capabilities(Path::new(&executable)).unwrap();assert!(result.cpu);
+        }
+    }
+
+    #[test]
     fn accumulation_deserialization_and_cli_boundary() {
         // Existing saved/UI arguments omit accumulation. Keep their meaning.
         let mut input = serde_json::json!({
@@ -164,6 +178,15 @@ mod training_tests {
         let old: TrainArgs = serde_json::from_value(input.clone()).unwrap();
         assert_eq!(old.accumulate, 1);
         assert_eq!(old.threads, 0);
+        assert_eq!(old.compute,"cpu");assert_eq!(old.device_memory_mib,1024);
+        input["compute"]="cuda".into();input["deviceMemoryMib"]=2048.into();
+        let gpu=checked_training_args(serde_json::from_value(input.clone()).unwrap()).unwrap();
+        for (flag,value) in [("--compute","cuda"),("--device-memory-mib","2048")] {
+            let at=gpu.iter().position(|s|s==flag).unwrap();assert_eq!(gpu[at+1],value);
+        }
+        input["compute"]="auto".into();assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
+        input["compute"]="cuda".into();input["deviceMemoryMib"]=0.into();assert!(checked_training_args(serde_json::from_value(input.clone()).unwrap()).is_err());
+        input["compute"]="cpu".into();input["deviceMemoryMib"]=1024.into();
         for count in [1, 7, 1024] {
             input["accumulate"] = count.into();
             let args = checked_training_args(serde_json::from_value(input.clone()).unwrap()).unwrap();
@@ -395,6 +418,8 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         || input.eval_every == 0
         || input.rank > 256
         || input.memory_mib == 0
+        || input.device_memory_mib == 0
+        || !matches!(input.compute.as_str(), "cpu" | "cuda")
         || !input.learning_rate.is_finite()
         || input.learning_rate <= 0.0
         || !input.beta.is_finite()
@@ -415,6 +440,10 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
         input.steps.to_string(),
         "--accumulate".into(),
         input.accumulate.to_string(),
+        "--compute".into(),
+        input.compute,
+        "--device-memory-mib".into(),
+        input.device_memory_mib.to_string(),
         "--threads".into(),
         input.threads.to_string(),
         "--lr".into(),
@@ -454,6 +483,38 @@ fn checked_training_args(input: TrainArgs) -> Result<Vec<String>, String> {
                      "--eval-records".into(), input.eval_records.to_string()]);
     }
     Ok(args)
+}
+
+#[derive(Deserialize, Serialize)]
+struct TrainingCapabilities { cpu: bool, cuda: bool }
+
+fn probe_training_capabilities(executable: &Path) -> Result<TrainingCapabilities, String> {
+    let mut child=background_command(executable).arg("--capabilities")
+        .stdout(Stdio::piped()).stderr(Stdio::null()).spawn().map_err(|e|e.to_string())?;
+    let deadline=std::time::Instant::now()+Duration::from_secs(30);
+    let result=(|| {
+        loop {
+            if let Some(status)=child.try_wait().map_err(|e|e.to_string())? {
+                if !status.success(){return Err("Trainer device detection failed".into());}
+                let mut data=Vec::new();
+                child.stdout.take().ok_or("Trainer device response is missing")?.take(4097)
+                    .read_to_end(&mut data).map_err(|e|e.to_string())?;
+                if data.len()>4096{return Err("Trainer device response is too large".into());}
+                return serde_json::from_slice(&data).map_err(|_|"Trainer device response is invalid".into());
+            }
+            if std::time::Instant::now()>=deadline{return Err("Trainer device detection timed out".into());}
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    })();
+    if result.is_err(){let _=child.kill();let _=child.wait();}
+    result
+}
+
+#[tauri::command]
+async fn training_capabilities(state: tauri::State<'_, Trainer>) -> Result<TrainingCapabilities, String> {
+    let executable=state.executable.clone();
+    tauri::async_runtime::spawn_blocking(move ||probe_training_capabilities(&executable))
+        .await.map_err(|e|e.to_string())?
 }
 
 #[tauri::command]
@@ -593,6 +654,7 @@ pub fn run() {
             clear_runtime_logs,
             start_training,
             training_status,
+            training_capabilities,
             stop_training
         ])
         .on_window_event(|window, event| {

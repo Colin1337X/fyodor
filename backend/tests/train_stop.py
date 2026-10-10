@@ -17,8 +17,14 @@ import threading
 parser = argparse.ArgumentParser()
 parser.add_argument("trainer", type=Path)
 parser.add_argument("--evidence", type=Path)
+parser.add_argument("--compute", choices=("cpu","cuda"), default="cpu")
 args = parser.parse_args()
 trainer = str(args.trainer.resolve())
+if args.compute=="cuda":
+    capabilities=subprocess.run([trainer,"--capabilities"],capture_output=True,text=True,timeout=30,check=True)
+    if not json.loads(capabilities.stdout)["cuda"]:
+        print("CUDA training device unavailable")
+        raise SystemExit(77)
 evidence = []
 
 
@@ -41,7 +47,7 @@ with tempfile.TemporaryDirectory(prefix="fyodor-stop-") as directory:
         model, checkpoint, metrics = (root / (name + ext) for ext in (".gguf", ".ckpt", ".csv"))
         if existing:
             model.write_bytes(b"preserve existing output")
-        command = [trainer, "--data", str(corpus), "--steps", str(steps),
+        command = [trainer, "--compute", args.compute, "--data", str(corpus), "--steps", str(steps),
                    "--output", str(model), "--checkpoint", str(checkpoint), "--metrics", str(metrics),
                    "--accumulate", "3", *dimensions, *settings]
         if resume:
@@ -127,7 +133,7 @@ with tempfile.TemporaryDirectory(prefix="fyodor-stop-") as directory:
     run("save-failure", 5000, stop="command", existing=True)
     # Never interpret ordinary file input as a control pipe or consume it.
     invalid_output = root / "invalid.gguf"
-    invalid = [trainer, "--data", str(corpus), "--output", str(invalid_output),
+    invalid = [trainer, "--compute", args.compute, "--data", str(corpus), "--output", str(invalid_output),
                "--control-stdin", "1", *dimensions]
     with corpus.open("rb") as stream:
         result = subprocess.run(invalid, stdin=stream, capture_output=True, text=True, timeout=30)

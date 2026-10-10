@@ -7,14 +7,14 @@ await mkdir(destination,{recursive:true});
 const exists=async path=>{try{return (await stat(path)).isFile()}catch{return false}};
 // An explicit override is authoritative. A typo must not quietly package an old
 // CPU executable. Otherwise prefer an existing CUDA build, then Vulkan, then CPU.
-let backendSource;
+const nativeSources=[];
 for(const [stem,env] of [['fyodor-backend','FYODOR_BACKEND_BIN'],['fyodor-train','FYODOR_TRAIN_BIN']]){
   const candidates=process.env[env]?[resolve(process.env[env])]:['build-cuda','build-vulkan','build-cpu'].flatMap(dir=>[resolve(root,dir,stem+ext),resolve(root,dir,'Release',stem+ext)]);
   let source;
   for(const file of candidates)if(await exists(file)){source=file;break;}
   if(!source)throw new Error(`Build ${stem} or set ${env} to a valid native executable.`);
   await copyFile(source,resolve(destination,stem+ext));
-  if(stem==='fyodor-backend')backendSource=source;
+  nativeSources.push(source);
   console.log(`Prepared ${stem} from ${source}`);
 }
 // Only remove known generated CUDA compiler resources in this exact bundle
@@ -46,7 +46,7 @@ if(process.platform==='win32'&&process.env.NYA_CUDA_CUTLASS_LIBRARY){
 if(process.platform==='win32'){
   let runtime=process.env.NYA_CUDA_NVRTC;
   if(!runtime){
-    for(const dir of [dirname(backendSource),resolve(dirname(backendSource),'..')]){
+    for(const dir of nativeSources.flatMap(source=>[dirname(source),resolve(dirname(source),'..')])){
       try{const cache=await readFile(resolve(dir,'CMakeCache.txt'),'utf8');runtime=cache.match(/^NYA_CUDA_NVRTC_LIBRARY:FILEPATH=(.+)$/m)?.[1].trim();if(runtime)break;}catch{}
     }
   }

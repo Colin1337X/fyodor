@@ -1,0 +1,29 @@
+[
+  {
+    "name": "recovery-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "fyodor-train",
+      "nya-test-training-graph",
+      "nya-test-training-device",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "recovery-tests",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "-R",
+      "training-graph|training-device-cuda$|train-cuda-",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  }
+]

@@ -36,6 +36,10 @@ int nya_train_device_zero(nya_train_device *d, nya_train_buffer b)
 { return d ? d->api->zero(d->context,b) : -1; }
 int nya_train_device_finish(nya_train_device *d)
 { return d ? d->api->finish(d->context) : -1; }
+nya_train_mark nya_train_device_mark(nya_train_device *d)
+{ return d ? d->api->mark(d->context) : 0; }
+int nya_train_device_elapsed(nya_train_device *d,nya_train_mark begin,nya_train_mark end,double *seconds)
+{ return d ? d->api->elapsed(d->context,begin,end,seconds) : -1; }
 int nya_train_device_slice(nya_train_device *d,nya_train_buffer destination,nya_train_buffer source,
     size_t rows,size_t columns,size_t first,size_t count,int backward)
 { return d ? d->api->slice(d->context,destination,source,rows,columns,first,count,backward) : -1; }

@@ -4,7 +4,7 @@
 #include "training_device.h"
 
 /* Private ownership/checkpoint bridge for accelerator graph integration, not
-   yet a public GPU graph executor or a CLI backend. One controlling thread
+   a public tensor ownership type. The CLI uses this private bridge. One controlling thread
    serializes the session, its parameters and its borrowed device. Creation
    validates and copies all four host arrays plus optimizer settings/counter,
    and exclusively leases unique parameters with no live CPU leaves. Failure
@@ -63,9 +63,14 @@ int nya_train_session_detach(nya_train_session *session, nya_train_adamw *optimi
    Register immutable model data before beginning a graph; keys and extents
    identify bindings for the session lifetime, and repeated registration reuses
    the original copy. Lookup never uploads. Caller owns model/key lifetime. */
-nya_train_scope nya_train_session_graph_begin(nya_train_session *session);
+nya_train_scope nya_train_session_graph_begin(nya_train_session *session, int evaluation);
 int nya_train_session_graph_end(nya_train_session *session, nya_train_scope scope);
 void nya_train_session_graph_fail(nya_train_session *session);
+/* Explicitly discard a completed/failed evaluation's diagnostic status without
+   changing parameters, gradients or optimizer state. Training failures and
+   poisoned devices cannot use this recovery path. Observe/snapshot still
+   validates persistent state before reporting success or saving it. */
+int nya_train_session_discard_evaluation(nya_train_session *session);
 int nya_train_session_parameter(nya_train_session *session, const nya_train_parameter *parameter,
     nya_train_adamw_tensor *tensor);
 nya_train_buffer nya_train_session_register(nya_train_session *session, const void *key,
