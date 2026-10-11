@@ -5,6 +5,12 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"graph:%d: %s (%s)\n",__LINE__,#x,error); return 1; } } while (0)
 static const uint32_t tokens[]={1,100,101,102,100,101,102,100,101,102,100,101};
 static const uint32_t labels[]={100,101,102,100,101,102,100,101,102,100,101,102};
+static int expected_synchronizations(uint64_t before,uint64_t after)
+{
+    const char *profile=getenv("NYA_TRAIN_PROFILE");
+    /* Diagnostics explicitly fence operations; normal execution must not. */
+    return profile && !strcmp(profile,"1") ? after>before : after==before;
+}
 static nya_train_adamw_config settings(nya_train_adamw o)
 { return (nya_train_adamw_config){o.learning_rate,o.beta1,o.beta2,o.epsilon,o.weight_decay,o.max_grad_norm}; }
 static uint64_t u64(const unsigned char *b)
@@ -58,7 +64,7 @@ static int one_step(nya_train_decoder *decoder,nya_train_session *s,float *loss,
     snprintf(error,sizeof(error),"%s",nya_train_error(g));CHECK(!result);
     if(s) {
         nya_train_device_get_stats(nya_train_session_device(s),&after);
-        CHECK(after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && after.synchronizations==before.synchronizations);
+        CHECK(after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && expected_synchronizations(before.synchronizations,after.synchronizations));
         CHECK(!nya_train_graph_forward_resident(g));
         nya_train_device_stats repeat; nya_train_device_get_stats(nya_train_session_device(s),&repeat);
         CHECK(repeat.kernel_launches==after.kernel_launches);
@@ -242,7 +248,7 @@ static int model_probe(const char *path,const char *prefix,size_t rank,int real)
         CHECK(!nya_train_backward(cl));nya_train_device_stats before,after;nya_train_device_get_stats(nya_train_session_device(session),&before);
         int result=nya_train_backward(gl);snprintf(error,sizeof(error),"%s",nya_train_error(gg));CHECK(!result);
         nya_train_device_get_stats(nya_train_session_device(session),&after);
-        CHECK(after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations && after.used_bytes==before.used_bytes);
+        CHECK(after.uploads==before.uploads && after.downloads==before.downloads && expected_synchronizations(before.synchronizations,after.synchronizations) && after.used_bytes==before.used_bytes);
         const float *actual=nya_train_data(gl);snprintf(error,sizeof(error),"%s",nya_train_error(gg));CHECK(actual);
         float expected=nya_train_data(cl)[0];CHECK(fabs((double)expected-*actual)<=1e-5*(1+fabs(expected)));
         printf("model=%s rank=%zu step=%u objective=%s loss=%.9g buffers=%zu graph_bytes=%zu inner_transfers=0 inner_fences=0\n",

@@ -60,6 +60,8 @@ struct nya_train_graph {
     size_t mapped_columns;
     float *mapped_scratch;
     double forward_linear, forward_mapped, backward_seconds[TR_SLICE + 1];
+    double resident_forward_seconds[TR_SLICE + 1];
+    size_t resident_forward_calls[TR_SLICE + 1], resident_backward_calls[TR_SLICE + 1];
     char error[160];
     nya_train_session *session;
     nya_train_device *device;
@@ -195,7 +197,7 @@ nya_train_graph *nya_train_graph_create_resident(size_t limit,nya_train_session 
     if (!g) return NULL;
     g->scope=nya_train_session_graph_begin(session,evaluation);
     if (!g->scope) { free(g); return NULL; }
-    g->session=session; g->device=nya_train_session_device(session); g->evaluation=evaluation; g->profile=0;
+    g->session=session; g->device=nya_train_session_device(session); g->evaluation=evaluation;
     float one=1;
     g->seed=tr_gpu_upload(g,&one,1,4);
     if (!g->seed) { nya_train_graph_free(g); return NULL; }
@@ -220,10 +222,20 @@ void nya_train_graph_free(nya_train_graph *g)
         static const char *names[] = {"input","leaf","add","mul","scale","linear",
             "gelu","silu","rms","embed","logp","dpo","reshape","rope","attention",
             "mapped_linear","softcap","slice"};
-        fprintf(stderr,"train_profile graph_bytes=%zu allocations=%zu forward_linear_ms=%.6f forward_mapped_ms=%.6f",
-            g->used,g->allocations,g->forward_linear*1000,g->forward_mapped*1000);
-        for (size_t i = 0; i <= TR_SLICE; ++i)
-            if (g->backward_seconds[i] > 0) fprintf(stderr," backward_%s_ms=%.6f",names[i],g->backward_seconds[i]*1000);
+        if (g->device) {
+            fprintf(stderr,"train_profile_resident timing=synchronized_host_diagnostic graph_bytes=%zu allocations=%zu",g->used,g->allocations);
+            for (size_t i=0;i<=TR_SLICE;++i) {
+                if (g->resident_forward_calls[i]) fprintf(stderr," forward_%s_ms=%.6f forward_%s_calls=%zu",
+                    names[i],g->resident_forward_seconds[i]*1000,names[i],g->resident_forward_calls[i]);
+                if (g->resident_backward_calls[i]) fprintf(stderr," backward_%s_ms=%.6f backward_%s_calls=%zu",
+                    names[i],g->backward_seconds[i]*1000,names[i],g->resident_backward_calls[i]);
+            }
+        } else {
+            fprintf(stderr,"train_profile graph_bytes=%zu allocations=%zu forward_linear_ms=%.6f forward_mapped_ms=%.6f",
+                g->used,g->allocations,g->forward_linear*1000,g->forward_mapped*1000);
+            for (size_t i = 0; i <= TR_SLICE; ++i)
+                if (g->backward_seconds[i] > 0) fprintf(stderr," backward_%s_ms=%.6f",names[i],g->backward_seconds[i]*1000);
+        }
         fputc('\n',stderr);
     }
     nya_train_tensor *t = g->last;
@@ -1269,6 +1281,11 @@ int nya_train_graph_forward_resident(nya_train_graph *g)
     if (!g || !g->device || g->error[0]) return -1;
     nya_train_device *d=g->device;
     for (nya_train_tensor *t=g->executed?g->executed->next:g->first;t;t=t->next) {
+        /* Opt-in diagnostics deliberately serialize operations. Drain earlier
+           uploads/allocations before starting; include dispatch, finite checks
+           and completion in the sample. Never interpret this as kernel time. */
+        if (g->profile && nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
+        double profile_start=g->profile?tr_seconds():0;
         nya_train_tensor *a=t->a,*b=t->b;
         int result=0;
         switch (t->operation) {
@@ -1303,6 +1320,11 @@ int nya_train_graph_forward_resident(nya_train_graph *g)
         }
         if (result || nya_train_device_check_finite(d,nya_train_session_status(g->session),t->device_data,t->count,(uint32_t)t->operation+2)) {
             tr_error(g,nya_train_device_error(d)); return -1;
+        }
+        if (g->profile) {
+            if (nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
+            g->resident_forward_seconds[t->operation]+=tr_seconds()-profile_start;
+            ++g->resident_forward_calls[t->operation];
         }
         g->executed=t;
     }
@@ -1339,6 +1361,8 @@ static int tr_gpu_backward(nya_train_tensor *loss)
     }
     for (nya_train_tensor *t=g->last;t;t=t->previous) {
         if (!t->device_gradient) continue;
+        if (g->profile && nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
+        double profile_start=g->profile?tr_seconds():0;
         nya_train_tensor *a=t->a,*b=t->b;
         int result=nya_train_device_check_finite(d,nya_train_session_status(g->session),t->device_gradient,t->count,(uint32_t)t->operation+32);
         if (result) { tr_error(g,nya_train_device_error(d)); return -1; }
@@ -1381,6 +1405,11 @@ static int tr_gpu_backward(nya_train_tensor *loss)
             result=nya_train_device_dpo_backward(d,a->device_gradient,b->device_gradient,t->state,t->device_gradient); break;
         }
         if (result) { tr_error(g,nya_train_device_error(d)); return -1; }
+        if (g->profile) {
+            if (nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
+            g->backward_seconds[t->operation]+=tr_seconds()-profile_start;
+            ++g->resident_backward_calls[t->operation];
+        }
     }
     return 0;
 }

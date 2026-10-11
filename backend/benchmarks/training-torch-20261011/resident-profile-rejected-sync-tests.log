@@ -1,0 +1,84 @@
+Test project C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cuda
+      Start  39: validate-gemma-graphs
+ 1/19 Test  #39: validate-gemma-graphs ............   Passed    0.30 sec
+      Start  45: training-graph-interface
+ 2/19 Test  #45: training-graph-interface .........   Passed    0.01 sec
+      Start  50: training-graph-cuda
+ 3/19 Test  #50: training-graph-cuda ..............***Failed    0.73 sec
+train_profile graph_bytes=872 allocations=0 forward_linear_ms=0.000000 forward_mapped_ms=0.000000
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1132 allocations=2
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1400 allocations=6 forward_leaf_ms=0.029400 forward_leaf_calls=1 backward_leaf_ms=0.024800 backward_leaf_calls=1 forward_scale_ms=0.035800 forward_scale_calls=1 backward_scale_ms=0.033700 backward_scale_calls=1
+train_profile graph_bytes=1392 allocations=4 forward_linear_ms=0.000000 forward_mapped_ms=0.000000 backward_scale_ms=0.001600
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1920 allocations=10 forward_input_ms=0.024500 forward_input_calls=1 forward_leaf_ms=0.026500 forward_leaf_calls=1 backward_leaf_ms=0.023700 backward_leaf_calls=1 forward_mul_ms=0.035800 forward_mul_calls=1 backward_mul_ms=0.033800 backward_mul_calls=1 forward_scale_ms=0.032500 forward_scale_calls=1 backward_scale_ms=0.034000 backward_scale_calls=1
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1420 allocations=5 forward_leaf_ms=0.027000 forward_leaf_calls=1 forward_slice_ms=0.034600 forward_slice_calls=1
+train_profile graph_bytes=66812 allocations=79 forward_linear_ms=0.014200 forward_mapped_ms=0.000000 backward_leaf_ms=0.004500 backward_add_ms=0.000600 backward_mul_ms=0.000500 backward_linear_ms=0.015100 backward_silu_ms=0.007200 backward_rms_ms=0.001800 backward_embed_ms=0.000200 backward_logp_ms=0.064600 backward_rope_ms=0.003200 backward_attention_ms=0.002400
+graph:61: after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && after.synchronizations==before.synchronizations ()
+graph:87: !one_step(cpu,NULL,&expected,0) && !one_step(gpu,s,&actual,0) ()
+graph:303: !failures(0) && !cancellation() && !slice_and_lifetime() && !lifecycle(argv[2]) ()
+
+      Start  51: training-graph-cuda-reference
+ 4/19 Test  #51: training-graph-cuda-reference ....***Failed    0.73 sec
+train_profile graph_bytes=872 allocations=0 forward_linear_ms=0.000000 forward_mapped_ms=0.000000
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1132 allocations=2
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1400 allocations=6 forward_leaf_ms=0.024200 forward_leaf_calls=1 backward_leaf_ms=0.023200 backward_leaf_calls=1 forward_scale_ms=0.032900 forward_scale_calls=1 backward_scale_ms=0.033400 backward_scale_calls=1
+train_profile graph_bytes=1392 allocations=4 forward_linear_ms=0.000000 forward_mapped_ms=0.000000 backward_scale_ms=0.002000
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1920 allocations=10 forward_input_ms=0.019800 forward_input_calls=1 forward_leaf_ms=0.024100 forward_leaf_calls=1 backward_leaf_ms=0.018900 backward_leaf_calls=1 forward_mul_ms=0.032200 forward_mul_calls=1 backward_mul_ms=0.026900 backward_mul_calls=1 forward_scale_ms=0.026600 forward_scale_calls=1 backward_scale_ms=0.031600 backward_scale_calls=1
+train_profile_resident timing=synchronized_host_diagnostic graph_bytes=1420 allocations=5 forward_leaf_ms=0.036900 forward_leaf_calls=1 forward_slice_ms=0.033900 forward_slice_calls=1
+train_profile graph_bytes=66812 allocations=79 forward_linear_ms=0.014500 forward_mapped_ms=0.000000 backward_leaf_ms=0.004500 backward_add_ms=0.000500 backward_mul_ms=0.000500 backward_linear_ms=0.021200 backward_silu_ms=0.007000 backward_rms_ms=0.001800 backward_embed_ms=0.000200 backward_logp_ms=0.064900 backward_rope_ms=0.003300 backward_attention_ms=0.002400
+graph:61: after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && after.synchronizations==before.synchronizations ()
+graph:87: !one_step(cpu,NULL,&expected,0) && !one_step(gpu,s,&actual,0) ()
+graph:303: !failures(0) && !cancellation() && !slice_and_lifetime() && !lifecycle(argv[2]) ()
+
+      Start  52: training-graph-gemma-0
+ 5/19 Test  #52: training-graph-gemma-0 ...........***Failed    0.31 sec
+train_profile graph_bytes=872 allocations=0 forward_linear_ms=0.000000 forward_mapped_ms=0.000000
+train_profile graph_bytes=107376 allocations=508 forward_linear_ms=0.004100 forward_mapped_ms=0.000000
+graph:245: after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations && after.used_bytes==before.used_bytes ()
+
+      Start  53: training-graph-gemma-1
+ 6/19 Test  #53: training-graph-gemma-1 ...........***Failed    0.32 sec
+train_profile graph_bytes=872 allocations=0 forward_linear_ms=0.000000 forward_mapped_ms=0.000000
+train_profile graph_bytes=143728 allocations=686 forward_linear_ms=0.005000 forward_mapped_ms=0.000000
+graph:245: after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations && after.used_bytes==before.used_bytes ()
+
+      Start  54: training-graph-gemma-tied
+ 7/19 Test  #54: training-graph-gemma-tied ........***Failed    0.32 sec
+train_profile graph_bytes=872 allocations=0 forward_linear_ms=0.000000 forward_mapped_ms=0.000000
+train_profile graph_bytes=143728 allocations=686 forward_linear_ms=0.006200 forward_mapped_ms=0.000000
+graph:245: after.uploads==before.uploads && after.downloads==before.downloads && after.synchronizations==before.synchronizations && after.used_bytes==before.used_bytes ()
+
+      Start  55: training-graph-failure-8
+ 8/19 Test  #55: training-graph-failure-8 .........   Passed    0.29 sec
+      Start  56: training-graph-failure-9
+ 9/19 Test  #56: training-graph-failure-9 .........   Passed    0.29 sec
+      Start  57: training-graph-failure-10
+10/19 Test  #57: training-graph-failure-10 ........   Passed    0.29 sec
+      Start  58: training-graph-failure-11
+11/19 Test  #58: training-graph-failure-11 ........   Passed    0.29 sec
+      Start  59: training-graph-failure-12
+12/19 Test  #59: training-graph-failure-12 ........   Passed    0.28 sec
+      Start  60: training-graph-failure-13
+13/19 Test  #60: training-graph-failure-13 ........   Passed    0.28 sec
+      Start  61: training-graph-failure-14
+14/19 Test  #61: training-graph-failure-14 ........   Passed    0.30 sec
+      Start  62: training-graph-failure-15
+15/19 Test  #62: training-graph-failure-15 ........   Passed    0.29 sec
+      Start  63: training-graph-failure-16
+16/19 Test  #63: training-graph-failure-16 ........   Passed    0.29 sec
+      Start  64: training-graph-failure-17
+17/19 Test  #64: training-graph-failure-17 ........   Passed    0.29 sec
+      Start 118: validate-training
+18/19 Test #118: validate-training ................   Passed    0.35 sec
+      Start 120: validate-training-scalar
+19/19 Test #120: validate-training-scalar .........   Passed    0.41 sec
+
+74% tests passed, 5 tests failed out of 19
+
+Total Test time (real) =   6.39 sec
+
+The following tests FAILED:
+	 50 - training-graph-cuda (Failed)
+	 51 - training-graph-cuda-reference (Failed)
+	 52 - training-graph-gemma-0 (Failed)
+	 53 - training-graph-gemma-1 (Failed)
+	 54 - training-graph-gemma-tied (Failed)
