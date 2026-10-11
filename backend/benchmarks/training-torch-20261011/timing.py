@@ -22,7 +22,11 @@ parser.add_argument('--repeats', type=int, default=4)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--diagnostic', action='store_true', help='Disable timing acceptance; allow single-update localization')
 parser.add_argument('--optimizer', choices=('default','scalar'), default='default')
+parser.add_argument('--reference-precision', choices=('float32','float64'), default='float32')
+parser.add_argument('--finite-difference', action='store_true')
 args = parser.parse_args()
+assert args.reference_precision == 'float32' or args.diagnostic
+assert not args.finite_difference or (args.diagnostic and args.reference_precision == 'float64' and args.steps == 1 and args.width == 256 and args.layers == 2)
 assert args.steps >= 1 and args.repeats >= 1
 assert args.diagnostic or (args.steps > args.warmup+1 >= 2 and args.repeats >= 2)
 assert args.width % args.heads == 0 and args.heads % args.kv_heads == 0
@@ -76,37 +80,58 @@ cos, sin = angle.cos(), angle.sin()
 mask = torch.ones(context, context, dtype=torch.bool).triu(1)
 
 def norm(x, w):
-    return (x.double() * torch.rsqrt(x.double().square().mean(-1, keepdim=True) + 1e-5) * w.double()).float()
+    return (x.double() * torch.rsqrt(x.double().square().mean(-1, keepdim=True) + 1e-5) * w.double()).to(x.dtype)
 
 def rope(x, heads):
     count = x.shape[0]; x = x.reshape(count, heads, hd)
     a, b = x[..., 0::2].double(), x[..., 1::2].double()
-    return torch.stack((a*cos[:count]-b*sin[:count], a*sin[:count]+b*cos[:count]), -1).float().reshape(count,heads,hd)
+    return torch.stack((a*cos[:count]-b*sin[:count], a*sin[:count]+b*cos[:count]), -1).to(x.dtype).reshape(count,heads,hd)
+
+def model_loss(params, sequence):
+    count = len(sequence)-1
+    x = F.embedding(sequence[:-1], params[0])
+    for layer in range(args.layers):
+        p = params[3+9*layer:12+9*layer]; n = norm(x,p[0])
+        q = rope(F.linear(n,p[1]),args.heads).transpose(0,1)
+        k = rope(F.linear(n,p[2]),args.kv_heads).transpose(0,1).repeat_interleave(args.heads//args.kv_heads,0)
+        v = F.linear(n,p[3]).reshape(count,args.kv_heads,hd).transpose(0,1).repeat_interleave(args.heads//args.kv_heads,0)
+        scores = ((q @ k.transpose(-2,-1)) * hd**-.5).masked_fill(mask[:count,:count],float('-inf'))
+        attention = (scores.softmax(-1) @ v).transpose(0,1).reshape(count,args.width)
+        x = x + F.linear(attention,p[4]); n = norm(x,p[5])
+        x = x + F.linear(F.silu(F.linear(n,p[6])) * F.linear(n,p[8]),p[7])
+    return F.cross_entropy(F.linear(norm(x,params[1]),params[2]),sequence[1:])
 
 def reference():
-    params = [torch.nn.Parameter(state[0].clone()) for state in initial]
+    dtype = torch.float64 if args.reference_precision == 'float64' else torch.float32
+    params = [torch.nn.Parameter(state[0].clone().to(dtype)) for state in initial]
     lr, b1, b2, eps, decay, maxnorm = settings
     optimizer = torch.optim.AdamW(params, lr=lr, betas=(b1,b2), eps=eps,
                                  weight_decay=decay, fused=args.device == 'cuda' and args.optimizer == 'default',
                                  foreach=args.device == 'cpu' and args.optimizer == 'default')
+    reference.finite_differences = []
+    if args.finite_difference:
+        sequence = tokens[:context+1]
+        gradients = torch.autograd.grad(model_loss(params,sequence),params)
+        for index,flat in ((10,149315),(9,108383),(7,44365)):
+            p = params[index].flatten(); original = p[flat].item()
+            derivative = gradients[index].flatten()[flat].item()
+            for delta in (1e-3,1e-4):
+                with torch.no_grad():
+                    p[flat] = original+delta; plus = model_loss(params,sequence).item()
+                    p[flat] = original-delta; minus = model_loss(params,sequence).item()
+                    p[flat] = original
+                numerical = (plus-minus)/(2*delta)
+                reference.finite_differences.append({'parameter':index,'flat_index':flat,
+                    'delta':delta,'autograd':derivative,'finite_difference':numerical,
+                    'absolute_error':abs(numerical-derivative)})
     losses, elapsed = [], []
     for update in range(args.steps):
         if args.device == 'cuda': torch.cuda.synchronize()
         start = time.perf_counter()
         optimizer.zero_grad(set_to_none=True)
         offset = (update % ((len(tokens)-2)//context+1))*context
-        sequence = tokens[offset:offset+context+1]; count = len(sequence)-1
-        x = F.embedding(sequence[:-1], params[0])
-        for layer in range(args.layers):
-            p = params[3+9*layer:12+9*layer]; n = norm(x,p[0])
-            q = rope(F.linear(n,p[1]),args.heads).transpose(0,1)
-            k = rope(F.linear(n,p[2]),args.kv_heads).transpose(0,1).repeat_interleave(args.heads//args.kv_heads,0)
-            v = F.linear(n,p[3]).reshape(count,args.kv_heads,hd).transpose(0,1).repeat_interleave(args.heads//args.kv_heads,0)
-            scores = ((q @ k.transpose(-2,-1)) * hd**-.5).masked_fill(mask[:count,:count],float('-inf'))
-            attention = (scores.softmax(-1) @ v).transpose(0,1).reshape(count,args.width)
-            x = x + F.linear(attention,p[4]); n = norm(x,p[5])
-            x = x + F.linear(F.silu(F.linear(n,p[6])) * F.linear(n,p[8]),p[7])
-        loss = F.cross_entropy(F.linear(norm(x,params[1]),params[2]),sequence[1:])
+        sequence = tokens[offset:offset+context+1]
+        loss = model_loss(params,sequence)
         loss.backward(); losses.append(loss.item())
         # Only the final (excluded) update copies raw gradients for diagnostics.
         if update == args.steps-1: raw = [p.grad.clone() for p in params]
@@ -124,7 +149,7 @@ record = {'configuration':vars(args) | {'output':str(work)}, 'torch_version':tor
           'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
           'trainer_sha256':hashlib.sha256(trainer.read_bytes()).hexdigest(),
           'script_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-          'reference':'eager F32 decoder; double RMS/RoPE/clip; TF32 off; AdamW '+args.optimizer,
+          'reference':'eager '+args.reference_precision+' decoder; double RMS/RoPE/clip; TF32 off; AdamW '+args.optimizer,
           'timing':'whole update; startup/export excluded; first warmup and last diagnostic update excluded',
           'tolerance':1e-5,'timing_environment_verified':False,'pairs':[]}
 for repeat in range(args.repeats):
@@ -133,6 +158,8 @@ for repeat in range(args.repeats):
     command = native(name)
     if not repeat % 2: losses, elapsed, actual = reference()
     expected, step, _ = checkpoint(work / (name+'.ckpt')); assert step == args.steps
+    if args.diagnostic:
+        torch.save([[x.detach().cpu() for x in state] for state in actual],work/('reference-'+str(repeat)+'.pt'))
     errors = {key:0. for key in ('parameter','gradient','moment','variance')}
     details = []
     for index,(a,b) in enumerate(zip(actual,expected)):
@@ -159,6 +186,7 @@ for repeat in range(args.repeats):
             'native_mean_ms':native_ms,'torch_mean_ms':torch_ms,
             'maximum_loss_absolute_error':loss_error,'state_maximum_scaled_errors':errors,
             'state_details':details,'correctness_passed':passed,
+            'finite_differences':reference.finite_differences,
             'throughput_percentage':torch_ms/native_ms*100 if passed and not args.diagnostic else None}
     if args.diagnostic and args.steps == 1:
         # Hold every raw gradient fixed to isolate optimizer arithmetic from

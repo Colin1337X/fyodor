@@ -72,3 +72,40 @@ Corresponding raw files remain under
 `D:/fyodor-validation/training-divergence-step1-scalar-cuda`.
 Next, compare operation-level forward/backward intermediates with a higher
 precision independent reference before changing any native numerical behavior.
+
+## Higher-precision independent investigation
+
+The harness now supports diagnostic-only `--reference-precision float64`.
+Parameters start from the same native F32 checkpoint, then all reference
+activations, gradients and optimizer states use double precision. This mode
+cannot generate a throughput percentage. It is not a replacement performance
+baseline. Diagnostic reference arrays are saved on disk for subsequent analysis.
+
+`--finite-difference` additionally checks the three implicated coordinates of
+the width256 model with central differences at perturbations 1e-3 and 1e-4.
+At 1e-4, absolute discrepancies from double autograd are 3.077906e-12,
+1.098170e-12, and 2.971265e-13. These checks support the independent reference
+at those coordinates; they do not constitute exhaustive derivative validation.
+Raw evidence is `divergence-f64-finite-difference.json`.
+
+`precision_analysis.py` compares every native and PyTorch F32 gradient array
+against the saved double reference and reports maximum and RMS errors, along
+with parameter errors after one update. Input hashes and results are in
+`precision-analysis.json`. Native maximum scaled parameter error against the
+double reference is 1.625568e-5; PyTorch F32's is 1.551979e-5. Neither is
+uniformly closer. In particular, the original FFN-down coordinate's gradients
+are native -1.85355020e-8, PyTorch F32 -2.14842455e-8, and double
+-1.92881574e-8. The native result is closer at this coordinate.
+
+The original pairwise failure remains a failure. This evidence identifies a
+numerically sensitive workload and does not justify relaxing its tolerance,
+changing optimizer epsilon, reporting its speed as accepted, or replacing
+the native backward implementation blindly with PyTorch's accumulation order.
+Operation-level accumulation analysis is still needed before selecting a fix.
+
+Refactoring the reference forward pass into `model_loss` preserved the small
+decoder's 30-update result: all four state arrays and losses passed unchanged,
+maximum parameter error 6.9272714e-6. The diagnostic result is retained as
+`reference-refactor-regression.json`. Production C/CUDA code is unchanged.
+Raw new evidence remains under `D:/fyodor-validation/training-divergence-f64-fd-cuda`,
+`training-divergence-f32-cuda`, and `training-reference-refactor-regression`.
