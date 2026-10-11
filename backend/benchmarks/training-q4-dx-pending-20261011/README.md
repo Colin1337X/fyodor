@@ -24,3 +24,7 @@ reduction boundaries 63/64/65/127/128/129. `--q4-dx` isolates these tests.
 After restoring the production kernel, all six focused boundary cases passed;
 see `restored-kernel-tests.log`.
 `nya-test-training-device --cuda` also passed the complete resident device suite on the restored kernel; see `restored-full-device-tests.log`.
+
+The later [controlled Q4_K-only experiment](../training-q4-dx-20261011/README.md)
+completed validation and accepted the specialization. This directory retains
+the original interrupted evidence; its timings remain excluded.

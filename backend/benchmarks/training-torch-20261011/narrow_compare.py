@@ -1,6 +1,6 @@
 """Before/after LoRA scheduling comparison; alternate executable order."""
 from pathlib import Path
-import argparse,csv,hashlib,json,os,statistics,subprocess
+import argparse,csv,hashlib,json,os,statistics,subprocess,sys
 root=Path(__file__).resolve().parents[3]
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output',type=Path,default=Path('D:/fyodor-validation/narrow-compare-20261011'))
@@ -9,9 +9,26 @@ parser.add_argument('--contexts',type=int,nargs='+',default=[8,32,128])
 parser.add_argument('--steps',type=int,default=3)
 parser.add_argument('--warmup',type=int,default=1)
 parser.add_argument('--repeats',type=int,default=2)
+parser.add_argument('--monitor-environment',action='store_true',help='Require monitored desktop idle and reject competing GPU identities')
 args=parser.parse_args()
 assert args.steps>args.warmup>=1 and args.repeats>=2 and all(c>0 for c in args.contexts)
 work=args.output.resolve();work.mkdir(parents=True,exist_ok=False)
+if args.monitor_environment:
+    sys.path.insert(0,str(root/'backend/benchmarks/score-refresh-20261011'))
+    import environment
+    environment.configure(work)
+
+def execute(command):
+    process=subprocess.Popen(command,env=dict(os.environ,NYA_TRAIN_PROFILE='0'),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    try:
+        if args.monitor_environment:environment.set_active_pid(process.pid)
+        stdout,stderr=process.communicate(timeout=1800)
+    except BaseException:
+        process.kill();process.communicate();raise
+    return subprocess.CompletedProcess(command,process.returncode,stdout,stderr)
+
+if args.monitor_environment:execute=environment.capture('whole-step-lora')(execute)
+
 executables={'before':args.before.resolve(),
              'after':root/'build-cuda/fyodor-train.exe'}
 def sha(path):
@@ -31,11 +48,13 @@ for repeat in range(args.repeats):
                 '--rank','2','--context',str(context),'--steps',str(args.steps),'--threads','6','--compute','cuda',
                 '--memory-mib','4096','--device-memory-mib','6144','--data',str(corpus),
                 '--output',str(export),'--checkpoint',str(work/(name+'.ckpt')),'--metrics',str(work/(name+'.csv'))]
-            with (work/(name+'-gpu.csv')).open('wb') as gpu:
-                monitor=subprocess.Popen(['nvidia-smi','--query-gpu=timestamp,utilization.gpu,memory.used,power.draw,temperature.gpu,clocks.sm','--format=csv,nounits','-lms','500'],stdout=gpu,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW)
-                try:
-                    p=subprocess.run(command,env=dict(os.environ,NYA_TRAIN_PROFILE='0'),capture_output=True,text=True,timeout=1800)
-                finally:monitor.terminate();monitor.wait(timeout=10)
+            if args.monitor_environment:
+                p=execute(command)
+            else:
+                with (work/(name+'-gpu.csv')).open('wb') as gpu:
+                    monitor=subprocess.Popen(['nvidia-smi','--query-gpu=timestamp,utilization.gpu,memory.used,power.draw,temperature.gpu,clocks.sm','--format=csv,nounits','-lms','500'],stdout=gpu,stderr=subprocess.STDOUT,creationflags=subprocess.CREATE_NO_WINDOW)
+                    try:p=execute(command)
+                    finally:monitor.terminate();monitor.wait(timeout=10)
             (work/(name+'.log')).write_text(p.stdout+p.stderr,encoding='utf-8');assert p.returncode==0,p.stderr
             with (work/(name+'.csv')).open(newline='') as f:rows=list(csv.DictReader(f))
             assert len(rows)==args.steps
