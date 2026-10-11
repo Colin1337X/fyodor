@@ -1,6 +1,6 @@
 # Writing UX: Snep reference and Fyodor adaptation
 
-Updated 2026-10-07 following the user's request to inspect
+Updated 2026-10-11 following the user's request to inspect
 `C:/Users/Colin/snep`. Reference files consulted were its `README.md`,
 `index.html`, `styles.css`, relevant portions of `main.js` and license. The
 reference calls itself Cherenkov: a framework-free story workspace. It was
@@ -117,6 +117,14 @@ from prose guidance. Model access is explicit. Project context and linked lore
 are assembled in the native snapshot provider, not by dumping the workspace into
 a browser-created prompt. Generated text remains a preview until applied; Save
 records a new revision and validated receipt provenance.
+
+Generated prose now has its own wide review panel beneath the editor, visible
+in focus mode. Authors can compare the exact proposed text with the saved
+generation baseline, inspect actual counters and readable native source ranges,
+download raw output, refresh the permission-checked receipt and deliberately
+accept or discard. Dirty/stale/duplicate/mismatched/oversized acceptance is
+blocked. Discarding the review preserves editor text and already accepted
+provenance. See [review contracts and lifecycle](WRITING_REVIEW.md).
 
 Clay material is shared with the rest of Fyodor, rather than adopting Snep's
 black/glowing palette. Named themes, customized radius/fonts/spacing and shadow

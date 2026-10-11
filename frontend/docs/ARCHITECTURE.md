@@ -1,6 +1,6 @@
 # Frontend architecture and maintenance guide
 
-Status: 2026-10-10. This describes the implemented vanilla JavaScript frontend,
+Status: 2026-10-11. This describes the implemented vanilla JavaScript frontend,
 not the entire product requested in `prompt.md`. Backend work is owned separately;
 frontend changes should consume documented contracts rather than add native APIs.
 
@@ -19,6 +19,7 @@ client router, remote font dependency or server-rendered page.
 | `src/writing-lore.js` | Rendering linked lore and link controls | Rendering only; resource controller owns requests and state. |
 | `src/writing-studio.js` | Editor-first Writing composition, counts and explicit session guidance | Moves existing nodes; resource controller retains write/context logic. |
 | `src/writing-files.js` | Strict UTF-8 text import and current-draft text downloads | Separate from resource package JSON; never round-trips loaded metadata. |
+| `src/writing-generation.js` | Exact baseline/proposed text, native receipt binding, acceptance guards and prose review | No requests/writes; shares bounded comparison/source presentation. See `WRITING_REVIEW.md`. |
 | `src/explore-data.js` | Typed world/lore identity, draft creation, bounded catalog filtering | Pure helpers except injected API access; no DOM or gameplay state. |
 | `src/explore-workspace.js` | World/lore authoring controller and view | Existing resource APIs only; see `EXPLORE.md`. |
 | `src/dataset-data.js` | Dataset format inspection, deterministic transforms, annotation and paging | Pure helpers; structural checks do not replace native tokenizer validation. |
@@ -156,7 +157,7 @@ Run commands from project root:
 
 ```powershell
 npm.cmd run build --prefix frontend
-node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs frontend/tests/evaluation-datasets.test.mjs frontend/tests/switcher.test.mjs frontend/tests/revision-comparison.test.mjs frontend/tests/model-inspection.test.mjs frontend/tests/agent.test.mjs frontend/tests/workflow.test.mjs
+node --test frontend/tests/appearance.test.mjs frontend/tests/syntax.test.mjs frontend/tests/ui.test.mjs frontend/tests/sidecar.test.mjs frontend/tests/explore.test.mjs frontend/tests/writing-studio.test.mjs frontend/tests/writing-files.test.mjs frontend/tests/writing-generation.test.mjs frontend/tests/dataset.test.mjs frontend/tests/dataset-sources.test.mjs frontend/tests/context-receipt.test.mjs frontend/tests/evaluation.test.mjs frontend/tests/evaluation-datasets.test.mjs frontend/tests/switcher.test.mjs frontend/tests/revision-comparison.test.mjs frontend/tests/model-inspection.test.mjs frontend/tests/agent.test.mjs frontend/tests/workflow.test.mjs
 node frontend/tests/resource-browser.mjs
 ```
 
@@ -173,7 +174,7 @@ terminate an unrelated service.
 
 Standalone palette screenshots go to `frontend/qa/themes` (or `FYODOR_QA_OUTPUT`).
 The owned integration matrix captures privately in its temporary directory and
-copies this checkpoint's new Workflow images after success, avoiding unrelated
+copies this checkpoint's new Writing review images after success, avoiding unrelated
 tracked-image churn. It also owns an authored HTTP endpoint protocol fixture;
 that fixture is not a real remote model or reasoning benchmark. Separate CLI export
 checks prove saved UI data is visible outside the browser. Keep fixture token

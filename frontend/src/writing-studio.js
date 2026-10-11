@@ -77,6 +77,7 @@ export function arrangeWritingStudio(root, state) {
     root.querySelector('#resource-content').setAttribute('aria-label', 'Writing editor');
   }
   main.append(editor);
+  const preview = editor.querySelector('.writing-preview'); if (preview) main.append(preview);
   const history = root.querySelector('.resource-history'); if (history) main.append(history);
   columns.replaceChildren(main, sidebar);
   root.querySelector('.resource-workspace').classList.add('writing-workspace');

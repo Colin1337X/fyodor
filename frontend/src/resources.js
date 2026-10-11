@@ -6,6 +6,7 @@ import {contextIdentity} from './context-workspace.js';
 import {escapeHtml as esc} from './message.js';
 import {resourceNavigationReference} from './switcher-data.js';
 import {installRevisionComparison} from './revision-comparison.js';
+import {createWritingPreview, verifyWritingReceipt, writingPreviewText, writingPreviewAcceptance, writingPreviewPanel, installWritingPreview} from './writing-generation.js';
 // Resource edits use CAS in the native store. Parent links and accepted receipts
 // are preserved there; never round-trip arbitrary metadata through JS numbers.
 // Context grants are explicit and do not inherit from folder membership.
@@ -42,7 +43,7 @@ export function resourceWorkspace(root,view='resources',modelId=null){
       if(d&&state.revision!=='0')root.querySelector('.resource-editor').insertAdjacentHTML('beforeend',`<section><h2>Project / folder</h2><div class="resource-toolbar"><label>Place in<select id="writing-parent">${folderOptions(d.metadata?.writing_parent||'')}</select></label><button data-resource="move">Move resource</button></div></section>`);
       root.querySelector('#writing-folder').addEventListener('change',event=>{state.folder=event.target.value==='*'?null:event.target.value;void run(()=>load());});
     }
-    if(writing&&d&&state.revision!=='0')root.querySelector('.resource-editor').insertAdjacentHTML('beforeend',`<section class="writing-generate"><h2>Write with a model</h2><p class="fine-print">${state.context.size} additional sources selected.</p><label>Instructions<textarea id="writing-instructions" rows="3">${esc(state.instructions)}</textarea></label><div class="resource-toolbar"><label>Context byte budget<input id="writing-budget" type="number" min="0" max="1048576" value="${state.budget}"></label><label>New tokens<input id="writing-tokens" type="number" min="1" max="256" value="${state.tokens}"></label><button data-resource="writing-grant">Set read-only grants</button></div><p class="fine-print">Allow the model to read this resource and the selected context.</p><div class="resource-toolbar">${['generate','rewrite','continue'].map(mode=>`<button data-writing-mode="${mode}" ${modelId?'':'disabled'}>${mode[0].toUpperCase()+mode.slice(1)}</button>`).join('')}</div>${state.generated?`<h3>Generated preview</h3><pre id="writing-output">${esc(state.generated.text)}</pre><p>Receipt: <code>${esc(state.generated.receipt_id)}</code></p><button data-resource="writing-apply">${state.generated.mode==='continue'?'Append preview to editor':'Replace editor text with preview'}</button>${state.receipt?`<details><summary>Executed prompt and sources</summary><pre id="writing-exact-prompt">${esc(state.receipt.prompt)}</pre><pre>${esc(state.receipt.sources_json)}</pre></details>`:''}`:''}</section>`);
+    if(writing&&d&&state.revision!=='0')root.querySelector('.resource-editor').insertAdjacentHTML('beforeend',`<section class="writing-generate"><h2>Write with a model</h2><p class="fine-print">${state.context.size} additional sources selected.</p><label>Instructions<textarea id="writing-instructions" rows="3">${esc(state.instructions)}</textarea></label><div class="resource-toolbar"><label>Context byte budget<input id="writing-budget" type="number" min="0" max="1048576" value="${state.budget}"></label><label>New tokens<input id="writing-tokens" type="number" min="1" max="256" value="${state.tokens}"></label><button data-resource="writing-grant">Set read-only grants</button></div><p class="fine-print">Allow the model to read this resource and the selected context.</p><div class="resource-toolbar">${['generate','rewrite','continue'].map(mode=>`<button data-writing-mode="${mode}" ${modelId?'':'disabled'}>${mode[0].toUpperCase()+mode.slice(1)}</button>`).join('')}</div></section>${writingPreviewPanel(state)}`);
     if(writing&&d&&state.revision!=='0'){
       root.querySelector('.resource-editor').insertAdjacentHTML('beforeend',writingLorePanel(d,state.loreItems,state.loreNext,state.loreTitles));
       const lore=root.querySelector('.writing-lore');lore.open=state.loreOpen;
@@ -68,6 +69,7 @@ export function resourceWorkspace(root,view='resources',modelId=null){
     root.querySelector('#resource-title')?.addEventListener('input',event=>{state.draft.title=event.target.value;markEdited();});
     root.querySelector('#resource-content')?.addEventListener('input',event=>{state.draft.content=event.target.value;markEdited();const count=root.querySelector('#writing-count');if(count)count.textContent=writingStatsLabel(state.draft.content);});
     installRevisionComparison(root,{current,getSnapshot:()=>state.preview&&({saved:state.preview.resource,draft:state.draft,savedRevision:state.preview.revision,editorRevision:state.revision,dirty:state.dirty})});
+    if(writing)installWritingPreview(root,state,current);
     if(writing&&d){
       root.querySelector('[data-resource="save"]').title='Save (Ctrl/Cmd+S)';
       root.querySelector('.resource-editor').addEventListener('keydown',event=>{
@@ -182,15 +184,24 @@ export function resourceWorkspace(root,view='resources',modelId=null){
         if(state.dirty)throw Error('Save edits before generating from this resource.');
         state.generated=null;state.receipt=null;state.accepted=null;
         const mode=name.slice(8),target=state.draft.uri,revision=state.revision,principal=contextIdentity();
+        const requestDraft={uri:target,title:state.draft.title,content:state.draft.content};
         const result=await backend.writingGenerate({namespace:state.namespace,principal,model_id:modelId,target,expected_revision:revision,mode,
           resources:[...state.context],layers:[...state.context].map(()=>'workspace'),prompt:writingPrompt(state.instructions,state.guidance.get(writingGuidanceKey(state.namespace,target))),byte_budget:state.budget,max_tokens:state.tokens});
-        state.generated={...result,mode,target,revision,principal};
-        state.receipt=await backend.contextReceipt(state.namespace,principal,result.receipt_id);
+        state.generated=createWritingPreview(result,{draft:requestDraft,mode,revision,principal});
+        const receipt=await backend.contextReceipt(state.namespace,principal,result.receipt_id);
+        verifyWritingReceipt(state.generated,receipt);state.receipt=receipt;
         state.notice='Preview generated and receipt saved. Editor text is unchanged.';
       }
+      else if(name==='writing-preview-receipt'&&state.generated){
+        state.receipt=null;
+        const receipt=await backend.contextReceipt(state.namespace,state.generated.principal,state.generated.receipt_id);
+        verifyWritingReceipt(state.generated,receipt);state.receipt=receipt;state.notice='Saved Writing receipt loaded.';
+      }
+      else if(name==='writing-preview-export'&&state.generated){downloadWritingText({title:state.generated.base.title+' preview',content:state.generated.text},'txt');state.notice='Generated preview downloaded.';}
+      else if(name==='writing-preview-discard'){state.generated=null;state.receipt=null;state.notice='Preview discarded. Editor text is unchanged.';}
       else if(name==='writing-apply'&&state.generated){
-        if(state.dirty||state.draft.uri!==state.generated.target||state.revision!==state.generated.revision)throw Error('The editor changed after generation. Review your edits before applying a preview.');
-        state.draft.content=state.generated.mode==='continue'?state.draft.content+state.generated.text:state.generated.text;
+        const reason=writingPreviewAcceptance(state.generated,state.receipt,state.draft,state.revision,state.dirty,state.accepted);if(reason)throw Error(reason);
+        state.draft.content=writingPreviewText(state.generated);
         state.accepted={receipt_id:state.generated.receipt_id,principal:state.generated.principal};
         state.dirty=true;state.notice='Preview copied to the unsaved editor. Save to add a revision.';
       }

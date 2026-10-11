@@ -114,7 +114,8 @@ try{
   console.log('Workflow native generation -> check -> saved Agent composition, input bindings, exact references, Stop and independent native run export passed');
   // Keep only this checkpoint's new evidence. The full palette/workflow matrix
   // runs privately rather than overwriting unrelated tracked images mid-test.
-  for(const label of ['workflows','workflows-dark','workflows-mobile'])for(const area of ['definition','result'])await copyFile(path.join(folder,'screenshots',label+'-'+area+'.png'),path.resolve('frontend/qa/themes',label+'-'+area+'.png'));
+  for(const label of ['writing-review','writing-review-dark','writing-review-mobile'])for(const suffix of ['','-sources'])await copyFile(path.join(folder,'screenshots',label+suffix+'.png'),path.resolve('frontend/qa/themes',label+suffix+'.png'));
+  console.log('Writing preview comparison, actual counters, exact download, permission revocation/regrant and draft-safe discard passed');
   console.log('Desktop resource create/save/reload and native CLI export passed');
 }finally{
   if(agentEndpoint)await agentEndpoint.close();

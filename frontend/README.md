@@ -94,6 +94,9 @@ explicit. Resources supports local package import/export and generic editing.
 Writing also imports UTF-8 Markdown/plain text into new drafts and exports current
 drafts as `.md`/`.txt`; saved JSON packages remain a separate format. Ctrl/Cmd+S
 saves from the editor, and explicit saved-version reload handles concurrent edits.
+Generated prose has a wide review panel with exact proposed-text comparison,
+actual counters/source attribution, raw preview download and draft-safe discard.
+Receipt refresh and acceptance guards preserve the native permission/CAS boundary.
 
 Writing, Resources and Explore revision previews offer a bounded read-only
 comparison against the current editor, including unsaved text. See
@@ -112,6 +115,8 @@ Maintenance and integration documentation:
   APIs, conflict/paging behavior and backend-owned gameplay requirements.
 - [Writing UX reference and adaptation](docs/WRITING_UX.md): Snep-inspired editor
   composition, implemented controls and remaining native contract requirements.
+- [Writing generation review](docs/WRITING_REVIEW.md): exact baseline/output,
+  readable receipts, permission refresh, acceptance/provenance and review bounds.
 - [Dataset Studio](docs/DATASET_STUDIO.md): formats, validation, reproducible
   transformations, provenance, split recovery and the explicit file handoff to
   Training. Direct dataset-resource training remains open.

@@ -691,3 +691,30 @@ results and platform/hardware skips; do not borrow previous reports' counts.
   resource permissions, durable jobs/pause/resume/reconnect, node selection,
   branches/parallelism, Explore gameplay and platform/accessibility/scale audits
   remain part of the active full product goal.
+
+## Frontend Writing prose review (2026-10-11)
+
+- Added a wide clay review panel beneath the editor, including focus mode, with
+  exact baseline/proposed-text comparison, actual native counters and readable
+  source ranges. Shared comparison/source helpers preserve native revision and
+  UTF-8 semantics. Model text remains inert plain text.
+- Response and receipt binding validate target/revision/mode/output/counters.
+  Dirty/stale/duplicate/missing/mismatched/oversized acceptance fails closed.
+  Native keyboard edits update the guard without repainting the textarea.
+- Explicit receipt refresh authorizes anew with the original principal; denial
+  clears loaded attribution and blocks copying while keeping output/editor.
+  Raw preview download is distinct from draft/package export. Discard preserves
+  editor text and any already accepted receipt association for the next native Save.
+- Maintainable `writing-generation.js` isolates pure validation/review logic;
+  requests and writes remain in the existing resource controller. Thorough
+  `frontend/docs/WRITING_REVIEW.md` documents contracts, cached permission
+  observations, final native CAS/receipt enforcement, limits and remaining scope.
+- Five new domain checks bring the selected suite to 88 passing checks. Production
+  build and owned real native/browser integration pass; a separate pure-C CLI
+  export verifies accepted provenance after review discard. Actual downloads,
+  permission writes, native typing and light/dark/390px prose/source layouts are
+  checked. Earlier test-selector/synthetic-event attempts were excluded and fixed.
+- Backend implementation/dependencies/formats are unchanged. Inherited controls,
+  trackers, complete project workflows, native stream/cancel/jobs, Explore shared
+  character references, nodes and final platform/accessibility/scale QA remain
+  requirements of the active full product goal.

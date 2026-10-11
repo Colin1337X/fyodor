@@ -11,6 +11,7 @@ import {revisionComparisonBrowser} from './revision-comparison-browser.mjs';
 import {modelInspectorBrowser} from './model-inspector-browser.mjs';
 import {agentBrowser} from './agent-browser.mjs';
 import {workflowBrowser} from './workflow-browser.mjs';
+import {writingGenerationBrowser} from './writing-generation-browser.mjs';
 // Use an installed Chromium browser without touching its normal profile. Keep
 // FYODOR_EDGE as the explicit binary override for existing CI/developer setups.
 let browserPath;
@@ -196,15 +197,20 @@ try {
       assert.equal(await evaluate('document.querySelector("#resource-content").value'),'A cartographer who keeps a journal.');
       assert.ok((await evaluate('document.querySelector("#writing-exact-prompt").textContent')).includes(mode==='generate'?'Write:':mode==='rewrite'?'Rewrite:':'Continue:'));
     }
+    await writingGenerationBrowser({evaluate,waitFor,call,sessionId,profile,output});
     const previewText=await evaluate('document.querySelector("#writing-output").textContent');
     await evaluate('document.querySelector("[data-resource=writing-apply]").click()');
     await waitFor('document.querySelector("[role=status]")?.textContent.includes("unsaved editor")');
+    assert.equal(await evaluate('document.querySelector("#resource-content").value'),'A cartographer who keeps a journal.'+previewText);
+    assert.equal(await evaluate('document.querySelector("[data-resource=writing-apply]").disabled'),true);
+    await evaluate('document.querySelector("[data-resource=writing-preview-discard]").click()');
+    await waitFor('document.querySelector("[role=status]")?.textContent.includes("Preview discarded")');
     assert.equal(await evaluate('document.querySelector("#resource-content").value'),'A cartographer who keeps a journal.'+previewText);
     await evaluate('document.querySelector("[data-resource=save]").click()');
     await waitFor('document.querySelector("[role=status]")?.textContent.includes("Saved to the local workspace")');
     assert.equal(await evaluate('document.querySelectorAll("[data-history-revision]").length'),2);
     const writing_uri=await evaluate('document.querySelector("[data-resource-uri*=characters]").dataset.resourceUri');
-    const writing_receipt=await evaluate('document.querySelector(".writing-generate code").textContent');
+    const writing_receipt=await evaluate(`(async()=>{const {backend}=await import('/src/api.js');const result=await backend.resource('workspace',document.querySelector('[data-resource-uri*=characters]').dataset.resourceUri);return result.resource.provenance.writing_generations[0].receipt_id;})()`);
     await writeFile(process.env.FYODOR_RESOURCE_QA,JSON.stringify({uri,principal,receipt_id,writing_uri,writing_receipt}));
     const writingCapture=await call('Page.captureScreenshot',{format:'png'},sessionId);
     await writeFile(path.join(output,'writing.png'),Buffer.from(writingCapture.data,'base64'));

@@ -1,6 +1,6 @@
 # Frontend delivery map
 
-Updated 2026-10-10. Frontend work is prioritized; another agent owns backend
+Updated 2026-10-11. Frontend work is prioritized; another agent owns backend
 implementation. The original product brief remains the wider target. This map
 separates usable frontend behavior from planned screens and required contracts.
 
@@ -10,7 +10,7 @@ separates usable frontend behavior from planned screens and required contracts.
 | --- | --- | --- |
 | Shell/appearance | Grouped navigation, shared model selector, responsive overlay, named themes, clay material, preferences, keyboard quick switcher and explicit saved-title search | Full keyboard/screen-reader/zoom audit and final cross-platform packaging QA; see `QUICK_SWITCHER.md`. |
 | Chat | Stored conversations, JSON import/export, safe code, regenerate/edit, remote streaming/Stop | Native local streaming/cancel contract and richer agent execution UI. |
-| Writing | Editor-first studio, focus mode, live counts, session story guidance, document/note/character/project editing, folders, history/comparison, lore links, model preview, accepted receipt provenance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md`. |
+| Writing | Editor-first studio, focus mode, live counts, session guidance, document/note/character/project editing, folders, history/comparison, lore links, prose preview comparison/download/discard, readable native attribution/counters, guarded receipt acceptance, Markdown/text files, keyboard save, conflict reload | Inherited creative controls, trackers, recursive generation, complete project workflows and rich document formats; see `WRITING_UX.md` and `WRITING_REVIEW.md`. |
 | Resources | Paged local library, package import/export, edit/delete/history | Typed catalog filters and richer navigation across every resource family. |
 | Context | Explicit grants/revocation, layers, search, generation, readable executed-source usage and receipt-backed datasets | Current full-resource inspection/retrieval APIs, shared workspace/session coordination and automatic retrieval UX; see `CONTEXT_RECEIPTS.md`. |
 | Explore | World/lore creation/editing/history/export, scoped lore library | Play/saves/state/timeline/conditions/hooks/assets; see `EXPLORE.md`. |
@@ -165,3 +165,13 @@ fixture. Six light/dark/390px captures were visually reviewed and retained.
 The test uses installed Chrome after the former Edge path became unavailable,
 with a private profile and bounded startup diagnostics. No backend code changed;
 canonical workflow/run/job/catalog/permission/node contracts remain open.
+
+2026-10-11 Writing review adds five domain checks (88 selected frontend checks
+total). Production build and native/browser integration pass for actual completed
+generation and receipt binding, exact raw preview download, proposed-text
+comparison, native permission revocation/denial/regrant, native keyboard edits,
+guard retention across rerender, duplicate prevention and draft-safe discard.
+Discard after copying preserves accepted provenance through Save and independent
+pure-C CLI export. Light/dark/390px prose/source layouts are recorded. No backend
+source, dependency or native format changed; full authoring/native/platform work
+remains open. See `WRITING_REVIEW.md` and its QA record.

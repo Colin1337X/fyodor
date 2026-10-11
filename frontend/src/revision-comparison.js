@@ -136,13 +136,20 @@ export function revisionComparisonMarkup(snapshot) {
   const label = `Saved revision ${snapshot.savedRevision} → ${snapshot.dirty ? "unsaved editor" : "editor revision " + snapshot.editorRevision}`;
   if (!result.available)
     return `<p>${esc(label)}</p>${title}<p role="status">${esc(result.reason)} Read the saved text above and the editor directly.</p>`;
+  return `<p>${esc(label)}</p>${title}${textComparisonMarkup(result)}`;
+}
+
+// Shared presentation for exact, bounded comparisons; callers supply their own
+// baseline labels. Generation previews must not pretend to be saved revisions.
+export function textComparisonMarkup(result) {
+  if (!result.available) return `<p role="status">${esc(result.reason)}</p>`;
   const summary =
     result.added || result.removed
       ? `${result.added} added lines · ${result.removed} removed lines`
       : "Text unchanged.";
   const changes =
     result.displayed === null
-      ? "<p>Too many changed lines to display. Read the saved text above and the editor directly.</p>"
+      ? "<p>Too many changed lines to display. Read both texts directly.</p>"
       : result.displayed.length
         ? `<ol class="revision-lines" aria-label="Line comparison">${result.displayed
             .map((row) =>
@@ -152,7 +159,7 @@ export function revisionComparisonMarkup(snapshot) {
             )
             .join("")}</ol>`
         : "";
-  return `<p>${esc(label)}</p>${title}<p role="status">${esc(summary)}</p>${changes}`;
+  return `<p role="status">${esc(summary)}</p>${changes}`;
 }
 
 // Mount on nodes owned by this paint, not the persistent root: rerenders must
