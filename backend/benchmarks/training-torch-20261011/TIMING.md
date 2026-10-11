@@ -31,3 +31,44 @@ Raw checkpoints, native CSVs/logs, and exports remain in
 `D:/fyodor-validation/training-timing-256-cuda-20261011`. Each JSON records the
 native binary and harness hashes, configuration, per-step reference timings,
 losses, command, and correctness results. No production code changed here.
+
+## First-update localization
+
+Diagnostic mode now permits a single update and one repetition, reports the
+worst element of every state array, and never produces a throughput percentage.
+`--optimizer scalar` selects stock scalar AdamW instead of fused/foreach AdamW.
+Every result explicitly records that its timing environment is unverified.
+
+The large case fails its parameter comparison immediately, while the loss,
+raw gradient and both moments pass. CUDA parameter error is 1.9876350e-5;
+CPU parameter error is 6.3729021e-5. Native CPU and CUDA parameters and raw
+gradients are exactly equal for this update; their moments differ by at most
+9.0948432e-13. `compare_checkpoints.py` checks every element and records input
+hashes; its result is `divergence-native-cpu-cuda.json`.
+
+Holding all gradients fixed to the native checkpoint, independent stock
+PyTorch AdamW reproduces the native parameters within 5.9575228e-8 on both
+devices. Selecting scalar CUDA AdamW also leaves the original mismatch
+unchanged. This localizes the dominant discrepancy to the independently
+computed gradients, rather than a CUDA-only fault or fused optimizer fault.
+At the worst CUDA parameter (first layer FFN down weight, flat index149315),
+the raw gradients are -2.14842455e-8 in PyTorch and -1.85355020e-8 natively.
+Their difference is small in absolute terms but significant relative to the
+optimizer epsilon; AdamW magnifies it into a 1.98832e-5 parameter difference.
+This explains the failed parameter check without proving either gradient is
+more accurate. The failed comparison remains rejected at the original 1e-5.
+
+Reproduce localization with the timing harness and:
+
+```
+--width 256 --ff 704 --heads 8 --kv-heads 2 --context 128
+--steps 1 --repeats 1 --diagnostic --device cpu|cuda --output NEW_DIRECTORY
+```
+
+The three `divergence-step1-*.json` files retain per-array coordinates,
+values, raw gradients, losses and the identical-gradient optimizer control.
+Corresponding raw files remain under
+`D:/fyodor-validation/training-divergence-step1-control-{cpu,cuda}` and
+`D:/fyodor-validation/training-divergence-step1-scalar-cuda`.
+Next, compare operation-level forward/backward intermediates with a higher
+precision independent reference before changing any native numerical behavior.

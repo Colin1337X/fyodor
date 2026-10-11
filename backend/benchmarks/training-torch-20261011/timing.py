@@ -20,8 +20,11 @@ parser.add_argument('--steps', type=int, default=30)
 parser.add_argument('--warmup', type=int, default=10)
 parser.add_argument('--repeats', type=int, default=4)
 parser.add_argument('--output', type=Path, required=True)
+parser.add_argument('--diagnostic', action='store_true', help='Disable timing acceptance; allow single-update localization')
+parser.add_argument('--optimizer', choices=('default','scalar'), default='default')
 args = parser.parse_args()
-assert args.steps > args.warmup >= 1 and args.repeats >= 2
+assert args.steps >= 1 and args.repeats >= 1
+assert args.diagnostic or (args.steps > args.warmup+1 >= 2 and args.repeats >= 2)
 assert args.width % args.heads == 0 and args.heads % args.kv_heads == 0
 root = Path(__file__).resolve().parents[3]
 work = args.output.resolve(); work.mkdir(parents=True, exist_ok=False)
@@ -84,8 +87,8 @@ def reference():
     params = [torch.nn.Parameter(state[0].clone()) for state in initial]
     lr, b1, b2, eps, decay, maxnorm = settings
     optimizer = torch.optim.AdamW(params, lr=lr, betas=(b1,b2), eps=eps,
-                                 weight_decay=decay, fused=args.device == 'cuda',
-                                 foreach=args.device == 'cpu')
+                                 weight_decay=decay, fused=args.device == 'cuda' and args.optimizer == 'default',
+                                 foreach=args.device == 'cpu' and args.optimizer == 'default')
     losses, elapsed = [], []
     for update in range(args.steps):
         if args.device == 'cuda': torch.cuda.synchronize()
@@ -121,9 +124,9 @@ record = {'configuration':vars(args) | {'output':str(work)}, 'torch_version':tor
           'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
           'trainer_sha256':hashlib.sha256(trainer.read_bytes()).hexdigest(),
           'script_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-          'reference':'eager F32 decoder; double RMS/RoPE/clip; CUDA fused AdamW or CPU foreach AdamW; TF32 off',
+          'reference':'eager F32 decoder; double RMS/RoPE/clip; TF32 off; AdamW '+args.optimizer,
           'timing':'whole update; startup/export excluded; first warmup and last diagnostic update excluded',
-          'tolerance':1e-5,'pairs':[]}
+          'tolerance':1e-5,'timing_environment_verified':False,'pairs':[]}
 for repeat in range(args.repeats):
     name = 'native-' + str(repeat)
     if repeat % 2: losses, elapsed, actual = reference()
@@ -131,21 +134,47 @@ for repeat in range(args.repeats):
     if not repeat % 2: losses, elapsed, actual = reference()
     expected, step, _ = checkpoint(work / (name+'.ckpt')); assert step == args.steps
     errors = {key:0. for key in ('parameter','gradient','moment','variance')}
-    for a,b in zip(actual,expected):
+    details = []
+    for index,(a,b) in enumerate(zip(actual,expected)):
         for key,x,y in zip(errors,a,b):
-            errors[key] = max(errors[key],((x-y).abs()/(1+y.abs())).max().item())
+            scaled = (x-y).abs()/(1+y.abs())
+            flat = int(scaled.argmax().item())
+            error = scaled.flatten()[flat].item()
+            errors[key] = max(errors[key],error)
+            details.append({'parameter':index,'array':key,'scaled_error':error,
+                            'flat_index':flat,'torch':x.flatten()[flat].item(),'native':y.flatten()[flat].item()})
+            if key == 'parameter':
+                details[-1].update(initial=initial[index][0].flatten()[flat].item(),
+                                   torch_raw_gradient=a[1].flatten()[flat].item(),
+                                   native_raw_gradient=b[1].flatten()[flat].item())
     with (work/(name+'.csv')).open(newline='') as f: rows = list(csv.DictReader(f))
     assert len(rows) == len(losses) == args.steps
     loss_error = max(abs(float(row['loss'])-loss) for row,loss in zip(rows,losses))
     selected = slice(args.warmup,-1)
-    native_ms = statistics.mean(float(row['step_ms']) for row in rows[selected])
-    torch_ms = statistics.mean(elapsed[selected])
+    native_ms = None if args.diagnostic else statistics.mean(float(row['step_ms']) for row in rows[selected])
+    torch_ms = None if args.diagnostic else statistics.mean(elapsed[selected])
     passed = loss_error <= 1e-5 and all(x <= 1e-5 for x in errors.values())
     pair = {'repeat':repeat,'order':['torch','native'] if repeat%2 else ['native','torch'],
             'native_command':command,'torch_step_ms':elapsed,'torch_losses':losses,
             'native_mean_ms':native_ms,'torch_mean_ms':torch_ms,
             'maximum_loss_absolute_error':loss_error,'state_maximum_scaled_errors':errors,
-            'correctness_passed':passed,'throughput_percentage':torch_ms/native_ms*100 if passed else None}
+            'state_details':details,'correctness_passed':passed,
+            'throughput_percentage':torch_ms/native_ms*100 if passed and not args.diagnostic else None}
+    if args.diagnostic and args.steps == 1:
+        # Hold every raw gradient fixed to isolate optimizer arithmetic from
+        # discrepancies produced by independent forward/backward reductions.
+        control = [torch.nn.Parameter(state[0].clone()) for state in initial]
+        lr,b1,b2,eps,decay,maxnorm = settings
+        opt = torch.optim.AdamW(control,lr=lr,betas=(b1,b2),eps=eps,weight_decay=decay,
+                               fused=args.device == 'cuda' and args.optimizer == 'default',
+                               foreach=args.device == 'cpu' and args.optimizer == 'default')
+        total = torch.sqrt(sum(state[1].double().square().sum() for state in expected))
+        clip = min(1.,maxnorm/total.item())
+        for p,state in zip(control,expected): p.grad = state[1].clone()*clip
+        opt.step()
+        pair['identical_native_gradient_optimizer_parameter_error'] = max(
+            ((p.detach()-state[0]).abs()/(1+state[0].abs())).max().item()
+            for p,state in zip(control,expected))
     record['pairs'].append(pair)
     (work/'results.json').write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(pair),flush=True)
