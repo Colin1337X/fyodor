@@ -1,5 +1,8 @@
 # Runtime benchmark evidence
 
+**Current measured comparison:** [October 11 inference and PyTorch scorecard](SCORECARD.md).
+Older results below retain their original configurations and are historical.
+
 **Training:** [October 5 resident attention with bounded backward workspace](TRAINING_ATTENTION_20261005.md),
 [October 5 resident RoPE and large-angle CPU correction](TRAINING_ROPE_20261005.md),
 [September 29 resident embeddings and ordered matrix gradients](TRAINING_EMBEDDING_20260929.md),

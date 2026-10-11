@@ -1,0 +1,118 @@
+{
+  "timestamp_utc": "2026-10-11T11:34:24.208272+00:00",
+  "revision": "b8cf762207fbbba959a684c6cbdb56e95ba3c37c",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "llama_commit": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+  "harness_sha256": "459fd4eb97905bdbd02c8edaa6b8280ebbc2e03d23ec0db9b63b129d38b465d6",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CPU_BATCH": "512",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "source_sha256": {
+    "CUDA\\gemm.cu": "cb73bd0a52ae2229693d7a38e218724ad4c884a54d24e83105e2e0c59cf8c40e",
+    "CUDA\\matvec.cu": "07957cc6919f33feee62cf971331d5a20419e6ae91c5937d917710f72eae7227",
+    "CUDA\\resident.cu": "59ad70391e4230bdb5af44735227aeea7836b8eb07f8b697972f4cdae8fa667e",
+    "CUDA\\resident.inc": "63a1d1e410a7dfe8821c21f5cd569a57f4b384eb29eb6c51a153280e1b73fb0d",
+    "CUDA\\cuda.c": "4791fff23d5e1e584785a1453bd655048d8268876119e42d3a4f5b0e2da5aa1c"
+  },
+  "binary_sha256": {
+    "after": "e518bf15949bd4a46c3abaf85c42e18c332aba56e1c651b518e594274c97981d",
+    "llama": "641e4186f3a55bbbfa819399596d75e281037fc54fcc23e288d265d07a50e92e"
+  },
+  "dependency_sha256": {
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    ".tools\\llama-b10809-cuda\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cuda\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    ".tools\\llama-b10809-cuda\\ggml-cuda.dll": "d860635f2be8faf7590103851225afdf3f0b2e5e26012815017b0a0a087d4441"
+  },
+  "caveats": [
+    "Windows interactive desktop; retained OS/development/user desktop processes are recorded. Nonessential NVIDIA Overlay and earlier training benchmarks were stopped. Other desktop apps remain open. Not a headless measurement.",
+    "Require three consecutive 0..5% whole-GPU utilization readings before and after each process. Preserve failure, never discard individual timed samples.",
+    "F32 KV, deterministic identical tokens, 512 batch/ubatch, six threads, FA off in llama C API harness; intermediate math differs.",
+    "Model loading, tokenization, sampling, prefix preparation are untimed. Host logits read every decoded token.",
+    "Resource sampling includes startup and model load; whole-device readings include other apps. Driver graph storage is not in explicit tensor byte totals."
+  ],
+  "runs": [],
+  "observed_desktop_processes": [
+    {
+      "pid": "3036",
+      "type": "C+G",
+      "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+    },
+    {
+      "pid": "3428",
+      "type": "C+G",
+      "name": "C:\\Windows\\explorer.exe"
+    },
+    {
+      "pid": "4996",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+    },
+    {
+      "pid": "5252",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\Microsoft.ScreenSketch_11.2607.23.0_x64__8wekyb3d8bbwe\\SnippingTool\\SnippingTool.exe"
+    },
+    {
+      "pid": "8112",
+      "type": "C+G",
+      "name": "D:\\thorium\\BIN\\thorium.exe"
+    },
+    {
+      "pid": "8300",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+    },
+    {
+      "pid": "9280",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+    },
+    {
+      "pid": "11928",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\3dd31cfff853001c\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+    },
+    {
+      "pid": "13016",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\154.0.4258.62\\msedgewebview2.exe"
+    },
+    {
+      "pid": "15548",
+      "type": "C+G",
+      "name": "C:\\Program Files (x86)\\Steam\\bin\\cef\\cef.win64\\steamwebhelper.exe"
+    },
+    {
+      "pid": "16584",
+      "type": "C+G",
+      "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+    },
+    {
+      "pid": "18136",
+      "type": "C+G",
+      "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+    },
+    {
+      "pid": "21092",
+      "type": "C+G",
+      "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1002.7124.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+    },
+    {
+      "pid": "22904",
+      "type": "C+G",
+      "name": "D:\\thorium\\BIN\\thorium.exe"
+    },
+    {
+      "pid": "26084",
+      "type": "C+G",
+      "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+    }
+  ],
+  "hardware": "name, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 5060 Ti, 617.42, 16311 MiB\n"
+}

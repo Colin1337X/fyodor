@@ -77,6 +77,14 @@ static int matrix(nya_train_device *d, unsigned type, size_t o, size_t i, size_t
         double sum=0, mag=0;
         for (size_t r=0; r<o; ++r) { double p=2*(double)nya_llm_tensor_value(&tensor,r*i+k)*dy[t*o+r]; sum+=p; mag+=fabs(p); }
         CHECK(close_sum(sum,mag,actual[t*i+k]));
+        if (type==12) {
+            float ordered=0;
+            for (unsigned pass=0;pass<2;++pass) for (size_t r=0;r<o;++r) {
+                volatile float product=nya_llm_tensor_value(&tensor,r*i+k)*dy[t*o+r];
+                ordered+=product;
+            }
+            CHECK(!memcmp(&ordered,&actual[t*i+k],4));
+        }
     }
     CHECK(!nya_train_device_read(d,bdw,0,actual,nw*4+4) && actual[nw] == guard);
     for (size_t r = 0; r < o; ++r) for (size_t k = 0; k < i; ++k) {
@@ -323,6 +331,16 @@ static int narrow_matrices(nya_train_device *d)
     }
     return 0;
 }
+static int q4_dx_tiles(nya_train_device *d)
+{
+    const size_t shapes[][2]={{63,1},{64,8},{65,35},{127,65},{128,17},{129,33}};
+    for (size_t k=0;k<sizeof(shapes)/sizeof(shapes[0]);++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,12,shapes[k][0],256,shapes[k][1]));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
@@ -336,6 +354,9 @@ int main(int argc, char **argv)
     if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
     if (!strcmp(argv[1],"--narrow")) {
         int result=narrow_matrices(d); nya_train_device_free(d); return result;
+    }
+    if (!strcmp(argv[1],"--q4-dx")) {
+        int result=q4_dx_tiles(d); nya_train_device_free(d); return result;
     }
     if (!strcmp(argv[1],"--finite-failure")) {
         nya_train_buffer status=nya_train_device_alloc(d,4), data=nya_train_device_alloc(d,4);
@@ -412,6 +433,7 @@ int main(int argc, char **argv)
     CHECK(!matrix(d,0,33,65,17) && !matrix(d,30,31,33,65));
     CHECK(!matrix(d,0,8192,33,3) && !matrix(d,0,5,33,8192) && !matrix(d,1,33,8192,3));
     CHECK(!narrow_matrices(d));
+    CHECK(!q4_dx_tiles(d));
     CHECK(!autograd(d) && !precise_forward(d) && !nya_train_device_finish(d));
     nya_train_device_get_stats(d,&after);
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
