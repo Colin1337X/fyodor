@@ -398,6 +398,10 @@ if(BUILD_TESTING)
         set_tests_properties(training-graph-cuda-reference PROPERTIES ENVIRONMENT "NYA_CUDA_REFERENCE=1")
         add_test(NAME training-graph-cuda-profile COMMAND nya-test-training-graph --cuda "${CMAKE_CURRENT_BINARY_DIR}/training-graph-profile")
         set_tests_properties(training-graph-cuda-profile PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 180 ENVIRONMENT "NYA_TRAIN_PROFILE=1")
+        add_test(NAME training-graph-cuda-profile-shapes COMMAND ${CMAKE_COMMAND}
+            "-DPROGRAM=$<TARGET_FILE:nya-test-training-graph>" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/training_profile_shapes.cmake")
+        set_tests_properties(training-graph-cuda-profile-shapes PROPERTIES TIMEOUT 180
+            ENVIRONMENT "NYA_TRAIN_PROFILE=1" SKIP_REGULAR_EXPRESSION "CUDA profile fixture unavailable")
         foreach(variant 0 1 tied)
             add_test(NAME training-graph-gemma-${variant} COMMAND nya-test-training-graph --gemma "${nya_fixtures}/tiny-gemma4.gguf.${variant}" "${CMAKE_CURRENT_BINARY_DIR}/training-graph-gemma-${variant}")
             set_tests_properties(training-graph-gemma-${variant} PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 180 FIXTURES_REQUIRED gemma_models)

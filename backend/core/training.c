@@ -51,6 +51,14 @@ struct nya_train_tensor {
     double reference_chosen, reference_rejected;
 };
 
+enum { TR_MATRIX_PROFILE_CAPACITY = 64 };
+struct tr_matrix_profile {
+    size_t inputs, outputs, tokens, calls[2];
+    unsigned type;
+    int mapped, dx, dw;
+    double seconds[2];
+};
+
 struct nya_train_graph {
     nya_train_executor *executor;
     nya_train_tensor *last;
@@ -68,7 +76,31 @@ struct nya_train_graph {
     nya_train_scope scope;
     nya_train_buffer seed;
     nya_train_tensor *first, *executed;
+    struct tr_matrix_profile *matrix_profile;
 };
+
+/* Diagnostics only: bounded shape attribution with a final overflow bucket.
+   Optional allocation failure preserves the existing aggregate profile. */
+static void tr_profile_matrix(nya_train_tensor *t, int backward, double seconds)
+{
+    nya_train_graph *g=t->graph;
+    if (!g->matrix_profile || (t->operation!=TR_LINEAR && t->operation!=TR_MAPPED_LINEAR)) return;
+    int mapped=t->operation==TR_MAPPED_LINEAR;
+    unsigned type=mapped?t->mapped->type:0;
+    int dx=t->a->device_gradient!=0, dw=!mapped && t->b->device_gradient!=0;
+    size_t i=0;
+    for (;i<TR_MATRIX_PROFILE_CAPACITY-1;++i) {
+        struct tr_matrix_profile *p=&g->matrix_profile[i];
+        if (!p->calls[0] && !p->calls[1]) {
+            p->inputs=t->a->columns; p->outputs=t->columns; p->tokens=t->rows;
+            p->type=type; p->mapped=mapped; p->dx=dx; p->dw=dw; break;
+        }
+        if (p->inputs==t->a->columns && p->outputs==t->columns && p->tokens==t->rows &&
+            p->type==type && p->mapped==mapped && p->dx==dx && p->dw==dw) break;
+    }
+    ++g->matrix_profile[i].calls[backward];
+    g->matrix_profile[i].seconds[backward]+=seconds;
+}
 
 static int tr_gradient(const nya_train_tensor *t) { return t && (t->gradient || t->device_gradient); }
 static int tr_gpu_backward(nya_train_tensor *loss);
@@ -198,6 +230,7 @@ nya_train_graph *nya_train_graph_create_resident(size_t limit,nya_train_session 
     g->scope=nya_train_session_graph_begin(session,evaluation);
     if (!g->scope) { free(g); return NULL; }
     g->session=session; g->device=nya_train_session_device(session); g->evaluation=evaluation;
+    if (g->profile) g->matrix_profile=calloc(TR_MATRIX_PROFILE_CAPACITY,sizeof(*g->matrix_profile));
     float one=1;
     g->seed=tr_gpu_upload(g,&one,1,4);
     if (!g->seed) { nya_train_graph_free(g); return NULL; }
@@ -237,6 +270,18 @@ void nya_train_graph_free(nya_train_graph *g)
                 if (g->backward_seconds[i] > 0) fprintf(stderr," backward_%s_ms=%.6f",names[i],g->backward_seconds[i]*1000);
         }
         fputc('\n',stderr);
+        if (g->device) {
+            fprintf(stderr,"train_profile_matrix_table available=%d capacity=%d bytes=%zu\n",
+                g->matrix_profile!=NULL,TR_MATRIX_PROFILE_CAPACITY,
+                g->matrix_profile?TR_MATRIX_PROFILE_CAPACITY*sizeof(*g->matrix_profile):0);
+            if (g->matrix_profile) for (size_t i=0;i<TR_MATRIX_PROFILE_CAPACITY;++i) {
+                const struct tr_matrix_profile *p=&g->matrix_profile[i];
+                if (!p->calls[0] && !p->calls[1]) continue;
+                fprintf(stderr,"train_profile_matrix timing=synchronized_host_diagnostic overflow=%d mapped=%d type=%u inputs=%zu outputs=%zu tokens=%zu dx=%d dw=%d forward_calls=%zu forward_ms=%.6f backward_calls=%zu backward_ms=%.6f\n",
+                    i==TR_MATRIX_PROFILE_CAPACITY-1,p->mapped,p->type,p->inputs,p->outputs,p->tokens,
+                    p->dx,p->dw,p->calls[0],p->seconds[0]*1000,p->calls[1],p->seconds[1]*1000);
+            }
+        }
     }
     nya_train_tensor *t = g->last;
     while (t != NULL) {
@@ -249,7 +294,7 @@ void nya_train_graph_free(nya_train_graph *g)
         if (g->error[0] || (!g->evaluation && !g->backward)) nya_train_session_graph_fail(g->session);
         nya_train_session_graph_end(g->session,g->scope);
     }
-    free(g->mapped_scratch); free(g);
+    free(g->matrix_profile); free(g->mapped_scratch); free(g);
 }
 
 const char *nya_train_error(const nya_train_graph *g) { return g == NULL ? "missing training graph" : g->error; }
@@ -1323,8 +1368,10 @@ int nya_train_graph_forward_resident(nya_train_graph *g)
         }
         if (g->profile) {
             if (nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
-            g->resident_forward_seconds[t->operation]+=tr_seconds()-profile_start;
+            double seconds=tr_seconds()-profile_start;
+            g->resident_forward_seconds[t->operation]+=seconds;
             ++g->resident_forward_calls[t->operation];
+            tr_profile_matrix(t,0,seconds);
         }
         g->executed=t;
     }
@@ -1407,8 +1454,10 @@ static int tr_gpu_backward(nya_train_tensor *loss)
         if (result) { tr_error(g,nya_train_device_error(d)); return -1; }
         if (g->profile) {
             if (nya_train_device_finish(d)) { tr_error(g,nya_train_device_error(d)); return -1; }
-            g->backward_seconds[t->operation]+=tr_seconds()-profile_start;
+            double seconds=tr_seconds()-profile_start;
+            g->backward_seconds[t->operation]+=seconds;
             ++g->resident_backward_calls[t->operation];
+            tr_profile_matrix(t,1,seconds);
         }
     }
     return 0;

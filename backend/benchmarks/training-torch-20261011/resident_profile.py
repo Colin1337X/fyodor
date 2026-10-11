@@ -35,8 +35,25 @@ def run(name,extra,profile):
         assert fields['timing']=='synchronized_host_diagnostic'
         assert int(fields['forward_linear_calls'])>0 and int(fields['backward_linear_calls'])>0
         summaries.append(fields)
+    matrices=[]
+    for line in p.stderr.splitlines():
+        if line.startswith('train_profile_resident '):matrices.append([])
+        elif line.startswith('train_profile_matrix_table '):
+            fields=dict(re.findall(r'(\w+)=([^ ]+)',line));assert fields['available']=='1'
+        elif line.startswith('train_profile_matrix '):
+            assert matrices
+            matrices[-1].append(dict(re.findall(r'(\w+)=([^ ]+)',line)))
+    assert len(matrices)==len(summaries)
+    for aggregate,entries in zip(summaries,matrices):
+        assert entries and len(entries)<=64
+        for phase in ('forward','backward'):
+            expected_calls=sum(int(aggregate.get(f'{phase}_{kind}_calls',0)) for kind in ('linear','mapped_linear'))
+            assert sum(int(e[f'{phase}_calls']) for e in entries)==expected_calls
+            expected_ms=sum(float(aggregate.get(f'{phase}_{kind}_ms',0)) for kind in ('linear','mapped_linear'))
+            actual_ms=sum(float(e[f'{phase}_ms']) for e in entries)
+            assert abs(expected_ms-actual_ms)<(len(entries)+2)*1e-6
     row={'name':name,'command':command,'profile':profile,'checkpoint_sha256':sha(work/(name+'.ckpt')),
-         'export_sha256':sha(work/(name+'.gguf')),'operation_summaries':summaries}
+         'export_sha256':sha(work/(name+'.gguf')),'operation_summaries':summaries,'matrix_summaries':matrices}
     record['runs'].append(row)
     (work/'results.json').write_text(json.dumps(record,indent=2)+'\n')
     return row

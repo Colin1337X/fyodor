@@ -298,11 +298,30 @@ static int model_probe(const char *path,const char *prefix,size_t rank,int real)
     if(real)nya_llm_state_free(&cpu_state);
     nya_llm_state_free(&state);nya_train_graph_free(eval);nya_train_executor_free(executor);nya_train_decoder_free(cpu);nya_train_decoder_free(gpu);nya_model_registry_shutdown(&registry);return 0;
 }
+static int profile_shapes(void)
+{
+    char error[160]={0};float weight=2,values[70];
+    for(size_t i=0;i<70;++i)values[i]=(float)i*.25f;
+    nya_train_parameter *p=nya_train_parameter_create(1,1,&weight);CHECK(p);
+    nya_train_adamw o;nya_train_adamw_defaults(&o);
+    nya_train_session *s=nya_train_session_create("cuda",8*1024*1024,&o,&p,1,error,sizeof(error));CHECK(s);
+    nya_train_graph *g=nya_train_graph_create_resident(2*1024*1024,s,1);CHECK(g);
+    nya_train_tensor *leaf=nya_train_leaf(g,p);CHECK(leaf);
+    for(size_t pass=0;pass<2;++pass) for(size_t n=1;n<=70;++n) {
+        nya_train_tensor *x=nya_train_input(g,n,1,values),*y=nya_train_linear(x,leaf);
+        CHECK(y && !nya_train_graph_forward_resident(g));
+        const float *out=nya_train_data(y);CHECK(out);
+        for(size_t i=0;i<n;++i)CHECK(out[i]==2*values[i]);
+    }
+    nya_train_graph_free(g);CHECK(!nya_train_session_discard_evaluation(s));
+    nya_train_session_free(s);nya_train_parameter_free(p);return 0;
+}
 int main(int argc,char **argv)
 {
     char error[160]={0};CHECK(!interface());if(argc==1)return 0;
     nya_train_device *probe=nya_train_device_create("cuda",1024*1024);if(!probe)return 77;nya_train_device_free(probe);
     if(!strcmp(argv[1],"--failure"))return failures(1);
+    if(!strcmp(argv[1],"--profile-shapes"))return profile_shapes();
     if(argc==4 && !strcmp(argv[1],"--model"))return model_probe(argv[2],argv[3],2,1);
     if(argc==4 && !strcmp(argv[1],"--gemma"))return model_probe(argv[2],argv[3],0,0) || model_probe(argv[2],argv[3],2,0);
     CHECK(argc==3 && !strcmp(argv[1],"--cuda"));
