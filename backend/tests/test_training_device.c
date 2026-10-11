@@ -311,6 +311,18 @@ static int timing_marks(void)
     seconds=123;CHECK(nya_train_device_elapsed(d,a,b,&seconds)<0 && seconds==123);
     nya_train_device_free(d);nya_train_device_free(other);return 0;
 }
+static int narrow_matrices(nya_train_device *d)
+{
+    /* Narrow dense scheduling, its boundary fallback, and token/input tails.
+       matrix() checks every forward value bit-for-bit against ordered C dots. */
+    const size_t ranks[]={1,2,7,8,9};
+    for (size_t k=0;k<sizeof(ranks)/sizeof(ranks[0]);++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,0,ranks[k],2049,35));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
@@ -322,6 +334,9 @@ int main(int argc, char **argv)
     if (!strcmp(argv[1],"--finite")) return finite_checks();
     d=nya_train_device_create("cuda",64*1024*1024);
     if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
+    if (!strcmp(argv[1],"--narrow")) {
+        int result=narrow_matrices(d); nya_train_device_free(d); return result;
+    }
     if (!strcmp(argv[1],"--finite-failure")) {
         nya_train_buffer status=nya_train_device_alloc(d,4), data=nya_train_device_alloc(d,4);
         CHECK(status && data && nya_train_device_check_finite(d,status,data,1,1));
@@ -396,6 +411,7 @@ int main(int argc, char **argv)
     }
     CHECK(!matrix(d,0,33,65,17) && !matrix(d,30,31,33,65));
     CHECK(!matrix(d,0,8192,33,3) && !matrix(d,0,5,33,8192) && !matrix(d,1,33,8192,3));
+    CHECK(!narrow_matrices(d));
     CHECK(!autograd(d) && !precise_forward(d) && !nya_train_device_finish(d));
     nya_train_device_get_stats(d,&after);
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,

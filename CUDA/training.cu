@@ -359,6 +359,23 @@ extern "C" __global__ void nya_train_binary(const float *a, const float *b, cons
 __device__ __forceinline__ void nya_train_forward(const unsigned char *w, const float *x, float *y,
     unsigned long long columns, unsigned long long row_bytes, unsigned rows, unsigned tokens, unsigned TYPE)
 {
+    /* Low-rank projections have at most eight output rows. Give each actual
+       output its own lane instead of loading a mostly empty 32-row tile and
+       synchronizing twice per input tile. Keep the ordered double dot exactly
+       as in the general dense path: this is a scheduling change only. */
+    if (TYPE==0 && rows<=8) {
+        unsigned output=threadIdx.y*32+threadIdx.x;
+        unsigned row=output%rows, local_token=output/rows;
+        unsigned token=blockIdx.y*32+local_token;
+        if (local_token<32 && token<tokens) {
+            double sum=0;
+            for (unsigned long long k=0;k<columns;++k)
+                sum=__dadd_rn(sum,__dmul_rn((double)nya_weight(w+(unsigned long long)row*row_bytes,k,0),
+                    (double)x[(unsigned long long)token*columns+k]));
+            y[(unsigned long long)token*rows+row]=(float)sum;
+        }
+        return;
+    }
     __shared__ float weights[32][33],inputs[32][33];
     unsigned lane=threadIdx.y*32+threadIdx.x,row=blockIdx.x*32+threadIdx.x,token=blockIdx.y*32+threadIdx.y;
     double precise[4]={0}; float sum[4]={0};
