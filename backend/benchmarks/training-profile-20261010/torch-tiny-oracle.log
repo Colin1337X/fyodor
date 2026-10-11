@@ -1,0 +1,40 @@
+D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\_subclasses\functional_tensor.py:307: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\pytorch\torch\csrc\utils\tensor_numpy.cpp:84.)
+  cpu = _conversion_method_template(device=torch.device("cpu"))
+Traceback (most recent call last):
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\benchmarks\training-profile-20261010\torch_tiny_oracle.py", line 45, in <module>
+    optimizer=torch.optim.AdamW(params,lr=lr,betas=(b1,b2),eps=eps,weight_decay=decay,foreach=False)
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\optim\adamw.py", line 36, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        params,
+        ^^^^^^^
+    ...<10 lines>...
+        decoupled_weight_decay=True,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\optim\adam.py", line 102, in __init__
+    super().__init__(params, defaults)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\optim\optimizer.py", line 408, in __init__
+    self.add_param_group(cast(dict, param_group))
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\_compile.py", line 47, in inner
+    import torch._dynamo
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\_dynamo\__init__.py", line 13, in <module>
+    from . import (
+    ...<6 lines>...
+    )
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\_dynamo\aot_compile.py", line 15, in <module>
+    from torch._dynamo.convert_frame import GraphRuntimeEnv
+  File "D:\fyodor-validation\pytorch-reference\Lib\site-packages\torch\_dynamo\convert_frame.py", line 28, in <module>
+    import cProfile
+  File "C:\Users\Colin\AppData\Local\Python\pythoncore-3.14-64\Lib\cProfile.py", line 11, in <module>
+    import profile as _pyprofile
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\benchmarks\training-profile-20261010\profile.py", line 5, in <module>
+    work=Path('D:/fyodor-validation/training-profile-20261010');work.mkdir(parents=True,exist_ok=False)
+                                                                ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Colin\AppData\Local\Python\pythoncore-3.14-64\Lib\pathlib\__init__.py", line 1011, in mkdir
+    os.mkdir(self, mode)
+    ~~~~~~~~^^^^^^^^^^^^
+FileExistsError: [WinError 183] Cannot create a file when that file already exists: 'D:\\fyodor-validation\\training-profile-20261010'
