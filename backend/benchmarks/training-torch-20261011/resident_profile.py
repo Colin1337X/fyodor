@@ -1,14 +1,23 @@
 """Check profiling transparency, then collect diagnostic operation timings."""
 from pathlib import Path
-import hashlib,json,os,re,subprocess
+import argparse,hashlib,json,os,re,subprocess
 root=Path(__file__).resolve().parents[3]
-work=Path('D:/fyodor-validation/resident-operation-profile-20261011')
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output',type=Path,default=Path('D:/fyodor-validation/resident-operation-profile-20261011'))
+parser.add_argument('--context',type=int,default=32)
+parser.add_argument('--rank',type=int,default=2)
+args=parser.parse_args()
+assert args.context>0 and args.rank>0
+work=args.output.resolve()
 work.mkdir(parents=True,exist_ok=False)
 trainer=root/'build-cuda/fyodor-train.exe'
 corpus=work/'corpus.txt';corpus.write_text('The small cat sat beside the quiet library. '*100)
 def sha(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 record={'trainer_sha256':sha(trainer),'training_source_sha256':sha(root/'backend/core/training.c'),
+        'cuda_training_source_sha256':sha(root/'CUDA/training.cu'),
+        'revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
+        'model_sha256':sha(root/'.tools/tinyllama-q4_k_m.gguf'),
         'method':'Synchronized host diagnostic; unsuitable for competitive throughput acceptance','runs':[]}
 def run(name,extra,profile):
     command=[str(trainer),'--data',str(corpus),'--steps','3','--threads','6','--compute','cuda',
@@ -36,7 +45,7 @@ off=run('random-off',shape,False);on=run('random-on',shape,True)
 assert off['checkpoint_sha256']==on['checkpoint_sha256']
 assert off['export_sha256']==on['export_sha256']
 run('tinyllama-on',['--mode','cpt','--base',str(root/'.tools/tinyllama-q4_k_m.gguf'),
-                   '--rank','2','--context','32'],True)
+                   '--rank',str(args.rank),'--context',str(args.context)],True)
 record['profile_on_off_exact']=True
 (work/'results.json').write_text(json.dumps(record,indent=2)+'\n')
 print(json.dumps(record,indent=2))
