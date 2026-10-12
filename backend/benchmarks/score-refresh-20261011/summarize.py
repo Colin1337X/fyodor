@@ -4,6 +4,7 @@ import argparse,hashlib,json,math,statistics
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('inference',type=Path)
 parser.add_argument('--training',type=Path)
+parser.add_argument('--output',type=Path,help='Write a new scorecard without replacing historical evidence')
 args=parser.parse_args();directory=Path(__file__).resolve().parent
 meta=json.loads((args.inference/'metadata.json').read_text())
 assert len(meta['runs'])==8
@@ -24,7 +25,7 @@ for key,parts in groups.items():
     variance=sum((p[0]-1)*p[2]**2+p[0]*(p[1]-mean)**2 for p in parts)/(count-1)
     pooled[key]={'samples':count,'tokens_per_second':mean,'sample_stdev':math.sqrt(variance)}
 record={'convention':'Fyodor throughput / reference throughput * 100; 100 is parity',
-        'measurement':'Monitored interactive desktop, not headless; overlay stopped; OS/development rendering remains',
+        'measurement':'Monitored interactive desktop, not headless; no observed competing GPU processes; OS/development rendering remains',
         'hardware':meta['hardware'],'inference_reference':'llama.cpp b10809, F32 KV, FA off; pinned comparable reference, not latest/fastest configuration',
         'inference':[]}
 for label,prefix,test in [('prefill',0,'pp512'),('short_decode',0,'tg128'),('long_decode',1024,'tg128')]:
@@ -46,5 +47,5 @@ if args.training:
                         'percentage':statistics.mean(reference)/statistics.mean(native)*100,
                         'tolerance':data['tolerance'],'correctness_passed':True,
                         'limitation':'Small eager workload only; no claim about compiled PyTorch, larger models or LoRA parity'}
-(directory/'scorecard.json').write_text(json.dumps(record,indent=2)+'\n')
+(args.output or directory/'scorecard.json').write_text(json.dumps(record,indent=2)+'\n')
 print(json.dumps(record,indent=2))
