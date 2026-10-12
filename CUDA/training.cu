@@ -362,12 +362,19 @@ __device__ __forceinline__ void nya_train_forward(const unsigned char *w, const 
     /* Low-rank projections have at most eight output rows. Give each actual
        output its own lane instead of loading a mostly empty 32-row tile and
        synchronizing twice per input tile. Keep the ordered double dot exactly
-       as in the general dense path: this is a scheduling change only. */
+       as in the general dense path: this is a scheduling change only. Small
+       independent blocks spread small batches over multiple SMs. Larger
+       batches retain 32-token blocks to avoid excessive partial warps. */
     if (TYPE==0 && rows<=8) {
-        unsigned output=threadIdx.y*32+threadIdx.x;
-        unsigned row=output%rows, local_token=output/rows;
-        unsigned token=blockIdx.y*32+local_token;
-        if (local_token<32 && token<tokens) {
+        unsigned long long output=(unsigned long long)blockIdx.x*blockDim.x+threadIdx.x;
+        unsigned row=(unsigned)(output%rows);
+        unsigned long long token=output/rows;
+        if (blockDim.y!=1) {
+            unsigned local=threadIdx.y*32+threadIdx.x;
+            if (local/rows>=32) return;
+            row=local%rows; token=(unsigned long long)blockIdx.y*32+local/rows;
+        }
+        if (token<tokens) {
             double sum=0;
             for (unsigned long long k=0;k<columns;++k)
                 sum=__dadd_rn(sum,__dmul_rn((double)nya_weight(w+(unsigned long long)row*row_bytes,k,0),

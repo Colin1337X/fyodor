@@ -71,6 +71,25 @@ static int run(nya_train_device *d, const nya_llm_tensor *w, size_t n, int recyc
     free(x); free(dy);
     return 0;
 }
+static int narrow(const char *order)
+{
+    nya_train_device *d=nya_train_device_create("cuda",64*1024*1024);REQUIRE(d);
+    REQUIRE(!strcmp(order,"forward") || !strcmp(order,"reverse"));
+    const size_t ranks[]={1,2,8,9},widths[]={2048,5632},tokens[]={8,32,128,256,512,1024};
+    for(size_t job=0;job<48;++job) {
+        size_t index=!strcmp(order,"reverse")?47-job:job;
+        size_t rank=ranks[index/12],width=widths[index/6%2],n=tokens[index%6];
+        float *weights=malloc(rank*width*sizeof(float));REQUIRE(weights);
+        for(size_t k=0;k<rank*width;++k)weights[k]=(float)((int)(k%71)-35)/64;
+        nya_llm_tensor tensor={0};
+        tensor.type=0;tensor.dimension_count=2;tensor.dimensions[0]=width;tensor.dimensions[1]=rank;
+        tensor.data=(const unsigned char *)weights;tensor.data_size=rank*width*sizeof(float);
+        snprintf(tensor.name,sizeof(tensor.name),"dense-rank-%zu-width-%zu",rank,width);
+        int result=run(d,&tensor,n,1,0);free(weights);
+        if(result){nya_train_device_free(d);return result;}
+    }
+    nya_train_device_free(d);return 0;
+}
 static int startup(const char *mode)
 {
     nya_train_device *d=NULL;
@@ -651,6 +670,7 @@ int main(int argc,char **argv)
     nya_train_device *d=NULL;
     REQUIRE(argc==3);
     if (!strcmp(argv[1],"--startup")) return startup(argv[2]);
+    if (!strcmp(argv[1],"--narrow")) return narrow(argv[2]);
     FILE *f=fopen(argv[1],"rb"); REQUIRE(f);
     REQUIRE(!fseek(f,0,SEEK_END)); long size=ftell(f); fclose(f); REQUIRE(size>0);
     nya_llm_context *m=NULL; char error[256];

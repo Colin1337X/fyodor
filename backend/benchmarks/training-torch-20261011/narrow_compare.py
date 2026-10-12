@@ -9,14 +9,17 @@ parser.add_argument('--contexts',type=int,nargs='+',default=[8,32,128])
 parser.add_argument('--steps',type=int,default=3)
 parser.add_argument('--warmup',type=int,default=1)
 parser.add_argument('--repeats',type=int,default=2)
+parser.add_argument('--rank',type=int,default=2)
 parser.add_argument('--monitor-environment',action='store_true',help='Require monitored desktop idle and reject competing GPU identities')
+parser.add_argument('--desktop-window',action='store_true',help='Use recorded ten-sample desktop gate; requires environment monitoring')
 args=parser.parse_args()
-assert args.steps>args.warmup>=1 and args.repeats>=2 and all(c>0 for c in args.contexts)
+assert args.steps>args.warmup>=1 and args.repeats>=2 and args.rank>0 and all(c>0 for c in args.contexts)
+assert not args.desktop_window or args.monitor_environment
 work=args.output.resolve();work.mkdir(parents=True,exist_ok=False)
 if args.monitor_environment:
     sys.path.insert(0,str(root/'backend/benchmarks/score-refresh-20261011'))
     import environment
-    environment.configure(work)
+    environment.configure(work,window=args.desktop_window)
 
 def execute(command):
     process=subprocess.Popen(command,env=dict(os.environ,NYA_TRAIN_PROFILE='0'),stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
@@ -45,7 +48,7 @@ for repeat in range(args.repeats):
         for version in (('before','after') if repeat%2==0 else ('after','before')):
             name=f'{repeat}-{context}-{version}'; export=work/(name+'.gguf')
             command=[str(executables[version]),'--mode','cpt','--base',str(root/'.tools/tinyllama-q4_k_m.gguf'),
-                '--rank','2','--context',str(context),'--steps',str(args.steps),'--threads','6','--compute','cuda',
+                '--rank',str(args.rank),'--context',str(context),'--steps',str(args.steps),'--threads','6','--compute','cuda',
                 '--memory-mib','4096','--device-memory-mib','6144','--data',str(corpus),
                 '--output',str(export),'--checkpoint',str(work/(name+'.ckpt')),'--metrics',str(work/(name+'.csv'))]
             if args.monitor_environment:

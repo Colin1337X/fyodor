@@ -329,6 +329,12 @@ static int narrow_matrices(nya_train_device *d)
         CHECK(!matrix(d,0,ranks[k],2049,35));
         CHECK(!nya_train_device_scratch_end(d,scope));
     }
+    const size_t tokens[]={128,129,257};
+    for(size_t rank=2;rank<=8;rank+=6) for(size_t k=0;k<3;++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,0,rank,65,tokens[k]));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
     return 0;
 }
 static int q4_dx_tiles(nya_train_device *d)

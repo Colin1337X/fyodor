@@ -1,0 +1,49 @@
+diff --git a/CUDA/training.cu b/CUDA/training.cu
+index 71f4eb2..d4ef296 100644
+--- a/CUDA/training.cu
++++ b/CUDA/training.cu
+@@ -362,12 +362,13 @@ __device__ __forceinline__ void nya_train_forward(const unsigned char *w, const
+     /* Low-rank projections have at most eight output rows. Give each actual
+        output its own lane instead of loading a mostly empty 32-row tile and
+        synchronizing twice per input tile. Keep the ordered double dot exactly
+-       as in the general dense path: this is a scheduling change only. */
++       as in the general dense path: this is a scheduling change only. Small
++       independent blocks spread these serial dots over multiple SMs. */
+     if (TYPE==0 && rows<=8) {
+-        unsigned output=threadIdx.y*32+threadIdx.x;
+-        unsigned row=output%rows, local_token=output/rows;
+-        unsigned token=blockIdx.y*32+local_token;
+-        if (local_token<32 && token<tokens) {
++        unsigned long long output=(unsigned long long)blockIdx.x*blockDim.x+threadIdx.x;
++        unsigned row=(unsigned)(output%rows);
++        unsigned long long token=output/rows;
++        if (token<tokens) {
+             double sum=0;
+             for (unsigned long long k=0;k<columns;++k)
+                 sum=__dadd_rn(sum,__dmul_rn((double)nya_weight(w+(unsigned long long)row*row_bytes,k,0),
+diff --git a/CUDA/training.inc b/CUDA/training.inc
+index 170f5d7..12a2e78 100644
+--- a/CUDA/training.inc
++++ b/CUDA/training.inc
+@@ -711,6 +711,10 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
+     unsigned tile = 32;
+     size_t gx = ((operation == 0 ? outputs : inputs)+tile-1)/tile;
+     size_t gy = ((operation == 2 ? outputs : tokens)+tile-1)/tile;
++    int narrow=operation==0 && type==0 && outputs<=8;
++    /* Distribute independent ordered dots instead of confining 32 tokens to
++       one block. The validated output byte count bounds this product. */
++    if (narrow) { gx=(outputs*tokens+7)/8; gy=1; }
+     if (gx > (size_t)t->cuda->grid_limit || gy > 65535)
+         return nya_ct_error(t,"training matrix grid too large",0);
+     unsigned o = (unsigned)outputs, i = (unsigned)inputs, n = (unsigned)tokens;
+@@ -720,8 +724,8 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
+         operation == 1 ? t->dx[type] : t->dw;
+     if (operation == 2) { args[3] = &i; args[4] = &o; args[5] = &n; }
+     if (nya_ct_enter(t)) return -1;
+-    unsigned bx = tile == 64 ? 16 : 32;
+-    return nya_ct_leave(t,nya_ct_launch(t,kernel,(unsigned)gx,(unsigned)gy,bx,256/bx,args));
++    unsigned bx = narrow?8:32, by=narrow?1:8;
++    return nya_ct_leave(t,nya_ct_launch(t,kernel,(unsigned)gx,(unsigned)gy,bx,by,args));
+ }
+ static int nya_ct_slice(void *context,nya_train_buffer destination,nya_train_buffer source,
+     size_t rows,size_t columns,size_t first,size_t count,int backward)

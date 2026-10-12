@@ -711,6 +711,11 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
     unsigned tile = 32;
     size_t gx = ((operation == 0 ? outputs : inputs)+tile-1)/tile;
     size_t gy = ((operation == 2 ? outputs : tokens)+tile-1)/tile;
+    int narrow=operation==0 && type==0 && outputs<=8 && tokens<=128;
+    /* Distribute independent ordered dots instead of confining 32 tokens to
+       one block. Keep ordinary blocks once batches exceed four token tiles;
+       small blocks regress at larger batches. Validated bytes bound this product. */
+    if (narrow) { gx=(outputs*tokens+7)/8; gy=1; }
     if (gx > (size_t)t->cuda->grid_limit || gy > 65535)
         return nya_ct_error(t,"training matrix grid too large",0);
     unsigned o = (unsigned)outputs, i = (unsigned)inputs, n = (unsigned)tokens;
@@ -720,8 +725,8 @@ static int nya_ct_matrix(void *context, nya_train_buffer destination, nya_train_
         operation == 1 ? t->dx[type] : t->dw;
     if (operation == 2) { args[3] = &i; args[4] = &o; args[5] = &n; }
     if (nya_ct_enter(t)) return -1;
-    unsigned bx = tile == 64 ? 16 : 32;
-    return nya_ct_leave(t,nya_ct_launch(t,kernel,(unsigned)gx,(unsigned)gy,bx,256/bx,args));
+    unsigned bx = narrow?8:32, by=narrow?1:8;
+    return nya_ct_leave(t,nya_ct_launch(t,kernel,(unsigned)gx,(unsigned)gy,bx,by,args));
 }
 static int nya_ct_slice(void *context,nya_train_buffer destination,nya_train_buffer source,
     size_t rows,size_t columns,size_t first,size_t count,int backward)

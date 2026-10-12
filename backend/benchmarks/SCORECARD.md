@@ -39,3 +39,11 @@ attempts are excluded and retained for inspection.
 [machine-readable scorecard](score-refresh-20261011/scorecard.json),
 [inference evidence](score-refresh-20261011/inference/metadata.json), and
 [training evidence](score-refresh-20261011/training/results.json).
+
+Subsequent internal LoRA comparison: the [October 12 small-batch scheduling
+change](training-narrow-grid-20261012/README.md) improved rank-8 TinyLlama CPT
+throughput by 19.6% at context 32 versus the previous Fyodor runtime, with exact
+checkpoint/export matches. Rank-2 gains were 1.7% at context 32 and 0.6% at
+context 128; context 8 was effectively unchanged. This uses a separately
+documented windowed desktop protocol and does not update or increase the
+inference/PyTorch percentages above.
