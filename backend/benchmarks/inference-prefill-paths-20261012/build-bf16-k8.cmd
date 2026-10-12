@@ -6,4 +6,3 @@ C:\Users\Colin\fyodor\.tools\w64devkit\bin\cmake.exe -S C:\Users\Colin\.codex\wo
 if errorlevel 1 exit /b 1
 C:\Users\Colin\fyodor\.tools\w64devkit\bin\cmake.exe --build D:\fyodor-validation\cutlass-bf16-k8-20261012 --parallel 4
 exit /b %errorlevel%
-
