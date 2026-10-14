@@ -128,3 +128,38 @@ extern "C" __global__ void nya_matvec(const unsigned char *weights, const float 
     }
     if (lane == 0) output[blockIdx.x] = partial[0];
 }
+
+/* Decode-only Q4_K gate/up pair: preserve each dot's ordered accumulation,
+   reuse the activation load, and write the SiLU product directly. */
+extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
+    const unsigned char *up, const float *input, float *output,
+    unsigned long long columns, unsigned long long stride, unsigned long long rows)
+{
+    unsigned lane = threadIdx.x & 31;
+    unsigned long long row = (unsigned long long)blockIdx.x * 8 + (threadIdx.x >> 5);
+    if (row >= rows) return;
+    float a = 0, z = 0;
+    for (unsigned long long base = 0; base < columns; base += 256) {
+        const unsigned char *g = gate + row*stride + base/256*144;
+        const unsigned char *u = up + row*stride + base/256*144;
+        float gd=nya_half(g), gm=nya_half(g+2), ud=nya_half(u), um=nya_half(u+2);
+        #pragma unroll
+        for (unsigned j=0; j<8; ++j) {
+            const unsigned char *gs=g+4, *us=u+4;
+            unsigned scg=j<4 ? gs[j]&63U : (gs[j+4]&15U) | ((unsigned)(gs[j-4]>>6)<<4);
+            unsigned mng=j<4 ? gs[j+4]&63U : (gs[j+4]>>4) | ((unsigned)(gs[j]>>6)<<4);
+            unsigned scu=j<4 ? us[j]&63U : (us[j+4]&15U) | ((unsigned)(us[j-4]>>6)<<4);
+            unsigned mnu=j<4 ? us[j+4]&63U : (us[j+4]>>4) | ((unsigned)(us[j]>>6)<<4);
+            unsigned qg=(g[16+j/2*32+lane]>>(j%2*4))&15U;
+            unsigned qu=(u[16+j/2*32+lane]>>(j%2*4))&15U;
+            float x=input[base+j*32+lane];
+            a += (gd*(float)scg*(float)qg-gm*(float)mng)*x;
+            z += (ud*(float)scu*(float)qu-um*(float)mnu)*x;
+        }
+    }
+    for (int step=16;step;step>>=1) {
+        a += __shfl_down_sync(0xffffffffU,a,step);
+        z += __shfl_down_sync(0xffffffffU,z,step);
+    }
+    if (!lane) output[row]=a/(1+expf(-a))*z;
+}

@@ -1,4 +1,4 @@
-# Performance scorecard — October 12, 2026
+# Performance scorecard - decode updated October 14, 2026
 
 Percentages are **Fyodor throughput / reference throughput × 100**. 100% is
 parity on that workload, not a percentage of engineering completion.
@@ -6,12 +6,25 @@ parity on that workload, not a percentage of engineering completion.
 | Workload | Fyodor | Reference | Relative throughput |
 | --- | ---: | ---: | ---: |
 | Inference prefill, 512 tokens | 4,595.77 ± 33.02 tok/s | 15,021.92 ± 591.61 tok/s | **30.6%** |
-| Inference decode, 128 tokens, prefix 0 | 255.56 ± 6.39 tok/s | 367.37 ± 1.39 tok/s | **69.6%** |
-| Inference decode, 128 tokens, prefix 1,024 | 230.67 ± 5.17 tok/s | 256.83 ± 4.50 tok/s | **89.8%** |
+| Inference decode, 128 tokens, prefix 0 | 280.15 ± 0.64 tok/s | 382.69 ± 5.75 tok/s | **73.2%** |
+| Inference decode, 128 tokens, prefix 1,024 | 249.28 ± 0.72 tok/s | 270.04 ± 0.64 tok/s | **92.3%** |
 | Small full-rank CUDA training update | 7.699 ± 0.029 ms | 5.466 ± 0.450 ms | **71.0%** |
 
+Decode was rerun October 14; prefill and training remain historical October 12
+measurements. Work is focused exclusively on decode until it exceeds parity.
+The new decode-only invocation omits the separate prefill benchmark and changes
+short-workload allocation capacity. Do not attribute the score change solely
+to the gate/up fusion. Its isolated paired gains were 2.7% at prefix 0 and
+1.9% at prefix 1,024 (the latter had greater variance).
+
+[Decode methodology and validation](decode-gatepair-20261012/README.md),
+[decode scores](decode-gatepair-20261012/summary.json), and
+[decode provenance](decode-gatepair-20261012/reference-20261014/metadata.json).
+
 Inference uses TinyLlama Q4_K_M against pinned llama.cpp b10809, F32 KV,
-reference flash attention off, batch 512 and six CPU threads. Each value pools
+reference flash attention off and six CPU threads. Decode uses `-p 0`,
+128 generated tokens, and prefix 0 or 1,024; maximum batch is 512
+(short-workload capacity limits its effective batch to 128). Each value pools
 ten timed samples across two process runs in reversed engine order, after two
 warmups per process. ± is sample standard deviation. This does not represent
 the latest or fastest available llama.cpp configuration.
@@ -30,7 +43,8 @@ The larger training comparison remains rejected by its numerical gate.
 
 Hardware: RTX 5060 Ti 16 GB, driver 617.42, Ryzen 5 9600X, Windows. GPU
 competitors and NVIDIA overlays were absent at preflight; no process needed
-termination or suspension during this refresh. Windows and development UI
+termination or suspension during the accepted reference refreshes. An earlier
+fusion diagnostic contaminated by Roblox was excluded and that process stopped. Windows and development UI
 remained active. These are **monitored interactive-desktop measurements**, not
 headless results. Each activity passed an explicit desktop idle gate and
 monitoring found no unapproved GPU process. The earlier October 11 results and
@@ -47,5 +61,5 @@ throughput by 19.6% at context 32 versus the previous Fyodor runtime, with exact
 checkpoint/export matches. Rank-2 gains were 1.7% at context 32 and 0.6% at
 context 128; context 8 was effectively unchanged. This uses a separately
 documented windowed desktop protocol and does not update or increase the
-inference/PyTorch percentages above. Those percentages come from the fresh
-reference rerun on the committed runtime, including this LoRA change.
+inference/PyTorch percentages above. Training and prefill percentages come from the October 12 refresh; decode
+percentages come from the October 14 refresh including gate/up fusion.

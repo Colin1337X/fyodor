@@ -1,0 +1,75 @@
+{
+  "caveat": "Diagnostic only, no monitored timing acceptance; graphs enabled; serial runs; no concurrent builds/tests",
+  "hashes": {
+    "before": "d36f2f762b71241d9da624ada70215f2ad4fbe921912dd9f8f82987e13f412ee",
+    "after": "bfdff380e5b71a273d89c45ad04bce197e3f1c85dc3f8fe69e6fab444cd1b19a"
+  },
+  "runs": [
+    {
+      "name": "0-before-a",
+      "command": [
+        "D:\\fyodor-validation\\decode-before-gatepair-d4712b2.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "0-after-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "0-after-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "exit_code": 4294967295
+    }
+  ]
+}

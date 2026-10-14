@@ -26,7 +26,7 @@ typedef struct nya_cuda_plan {
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
-    int use_graphs, split_attention;
+    int use_graphs, split_attention, fuse_gate_up;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
@@ -73,7 +73,7 @@ static void cuda_plan_free(void *opaque)
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -173,6 +173,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->split_attention = partial_count != 0;
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
+    const char *gate_up = getenv("NYA_CUDA_GATE_UP");
+    p->fuse_gate_up = !gate_up || strcmp(gate_up,"0");
     const char *profile = getenv("NYA_CUDA_PROFILE");
     if (profile && !strcmp(profile, "1")) {
         p->timings = calloc(4096, sizeof(*p->timings));
@@ -375,26 +377,42 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
     args[5] = &row_count;
     return plan_launch(p, p->cuda->dot[type], (rows + 7) / 8, args);
 }
-static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
+/* One profile entry denotes one dispatched operation; gate/up represents
+   both projections and their activation, so its count is one per layer. */
+static unsigned plan_matrix_slot(nya_cuda_plan *p, size_t rows, size_t columns,
+    unsigned type, unsigned path)
 {
-    if (!p->matrix_profiles) return plan_matvec_impl(p, out, t, in, rows, columns);
-    /* Fixed diagnostic storage: 63 distinct shapes plus one explicit overflow
-       bucket. A vendor entry times the complete expansion/chunked GEMM call,
-       not an individual internal kernel. No tensor names or contents are logged. */
-    unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
-        p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U : 2U;
+    if (!p->matrix_profiles) return 0;
     unsigned slot = 0;
     for (; slot < p->matrix_profile_count; ++slot) {
         const nya_cuda_matrix_profile *m = &p->matrix_profiles[slot];
-        if (m->rows == rows && m->columns == columns && m->batch == p->batch && m->type == t->type && m->path == path) break;
+        if (m->rows == rows && m->columns == columns && m->batch == p->batch && m->type == type && m->path == path) break;
     }
     if (slot == p->matrix_profile_count && slot < 63) {
-        p->matrix_profiles[slot] = (nya_cuda_matrix_profile){rows, columns, p->batch, t->type, path, 0, 0};
+        p->matrix_profiles[slot] = (nya_cuda_matrix_profile){rows, columns, p->batch, type, path, 0, 0};
         ++p->matrix_profile_count;
     } else if (slot == 63) p->matrix_profiles[slot].path = 4;
-    p->matrix_profile = slot + 1;
-    int result = plan_matvec_impl(p, out, t, in, rows, columns);
+    return slot + 1;
+}
+static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
+{
+    if (!p->matrix_profiles) return plan_matvec_impl(p,out,t,in,rows,columns);
+    unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
+        p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U : 2U;
+    p->matrix_profile = plan_matrix_slot(p,rows,columns,t->type,path);
+    int result = plan_matvec_impl(p,out,t,in,rows,columns);
     p->matrix_profile = 0;
+    return result;
+}
+static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
+    const nya_llm_tensor *up, size_t rows, size_t columns)
+{
+    CUdeviceptr g=plan_tensor(p,gate), u=plan_tensor(p,up);
+    unsigned long long cols=columns, stride=gate->data_size/rows, count=rows;
+    void *args[]={&g,&u,&p->norm,&p->gate,&cols,&stride,&count};
+    p->matrix_profile=plan_matrix_slot(p,rows,columns,12,5);
+    int result=plan_launch(p,p->cuda->gate_up_q4,(rows+7)/8,args);
+    p->matrix_profile=0;
     return result;
 }
 static int plan_norm(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr in, const nya_llm_tensor *t, size_t n, size_t rows)
@@ -537,9 +555,15 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
             RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
         }
-        RUN(plan_matvec(p, p->gate, w->feed_forward_gate, p->norm, h, d));
-        RUN(plan_matvec(p, p->up, w->feed_forward_up, p->norm, h, d));
-        RUN(plan_vector(p, p->gate, p->gate, p->up, h, m->is_gemma ? 3U : 2U, 1));
+        if (count == 1 && p->fuse_gate_up && !m->is_gemma && !c->reference &&
+            w->feed_forward_gate->type == 12 && w->feed_forward_up->type == 12 &&
+            w->feed_forward_gate->data_size == w->feed_forward_up->data_size) {
+            RUN(plan_gate_up(p,w->feed_forward_gate,w->feed_forward_up,h,d));
+        } else {
+            RUN(plan_matvec(p, p->gate, w->feed_forward_gate, p->norm, h, d));
+            RUN(plan_matvec(p, p->up, w->feed_forward_up, p->norm, h, d));
+            RUN(plan_vector(p, p->gate, p->gate, p->up, h, m->is_gemma ? 3U : 2U, 1));
+        }
         RUN(plan_matvec(p, p->residual, w->feed_forward_down, p->gate, d, h));
         if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->ffn_post_norm, d, 1));
         RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
