@@ -1,0 +1,404 @@
+{
+  "timestamp_utc": "2026-10-14T21:56:33.861977+00:00",
+  "revision": "59807c6d62586faa3df919dd0a109b18ea00b536",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "llama_commit": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+  "harness_sha256": "459fd4eb97905bdbd02c8edaa6b8280ebbc2e03d23ec0db9b63b129d38b465d6",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CPU_BATCH": "512",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "source_sha256": {
+    "CUDA\\gemm.cu": "cb73bd0a52ae2229693d7a38e218724ad4c884a54d24e83105e2e0c59cf8c40e",
+    "CUDA\\matvec.cu": "6c3b27582983fd528a212609790cfabb190c81f957e19976bb23b7281c421396",
+    "CUDA\\resident.cu": "59ad70391e4230bdb5af44735227aeea7836b8eb07f8b697972f4cdae8fa667e",
+    "CUDA\\resident.inc": "ba205d7ab5dba2dcf6163d8c138b46dc866fead1429d3cc99f47ce20371433c9",
+    "CUDA\\cuda.c": "86b667a692e5c1c82490b9a5a0457707652425b07c89816d9ca0bde2eafd6205"
+  },
+  "binary_sha256": {
+    "after": "eb4902e77e1c8d4b91f4c9afa33c08f94e3b095bd6d9f7c6d2d4103be0ad7ba6",
+    "llama": "641e4186f3a55bbbfa819399596d75e281037fc54fcc23e288d265d07a50e92e"
+  },
+  "dependency_sha256": {
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    ".tools\\llama-b10809-cuda\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cuda\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    ".tools\\llama-b10809-cuda\\ggml-cuda.dll": "d860635f2be8faf7590103851225afdf3f0b2e5e26012815017b0a0a087d4441"
+  },
+  "caveats": [
+    "Windows interactive desktop; retained OS/development/user desktop processes are recorded. The contaminating Roblox process was stopped before validation and the fresh timing run. Other desktop apps remain open. Not a headless measurement.",
+    "Require three consecutive <=30% utilization and <=15W desktop-idle readings; Windows GPU-engine counters identify residual DWM/UI activity before and after each process. Preserve failure, never discard individual timed samples.",
+    "F32 KV, deterministic identical tokens, 512 batch/ubatch, six threads, FA off in llama C API harness; intermediate math differs.",
+    "Model loading, tokenization, sampling, prefix preparation are untimed. Host logits read every decoded token.",
+    "Resource sampling includes startup and model load; whole-device readings include other apps. Driver graph storage is not in explicit tensor byte totals."
+  ],
+  "runs": [
+    {
+      "name": "blas-0-after-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.53 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.42 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.43 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 0 MiB, P1, 2782 MHz, 13801 MHz, 158.73 W, 58",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 34.80 W, 37",
+        "0 %, 0 MiB, P5, 1140 MHz, 14001 MHz, 20.59 W, 35",
+        "0 %, 0 MiB, P5, 510 MHz, 810 MHz, 9.13 W, 34",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.73 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.49 W, 33"
+      ]
+    },
+    {
+      "name": "blas-0-llama-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.42 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.46 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.41 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "89 %, 0 MiB, P1, 2812 MHz, 13801 MHz, 124.94 W, 51",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 29.95 W, 36",
+        "0 %, 0 MiB, P5, 1515 MHz, 14001 MHz, 19.70 W, 34",
+        "0 %, 0 MiB, P5, 487 MHz, 810 MHz, 8.68 W, 33",
+        "0 %, 0 MiB, P8, 285 MHz, 810 MHz, 5.02 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.26 W, 32"
+      ]
+    },
+    {
+      "name": "blas-0-llama-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.38 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.38 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.42 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "90 %, 0 MiB, P1, 2827 MHz, 13801 MHz, 124.44 W, 51",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 30.58 W, 36",
+        "0 %, 0 MiB, P3, 742 MHz, 14001 MHz, 19.35 W, 34",
+        "0 %, 0 MiB, P3, 465 MHz, 7001 MHz, 14.48 W, 33",
+        "0 %, 0 MiB, P3, 292 MHz, 7001 MHz, 9.40 W, 33",
+        "0 %, 0 MiB, P3, 195 MHz, 7001 MHz, 9.08 W, 32"
+      ]
+    },
+    {
+      "name": "blas-0-after-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 810 MHz, 4.13 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.84 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.37 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 0 MiB, P1, 2782 MHz, 13801 MHz, 157.88 W, 58",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 32.54 W, 37",
+        "0 %, 0 MiB, P5, 1852 MHz, 14001 MHz, 20.63 W, 34",
+        "0 %, 0 MiB, P5, 375 MHz, 810 MHz, 8.21 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.69 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.44 W, 32"
+      ]
+    },
+    {
+      "name": "blas-1024-after-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.42 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.42 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.41 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 0 MiB, P1, 2782 MHz, 13801 MHz, 162.07 W, 60",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 27.61 W, 38",
+        "0 %, 0 MiB, P3, 937 MHz, 14001 MHz, 21.16 W, 36",
+        "0 %, 0 MiB, P3, 360 MHz, 7001 MHz, 15.62 W, 35",
+        "0 %, 0 MiB, P5, 232 MHz, 7001 MHz, 9.57 W, 34",
+        "0 %, 0 MiB, P5, 195 MHz, 810 MHz, 7.99 W, 34",
+        "0 %, 0 MiB, P8, 195 MHz, 810 MHz, 5.21 W, 33"
+      ]
+    },
+    {
+      "name": "blas-1024-llama-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.84 W, 33",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.82 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.57 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "93 %, 0 MiB, P1, 2820 MHz, 13801 MHz, 118.53 W, 52",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 607 MHz, 14001 MHz, 20.41 W, 34",
+        "0 %, 0 MiB, P3, 382 MHz, 7001 MHz, 15.07 W, 33",
+        "0 %, 0 MiB, P3, 240 MHz, 7001 MHz, 9.72 W, 33",
+        "0 %, 0 MiB, P3, 195 MHz, 7001 MHz, 9.67 W, 33",
+        "0 %, 0 MiB, P5, 195 MHz, 810 MHz, 5.54 W, 32"
+      ]
+    },
+    {
+      "name": "blas-1024-llama-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\fyodor-llama-capi-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json",
+        "--batch",
+        "512",
+        "--threads",
+        "6"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 187 MHz, 405 MHz, 4.39 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.29 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.32 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "93 %, 0 MiB, P1, 2820 MHz, 13801 MHz, 117.80 W, 51",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 28.71 W, 36",
+        "0 %, 0 MiB, P3, 712 MHz, 7001 MHz, 19.51 W, 34",
+        "0 %, 0 MiB, P3, 442 MHz, 7001 MHz, 9.27 W, 33",
+        "0 %, 0 MiB, P3, 277 MHz, 7001 MHz, 9.20 W, 33",
+        "0 %, 0 MiB, P3, 195 MHz, 7001 MHz, 9.05 W, 33"
+      ]
+    },
+    {
+      "name": "blas-1024-after-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "5",
+        "--warmup",
+        "2",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CPU_BATCH": "512",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+      },
+      "gpu_idle_before": [
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 4.36 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.74 W, 32",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 3.54 W, 32"
+      ],
+      "exit_code": 0,
+      "gpu_after": "98 %, 0 MiB, P0, 2775 MHz, 14001 MHz, 162.13 W, 60",
+      "gpu_idle_after": [
+        "0 %, 0 MiB, P0, 2857 MHz, 14001 MHz, 27.67 W, 38",
+        "0 %, 0 MiB, P5, 1440 MHz, 14001 MHz, 20.01 W, 36",
+        "0 %, 0 MiB, P5, 405 MHz, 810 MHz, 9.99 W, 34",
+        "0 %, 0 MiB, P8, 247 MHz, 810 MHz, 8.07 W, 34",
+        "0 %, 0 MiB, P8, 195 MHz, 405 MHz, 5.62 W, 33"
+      ]
+    }
+  ],
+  "observed_desktop_processes": [],
+  "hardware": "name, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 5060 Ti, 617.42, 16311 MiB\n"
+}

@@ -79,11 +79,13 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
         for (unsigned long long base = 0; base < columns; base += 256) {
             const unsigned char *b = w + base / 256 * 144;
             float d = nya_half(b), minimum = nya_half(b+2);
-            const unsigned char *s = b+4;
+            const unsigned *s = (const unsigned *)(b+4);
+            unsigned S[3]={s[0],s[1],s[2]};
             #pragma unroll
             for (unsigned g = 0; g < 8; ++g) {
-                unsigned sc = g < 4 ? s[g] & 63U : (s[g+4] & 15U) | ((unsigned)(s[g-4] >> 6) << 4);
-                unsigned mn = g < 4 ? s[g+4] & 63U : (s[g+4] >> 4) | ((unsigned)(s[g] >> 6) << 4);
+                unsigned shift=(g%4)*8;
+                unsigned sc = g<4 ? (S[0]>>shift)&63U : ((S[2]>>shift)&15U) | (((S[0]>>(shift+6))&3U)<<4);
+                unsigned mn = g<4 ? (S[1]>>shift)&63U : ((S[2]>>(shift+4))&15U) | (((S[1]>>(shift+6))&3U)<<4);
                 unsigned q = (b[16+g/2*32+lane] >> (g%2*4)) & 15U;
                 sum += (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
             }
@@ -107,6 +109,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
     if (!lane) output[row] = sum;
 }
+
 #define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot(w,x,y,c,s,r,TYPE); }
 NYA_DOT(0) NYA_DOT(1) NYA_DOT(2) NYA_DOT(8) NYA_DOT(12) NYA_DOT(14) NYA_DOT(30)
 #undef NYA_DOT

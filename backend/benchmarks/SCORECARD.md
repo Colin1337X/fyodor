@@ -1,4 +1,4 @@
-# Performance scorecard - decode updated October 14, 2026
+# Performance scorecard - decode updated October 15, 2026
 
 Percentages are **Fyodor throughput / reference throughput × 100**. 100% is
 parity on that workload, not a percentage of engineering completion.
@@ -6,24 +6,26 @@ parity on that workload, not a percentage of engineering completion.
 | Workload | Fyodor | Reference | Relative throughput |
 | --- | ---: | ---: | ---: |
 | Inference prefill, 512 tokens | 4,595.77 ± 33.02 tok/s | 15,021.92 ± 591.61 tok/s | **30.6%** |
-| Inference decode, 128 tokens, prefix 0 | 290.60 ± 8.79 tok/s | 384.65 ± 0.88 tok/s | **75.5%** |
-| Inference decode, 128 tokens, prefix 1,024 | 259.69 ± 0.58 tok/s | 270.42 ± 0.91 tok/s | **96.0%** |
+| Inference decode, 128 tokens, prefix 0 | 312.65 ± 0.28 tok/s | 384.36 ± 1.54 tok/s | **81.3%** |
+| Inference decode, 128 tokens, prefix 1,024 | 274.19 ± 3.16 tok/s | 270.29 ± 0.29 tok/s | **101.4%** |
 | Small full-rank CUDA training update | 7.699 ± 0.029 ms | 5.466 ± 0.450 ms | **71.0%** |
 
-Decode was rerun October 14; prefill and training remain historical October 12
+Decode was rerun October 15; prefill and training remain historical October 12
 measurements. Work is focused exclusively on decode until it exceeds parity.
-The current refresh includes aligned Q4_K metadata loads in the fused gate/up
-kernel. Its isolated paired gains were 4.75% at prefix 0 and 4.26% at prefix
-1,024; the prefix-512 mean gain was 5.86% with greater baseline variance.
-The short reference comparison also had greater Fyodor variance; every sample
-was retained. The reference invocation is unchanged from the preceding
-October 14 refresh. Differences between refreshes are not isolated code effects.
+The current refresh extends aligned Q4_K metadata loads to standalone decode
+dot projections. Isolated paired throughput improved 6.81% at prefix 0 and
+5.72% at prefix 1,024; prefix 512 improved 7.49% with greater baseline variance.
+Long decode narrowly exceeds this pinned reference in the measured workload;
+one Fyodor long-context run had higher variance and every sample was retained.
+Short decode remains below parity, so optimization remains focused on decode.
+The invocation is unchanged from October 14; differences across refreshes are
+not isolated code effects.
 
-[Decode methodology and validation](decode-wide-loads-20261014/README.md),
-[decode scores](decode-wide-loads-20261014/summary.json), and
-[decode provenance](decode-wide-loads-20261014/reference-20261014/metadata.json).
-The [previous fusion refresh](decode-gatepair-20261012/README.md) remains
-available with its earlier 73.2% / 92.3% scores and protocol history.
+[Decode methodology and validation](decode-dot-metadata-20261014/README.md),
+[decode scores](decode-dot-metadata-20261014/summary.json), and
+[decode provenance](decode-dot-metadata-20261014/reference-20261015/metadata.json).
+The [previous refresh](decode-wide-loads-20261014/README.md) retains the earlier
+75.5% / 96.0% measurements.
 
 Inference uses TinyLlama Q4_K_M against pinned llama.cpp b10809, F32 KV,
 reference flash attention off and six CPU threads. Decode uses `-p 0`,
@@ -66,4 +68,4 @@ checkpoint/export matches. Rank-2 gains were 1.7% at context 32 and 0.6% at
 context 128; context 8 was effectively unchanged. This uses a separately
 documented windowed desktop protocol and does not update or increase the
 inference/PyTorch percentages above. Training and prefill percentages come from the October 12 refresh; decode
-percentages come from the October 14 refresh including gate/up fusion and metadata word loads.
+percentages come from the October 15 refresh including Q4_K dot metadata loads.
