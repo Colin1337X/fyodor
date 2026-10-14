@@ -143,13 +143,17 @@ extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
         const unsigned char *g = gate + row*stride + base/256*144;
         const unsigned char *u = up + row*stride + base/256*144;
         float gd=nya_half(g), gm=nya_half(g+2), ud=nya_half(u), um=nya_half(u+2);
+        /* Device allocations and 144-byte Q4_K blocks are word-aligned.
+           Load each metadata word once; unrolling makes extraction constant. */
+        const unsigned *gs32=(const unsigned *)(g+4), *us32=(const unsigned *)(u+4);
+        unsigned G[3]={gs32[0],gs32[1],gs32[2]}, U[3]={us32[0],us32[1],us32[2]};
         #pragma unroll
         for (unsigned j=0; j<8; ++j) {
-            const unsigned char *gs=g+4, *us=u+4;
-            unsigned scg=j<4 ? gs[j]&63U : (gs[j+4]&15U) | ((unsigned)(gs[j-4]>>6)<<4);
-            unsigned mng=j<4 ? gs[j+4]&63U : (gs[j+4]>>4) | ((unsigned)(gs[j]>>6)<<4);
-            unsigned scu=j<4 ? us[j]&63U : (us[j+4]&15U) | ((unsigned)(us[j-4]>>6)<<4);
-            unsigned mnu=j<4 ? us[j+4]&63U : (us[j+4]>>4) | ((unsigned)(us[j]>>6)<<4);
+            unsigned shift=(j%4)*8;
+            unsigned scg=j<4 ? (G[0]>>shift)&63U : ((G[2]>>shift)&15U) | (((G[0]>>(shift+6))&3U)<<4);
+            unsigned mng=j<4 ? (G[1]>>shift)&63U : ((G[2]>>(shift+4))&15U) | (((G[1]>>(shift+6))&3U)<<4);
+            unsigned scu=j<4 ? (U[0]>>shift)&63U : ((U[2]>>shift)&15U) | (((U[0]>>(shift+6))&3U)<<4);
+            unsigned mnu=j<4 ? (U[1]>>shift)&63U : ((U[2]>>(shift+4))&15U) | (((U[1]>>(shift+6))&3U)<<4);
             unsigned qg=(g[16+j/2*32+lane]>>(j%2*4))&15U;
             unsigned qu=(u[16+j/2*32+lane]>>(j%2*4))&15U;
             float x=input[base+j*32+lane];
