@@ -142,6 +142,7 @@ extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
     unsigned long long row = (unsigned long long)blockIdx.x * 8 + (threadIdx.x >> 5);
     if (row >= rows) return;
     float a = 0, z = 0;
+    #pragma unroll 8
     for (unsigned long long base = 0; base < columns; base += 256) {
         const unsigned char *g = gate + row*stride + base/256*144;
         const unsigned char *u = up + row*stride + base/256*144;
