@@ -20,13 +20,13 @@ typedef struct nya_cuda_plan {
     size_t blas_expansion;
     CUdeviceptr *tensors;
     CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
-    CUfunction qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
+    CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     int failed;
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
-    int use_graphs, split_attention, fuse_gate_up, fuse_qkv;
+    int use_graphs, split_attention, fuse_gate_up, fuse_qkv, fuse_residual;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
@@ -73,7 +73,7 @@ static void cuda_plan_free(void *opaque)
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -173,6 +173,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->split_attention = partial_count != 0;
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
+    const char *residual = getenv("NYA_CUDA_RESIDUAL");
+    p->fuse_residual = !residual || strcmp(residual,"0");
     const char *qkv = getenv("NYA_CUDA_QKV");
     p->fuse_qkv = !qkv || strcmp(qkv,"0");
     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
@@ -290,6 +292,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (c->function_get(&p->gather, c->module, "nya_gather") != CUDA_SUCCESS ||
         c->function_get(&p->decode_request, c->module, "nya_decode_request") != CUDA_SUCCESS ||
         c->function_get(&p->gather_batch, c->module, "nya_gather_batch") != CUDA_SUCCESS ||
+        c->function_get(&p->dot_add[0], c->module, "nya_add_12") != CUDA_SUCCESS ||
+        c->function_get(&p->dot_add[1], c->module, "nya_add_14") != CUDA_SUCCESS ||
         c->function_get(&p->qkv[0], c->module, "nya_qkv_12") != CUDA_SUCCESS ||
         c->function_get(&p->qkv[1], c->module, "nya_qkv_14") != CUDA_SUCCESS ||
         c->function_get(&p->norm_op, c->module, "nya_norm") != CUDA_SUCCESS ||
@@ -416,6 +420,17 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
     void *args[]={&g,&u,&p->norm,&p->gate,&cols,&stride,&count};
     p->matrix_profile=plan_matrix_slot(p,rows,columns,12,5);
     int result=plan_launch(p,p->cuda->gate_up_q4,(rows+7)/8,args);
+    p->matrix_profile=0;
+    return result;
+}
+static int plan_matvec_add(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t,
+    CUdeviceptr in, size_t rows, size_t columns)
+{
+    CUdeviceptr matrix=plan_tensor(p,t);
+    unsigned long long cols=columns, stride=t->data_size/rows, count=rows;
+    void *args[]={&matrix,&in,&out,&cols,&stride,&count};
+    p->matrix_profile=plan_matrix_slot(p,rows,columns,t->type,7);
+    int result=plan_launch(p,p->dot_add[t->type==14],(rows+7)/8,args);
     p->matrix_profile=0;
     return result;
 }
@@ -568,15 +583,22 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             void *combine[] = {&p->attention_parts, &p->norm, &width};
             RUN(plan_grid(p, p->attention_combine, heads, 1, 128, 1, combine));
         } else RUN(plan_grid(p, p->attention, heads, count, 256, 1, attention));
-        RUN(plan_matvec(p, p->residual, w->attention_output, p->norm, d, qdim));
-        if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->attention_post_norm, d, 1));
-        /* One-block decode states benefit from dropping a launch. Wider
-           residuals lose the parallelism of the separate vector grid; paired
-           measurements did not justify that tradeoff or batched fusion. */
-        if (count == 1 && d <= 256) RUN(plan_add_norm(p, p->norm, p->x, p->residual, w->feed_forward_norm, d));
-        else {
-            RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
-            RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
+        int add_attention = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
+            !c->reference && (w->attention_output->type == 12 || w->attention_output->type == 14);
+        if (add_attention) {
+            RUN(plan_matvec_add(p,p->x,w->attention_output,p->norm,d,qdim));
+            RUN(plan_norm(p,p->norm,p->x,w->feed_forward_norm,d,1));
+        } else {
+            RUN(plan_matvec(p, p->residual, w->attention_output, p->norm, d, qdim));
+            if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->attention_post_norm, d, 1));
+            /* One-block decode states benefit from dropping a launch. Wider
+               residuals lose the parallelism of the separate vector grid; paired
+               measurements did not justify that tradeoff or batched fusion. */
+            if (count == 1 && d <= 256) RUN(plan_add_norm(p, p->norm, p->x, p->residual, w->feed_forward_norm, d));
+            else {
+                RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
+                RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
+            }
         }
         if (count == 1 && p->fuse_gate_up && !m->is_gemma && !c->reference &&
             w->feed_forward_gate->type == 12 && w->feed_forward_up->type == 12 &&
@@ -587,9 +609,14 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             RUN(plan_matvec(p, p->up, w->feed_forward_up, p->norm, h, d));
             RUN(plan_vector(p, p->gate, p->gate, p->up, h, m->is_gemma ? 3U : 2U, 1));
         }
-        RUN(plan_matvec(p, p->residual, w->feed_forward_down, p->gate, d, h));
-        if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->ffn_post_norm, d, 1));
-        RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
+        int add_down = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
+            !c->reference && (w->feed_forward_down->type == 12 || w->feed_forward_down->type == 14);
+        if (add_down) RUN(plan_matvec_add(p,p->x,w->feed_forward_down,p->gate,d,h));
+        else {
+            RUN(plan_matvec(p, p->residual, w->feed_forward_down, p->gate, d, h));
+            if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->ffn_post_norm, d, 1));
+            RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
+        }
         if (w->output_scale) RUN(plan_vector(p, p->x, p->x, 0, d, 0, nya_llm_tensor_value(w->output_scale, 0)));
     }
     if (logits) {

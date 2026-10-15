@@ -1,0 +1,234 @@
+diff --git a/CUDA/matvec.cu b/CUDA/matvec.cu
+index 60a09c4..c374adb 100644
+--- a/CUDA/matvec.cu
++++ b/CUDA/matvec.cu
+@@ -81,7 +81,7 @@ __device__ __forceinline__ float nya_weight(const unsigned char *p, unsigned lon
+    below remains available in explicit reference mode. */
+ __device__ __forceinline__ void nya_row_dot_at(const unsigned char *weights,
+     const float *input, float *output, unsigned long long columns,
+-    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row)
++    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row, unsigned add = 0)
+ {
+     unsigned lane = threadIdx.x & 31;
+     if (row >= rows) return;
+@@ -119,7 +119,7 @@ __device__ __forceinline__ void nya_row_dot_at(const unsigned char *weights,
+         for (unsigned long long i = lane; i < columns; i += 32) sum += nya_weight(w, i, TYPE) * input[i];
+     }
+     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
+-    if (!lane) output[row] = sum;
++    if (!lane) output[row] = add ? output[row]+sum : sum;
+ }
+ 
+ #define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_at(w,x,y,c,s,r,TYPE,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
+@@ -197,3 +197,9 @@ extern "C" __global__ void nya_qkv_##VTYPE(const unsigned char *q, const unsigne
+ }
+ NYA_QKV(12) NYA_QKV(14)
+ #undef NYA_QKV
++
++/* A decode projection can commit directly to its residual stream. The rounded
++   row sum is unchanged; only the separate elementwise addition is removed. */
++#define NYA_DOT_ADD(TYPE) extern "C" __global__ void nya_add_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_at(w,x,y,c,s,r,TYPE,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5),1); }
++NYA_DOT_ADD(12) NYA_DOT_ADD(14)
++#undef NYA_DOT_ADD
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index e2a6637..d1805d8 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -20,13 +20,13 @@ typedef struct nya_cuda_plan {
+     size_t blas_expansion;
+     CUdeviceptr *tensors;
+     CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
+-    CUfunction qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
++    CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
+     size_t capacity, bytes, valid, batch, maximum_batch;
+     int failed;
+     nya_compute_stats stats;
+     CUgraphExec executable[2];
+     unsigned long long graph_kernels[2];
+-    int use_graphs, split_attention, fuse_gate_up, fuse_qkv;
++    int use_graphs, split_attention, fuse_gate_up, fuse_qkv, fuse_residual;
+     size_t fail_after;
+     size_t allocations, fail_allocation_after;
+     nya_cuda_timing *timings;
+@@ -73,7 +73,7 @@ static void cuda_plan_free(void *opaque)
+     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
+         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
+     if (p->matrix_profiles) {
+-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv"};
++        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add"};
+         for (unsigned i = 0; i < 64; ++i) {
+             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
+             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
+@@ -173,6 +173,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+     p->split_attention = partial_count != 0;
+     const char *graphs = getenv("NYA_CUDA_GRAPHS");
+     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
++    const char *residual = getenv("NYA_CUDA_RESIDUAL");
++    p->fuse_residual = !residual || strcmp(residual,"0");
+     const char *qkv = getenv("NYA_CUDA_QKV");
+     p->fuse_qkv = !qkv || strcmp(qkv,"0");
+     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
+@@ -290,6 +292,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+     if (c->function_get(&p->gather, c->module, "nya_gather") != CUDA_SUCCESS ||
+         c->function_get(&p->decode_request, c->module, "nya_decode_request") != CUDA_SUCCESS ||
+         c->function_get(&p->gather_batch, c->module, "nya_gather_batch") != CUDA_SUCCESS ||
++        c->function_get(&p->dot_add[0], c->module, "nya_add_12") != CUDA_SUCCESS ||
++        c->function_get(&p->dot_add[1], c->module, "nya_add_14") != CUDA_SUCCESS ||
+         c->function_get(&p->qkv[0], c->module, "nya_qkv_12") != CUDA_SUCCESS ||
+         c->function_get(&p->qkv[1], c->module, "nya_qkv_14") != CUDA_SUCCESS ||
+         c->function_get(&p->norm_op, c->module, "nya_norm") != CUDA_SUCCESS ||
+@@ -419,6 +423,17 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
+     p->matrix_profile=0;
+     return result;
+ }
++static int plan_matvec_add(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t,
++    CUdeviceptr in, size_t rows, size_t columns)
++{
++    CUdeviceptr matrix=plan_tensor(p,t);
++    unsigned long long cols=columns, stride=t->data_size/rows, count=rows;
++    void *args[]={&matrix,&in,&out,&cols,&stride,&count};
++    p->matrix_profile=plan_matrix_slot(p,rows,columns,t->type,7);
++    int result=plan_launch(p,p->dot_add[t->type==14],(rows+7)/8,args);
++    p->matrix_profile=0;
++    return result;
++}
+ static int plan_qkv(nya_cuda_plan *p, const nya_llm_layer *w, CUdeviceptr key,
+     CUdeviceptr value, size_t qrows, size_t krows, size_t columns)
+ {
+@@ -568,15 +583,22 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
+             void *combine[] = {&p->attention_parts, &p->norm, &width};
+             RUN(plan_grid(p, p->attention_combine, heads, 1, 128, 1, combine));
+         } else RUN(plan_grid(p, p->attention, heads, count, 256, 1, attention));
+-        RUN(plan_matvec(p, p->residual, w->attention_output, p->norm, d, qdim));
+-        if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->attention_post_norm, d, 1));
+-        /* One-block decode states benefit from dropping a launch. Wider
+-           residuals lose the parallelism of the separate vector grid; paired
+-           measurements did not justify that tradeoff or batched fusion. */
+-        if (count == 1 && d <= 256) RUN(plan_add_norm(p, p->norm, p->x, p->residual, w->feed_forward_norm, d));
+-        else {
+-            RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
+-            RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
++        int add_attention = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
++            !c->reference && (w->attention_output->type == 12 || w->attention_output->type == 14);
++        if (add_attention) {
++            RUN(plan_matvec_add(p,p->x,w->attention_output,p->norm,d,qdim));
++            RUN(plan_norm(p,p->norm,p->x,w->feed_forward_norm,d,1));
++        } else {
++            RUN(plan_matvec(p, p->residual, w->attention_output, p->norm, d, qdim));
++            if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->attention_post_norm, d, 1));
++            /* One-block decode states benefit from dropping a launch. Wider
++               residuals lose the parallelism of the separate vector grid; paired
++               measurements did not justify that tradeoff or batched fusion. */
++            if (count == 1 && d <= 256) RUN(plan_add_norm(p, p->norm, p->x, p->residual, w->feed_forward_norm, d));
++            else {
++                RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
++                RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
++            }
+         }
+         if (count == 1 && p->fuse_gate_up && !m->is_gemma && !c->reference &&
+             w->feed_forward_gate->type == 12 && w->feed_forward_up->type == 12 &&
+@@ -587,9 +609,14 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
+             RUN(plan_matvec(p, p->up, w->feed_forward_up, p->norm, h, d));
+             RUN(plan_vector(p, p->gate, p->gate, p->up, h, m->is_gemma ? 3U : 2U, 1));
+         }
+-        RUN(plan_matvec(p, p->residual, w->feed_forward_down, p->gate, d, h));
+-        if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->ffn_post_norm, d, 1));
+-        RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
++        int add_down = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
++            !c->reference && (w->feed_forward_down->type == 12 || w->feed_forward_down->type == 14);
++        if (add_down) RUN(plan_matvec_add(p,p->x,w->feed_forward_down,p->gate,d,h));
++        else {
++            RUN(plan_matvec(p, p->residual, w->feed_forward_down, p->gate, d, h));
++            if (m->is_gemma) RUN(plan_norm(p, p->residual, p->residual, w->ffn_post_norm, d, 1));
++            RUN(plan_vector(p, p->x, p->x, p->residual, d, 1, 1));
++        }
+         if (w->output_scale) RUN(plan_vector(p, p->x, p->x, 0, d, 0, nya_llm_tensor_value(w->output_scale, 0)));
+     }
+     if (logits) {
+diff --git a/backend/tests/test_inference.c b/backend/tests/test_inference.c
+index e79bc63..116abc2 100644
+--- a/backend/tests/test_inference.c
++++ b/backend/tests/test_inference.c
+@@ -12,7 +12,7 @@
+ /* Dedicated equivalence mode creates an unfused CUDA reference plan first.
+    It complements, rather than replaces, the independent CPU oracle. */
+ static const char *fusion_variable(void)
+-{ return getenv("NYA_TEST_QKV") ? "NYA_CUDA_QKV" : "NYA_CUDA_GATE_UP"; }
++{ return getenv("NYA_TEST_QKV") ? "NYA_CUDA_QKV" : getenv("NYA_TEST_RESIDUAL") ? "NYA_CUDA_RESIDUAL" : "NYA_CUDA_GATE_UP"; }
+ 
+ static int gate_pair_env(const char *value)
+ {
+@@ -36,7 +36,7 @@ static int check_cache_snapshot(nya_llm_session *candidate, nya_llm_session *ref
+             nya_llm_session_read_kv(candidate,layer,position,count,buffer+1+2*n,buffer+1+3*n,n);
+         for (size_t i = 0; !result && i < 2*n; ++i) {
+             float a = buffer[1+i], b = buffer[1+2*n+i];
+-            if (!isfinite(a) || !isfinite(b) || fabs((double)a-b) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 0.00015*(1+fabs(a)))) result = 1;
++            if (!isfinite(a) || !isfinite(b) || fabs((double)a-b) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 0.00015*(1+fabs(a)))) result = 1;
+         }
+         if (buffer[0] != 12345 || buffer[4*n+1] != 12345) result = 1;
+         /* Wrong shape, layer and valid-prefix bounds reject before any store. */
+@@ -68,13 +68,13 @@ static int check_graph_reuse(nya_llm_session *candidate, nya_llm_session *refere
+             size_t prefill = pass == 2 ? 9U : 3U;
+             size_t chunk = pass && (position == 0 || position == prefill+2) && capacity-position >= prefill ? prefill : 1;
+             if (nya_llm_session_run(candidate, tokens+position, chunk, 0) ||
+-                nya_llm_session_run(reference, tokens+position, chunk, (getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 1)) return -1;
++                nya_llm_session_run(reference, tokens+position, chunk, (getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 1)) return -1;
+             if (chunk == 1) ++expected_replays;
+             if (check_cache_snapshot(candidate,reference,model,position,chunk)) return -1;
+             const float *a = nya_llm_session_logits(reference), *b = nya_llm_session_logits(candidate);
+             for (size_t i = 0; i < model->tokenizer.vocabulary_size; ++i) {
+                 if (a[i] == b[i]) continue;
+-                if (!isfinite(a[i]) || !isfinite(b[i]) || fabs((double)a[i]-b[i]) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 0.0005*(1+fabs(a[i])))) {
++                if (!isfinite(a[i]) || !isfinite(b[i]) || fabs((double)a[i]-b[i]) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 0.0005*(1+fabs(a[i])))) {
+                     fprintf(stderr, "graph reuse pass %zu position %zu logit %zu: %.9g vs %.9g\n", pass,position,i,(double)a[i],(double)b[i]);
+                     return -1;
+                 }
+@@ -155,7 +155,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
+         cpu.compute = cpu_compute;
+         fprintf(stderr,"Numerical comparison uses optimized native CPU kernels\n");
+     }
+-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
++    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
+         nya_compute_free(cpu_compute);
+         cpu_compute = nya_compute_create_for("cuda");
+         if (!cpu_compute || strcmp(nya_compute_name(cpu_compute),"cuda") ||
+@@ -171,11 +171,11 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
+     const char *gate_setting=getenv(fusion_variable());
+     int gate_unset=gate_setting==NULL;
+     int gate_disabled=gate_setting && !strcmp(gate_setting,"0");
+-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env("0")) goto done;
++    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env("0")) goto done;
+     reference = nya_llm_session_create(&cpu, capacity, error, sizeof(error));
+-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env("1")) goto done;
++    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env("1")) goto done;
+     candidate = nya_llm_session_create(&view, capacity, error, sizeof(error));
+-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env(gate_unset ? "" : gate_disabled ? "0" : "1")) goto done;
++    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env(gate_unset ? "" : gate_disabled ? "0" : "1")) goto done;
+     if (!reference || !candidate) goto done;
+     nya_compute_stats resources;
+     nya_llm_session_stats(candidate, &resources);
+@@ -204,7 +204,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
+         }
+         if (getenv("NYA_TEST_BLAS") && !resources.external_matmul_calls) goto done;
+         if (getenv("NYA_TEST_CUTLASS") && !resources.cutlass_matmul_calls) goto done;
+-        if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
++        if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
+             if (nya_llm_session_run(reference,tokens,count,getenv("NYA_TEST_DECODE") != NULL)) goto done;
+         } else {
+         for (size_t i = 0; i < count; ++i) if (nya_llm_session_run(reference, tokens+i, 1, 1)) goto done;
+@@ -251,13 +251,13 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
+         /* The optional real-model run traverses many more layers than fixtures.
+            Keep its bound explicit and print both absolute and RMS error. The
+            independent Gemma fixtures still enforce their existing 3e-5 bound. */
+-        if (relative > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : argc > 3 ? 0.001 : 0.0005)) goto done;
++        if (relative > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : argc > 3 ? 0.001 : 0.0005)) goto done;
+         uint32_t invalid = m->tokenizer.vocabulary_size;
+         if (nya_llm_session_run(candidate, &invalid, 1, 1) == 0 ||
+             nya_llm_session_run(candidate, tokens, capacity+1, 0) == 0) goto done;
+     }
+     if (getenv("NYA_TEST_GRAPH") && check_graph_reuse(candidate, reference, m, tokens, capacity)) goto done;
+-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
++    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
+         nya_compute_stats fused, separate;
+         nya_llm_session_stats(candidate,&fused); nya_llm_session_stats(reference,&separate);
+         if (strcmp(nya_llm_session_execution(candidate),"resident") ||

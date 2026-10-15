@@ -81,7 +81,7 @@ __device__ __forceinline__ float nya_weight(const unsigned char *p, unsigned lon
    below remains available in explicit reference mode. */
 __device__ __forceinline__ void nya_row_dot_at(const unsigned char *weights,
     const float *input, float *output, unsigned long long columns,
-    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row)
+    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row, unsigned add = 0)
 {
     unsigned lane = threadIdx.x & 31;
     if (row >= rows) return;
@@ -119,7 +119,7 @@ __device__ __forceinline__ void nya_row_dot_at(const unsigned char *weights,
         for (unsigned long long i = lane; i < columns; i += 32) sum += nya_weight(w, i, TYPE) * input[i];
     }
     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
-    if (!lane) output[row] = sum;
+    if (!lane) output[row] = add ? output[row]+sum : sum;
 }
 
 #define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_at(w,x,y,c,s,r,TYPE,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
@@ -197,3 +197,9 @@ extern "C" __global__ void nya_qkv_##VTYPE(const unsigned char *q, const unsigne
 }
 NYA_QKV(12) NYA_QKV(14)
 #undef NYA_QKV
+
+/* A decode projection can commit directly to its residual stream. The rounded
+   row sum is unchanged; only the separate elementwise addition is removed. */
+#define NYA_DOT_ADD(TYPE) extern "C" __global__ void nya_add_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_at(w,x,y,c,s,r,TYPE,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5),1); }
+NYA_DOT_ADD(12) NYA_DOT_ADD(14)
+#undef NYA_DOT_ADD

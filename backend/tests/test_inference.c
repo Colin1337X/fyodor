@@ -12,7 +12,7 @@
 /* Dedicated equivalence mode creates an unfused CUDA reference plan first.
    It complements, rather than replaces, the independent CPU oracle. */
 static const char *fusion_variable(void)
-{ return getenv("NYA_TEST_QKV") ? "NYA_CUDA_QKV" : "NYA_CUDA_GATE_UP"; }
+{ return getenv("NYA_TEST_QKV") ? "NYA_CUDA_QKV" : getenv("NYA_TEST_RESIDUAL") ? "NYA_CUDA_RESIDUAL" : "NYA_CUDA_GATE_UP"; }
 
 static int gate_pair_env(const char *value)
 {
@@ -36,7 +36,7 @@ static int check_cache_snapshot(nya_llm_session *candidate, nya_llm_session *ref
             nya_llm_session_read_kv(candidate,layer,position,count,buffer+1+2*n,buffer+1+3*n,n);
         for (size_t i = 0; !result && i < 2*n; ++i) {
             float a = buffer[1+i], b = buffer[1+2*n+i];
-            if (!isfinite(a) || !isfinite(b) || fabs((double)a-b) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 0.00015*(1+fabs(a)))) result = 1;
+            if (!isfinite(a) || !isfinite(b) || fabs((double)a-b) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 0.00015*(1+fabs(a)))) result = 1;
         }
         if (buffer[0] != 12345 || buffer[4*n+1] != 12345) result = 1;
         /* Wrong shape, layer and valid-prefix bounds reject before any store. */
@@ -68,13 +68,13 @@ static int check_graph_reuse(nya_llm_session *candidate, nya_llm_session *refere
             size_t prefill = pass == 2 ? 9U : 3U;
             size_t chunk = pass && (position == 0 || position == prefill+2) && capacity-position >= prefill ? prefill : 1;
             if (nya_llm_session_run(candidate, tokens+position, chunk, 0) ||
-                nya_llm_session_run(reference, tokens+position, chunk, (getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 1)) return -1;
+                nya_llm_session_run(reference, tokens+position, chunk, (getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 1)) return -1;
             if (chunk == 1) ++expected_replays;
             if (check_cache_snapshot(candidate,reference,model,position,chunk)) return -1;
             const float *a = nya_llm_session_logits(reference), *b = nya_llm_session_logits(candidate);
             for (size_t i = 0; i < model->tokenizer.vocabulary_size; ++i) {
                 if (a[i] == b[i]) continue;
-                if (!isfinite(a[i]) || !isfinite(b[i]) || fabs((double)a[i]-b[i]) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : 0.0005*(1+fabs(a[i])))) {
+                if (!isfinite(a[i]) || !isfinite(b[i]) || fabs((double)a[i]-b[i]) > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : 0.0005*(1+fabs(a[i])))) {
                     fprintf(stderr, "graph reuse pass %zu position %zu logit %zu: %.9g vs %.9g\n", pass,position,i,(double)a[i],(double)b[i]);
                     return -1;
                 }
@@ -155,7 +155,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
         cpu.compute = cpu_compute;
         fprintf(stderr,"Numerical comparison uses optimized native CPU kernels\n");
     }
-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
+    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
         nya_compute_free(cpu_compute);
         cpu_compute = nya_compute_create_for("cuda");
         if (!cpu_compute || strcmp(nya_compute_name(cpu_compute),"cuda") ||
@@ -171,11 +171,11 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
     const char *gate_setting=getenv(fusion_variable());
     int gate_unset=gate_setting==NULL;
     int gate_disabled=gate_setting && !strcmp(gate_setting,"0");
-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env("0")) goto done;
+    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env("0")) goto done;
     reference = nya_llm_session_create(&cpu, capacity, error, sizeof(error));
-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env("1")) goto done;
+    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env("1")) goto done;
     candidate = nya_llm_session_create(&view, capacity, error, sizeof(error));
-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) && gate_pair_env(gate_unset ? "" : gate_disabled ? "0" : "1")) goto done;
+    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) && gate_pair_env(gate_unset ? "" : gate_disabled ? "0" : "1")) goto done;
     if (!reference || !candidate) goto done;
     nya_compute_stats resources;
     nya_llm_session_stats(candidate, &resources);
@@ -204,7 +204,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
         }
         if (getenv("NYA_TEST_BLAS") && !resources.external_matmul_calls) goto done;
         if (getenv("NYA_TEST_CUTLASS") && !resources.cutlass_matmul_calls) goto done;
-        if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
+        if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
             if (nya_llm_session_run(reference,tokens,count,getenv("NYA_TEST_DECODE") != NULL)) goto done;
         } else {
         for (size_t i = 0; i < count; ++i) if (nya_llm_session_run(reference, tokens+i, 1, 1)) goto done;
@@ -251,13 +251,13 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
         /* The optional real-model run traverses many more layers than fixtures.
            Keep its bound explicit and print both absolute and RMS error. The
            independent Gemma fixtures still enforce their existing 3e-5 bound. */
-        if (relative > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV")) ? 0 : argc > 3 ? 0.001 : 0.0005)) goto done;
+        if (relative > ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL")) ? 0 : argc > 3 ? 0.001 : 0.0005)) goto done;
         uint32_t invalid = m->tokenizer.vocabulary_size;
         if (nya_llm_session_run(candidate, &invalid, 1, 1) == 0 ||
             nya_llm_session_run(candidate, tokens, capacity+1, 0) == 0) goto done;
     }
     if (getenv("NYA_TEST_GRAPH") && check_graph_reuse(candidate, reference, m, tokens, capacity)) goto done;
-    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV"))) {
+    if ((getenv("NYA_TEST_GATE_UP") || getenv("NYA_TEST_QKV") || getenv("NYA_TEST_RESIDUAL"))) {
         nya_compute_stats fused, separate;
         nya_llm_session_stats(candidate,&fused); nya_llm_session_stats(reference,&separate);
         if (strcmp(nya_llm_session_execution(candidate),"resident") ||
