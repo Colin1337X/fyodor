@@ -1,0 +1,65 @@
+{
+  "source_sha256": "d81b969bf831e4b8a363473254e445afb5ca8d9cfc4f81d4624e465dcf8e61c5",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "cases": [
+    {
+      "width": 2048,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "nya_norm": [
+          15.661439895629883,
+          13.131648063659668
+        ],
+        "nya_norm_f32_2048": [
+          15.574399948120117,
+          15.11075210571289
+        ]
+      },
+      "mean_ms": {
+        "nya_norm": 14.396543979644775,
+        "nya_norm_f32_2048": 15.342576026916504
+      }
+    },
+    {
+      "width": 4096,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "nya_norm": [
+          15.141247749328613,
+          14.787967681884766
+        ],
+        "nya_norm_f32_4096": [
+          15.60921573638916,
+          15.590784072875977
+        ]
+      },
+      "mean_ms": {
+        "nya_norm": 14.96460771560669,
+        "nya_norm_f32_4096": 15.599999904632568
+      }
+    },
+    {
+      "width": 8192,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "nya_norm": [
+          16.084352493286133,
+          16.10585594177246
+        ],
+        "nya_norm_f32_8192": [
+          16.14201545715332,
+          15.854207992553711
+        ]
+      },
+      "mean_ms": {
+        "nya_norm": 16.095104217529297,
+        "nya_norm_f32_8192": 15.998111724853516
+      }
+    }
+  ]
+}
