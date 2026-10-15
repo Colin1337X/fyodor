@@ -79,12 +79,11 @@ __device__ __forceinline__ float nya_weight(const unsigned char *p, unsigned lon
    decoding branches for each entry point. Eight rows share a block without any
    shared-memory reduction or block-wide barrier. The scalar generic entry point
    below remains available in explicit reference mode. */
-__device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
+__device__ __forceinline__ void nya_row_dot_at(const unsigned char *weights,
     const float *input, float *output, unsigned long long columns,
-    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE)
+    unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row)
 {
     unsigned lane = threadIdx.x & 31;
-    unsigned long long row = (unsigned long long)blockIdx.x * 8 + (threadIdx.x >> 5);
     if (row >= rows) return;
     const unsigned char *w = weights + row * row_bytes;
     float sum = 0;
@@ -123,7 +122,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     if (!lane) output[row] = sum;
 }
 
-#define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot(w,x,y,c,s,r,TYPE); }
+#define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_at(w,x,y,c,s,r,TYPE,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
 NYA_DOT(0) NYA_DOT(1) NYA_DOT(2) NYA_DOT(8) NYA_DOT(12) NYA_DOT(14) NYA_DOT(30)
 #undef NYA_DOT
 
@@ -184,3 +183,17 @@ extern "C" __global__ __launch_bounds__(256,4) void nya_gate_up_q4(const unsigne
     }
     if (!lane) output[row]=a/(1+expf(-a))*z;
 }
+
+/* Decode Q/K/V share the normalized input but retain distinct weight/output
+   buffers. Block ranges select a projection; warp arithmetic is unchanged. */
+#define NYA_QKV(VTYPE) \
+extern "C" __global__ void nya_qkv_##VTYPE(const unsigned char *q, const unsigned char *k, const unsigned char *v, \
+    const float *x, float *yq, float *yk, float *yv, unsigned long long columns, \
+    unsigned long long qs, unsigned long long vs, unsigned long long qr, unsigned long long kr) { \
+    unsigned long long qb=(qr+7)/8, kb=(kr+7)/8, b=blockIdx.x; \
+    if (b<qb) nya_row_dot_at(q,x,yq,columns,qs,qr,12,b*8+(threadIdx.x>>5)); \
+    else if (b<qb+kb) nya_row_dot_at(k,x,yk,columns,qs,kr,12,(b-qb)*8+(threadIdx.x>>5)); \
+    else nya_row_dot_at(v,x,yv,columns,vs,kr,VTYPE,(b-qb-kb)*8+(threadIdx.x>>5)); \
+}
+NYA_QKV(12) NYA_QKV(14)
+#undef NYA_QKV
