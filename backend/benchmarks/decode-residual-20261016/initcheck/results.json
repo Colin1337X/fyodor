@@ -1,0 +1,137 @@
+{
+  "source_sha256": "cc037003302f6b266896fc92ff89b63e8276dd17365b83bc78cf32952405f754",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "cases": [
+    {
+      "width": 256,
+      "rows": 9,
+      "type": 12,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.37782400846481323,
+          0.4567039906978607
+        ],
+        "fused": [
+          0.09113600105047226,
+          0.0942080020904541
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.417263999581337,
+        "fused": 0.09267200157046318
+      },
+      "gain_percent": 350.25896981848416
+    },
+    {
+      "width": 768,
+      "rows": 65,
+      "type": 14,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.4628480076789856,
+          0.4424000084400177
+        ],
+        "fused": [
+          0.1812800019979477,
+          0.18134400248527527
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.45262400805950165,
+        "fused": 0.18131200224161148
+      },
+      "gain_percent": 149.63819408730984
+    },
+    {
+      "width": 2048,
+      "rows": 2048,
+      "type": 12,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          1.8881280422210693,
+          1.8708479404449463
+        ],
+        "fused": [
+          1.8216960430145264,
+          1.8186559677124023
+        ]
+      },
+      "mean_ms": {
+        "separate": 1.8794879913330078,
+        "fused": 1.8201760053634644
+      },
+      "gain_percent": 3.2585852024623163
+    },
+    {
+      "width": 5632,
+      "rows": 2048,
+      "type": 12,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          4.943871974945068,
+          4.911104202270508
+        ],
+        "fused": [
+          4.847583770751953,
+          4.814815998077393
+        ]
+      },
+      "mean_ms": {
+        "separate": 4.927488088607788,
+        "fused": 4.831199884414673
+      },
+      "gain_percent": 1.9930494803938492
+    },
+    {
+      "width": 5632,
+      "rows": 2048,
+      "type": 14,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          6.974463939666748,
+          7.009344100952148
+        ],
+        "fused": [
+          6.905856132507324,
+          6.84227180480957
+        ]
+      },
+      "mean_ms": {
+        "separate": 6.991904020309448,
+        "fused": 6.874063968658447
+      },
+      "gain_percent": 1.7142705128768032
+    },
+    {
+      "width": 11008,
+      "rows": 4096,
+      "type": 14,
+      "exact_including_guards": true,
+      "timings_ms": {
+        "separate": [
+          25.645055770874023,
+          25.68604850769043
+        ],
+        "fused": [
+          25.563167572021484,
+          25.603328704833984
+        ]
+      },
+      "mean_ms": {
+        "separate": 25.665552139282227,
+        "fused": 25.583248138427734
+      },
+      "gain_percent": 0.3217105209203819
+    }
+  ]
+}
