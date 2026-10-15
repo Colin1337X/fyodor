@@ -6,27 +6,26 @@ parity on that workload, not a percentage of engineering completion.
 | Workload | Fyodor | Reference | Relative throughput |
 | --- | ---: | ---: | ---: |
 | Inference prefill, 512 tokens | 4,595.77 ± 33.02 tok/s | 15,021.92 ± 591.61 tok/s | **30.6%** |
-| Inference decode, 128 tokens, prefix 0 | 323.22 ± 5.07 tok/s | 384.28 ± 1.29 tok/s | **84.1%** |
-| Inference decode, 128 tokens, prefix 1,024 | 284.87 ± 0.88 tok/s | 269.96 ± 0.46 tok/s | **105.5%** |
+| Inference decode, 128 tokens, prefix 0 | 333.23 ± 0.80 tok/s | 383.92 ± 1.46 tok/s | **86.8%** |
+| Inference decode, 128 tokens, prefix 1,024 | 290.48 ± 0.53 tok/s | 270.18 ± 0.81 tok/s | **107.5%** |
 | Small full-rank CUDA training update | 7.699 ± 0.029 ms | 5.466 ± 0.450 ms | **71.0%** |
 
 Decode was rerun October 15; prefill and training remain historical October 12
 measurements. Work is focused exclusively on decode until it exceeds parity.
-The current refresh includes direct two-byte FP16 scale loads in Q4_K/Q6_K
-decode kernels, retaining reference conversion and arithmetic order. Isolated
-before/after throughput improved 3.21% at prefix 0, 2.68% at prefix 512 and
-2.00% at prefix 1,024. Short and prefix-512 controls had higher variance; every
-sample was retained. One short Fyodor reference run was also noisier and is
-included. Long decode exceeds this pinned reference on the measured workload;
-short decode remains below parity, so optimization remains focused on decode.
-The reference invocation is unchanged; differences across refreshes are not
-isolated code effects.
+The current refresh adds a four-block compiler launch bound to fused Q4_K
+gate/up, preserving launch geometry, arithmetic and precision. All initial
+and confirmation observations pool to +2.07% short, +1.00% prefix 512 and
++1.81% long throughput. Short/middle variance limits precision; no samples
+were discarded. The fresh matched reference comparison below is separate from
+that isolated comparison. Short remains below parity, so work stays on decode.
 
-[Decode methodology and validation](decode-halfword-runtime-20261015/README.md),
-[decode scores](decode-halfword-runtime-20261015/summary.json), and
-[decode provenance](decode-halfword-runtime-20261015/reference-20261015/metadata.json).
-The [previous refresh](decode-unroll-runtime-20261015/README.md) retains the earlier
-82.8% / 103.5% measurements.
+[Decode methodology and validation](decode-launchbound-runtime-20261015/README.md),
+[decode scores](decode-launchbound-runtime-20261015/summary.json),
+[pooled baseline comparison](decode-launchbound-runtime-20261015/pooled-comparison.json),
+and [decode provenance](decode-launchbound-runtime-20261015/reference-20261015/metadata.json).
+The [previous refresh](decode-halfword-runtime-20261015/README.md) retains the
+84.1% / 105.5% measurements. Differences across refreshes are not isolated
+code effects.
 
 Inference uses TinyLlama Q4_K_M against pinned llama.cpp b10809, F32 KV,
 reference flash attention off and six CPU threads. Decode uses `-p 0`,

@@ -147,7 +147,7 @@ extern "C" __global__ void nya_matvec(const unsigned char *weights, const float 
 
 /* Decode-only Q4_K gate/up pair: preserve each dot's ordered accumulation,
    reuse the activation load, and write the SiLU product directly. */
-extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
+extern "C" __global__ __launch_bounds__(256,4) void nya_gate_up_q4(const unsigned char *gate,
     const unsigned char *up, const float *input, float *output,
     unsigned long long columns, unsigned long long stride, unsigned long long rows)
 {
