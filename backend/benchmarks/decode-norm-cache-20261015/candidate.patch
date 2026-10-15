@@ -1,0 +1,120 @@
+diff --git a/CUDA/resident.cu b/CUDA/resident.cu
+index 34846b6..de3e8c5 100644
+--- a/CUDA/resident.cu
++++ b/CUDA/resident.cu
+@@ -59,6 +59,68 @@ extern "C" __global__ void nya_norm(const float *x, float *out, const unsigned c
+         out[base+i] = x[base+i] * scale * (w ? nya_weight(w, i, type) : 1.0f);
+ }
+ 
++/* Fixed-width F32 decode RMSNorm keeps inputs in registers across the
++   unchanged ordered sum and warp reduction. Generic formats retain nya_norm. */
++extern "C" __global__ void nya_norm_f32_2048(const float *x, float *out,
++    const unsigned char *w, unsigned long long n, unsigned type, float epsilon)
++{
++    float values[8], sum = 0;
++    #pragma unroll
++    for (unsigned j = 0; j < 8; ++j) {
++        values[j] = x[threadIdx.x+j*256];
++        sum += values[j]*values[j];
++    }
++    sum = nya_sum(sum);
++    __shared__ float scale;
++    if (!threadIdx.x) scale = rsqrtf(sum/2048.0f+epsilon);
++    __syncthreads();
++    #pragma unroll
++    for (unsigned j = 0; j < 8; ++j) {
++        unsigned i = threadIdx.x+j*256;
++        out[i] = values[j]*scale*(w ? ((const float *)w)[i] : 1.0f);
++    }
++}
++
++extern "C" __global__ void nya_norm_f32_4096(const float *x, float *out,
++    const unsigned char *w, unsigned long long n, unsigned type, float epsilon)
++{
++    float values[16], sum = 0;
++    #pragma unroll
++    for (unsigned j = 0; j < 16; ++j) {
++        values[j] = x[threadIdx.x+j*256];
++        sum += values[j]*values[j];
++    }
++    sum = nya_sum(sum);
++    __shared__ float scale;
++    if (!threadIdx.x) scale = rsqrtf(sum/4096.0f+epsilon);
++    __syncthreads();
++    #pragma unroll
++    for (unsigned j = 0; j < 16; ++j) {
++        unsigned i = threadIdx.x+j*256;
++        out[i] = values[j]*scale*(w ? ((const float *)w)[i] : 1.0f);
++    }
++}
++
++extern "C" __global__ void nya_norm_f32_8192(const float *x, float *out,
++    const unsigned char *w, unsigned long long n, unsigned type, float epsilon)
++{
++    float values[32], sum = 0;
++    #pragma unroll
++    for (unsigned j = 0; j < 32; ++j) {
++        values[j] = x[threadIdx.x+j*256];
++        sum += values[j]*values[j];
++    }
++    sum = nya_sum(sum);
++    __shared__ float scale;
++    if (!threadIdx.x) scale = rsqrtf(sum/8192.0f+epsilon);
++    __syncthreads();
++    #pragma unroll
++    for (unsigned j = 0; j < 32; ++j) {
++        unsigned i = threadIdx.x+j*256;
++        out[i] = values[j]*scale*(w ? ((const float *)w)[i] : 1.0f);
++    }
++}
++
+ /* Residual addition immediately precedes FFN normalization in each supported
+    dense layer. Preserve the rounded F32 sum in x, then use the same RMSNorm
+    reduction as the separate kernels. This saves a launch and an extra read of
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 0b637a3..700395a 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -19,7 +19,7 @@ typedef struct nya_cuda_plan {
+     CUdeviceptr request, decode_key, decode_value, active_request;
+     size_t blas_expansion;
+     CUdeviceptr *tensors;
+-    CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
++    CUfunction gather, gather_batch, norm_op, norm_f32[3], add_norm, rope, vector, attention;
+     CUfunction decode_request, attention_prefill, attention_split, attention_combine;
+     size_t capacity, bytes, valid, batch, maximum_batch;
+     int failed;
+@@ -289,6 +289,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+         c->function_get(&p->decode_request, c->module, "nya_decode_request") != CUDA_SUCCESS ||
+         c->function_get(&p->gather_batch, c->module, "nya_gather_batch") != CUDA_SUCCESS ||
+         c->function_get(&p->norm_op, c->module, "nya_norm") != CUDA_SUCCESS ||
++        c->function_get(&p->norm_f32[0], c->module, "nya_norm_f32_2048") != CUDA_SUCCESS ||
++        c->function_get(&p->norm_f32[1], c->module, "nya_norm_f32_4096") != CUDA_SUCCESS ||
++        c->function_get(&p->norm_f32[2], c->module, "nya_norm_f32_8192") != CUDA_SUCCESS ||
+         c->function_get(&p->add_norm, c->module, "nya_add_norm") != CUDA_SUCCESS ||
+         c->function_get(&p->rope, c->module, "nya_rope") != CUDA_SUCCESS ||
+         c->function_get(&p->vector, c->module, "nya_vector") != CUDA_SUCCESS ||
+@@ -321,7 +324,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
+         timing->matrix = p->matrix_profile;
+         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
+         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
+-        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
++        timing->kind = f == p->norm_op || f == p->norm_f32[0] || f == p->norm_f32[1] || f == p->norm_f32[2] || f == p->add_norm ? 1U : f == p->rope ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
+         ++p->timing_count;
+         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
+     }
+@@ -422,7 +425,13 @@ static int plan_norm(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr in, const ny
+     unsigned long long length = n;
+     float eps = p->model->norm_epsilon;
+     void *args[] = {&in, &out, &weight, &length, &type, &eps};
+-    return plan_launch(p, p->norm_op, rows * p->batch, args);
++    CUfunction kernel = p->norm_op;
++    if (!p->cuda->reference && rows == 1 && p->batch == 1 && type == 0) {
++        if (n == 2048) kernel = p->norm_f32[0];
++        else if (n == 4096) kernel = p->norm_f32[1];
++        else if (n == 8192) kernel = p->norm_f32[2];
++    }
++    return plan_launch(p, kernel, rows * p->batch, args);
+ }
+ static int plan_add_norm(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr x, CUdeviceptr residual,
+     const nya_llm_tensor *t, size_t n)
