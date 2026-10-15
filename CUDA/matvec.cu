@@ -29,6 +29,19 @@ __device__ float nya_half(const unsigned char *p)
 #endif
 }
 
+/* Decode weight blocks and CUDA allocations retain two-byte alignment. */
+__device__ __forceinline__ float nya_half_aligned(const unsigned char *p)
+{
+#ifndef NYA_CUDA_REFERENCE_MATH
+    unsigned short h = *(const unsigned short *)p;
+    float value;
+    asm("cvt.f32.f16 %0, %1;" : "=f"(value) : "h"(h));
+    return value;
+#else
+    return nya_half(p);
+#endif
+}
+
 __device__ __forceinline__ float nya_weight(const unsigned char *p, unsigned long long i, unsigned int type)
 {
     if (type == 0) return ((const float *)p)[i];
@@ -78,7 +91,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     if (TYPE == 12) {
         for (unsigned long long base = 0; base < columns; base += 256) {
             const unsigned char *b = w + base / 256 * 144;
-            float d = nya_half(b), minimum = nya_half(b+2);
+            float d = nya_half_aligned(b), minimum = nya_half_aligned(b+2);
             const unsigned *s = (const unsigned *)(b+4);
             unsigned S[3]={s[0],s[1],s[2]};
             #pragma unroll
@@ -93,7 +106,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     } else if (TYPE == 14) {
         for (unsigned long long base = 0; base < columns; base += 256) {
             const unsigned char *b = w + base / 256 * 210;
-            float d = nya_half(b+208);
+            float d = nya_half_aligned(b+208);
             #pragma unroll
             for (unsigned g = 0; g < 8; ++g) {
                 unsigned half = g/4, quarter = g%4;
@@ -146,7 +159,7 @@ extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
     for (unsigned long long base = 0; base < columns; base += 256) {
         const unsigned char *g = gate + row*stride + base/256*144;
         const unsigned char *u = up + row*stride + base/256*144;
-        float gd=nya_half(g), gm=nya_half(g+2), ud=nya_half(u), um=nya_half(u+2);
+        float gd=nya_half_aligned(g), gm=nya_half_aligned(g+2), ud=nya_half_aligned(u), um=nya_half_aligned(u+2);
         /* Device allocations and 144-byte Q4_K blocks are word-aligned.
            Load each metadata word once; unrolling makes extraction constant. */
         const unsigned *gs32=(const unsigned *)(g+4), *us32=(const unsigned *)(u+4);
