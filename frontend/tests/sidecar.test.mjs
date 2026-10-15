@@ -29,6 +29,16 @@ test('CUTLASS packaging requires its license and removes stale artifacts', {skip
     await assert.rejects(stat(resolve(destination,'fyodor-cutlass.dll')), {code:'ENOENT'});
     await assert.rejects(stat(resolve(destination,'CUTLASS-LICENSE.txt')), {code:'ENOENT'});
     assert.equal(await readFile(resolve(destination,'fyodor-backend.exe'),'utf8'),'backend fixture');
+    // A CPU backend can be bundled with a separately built CUDA trainer.
+    const gpuDir=resolve(root,'gpu-trainer');await mkdir(gpuDir);
+    const gpuTrainer=resolve(gpuDir,'fyodor-train.exe'),nvrtc=resolve(gpuDir,'nvrtc64_130_0.dll');
+    await writeFile(gpuTrainer,'GPU trainer fixture');await writeFile(nvrtc,'NVRTC fixture');
+    await writeFile(resolve(gpuDir,'nvrtc-builtins64_130.dll'),'builtins fixture');
+    await writeFile(resolve(gpuDir,'LICENSE.txt'),'CUDA license fixture');
+    await writeFile(resolve(gpuDir,'CMakeCache.txt'),`NYA_CUDA_NVRTC_LIBRARY:FILEPATH=${nvrtc}\n`);
+    result=run({FYODOR_TRAIN_BIN:gpuTrainer});assert.equal(result.status,0,result.stderr);
+    assert.equal(await readFile(resolve(destination,'nvrtc64_130_0.dll'),'utf8'),'NVRTC fixture');
+    assert.equal(await readFile(resolve(destination,'CUDA-LICENSE.txt'),'utf8'),'CUDA license fixture');
     result=run({NYA_CUDA_CUTLASS_LIBRARY:resolve(root,'missing.dll')});
     assert.notEqual(result.status,0);assert.match(result.stderr,/existing fyodor-cutlass/);
   } finally {

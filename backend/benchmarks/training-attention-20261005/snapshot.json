@@ -1,0 +1,65 @@
+{
+  "base_revision": "3fe699a0c9a38bce3952a12652c222e11bec1515",
+  "source_sha256": {
+    "CUDA/training.cu": "7984c93d8a8672af79ce7369eae03d66d0d972a15f20d8a322e5050b28858789",
+    "CUDA/training.inc": "2fbd92a81602fb56d38110ef37b03a5c56b25a8669f4bc8c9909221dcbbfbb8f",
+    "CUDA/cuda.c": "f7153c885868677e231193af03dd4248f5e1efa439d8ddd9bbfcce4d30bd4cb1",
+    "CUDA/CMakeLists.txt": "da7d26e96d4386241ab0cd6f91d6399181f86c5f2c797bfbe610e6d27b062afc",
+    "backend/CMakeLists.txt": "19b24e46d6faeee5f21c7fbfbbb93146b5c31d366c3a7398cacaf44b315b43c9",
+    "backend/core/training_device.c": "db8476208bfa912bda01672569f25c11dc64e9335e9e9b2175fb6eb149bf512d",
+    "backend/core/training_device.h": "238b1225432de0ebaf329821ae05fddf68be89b600d1160e4f41143b350746ea",
+    "backend/core/training_device_backend.h": "e1e03cce2f19e8ed8189804fc9c7428b367b5c3013e5a9d34a619807cbc55099",
+    "backend/core/training.c": "226c3204bf4968699e779896d0a2e3961eaae49b36d355daa4fc3505dbc48000",
+    "backend/tests/test_training_attention.c": "6cb88a77e68da046c562f11f26d26899b237d6d3dbd511d83ce20cd8bb0df597",
+    "backend/benchmarks/training_device_bench.c": "9c98c101b6597002402f220a2f39445a2425be17de3362f42427b424c80c39b4"
+  },
+  "generated_bundles": {
+    "nya_cuda_source": {
+      "bytes": 32843,
+      "sha256": "5d307a7bafd596eeb2f8fb886383db315edbc679562664e89bf627c56594ea4d",
+      "crlf_count": 623,
+      "lf_normalized_sha256": "76313ca8c3b0ee61f4b7d6e805a337ca773617cc7021651d0b5d4d140942a680"
+    },
+    "nya_cuda_training_source": {
+      "bytes": 36651,
+      "sha256": "8685ac8ae9991081cef458a376ae0863777fe0b8c9285239cb07faa6e44475cc",
+      "crlf_count": 269,
+      "lf_normalized_sha256": "7c01906a2a86a431cfe5306fe58993342fd6bc03b5d9bf8d5d898ea06975e35c"
+    }
+  },
+  "historical_inference_bundle": {
+    "bytes": 32423,
+    "sha256": "927af8f2929259b9984b8b82ddf4a327f8194a4d9603947d4758765613822d55"
+  },
+  "inference_change": "Only checkout CRLF expansion: normalized bytes identical",
+  "gpu": "NVIDIA GeForce RTX 5060 Ti, 610.88, 16311 MiB",
+  "compiler": "gcc.exe (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+  "model": {
+    "bytes": 668788096,
+    "sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0"
+  },
+  "executables_sha256": {
+    "nya-test-training-attention.exe": "4a7ac7e91687cd6aa85f8edc0b6d1698d99d94160113afadc39c349a6b7d3f4b",
+    "nya-bench-training-device.exe": "1083a999de18935f2e7bda47d15d9f820cc6ef5eae459d71546509b52f3184b1"
+  },
+  "source_study": {
+    "project": "llama.cpp/ggml",
+    "revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+    "license": "MIT",
+    "sha256": {
+      "LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+      "ggml/src/ggml-cpu/ops.cpp": "e9d5fc74be2a250894c603e1b982dfb016fc9972ac296ac063db06f974d82321",
+      "ggml/src/ggml-cuda/fattn-vec.cuh": "eb66931768b52fc8bebce2e1859b0a52f685921240c2cfa314db59d997a3135a"
+    },
+    "finding": "Studied ggml CPU attention backward recomputation and CUDA vector attention block reductions. Original Fyodor kernels use bounded query tiles, F32 probabilities, double normalization and ordered F32 gradients. No source copied."
+  },
+  "method": {
+    "warmups": 2,
+    "measured_repetitions": 5,
+    "microbatches_per_repetition": 2,
+    "tolerance": 1e-05,
+    "oracle": "Six-worker CPU autograd; complete frozen Q/K/V-RoPE-attention-output branch, every output and accumulated input gradient checked after every repetition",
+    "timing_accepted": false,
+    "reason": "Interactive desktop and build activity not isolated; component correctness/resource evidence only"
+  }
+}

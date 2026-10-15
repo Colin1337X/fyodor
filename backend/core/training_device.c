@@ -36,6 +36,33 @@ int nya_train_device_zero(nya_train_device *d, nya_train_buffer b)
 { return d ? d->api->zero(d->context,b) : -1; }
 int nya_train_device_finish(nya_train_device *d)
 { return d ? d->api->finish(d->context) : -1; }
+nya_train_mark nya_train_device_mark(nya_train_device *d)
+{ return d ? d->api->mark(d->context) : 0; }
+int nya_train_device_elapsed(nya_train_device *d,nya_train_mark begin,nya_train_mark end,double *seconds)
+{ return d ? d->api->elapsed(d->context,begin,end,seconds) : -1; }
+int nya_train_device_slice(nya_train_device *d,nya_train_buffer destination,nya_train_buffer source,
+    size_t rows,size_t columns,size_t first,size_t count,int backward)
+{ return d ? d->api->slice(d->context,destination,source,rows,columns,first,count,backward) : -1; }
+size_t nya_train_adamw_plan_bytes(const nya_train_adamw_tensor *tensors, size_t count)
+{
+    if (!tensors || !count || count>(SIZE_MAX-32)/48) return 0;
+    size_t total=0,chunks=0;
+    for (size_t i=0;i<count;++i) {
+        size_t n=tensors[i].count,c=n/2048+(n%2048!=0);
+        if (!n || n>SIZE_MAX-total || c>SIZE_MAX-chunks) return 0;
+        total+=n; chunks+=c;
+    }
+    size_t overhead=count*48+32;
+    if (chunks>(SIZE_MAX-overhead)/24) return 0;
+    overhead+=chunks*24;
+    return total>(SIZE_MAX-overhead)/12 ? 0 : overhead+total*12;
+}
+nya_train_optimizer_plan nya_train_device_adamw_plan(nya_train_device *d,
+    const nya_train_adamw_tensor *tensors, size_t count)
+{ return d ? d->api->adamw_plan(d->context,tensors,count) : 0; }
+int nya_train_device_adamw(nya_train_device *d, nya_train_optimizer_plan plan, nya_train_adamw_config config,
+    nya_train_buffer step, nya_train_buffer status, nya_train_buffer norm, uint32_t tag)
+{ return d ? d->api->adamw(d->context,plan,config,step,status,norm,tag) : -1; }
 nya_train_indices nya_train_device_indices(nya_train_device *d, const uint32_t *ids, size_t count, size_t rows)
 {
     if (!d) return 0;
@@ -84,3 +111,38 @@ int nya_train_device_linear_dx(nya_train_device *d, nya_train_buffer dx, nya_tra
 int nya_train_device_linear_dw(nya_train_device *d, nya_train_buffer dw, nya_train_buffer x,
     nya_train_buffer dy, size_t o, size_t i, size_t n)
 { return d ? d->api->matrix(d->context,dw,x,dy,0,o,i,n,2) : -1; }
+
+int nya_train_device_rope(nya_train_device *d, nya_train_buffer y, nya_train_view x,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half)
+{ return d ? d->api->rope(d->context,y,x,heads,dimension,frequencies,split_half,0) : -1; }
+int nya_train_device_rope_backward(nya_train_device *d, nya_train_buffer dx, nya_train_view dy,
+    size_t heads, size_t dimension, nya_train_buffer frequencies, int split_half)
+{ return d ? d->api->rope(d->context,dx,dy,heads,dimension,frequencies,split_half,1) : -1; }
+
+size_t nya_train_attention_workspace_bytes(size_t tokens, size_t heads)
+{
+    size_t tile=tokens<16?tokens:16;
+    if (!tokens || !heads || heads>SIZE_MAX/tokens || tokens*heads>SIZE_MAX/tile/16) return 0;
+    return tokens*heads*tile*16;
+}
+size_t nya_train_loss_state_bytes(size_t rows)
+{ return rows && rows <= (SIZE_MAX-8)/32 ? rows*32+8 : 0; }
+int nya_train_device_loss(nya_train_device *d, nya_train_buffer y, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_loss_op operation)
+{ return d ? d->api->loss(d->context,y,state,logits,labels,mask,0,(unsigned)operation,0) : -1; }
+int nya_train_device_loss_backward(nya_train_device *d, nya_train_buffer dx, nya_train_buffer state,
+    nya_train_view logits, nya_train_buffer labels, nya_train_buffer mask, nya_train_buffer dy)
+{ return d ? d->api->loss(d->context,dx,state,logits,labels,mask,dy,0,1) : -1; }
+int nya_train_device_dpo(nya_train_device *d, nya_train_buffer y, nya_train_buffer state,
+    nya_train_buffer chosen, nya_train_buffer rejected, double rc, double rr, float beta)
+{ return d ? d->api->dpo(d->context,y,0,state,chosen,rejected,0,rc,rr,beta,0) : -1; }
+int nya_train_device_dpo_backward(nya_train_device *d, nya_train_buffer dc, nya_train_buffer dr,
+    nya_train_buffer state, nya_train_buffer dy)
+{ return d ? d->api->dpo(d->context,dc,dr,state,0,0,dy,0,0,0,1) : -1; }
+int nya_train_device_attention(nya_train_device *d, nya_train_buffer y,
+    nya_train_buffer state, nya_train_attention_desc descriptor)
+{ return d ? d->api->attention(d->context,y,0,0,state,0,0,descriptor,0) : -1; }
+int nya_train_device_attention_backward(nya_train_device *d, nya_train_buffer dq,
+    nya_train_buffer dk, nya_train_buffer dv, nya_train_buffer state, nya_train_buffer dy,
+    nya_train_buffer workspace, nya_train_attention_desc descriptor)
+{ return d ? d->api->attention(d->context,dq,dk,dv,state,dy,workspace,descriptor,1) : -1; }

@@ -1,6 +1,7 @@
 #include "training_device.h"
 #include "llm_internal.h"
 #include "training.h"
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,12 +61,30 @@ static int matrix(nya_train_device *d, unsigned type, size_t o, size_t i, size_t
         double sum=0, mag=0;
         for (size_t k=0; k<i; ++k) { double p=(double)nya_llm_tensor_value(&tensor,r*i+k)*x[t*i+k]; sum+=p; mag+=fabs(p); }
         CHECK(close_sum(sum,mag,actual[t*o+r]));
+        float ordered=(float)sum;
+        if (type) {
+            ordered=0;
+            for (size_t j=0;j<i;++j) {
+                size_t k=type==2?(j/32)*32+(j%32)/2+(j%2)*16:j;
+                volatile float product=nya_llm_tensor_value(&tensor,r*i+k)*x[t*i+k];
+                ordered+=product;
+            }
+        }
+        CHECK(!memcmp(&ordered,&actual[t*o+r],4));
     }
     CHECK(!nya_train_device_read(d,bdx,0,actual,nx*4+4) && actual[nx] == guard);
     for (size_t t = 0; t < n; ++t) for (size_t k = 0; k < i; ++k) {
         double sum=0, mag=0;
         for (size_t r=0; r<o; ++r) { double p=2*(double)nya_llm_tensor_value(&tensor,r*i+k)*dy[t*o+r]; sum+=p; mag+=fabs(p); }
         CHECK(close_sum(sum,mag,actual[t*i+k]));
+        if (type==12) {
+            float ordered=0;
+            for (unsigned pass=0;pass<2;++pass) for (size_t r=0;r<o;++r) {
+                volatile float product=nya_llm_tensor_value(&tensor,r*i+k)*dy[t*o+r];
+                ordered+=product;
+            }
+            CHECK(!memcmp(&ordered,&actual[t*i+k],4));
+        }
     }
     CHECK(!nya_train_device_read(d,bdw,0,actual,nw*4+4) && actual[nw] == guard);
     for (size_t r = 0; r < o; ++r) for (size_t k = 0; k < i; ++k) {
@@ -109,9 +128,22 @@ static int autograd(nya_train_device *d)
     nya_train_graph_free(g); nya_train_parameter_free(px); nya_train_parameter_free(pw);
     return 0;
 }
+static int precise_forward(nya_train_device *d)
+{
+    const float weights[10]={FLT_MAX,-FLT_MAX,FLT_MAX,-FLT_MAX,1,FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX,0};
+    const float x[15]={2,2,2,2,2,1,1,1,1,1,-2,-2,-2,-2,-2};
+    nya_train_graph *g=nya_train_graph_create(65536); CHECK(g);
+    nya_train_tensor *y=nya_train_linear(nya_train_input(g,3,5,x),nya_train_input(g,2,5,weights)); CHECK(y);
+    nya_train_buffer bw=nya_train_device_alloc(d,sizeof(weights)),bx=nya_train_device_alloc(d,sizeof(x)),by=nya_train_device_alloc(d,24);
+    CHECK(bw && bx && by && !nya_train_device_write(d,bw,0,weights,sizeof(weights)) && !nya_train_device_write(d,bx,0,x,sizeof(x)));
+    CHECK(!nya_train_device_linear(d,by,bw,0,2,5,bx,3));
+    float actual[6]; CHECK(!nya_train_device_read(d,by,0,actual,sizeof(actual)) && !memcmp(actual,nya_train_data(y),sizeof(actual)));
+    CHECK(actual[0]==2 && actual[1]==0 && actual[2]==1 && actual[3]==0 && actual[4]==-2 && actual[5]==0);
+    nya_train_graph_free(g); return 0;
+}
 static int scratch_lifetime(void)
 {
-    nya_train_device *d=nya_train_device_create("cuda",2*1024*1024);
+    nya_train_device *d=nya_train_device_create("cuda",(size_t)NYA_TRAIN_BUFFER_LIMIT*256+1024);
     CHECK(d);
     nya_train_buffer w=nya_train_device_alloc(d,4), x=nya_train_device_alloc(d,4), grad=nya_train_device_alloc(d,4);
     float weight=3, input=2, value;
@@ -155,9 +187,9 @@ static int scratch_lifetime(void)
     CHECK(nya_train_device_alloc(other,17));
     nya_train_device_free(other); /* Active scope and queued zero work. */
     CHECK(!nya_train_device_alloc(d,SIZE_MAX));
-    for (size_t k=3;k<4096;++k) CHECK(nya_train_device_alloc(d,4));
+    for (size_t k=3;k<NYA_TRAIN_BUFFER_LIMIT;++k) CHECK(nya_train_device_alloc(d,4));
     CHECK(!nya_train_device_alloc(d,4));
-    nya_train_device_get_stats(d,&after); CHECK(after.buffers==4096 && !after.failed);
+    nya_train_device_get_stats(d,&after); CHECK(after.buffers==NYA_TRAIN_BUFFER_LIMIT && !after.failed);
     CHECK(!nya_train_device_scratch_end(d,scope));
     /* Recover both table slots and byte capacity, and zero reused storage. */
     nya_train_buffer fresh=nya_train_device_alloc(d,268); CHECK(fresh);
@@ -267,6 +299,54 @@ static int finite_checks(void)
     nya_train_device_free(d);
     return 0;
 }
+static int timing_marks(void)
+{
+    nya_train_device *d=nya_train_device_create("cuda",65536),*other=nya_train_device_create("cuda",65536);CHECK(d && other);
+    double seconds=123;CHECK(!nya_train_device_mark(NULL) && nya_train_device_elapsed(NULL,1,2,&seconds)<0 && seconds==123);
+    CHECK(nya_train_device_elapsed(d,1,2,&seconds)<0 && seconds==123);
+    nya_train_buffer buffer=nya_train_device_alloc(d,4096);CHECK(buffer);
+    nya_train_device_stats before,after;nya_train_device_get_stats(d,&before);
+    nya_train_mark a=nya_train_device_mark(d);CHECK(a && !nya_train_device_zero(d,buffer));
+    nya_train_mark b=nya_train_device_mark(d);CHECK(b);
+    nya_train_device_get_stats(d,&after);
+    CHECK(after.synchronizations==before.synchronizations && after.uploads==before.uploads && after.downloads==before.downloads && after.used_bytes==before.used_bytes && after.kernel_launches==before.kernel_launches+1);
+    CHECK(nya_train_device_elapsed(d,b,a,&seconds)<0 && nya_train_device_elapsed(d,a,a,&seconds)<0 && nya_train_device_elapsed(d,a,b,NULL)<0);
+    CHECK(nya_train_device_elapsed(other,a,b,&seconds)<0 && seconds==123 && nya_train_device_zero(d,a)<0);
+    CHECK(!nya_train_device_finish(d));nya_train_device_get_stats(d,&before);
+    CHECK(!nya_train_device_elapsed(d,a,b,&seconds) && isfinite(seconds) && seconds>=0);
+    nya_train_device_get_stats(d,&after);CHECK(after.synchronizations==before.synchronizations);
+    for(size_t i=0;i<8;++i)CHECK(nya_train_device_mark(d));
+    seconds=123;CHECK(nya_train_device_elapsed(d,a,b,&seconds)<0 && seconds==123);
+    nya_train_device_free(d);nya_train_device_free(other);return 0;
+}
+static int narrow_matrices(nya_train_device *d)
+{
+    /* Narrow dense scheduling, its boundary fallback, and token/input tails.
+       matrix() checks every forward value bit-for-bit against ordered C dots. */
+    const size_t ranks[]={1,2,7,8,9};
+    for (size_t k=0;k<sizeof(ranks)/sizeof(ranks[0]);++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,0,ranks[k],2049,35));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    const size_t tokens[]={128,129,257};
+    for(size_t rank=2;rank<=8;rank+=6) for(size_t k=0;k<3;++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,0,rank,65,tokens[k]));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    return 0;
+}
+static int q4_dx_tiles(nya_train_device *d)
+{
+    const size_t shapes[][2]={{63,1},{64,8},{65,35},{127,65},{128,17},{129,33}};
+    for (size_t k=0;k<sizeof(shapes)/sizeof(shapes[0]);++k) {
+        nya_train_scope scope=nya_train_device_scratch_begin(d); CHECK(scope);
+        CHECK(!matrix(d,12,shapes[k][0],256,shapes[k][1]));
+        CHECK(!nya_train_device_scratch_end(d,scope));
+    }
+    return 0;
+}
 int main(int argc, char **argv)
 {
     nya_train_device *d = NULL;
@@ -278,6 +358,12 @@ int main(int argc, char **argv)
     if (!strcmp(argv[1],"--finite")) return finite_checks();
     d=nya_train_device_create("cuda",64*1024*1024);
     if (!d) { fprintf(stderr,"CUDA training storage unavailable\n"); return 77; }
+    if (!strcmp(argv[1],"--narrow")) {
+        int result=narrow_matrices(d); nya_train_device_free(d); return result;
+    }
+    if (!strcmp(argv[1],"--q4-dx")) {
+        int result=q4_dx_tiles(d); nya_train_device_free(d); return result;
+    }
     if (!strcmp(argv[1],"--finite-failure")) {
         nya_train_buffer status=nya_train_device_alloc(d,4), data=nya_train_device_alloc(d,4);
         CHECK(status && data && nya_train_device_check_finite(d,status,data,1,1));
@@ -293,6 +379,7 @@ int main(int argc, char **argv)
         CHECK(b && nya_train_device_zero(d,b));
         nya_train_device_stats s; nya_train_device_get_stats(d,&s);
         CHECK(s.failed && s.kernel_launches==1 && nya_train_device_finish(d) && !nya_train_device_alloc(d,4));
+        double elapsed=123;CHECK(!nya_train_device_mark(d) && nya_train_device_elapsed(d,1,2,&elapsed)<0 && elapsed==123);
         CHECK(!nya_train_device_scratch_begin(d) && nya_train_device_scratch_end(d,scope));
         CHECK(nya_train_device_check_finite(d,b,b,1,1));
         nya_train_device_get_stats(d,&s); CHECK(s.buffers==1 && s.scratch_resets==0);
@@ -351,11 +438,14 @@ int main(int argc, char **argv)
     }
     CHECK(!matrix(d,0,33,65,17) && !matrix(d,30,31,33,65));
     CHECK(!matrix(d,0,8192,33,3) && !matrix(d,0,5,33,8192) && !matrix(d,1,33,8192,3));
-    CHECK(!autograd(d) && !nya_train_device_finish(d));
+    CHECK(!narrow_matrices(d));
+    CHECK(!q4_dx_tiles(d));
+    CHECK(!autograd(d) && !precise_forward(d) && !nya_train_device_finish(d));
     nya_train_device_get_stats(d,&after);
     printf("resident matrix suite: buffers=%zu bytes=%zu launches=%llu uploads=%llu downloads=%llu\n",after.buffers,after.used_bytes,
         (unsigned long long)after.kernel_launches,(unsigned long long)after.uploads,(unsigned long long)after.downloads);
     nya_train_device_free(d);
-    int result=scratch_lifetime();
+    int result=timing_marks();
+    if(!result)result=scratch_lifetime();
     return result ? result : finite_checks();
 }

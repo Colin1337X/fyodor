@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-10-14T09:49:22.138810+00:00",
+  "revision": "d4712b2817d73a16c9e822c34f823e189f26d449",
+  "exe_sha256": "2bdf6880e30662522be5f45687a5c92989086ee0d1e284208464ed5e80ae6db4",
+  "model_sha256": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+  "environment": {
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll"
+  },
+  "caveat": "Diagnostic desktop runs. Other apps remain open; no performance acceptance from these measurements. CUDA event profiling disables graphs and includes host submission gaps.",
+  "runs": [
+    {
+      "name": "profile-short",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "0 %, 0 MiB, P8, 187 MHz, 405 MHz, 3.20 W, 32",
+      "exit_code": 0,
+      "gpu_after": "66 %, 0 MiB, P0, 2812 MHz, 14001 MHz, 106.37 W, 41"
+    },
+    {
+      "name": "profile-long",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "128",
+        "--context",
+        "1024",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "gpu_before": "0 %, 0 MiB, P3, 1522 MHz, 7001 MHz, 18.58 W, 34",
+      "exit_code": 0,
+      "gpu_after": "62 %, 0 MiB, P0, 2797 MHz, 14001 MHz, 122.57 W, 43"
+    }
+  ]
+}

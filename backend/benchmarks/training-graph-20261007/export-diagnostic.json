@@ -1,0 +1,25 @@
+[
+  {
+    "name": "export-diagnostic-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "nya-test-training-graph",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "tinyllama-export-diagnostic",
+    "command": [
+      "build-cuda/nya-test-training-graph.exe",
+      "--model",
+      ".tools/tinyllama-q4_k_m.gguf",
+      "D:/fyodor-validation/resident-training-graph-20261007/tinyllama-diagnostic"
+    ],
+    "exit_code": 1
+  }
+]

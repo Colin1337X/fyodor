@@ -29,6 +29,19 @@ __device__ float nya_half(const unsigned char *p)
 #endif
 }
 
+/* Decode weight blocks and CUDA allocations retain two-byte alignment. */
+__device__ __forceinline__ float nya_half_aligned(const unsigned char *p)
+{
+#ifndef NYA_CUDA_REFERENCE_MATH
+    unsigned short h = *(const unsigned short *)p;
+    float value;
+    asm("cvt.f32.f16 %0, %1;" : "=f"(value) : "h"(h));
+    return value;
+#else
+    return nya_half(p);
+#endif
+}
+
 __device__ __forceinline__ float nya_weight(const unsigned char *p, unsigned long long i, unsigned int type)
 {
     if (type == 0) return ((const float *)p)[i];
@@ -78,12 +91,14 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     if (TYPE == 12) {
         for (unsigned long long base = 0; base < columns; base += 256) {
             const unsigned char *b = w + base / 256 * 144;
-            float d = nya_half(b), minimum = nya_half(b+2);
-            const unsigned char *s = b+4;
+            float d = nya_half_aligned(b), minimum = nya_half_aligned(b+2);
+            const unsigned *s = (const unsigned *)(b+4);
+            unsigned S[3]={s[0],s[1],s[2]};
             #pragma unroll
             for (unsigned g = 0; g < 8; ++g) {
-                unsigned sc = g < 4 ? s[g] & 63U : (s[g+4] & 15U) | ((unsigned)(s[g-4] >> 6) << 4);
-                unsigned mn = g < 4 ? s[g+4] & 63U : (s[g+4] >> 4) | ((unsigned)(s[g] >> 6) << 4);
+                unsigned shift=(g%4)*8;
+                unsigned sc = g<4 ? (S[0]>>shift)&63U : ((S[2]>>shift)&15U) | (((S[0]>>(shift+6))&3U)<<4);
+                unsigned mn = g<4 ? (S[1]>>shift)&63U : ((S[2]>>(shift+4))&15U) | (((S[1]>>(shift+6))&3U)<<4);
                 unsigned q = (b[16+g/2*32+lane] >> (g%2*4)) & 15U;
                 sum += (d*(float)sc*(float)q - minimum*(float)mn) * input[base+g*32+lane];
             }
@@ -91,7 +106,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     } else if (TYPE == 14) {
         for (unsigned long long base = 0; base < columns; base += 256) {
             const unsigned char *b = w + base / 256 * 210;
-            float d = nya_half(b+208);
+            float d = nya_half_aligned(b+208);
             #pragma unroll
             for (unsigned g = 0; g < 8; ++g) {
                 unsigned half = g/4, quarter = g%4;
@@ -107,6 +122,7 @@ __device__ __forceinline__ void nya_row_dot(const unsigned char *weights,
     for (int step = 16; step; step >>= 1) sum += __shfl_down_sync(0xffffffffU, sum, step);
     if (!lane) output[row] = sum;
 }
+
 #define NYA_DOT(TYPE) extern "C" __global__ void nya_dot_##TYPE(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot(w,x,y,c,s,r,TYPE); }
 NYA_DOT(0) NYA_DOT(1) NYA_DOT(2) NYA_DOT(8) NYA_DOT(12) NYA_DOT(14) NYA_DOT(30)
 #undef NYA_DOT
@@ -127,4 +143,44 @@ extern "C" __global__ void nya_matvec(const unsigned char *weights, const float 
         __syncthreads();
     }
     if (lane == 0) output[blockIdx.x] = partial[0];
+}
+
+/* Decode-only Q4_K gate/up pair: preserve each dot's ordered accumulation,
+   reuse the activation load, and write the SiLU product directly. */
+extern "C" __global__ void nya_gate_up_q4(const unsigned char *gate,
+    const unsigned char *up, const float *input, float *output,
+    unsigned long long columns, unsigned long long stride, unsigned long long rows)
+{
+    unsigned lane = threadIdx.x & 31;
+    unsigned long long row = (unsigned long long)blockIdx.x * 8 + (threadIdx.x >> 5);
+    if (row >= rows) return;
+    float a = 0, z = 0;
+    #pragma unroll 8
+    for (unsigned long long base = 0; base < columns; base += 256) {
+        const unsigned char *g = gate + row*stride + base/256*144;
+        const unsigned char *u = up + row*stride + base/256*144;
+        float gd=nya_half_aligned(g), gm=nya_half_aligned(g+2), ud=nya_half_aligned(u), um=nya_half_aligned(u+2);
+        /* Device allocations and 144-byte Q4_K blocks are word-aligned.
+           Load each metadata word once; unrolling makes extraction constant. */
+        const unsigned *gs32=(const unsigned *)(g+4), *us32=(const unsigned *)(u+4);
+        unsigned G[3]={gs32[0],gs32[1],gs32[2]}, U[3]={us32[0],us32[1],us32[2]};
+        #pragma unroll
+        for (unsigned j=0; j<8; ++j) {
+            unsigned shift=(j%4)*8;
+            unsigned scg=j<4 ? (G[0]>>shift)&63U : ((G[2]>>shift)&15U) | (((G[0]>>(shift+6))&3U)<<4);
+            unsigned mng=j<4 ? (G[1]>>shift)&63U : ((G[2]>>(shift+4))&15U) | (((G[1]>>(shift+6))&3U)<<4);
+            unsigned scu=j<4 ? (U[0]>>shift)&63U : ((U[2]>>shift)&15U) | (((U[0]>>(shift+6))&3U)<<4);
+            unsigned mnu=j<4 ? (U[1]>>shift)&63U : ((U[2]>>(shift+4))&15U) | (((U[1]>>(shift+6))&3U)<<4);
+            unsigned qg=(g[16+j/2*32+lane]>>(j%2*4))&15U;
+            unsigned qu=(u[16+j/2*32+lane]>>(j%2*4))&15U;
+            float x=input[base+j*32+lane];
+            a += (gd*(float)scg*(float)qg-gm*(float)mng)*x;
+            z += (ud*(float)scu*(float)qu-um*(float)mnu)*x;
+        }
+    }
+    for (int step=16;step;step>>=1) {
+        a += __shfl_down_sync(0xffffffffU,a,step);
+        z += __shfl_down_sync(0xffffffffU,z,step);
+    }
+    if (!lane) output[row]=a/(1+expf(-a))*z;
 }

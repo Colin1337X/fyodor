@@ -36,6 +36,11 @@ size_t nya_train_memory_used(const nya_train_graph *graph);
 
 nya_train_parameter *nya_train_parameter_create(size_t rows, size_t columns, const float *initial);
 void nya_train_parameter_free(nya_train_parameter *parameter);
+/* A private resident session may exclusively lease parameters. During a lease,
+   host data/gradient access returns NULL, zero_grad does nothing, and CPU leaf,
+   AdamW, checkpoint and decoder export operations reject the parameters.
+   Previously returned host pointers must not be used while leased. Graphs and
+   sessions retain parameter storage; free releases the caller's reference. */
 float *nya_train_parameter_data(nya_train_parameter *parameter);
 const float *nya_train_parameter_gradient(const nya_train_parameter *parameter);
 void nya_train_zero_grad(nya_train_parameter *parameter);

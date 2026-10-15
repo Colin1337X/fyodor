@@ -1,0 +1,66 @@
+{
+  "convention": "Fyodor throughput / reference throughput * 100; 100 is parity",
+  "measurement": "Monitored interactive desktop, not headless; overlay stopped; OS/development rendering remains",
+  "hardware": "name, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 5060 Ti, 617.42, 16311 MiB\n",
+  "inference_reference": "llama.cpp b10809, F32 KV, FA off; pinned comparable reference, not latest/fastest configuration",
+  "inference": [
+    {
+      "workload": "prefill",
+      "prefix": 0,
+      "fyodor": {
+        "samples": 10,
+        "tokens_per_second": 4614.807610000001,
+        "sample_stdev": 25.313304785138993
+      },
+      "reference": {
+        "samples": 10,
+        "tokens_per_second": 15091.217550000001,
+        "sample_stdev": 509.7799113066299
+      },
+      "percentage": 30.579425382413895
+    },
+    {
+      "workload": "short_decode",
+      "prefix": 0,
+      "fyodor": {
+        "samples": 10,
+        "tokens_per_second": 258.5765665,
+        "sample_stdev": 4.392964789842732
+      },
+      "reference": {
+        "samples": 10,
+        "tokens_per_second": 370.96936900000003,
+        "sample_stdev": 1.6861832209104672
+      },
+      "percentage": 69.70294264376314
+    },
+    {
+      "workload": "long_decode",
+      "prefix": 1024,
+      "fyodor": {
+        "samples": 10,
+        "tokens_per_second": 233.082359,
+        "sample_stdev": 4.515950529365522
+      },
+      "reference": {
+        "samples": 10,
+        "tokens_per_second": 257.74994449999997,
+        "sample_stdev": 4.225325779814867
+      },
+      "percentage": 90.42964468999139
+    }
+  ],
+  "training": {
+    "workload": "CUDA width64 FF176 layers2 context32 full-rank decoder, eager F32 PyTorch with double RMS/RoPE/clipping and fused AdamW",
+    "torch_version": "2.11.0+cu128",
+    "process_repetitions": 4,
+    "native_ms_mean": 7.388084210526316,
+    "native_ms_sample_stdev": 0.19667377181712756,
+    "torch_ms_mean": 5.525246051547583,
+    "torch_ms_sample_stdev": 0.26210132461176283,
+    "percentage": 74.78591058390187,
+    "tolerance": 1e-05,
+    "correctness_passed": true,
+    "limitation": "Small eager workload only; no claim about compiled PyTorch, larger models or LoRA parity"
+  }
+}

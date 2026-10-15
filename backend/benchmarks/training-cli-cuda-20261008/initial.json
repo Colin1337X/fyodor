@@ -1,0 +1,29 @@
+[
+  {
+    "name": "initial-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "fyodor-train",
+      "nya-test-train-runner",
+      "nya-test-training-device",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "initial-cpu-tests",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "-R",
+      "train-accumulation|train-evaluation|train-cli-workflows|training-device-cuda$",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  }
+]

@@ -37,7 +37,7 @@ typedef struct nya_cuda_context {
     CUcontext context;
     CUmodule module;
     CUfunction function;
-    CUfunction dot[31];
+    CUfunction dot[31], gate_up_q4;
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
@@ -267,7 +267,10 @@ static nya_cuda_context *nya_cuda_create_for(int training)
     snprintf(architecture, sizeof(architecture), "--gpu-architecture=compute_%d", selected);
     const char *reference = getenv("NYA_CUDA_REFERENCE");
     c->reference = reference != NULL && strcmp(reference, "1") == 0;
-    const char *options[] = {architecture, "--std=c++11", c->reference ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
+    /* Training follows separate CPU products/additions. FMA contraction in a
+       cancelling gradient can become a material AdamW trajectory difference.
+       Inference retains its existing independently selected compilation. */
+    const char *options[] = {architecture, "--std=c++11", (training || c->reference) ? "--fmad=false" : "--fmad=true", c->reference ? "-DNYA_CUDA_REFERENCE_MATH=1" : "-DNYA_CUDA_FAST_MATH=1"};
     const unsigned char *source = training ? nya_cuda_training_source : nya_cuda_source;
     const char *source_name = training ? "fyodor_training.cu" : "fyodor_inference.cu";
     if (c->program_create(&program, (const char *)source, source_name, 0, NULL, NULL) != NVRTC_SUCCESS) goto failure;
@@ -290,6 +293,7 @@ static nya_cuda_context *nya_cuda_create_for(int training)
     pushed = 1;
     if (c->module_load(&c->module, ptx) != CUDA_SUCCESS || c->function_get(&c->function, c->module, "nya_matvec") != CUDA_SUCCESS ||
         c->stream_create(&c->stream, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS || c->memory_info(&free_bytes, &total_bytes) != CUDA_SUCCESS) goto failure;
+    if (c->function_get(&c->gate_up_q4, c->module, "nya_gate_up_q4") != CUDA_SUCCESS) goto failure;
     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
     for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
         char name[32]; snprintf(name, sizeof(name), "nya_dot_%u", types[i]);

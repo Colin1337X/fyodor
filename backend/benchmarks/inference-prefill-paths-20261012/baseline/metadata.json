@@ -1,0 +1,599 @@
+{
+  "revision": "e2e4f91dc90e4a8329f7b1ff8bf4b6f5d1c2baf3",
+  "timestamp": "2026-10-12T05:31:01.527495+00:00",
+  "caveat": "Diagnostic interactive desktop runs only; no performance acceptance. Event profiles disable graphs and include host submission gaps.",
+  "sha256": {
+    "build-cuda\\fyodor-bench.exe": "d36f2f762b71241d9da624ada70215f2ad4fbe921912dd9f8f82987e13f412ee",
+    ".tools\\tinyllama-q4_k_m.gguf": "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    "build-cutlass\\fyodor-cutlass.dll": "21cebb262893695de7e7a1620c453eae15cc7533a92ed9ad682edb357f32affa",
+    "backend\\benchmarks\\inference-prefill-paths-20261012\\profile.py": "4826663f06fe6abd36ce1b7a78892ce5e971030054940a1a847c47ba9a85478b",
+    "CUDA\\blas.inc": "196a1e9605846dd01132957eaef0e5b39eb816431c90ab2c9de8db2fd0d1de8d",
+    "CUDA\\resident.inc": "63a1d1e410a7dfe8821c21f5cd569a57f4b384eb29eb6c51a153280e1b73fb0d",
+    "CUDA\\cutlass\\gemm.cu": "eac209af38dc81deab9a014dda06ebdf26b61ce8b65ea350744a3901d55b2d88"
+  },
+  "runs": [
+    {
+      "name": "native-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 827.588,
+      "attention_ms": 64.428,
+      "shapes": [
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 402.168127
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 163.589663
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 124.800384
+        },
+        {
+          "path": "native-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 98.485888
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 29.647968
+        },
+        {
+          "path": "native-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 8.180448
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.715072
+        }
+      ],
+      "dispatch_verified": true
+    },
+    {
+      "name": "cutlass-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "1",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 441.616,
+      "attention_ms": 64.178,
+      "shapes": [
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 224.01888
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 86.6128
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 64.03088
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 54.88112
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 8.865984
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 2.539456
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.666432
+        }
+      ],
+      "dispatch_verified": true
+    },
+    {
+      "name": "cublas-a",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 275.617,
+      "attention_ms": 64.656,
+      "shapes": [
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 132.754688
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 66.162367
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 37.510848
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 30.080928
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 6.726176
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 1.880352
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.502048
+        }
+      ],
+      "dispatch_verified": true
+    },
+    {
+      "name": "cublas-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 292.475,
+      "attention_ms": 70.418,
+      "shapes": [
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 144.414304
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 67.621056
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 37.10672
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 32.929408
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 7.860032
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 2.040928
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.50208
+        }
+      ],
+      "dispatch_verified": true
+    },
+    {
+      "name": "cutlass-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "1",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 444.14,
+      "attention_ms": 64.281,
+      "shapes": [
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 221.151777
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 88.4696
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 68.254784
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 54.037408
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 9.186912
+        },
+        {
+          "path": "vendor-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 2.547712
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.492
+        }
+      ],
+      "dispatch_verified": true
+    },
+    {
+      "name": "native-b",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "512",
+        "-n",
+        "0",
+        "-r",
+        "2",
+        "--warmup",
+        "1",
+        "--json"
+      ],
+      "environment": {
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_CUTLASS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cutlass\\fyodor-cutlass.dll",
+        "NYA_CUDA_BLAS": "0",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_PROFILE": "1"
+      },
+      "exit_code": 0,
+      "matmul_ms": 798.094,
+      "attention_ms": 67.205,
+      "shapes": [
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 5632,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 385.910685
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 132,
+          "milliseconds": 162.848
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 36,
+          "milliseconds": 116.900864
+        },
+        {
+          "path": "native-gemm",
+          "type": 14,
+          "rows": 2048,
+          "columns": 5632,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 94.301216
+        },
+        {
+          "path": "native-gemm",
+          "type": 12,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 102,
+          "milliseconds": 29.249248
+        },
+        {
+          "path": "native-gemm",
+          "type": 14,
+          "rows": 256,
+          "columns": 2048,
+          "batch": 512,
+          "calls": 30,
+          "milliseconds": 8.330368
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 32000,
+          "columns": 2048,
+          "batch": 1,
+          "calls": 3,
+          "milliseconds": 0.553312
+        }
+      ],
+      "dispatch_verified": true
+    }
+  ]
+}

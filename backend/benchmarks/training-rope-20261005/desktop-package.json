@@ -1,0 +1,191 @@
+{
+  "installer": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\frontend\\src-tauri\\target\\release\\bundle\\nsis\\Fyodor_0.3.0_x64-setup.exe",
+  "bytes": 406263678,
+  "sha256": "e552a155571708f8315b2da6b5bfa6e0117b2033209c5af9e51d01b9a3c21750",
+  "extraction_command": [
+    "C:/Program Files/7-Zip/7z.exe",
+    "x",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\frontend\\src-tauri\\target\\release\\bundle\\nsis\\Fyodor_0.3.0_x64-setup.exe",
+    "-oC:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-train-profile\\installer-training-rope-verified",
+    "-y"
+  ],
+  "verified_contents_sha256": {
+    "backend/cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    "backend/cublasLt64_13.dll": "b592cd016d7673e9cb97716a22b27c4010ee635377a3ba28f37070a9bdb76a68",
+    "backend/CUDA-LICENSE.txt": "72c22161fc1ebf242443d45158a7dd382d68597b00eeb7a7f539be5c6114be33",
+    "backend/CUTLASS-LICENSE.txt": "10e174914fb737aec2d32762bd2e45861acb5ebf1656bee6cf575a6019a08cf0",
+    "backend/fyodor-backend.exe": "b8d46def68c89a28c659c3dc2d9cca59376b014052af5614f317cfe0b713d163",
+    "backend/fyodor-cutlass.dll": "21cebb262893695de7e7a1620c453eae15cc7533a92ed9ad682edb357f32affa",
+    "backend/fyodor-train.exe": "7c674e72fc753de6cf83630feb8e4f16b525a515105d2e2f8c81d2c7e3057e67",
+    "backend/nvrtc-builtins64_131.dll": "7869f703c1b22c41b21d9865105ea973b7d2c144c0c79364d3eb2ec051d4d8bc",
+    "backend/nvrtc64_130_0.dll": "3e2371db636d41af6ae4bfe73cd315b8415190b6129ce6d3416909e22802b4e7",
+    "fyodor-desktop.exe": "452c1595be8405984ce706eaa0e45298adb2859f6a94ff850bc13ffb506c6d78"
+  },
+  "desktop_comparison": "Identical after the one expected Tauri UNK -> NSS bundle marker replacement.",
+  "cli_command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+    "-DTRAINER=C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-train-profile\\installer-training-rope-verified\\backend\\fyodor-train.exe",
+    "-DFIXTURES=C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-train-profile\\installer-training-rope-verified",
+    "-P",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\tests\\TrainCli.cmake"
+  ],
+  "cli_exit_code": 0,
+  "http_calls": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 401,
+      "response": {
+        "version": 1,
+        "ok": false,
+        "error": {
+          "code": "unauthorized",
+          "message": "Use the local Fyodor token as the bearer token (or Anthropic x-api-key)."
+        }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "status": "ready",
+        "engine_version": "0.3.0",
+        "uptime_seconds": 0,
+        "bind": "127.0.0.1",
+        "port": 18883,
+        "worker_threads": 2,
+        "remote_enabled": false
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/load",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model": {
+          "id": 1,
+          "path": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+          "file_size": 668788096,
+          "format": "gguf",
+          "format_version": 3,
+          "tensor_count": 201,
+          "metadata_count": 23,
+          "data_offset": 1709440,
+          "architecture": "llama",
+          "producer": null,
+          "inference_supported": false,
+          "generation_supported": true,
+          "draft_supported": true,
+          "capabilities": [
+            "inspect",
+            "generation",
+            "draft"
+          ],
+          "execution_error": "backend was built without ONNX Runtime",
+          "generation_error": null
+        }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/compute",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "compute": "cuda"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/generate",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "text": " beside the river opens each morning. The",
+        "prompt_tokens": 725,
+        "generated_tokens": 8,
+        "seed": 123,
+        "stop_reason": "length",
+        "draft_tokens": 0,
+        "accepted_draft_tokens": 0,
+        "target_steps": 732
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/generate",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "model_id": 1,
+        "text": " beside the river opens each morning. The",
+        "prompt_tokens": 725,
+        "generated_tokens": 8,
+        "seed": 123,
+        "stop_reason": "length",
+        "draft_tokens": 0,
+        "accepted_draft_tokens": 0,
+        "target_steps": 732
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/runtime",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "compiled": {
+          "cpu": true,
+          "cuda": true,
+          "vulkan": true,
+          "rocm": true,
+          "mlx": true
+        },
+        "training_compute": "cpu",
+        "verbose": false,
+        "limits": {
+          "request_bytes": 1048576,
+          "output_bytes": 67108864,
+          "generation_tokens": 256
+        },
+        "models": [
+          {
+            "model_id": 1,
+            "selectable": true,
+            "compute": "cuda"
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/model/unload",
+      "status": 200,
+      "response": {
+        "version": 1,
+        "ok": true,
+        "unloaded_model_id": 1
+      }
+    }
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_DEBUG": "1",
+    "NYA_CUDA_BLAS": "0",
+    "NYA_CUDA_CUTLASS": "0"
+  },
+  "installed": false,
+  "interactive_ui_checked": false
+}

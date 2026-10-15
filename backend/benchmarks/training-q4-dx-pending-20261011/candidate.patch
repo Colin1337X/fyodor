@@ -1,0 +1,58 @@
+diff --git a/CUDA/training.cu b/CUDA/training.cu
+index cb02d64..71f4eb2 100644
+--- a/CUDA/training.cu
++++ b/CUDA/training.cu
+@@ -411,10 +411,11 @@ __device__ __forceinline__ void nya_train_forward(const unsigned char *w, const
+ #define NYA_TRAIN_FORWARD(TYPE) extern "C" __global__ void nya_train_forward_##TYPE(const unsigned char *w,const float *x,float *y,unsigned long long c,unsigned long long s,unsigned o,unsigned n) { nya_train_forward(w,x,y,c,s,o,n,TYPE); }
+ NYA_TRAIN_FORWARD(0) NYA_TRAIN_FORWARD(1) NYA_TRAIN_FORWARD(2) NYA_TRAIN_FORWARD(8) NYA_TRAIN_FORWARD(12) NYA_TRAIN_FORWARD(14) NYA_TRAIN_FORWARD(30)
+ #undef NYA_TRAIN_FORWARD
++template<unsigned TILE>
+ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float *dy, float *dx,
+     unsigned long long inputs, unsigned long long row_bytes, unsigned outputs, unsigned tokens, unsigned TYPE)
+ {
+-    __shared__ float weights[32][33], gradients[32][33];
++    __shared__ float weights[32][TILE+1], gradients[32][TILE+1];
+     unsigned linear = threadIdx.y*32+threadIdx.x;
+     unsigned long long column = (unsigned long long)blockIdx.x*32+threadIdx.x;
+     unsigned token = blockIdx.y*32+threadIdx.y;
+@@ -425,22 +426,23 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
+     for (unsigned slot = 0; slot < 4; ++slot)
+         sum[slot] = column < inputs && token+slot*8 < tokens ?
+             dx[(unsigned long long)(token+slot*8)*inputs+column] : 0;
+-    for (unsigned long long base = 0; base < outputs; base += 32) {
++    for (unsigned long long base = 0; base < outputs; base += TILE) {
+         #pragma unroll
+-        for (unsigned slot = 0; slot < 4; ++slot) {
++        for (unsigned slot = 0; slot < TILE/8; ++slot) {
+             unsigned row = linear%32, k = linear/32+slot*8;
+             unsigned long long source_column = (unsigned long long)blockIdx.x*32+row;
+             /* Lanes read adjacent original weight columns, then transpose into
+                padded shared memory for the W^T multiply. */
+             weights[row][k] = source_column < inputs && base+k < outputs ?
+                 nya_weight(w+(base+k)*row_bytes,source_column,TYPE) : 0;
+-            unsigned source_token = blockIdx.y*32+k;
+-            gradients[k][row] = source_token < tokens && base+row < outputs ?
+-                dy[(unsigned long long)source_token*outputs+base+row] : 0;
++            unsigned gradient_row=linear/TILE+slot*(256/TILE), gradient_column=linear%TILE;
++            unsigned source_token = blockIdx.y*32+gradient_row;
++            gradients[gradient_row][gradient_column] = source_token < tokens && base+gradient_column < outputs ?
++                dy[(unsigned long long)source_token*outputs+base+gradient_column] : 0;
+         }
+         __syncthreads();
+         #pragma unroll
+-        for (unsigned k = 0; k < 32; ++k) {
++        for (unsigned k = 0; k < TILE; ++k) {
+             float weight = weights[threadIdx.x][k];
+             #pragma unroll
+             for (unsigned slot = 0; slot < 4; ++slot)
+@@ -455,7 +457,9 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
+             if (token+slot*8 < tokens) dx[(unsigned long long)(token+slot*8)*inputs+column] = sum[slot];
+     }
+ }
+-#define NYA_TRAIN_DX(TYPE) extern "C" __global__ void nya_train_dx_##TYPE(const unsigned char *w, const float *dy, float *dx, unsigned long long i, unsigned long long s, unsigned o, unsigned n) { nya_train_dx(w,dy,dx,i,s,o,n,TYPE); }
++/* Q4_K benefits from fewer synchronization points; Q6_K and other formats
++   retain the smaller tile. Both specializations preserve ordered F32 dots. */
++#define NYA_TRAIN_DX(TYPE) extern "C" __global__ void nya_train_dx_##TYPE(const unsigned char *w, const float *dy, float *dx, unsigned long long i, unsigned long long s, unsigned o, unsigned n) { nya_train_dx<(TYPE==12?64:32)>(w,dy,dx,i,s,o,n,TYPE); }
+ NYA_TRAIN_DX(0) NYA_TRAIN_DX(1) NYA_TRAIN_DX(2) NYA_TRAIN_DX(8) NYA_TRAIN_DX(12) NYA_TRAIN_DX(14) NYA_TRAIN_DX(30)
+ #undef NYA_TRAIN_DX
+ 

@@ -1,0 +1,32 @@
+**********************************************************************
+** Visual Studio 2022 Developer Command Prompt v17.0
+** Copyright (c) 2025 Microsoft Corporation
+**********************************************************************
+   Compiling fyodor-desktop v0.3.0 (C:\Users\Colin\.codex\worktrees\resident-training\fyodor\frontend\src-tauri)
+error[E0786]: found invalid metadata files for crate `serde`
+   --> src\lib.rs:488:10
+    |
+488 | #[derive(Deserialize, Serialize)]
+    |          ^^^^^^^^^^^
+    |
+    = note: failed to mmap file '\\?\C:\Users\Colin\.codex\worktrees\resident-training\fyodor\frontend\src-tauri\target\release\deps\libserde-f1d8f37861a444c1.rlib': The paging file is too small for this operation to complete. (os error 1455)
+    = note: this error originates in the derive macro `Deserialize` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: only metadata stub found for `rlib` dependency `std` please provide path to the corresponding .rmeta file with full metadata
+ --> src\lib.rs:2:5
+  |
+2 | use std::{
+  |     ^^^
+
+error[E0786]: found invalid metadata files for crate `tauri`
+  --> src\lib.rs:11:5
+   |
+11 | use tauri::{Manager, RunEvent};
+   |     ^^^^^
+   |
+   = note: failed to mmap file '\\?\C:\Users\Colin\.codex\worktrees\resident-training\fyodor\frontend\src-tauri\target\release\deps\libtauri-17a736450a387182.rlib': The paging file is too small for this operation to complete. (os error 1455)
+
+For more information about this error, try `rustc --explain E0786`.
+error: could not compile `fyodor-desktop` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `fyodor-desktop` (lib) due to 3 previous errors

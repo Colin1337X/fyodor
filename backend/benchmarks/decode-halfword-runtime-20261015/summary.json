@@ -1,0 +1,77 @@
+{
+  "convention": "Fyodor throughput / reference throughput * 100; 100 is parity",
+  "self_comparison": [
+    {
+      "prefix": 0,
+      "before": {
+        "samples": 10,
+        "tokens_per_second": 314.09127950000004,
+        "sample_stdev": 3.9231881264411474
+      },
+      "after": {
+        "samples": 10,
+        "tokens_per_second": 324.170096,
+        "sample_stdev": 0.5397867823353332
+      },
+      "throughput_gain_percent": 3.2088813532309413
+    },
+    {
+      "prefix": 512,
+      "before": {
+        "samples": 10,
+        "tokens_per_second": 297.22490450000004,
+        "sample_stdev": 2.9538355844605797
+      },
+      "after": {
+        "samples": 10,
+        "tokens_per_second": 305.1851735,
+        "sample_stdev": 0.6201998724102593
+      },
+      "throughput_gain_percent": 2.6781971764415102
+    },
+    {
+      "prefix": 1024,
+      "before": {
+        "samples": 10,
+        "tokens_per_second": 279.4071115,
+        "sample_stdev": 0.4601630058330875
+      },
+      "after": {
+        "samples": 10,
+        "tokens_per_second": 284.99829650000004,
+        "sample_stdev": 0.7241317156222598
+      },
+      "throughput_gain_percent": 2.001089009504353
+    }
+  ],
+  "reference_comparison": [
+    {
+      "prefix": 0,
+      "fyodor": {
+        "samples": 10,
+        "tokens_per_second": 323.21726849999993,
+        "sample_stdev": 5.065130831285274
+      },
+      "llama": {
+        "samples": 10,
+        "tokens_per_second": 384.27936,
+        "sample_stdev": 1.2892247230176601
+      },
+      "percentage": 84.10997366603294
+    },
+    {
+      "prefix": 1024,
+      "fyodor": {
+        "samples": 10,
+        "tokens_per_second": 284.86957599999994,
+        "sample_stdev": 0.8827268802459645
+      },
+      "llama": {
+        "samples": 10,
+        "tokens_per_second": 269.9604015,
+        "sample_stdev": 0.46165788010635606
+      },
+      "percentage": 105.52272645067909
+    }
+  ]
+}

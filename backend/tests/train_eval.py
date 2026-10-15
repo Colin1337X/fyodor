@@ -10,8 +10,14 @@ import tempfile
 parser = argparse.ArgumentParser()
 parser.add_argument('trainer', type=Path)
 parser.add_argument('--evidence', type=Path)
+parser.add_argument("--compute", choices=("cpu","cuda"), default="cpu")
 args = parser.parse_args()
 trainer = str(args.trainer.resolve())
+if args.compute=="cuda":
+    capabilities=subprocess.run([trainer,"--capabilities"],capture_output=True,text=True,timeout=30,check=True)
+    if not json.loads(capabilities.stdout)["cuda"]:
+        print("CUDA training device unavailable")
+        raise SystemExit(77)
 evidence = []
 
 def sha(path):
@@ -33,7 +39,7 @@ with tempfile.TemporaryDirectory(prefix='fyodor-eval-') as folder:
 
     def run(name, steps, settings=(), resume=None, stop=False, failure=False):
         model, checkpoint, metrics = [root / (name + ext) for ext in ('.gguf','.ckpt','.csv')]
-        command = [trainer, '--data', str(corpus), '--output', str(model), '--checkpoint', str(checkpoint),
+        command = [trainer, "--compute", args.compute, '--data', str(corpus), '--output', str(model), '--checkpoint', str(checkpoint),
                    '--metrics', str(metrics), '--steps', str(steps), '--accumulate','3', *dimensions, *settings]
         if resume:
             command += ['--resume',str(resume)]

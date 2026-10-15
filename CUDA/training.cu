@@ -1,6 +1,188 @@
 /* Native training derivatives. Each output has one writer, so accumulation is
    stream ordered without floating-point atomics. Packed frozen weights stay
    compressed for dX. These are original Fyodor kernels. */
+extern "C" __global__ void nya_train_slice(float *destination,const float *source,
+    unsigned long long elements,unsigned long long columns,unsigned long long first,unsigned long long count,int backward)
+{
+    unsigned long long i=(unsigned long long)blockIdx.x*blockDim.x+threadIdx.x;
+    if (i>=elements) return;
+    unsigned long long j=i/count*columns+first+i%count;
+    if (backward) destination[j]=__fadd_rn(destination[j],source[i]);
+    else destination[i]=source[j];
+}
+/* Original multi-tensor AdamW kernels. Immutable metadata maps each block to
+   a 2048-element parameter chunk, following the scheduling idea studied in
+   PyTorch MultiTensorApply. Unlike its in-place fused update, Fyodor stages
+   every proposed value/moment before a separate globally guarded commit. */
+extern "C" __global__ void nya_train_adamw_norm(const unsigned long long *tensors,
+    const unsigned long long *mapping, double *partials, unsigned *status, unsigned tag)
+{
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start;
+    if (count>2048) count=2048;
+    const float *gradient=reinterpret_cast<const float *>(tensor[1])+start;
+    unsigned lane=threadIdx.x;
+    __shared__ double sums[256];
+    double square=0; int bad=0;
+    for (unsigned long long i=lane;i<count;i+=256) {
+        double g=gradient[i];
+        if (!isfinite(g)) bad=1;
+        else square=__dadd_rn(square,__dmul_rn(g,g));
+    }
+    if (__syncthreads_or(bad) && !lane) atomicCAS(status,0u,tag);
+    sums[lane]=square; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) sums[lane]=__dadd_rn(sums[lane],sums[lane+stride]);
+        __syncthreads();
+    }
+    if (!lane) partials[blockIdx.x]=sums[0];
+}
+extern "C" __global__ void nya_train_adamw_prepare(const double *partials, double *scalar,
+    const unsigned long long *step, unsigned *status, unsigned long long chunks,
+    double limit, double beta1, double beta2, unsigned tag)
+{
+    if (*status) return;
+    if (*step==~0ull) { atomicCAS(status,0u,tag); return; }
+    double square=0;
+    for (unsigned long long i=0;i<chunks;++i) square=__dadd_rn(square,partials[i]);
+    double norm=sqrt(square),c1=1.0-pow(beta1,(double)(*step+1)),c2=1.0-pow(beta2,(double)(*step+1));
+    if (!isfinite(norm) || !isfinite(c1) || c1<=0 || !isfinite(c2) || c2<=0) { atomicCAS(status,0u,tag); return; }
+    scalar[0]=norm; scalar[1]=limit>0 && norm>limit ? limit/norm : 1.0;
+    scalar[2]=c1; scalar[3]=c2;
+}
+extern "C" __global__ void nya_train_adamw_stage(const unsigned long long *tensors,
+    const unsigned long long *mapping, const double *scalar, float *next, unsigned *status,
+    unsigned long long total, double lr, double beta1, double beta2, double epsilon, double decay, unsigned tag)
+{
+    /* Other blocks may publish failure concurrently. Use an atomic read and
+       block-uniform branch; partial scratch writes are never committed. */
+    __shared__ unsigned skip;
+    if (!threadIdx.x) skip=atomicAdd(status,0u);
+    __syncthreads();
+    if (skip) return;
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start,offset=tensor[5]+start;
+    if (count>2048) count=2048;
+    const float *w=reinterpret_cast<const float *>(tensor[0])+start;
+    const float *g=reinterpret_cast<const float *>(tensor[1])+start;
+    const float *m=reinterpret_cast<const float *>(tensor[2])+start;
+    const float *v=reinterpret_cast<const float *>(tensor[3])+start;
+    int bad=0;
+    for (unsigned long long i=threadIdx.x;i<count;i+=256) {
+        double grad=__dmul_rn((double)g[i],scalar[1]);
+        double moment=__dadd_rn(__dmul_rn(beta1,(double)m[i]),__dmul_rn(1.0-beta1,grad));
+        double variance=__dadd_rn(__dmul_rn(beta2,(double)v[i]),__dmul_rn(__dmul_rn(1.0-beta2,grad),grad));
+        double value=__dsub_rn(__dmul_rn((double)w[i],1.0-__dmul_rn(lr,decay)),
+            __dmul_rn(lr,moment/scalar[2])/(sqrt(variance/scalar[3])+epsilon));
+        double largest=(double)__int_as_float(0x7f7fffff);
+        if (!isfinite(moment) || !isfinite(variance) || !isfinite(value) ||
+            fabs(moment)>largest || variance<0 || variance>largest || fabs(value)>largest) bad=1;
+        else { next[offset+i]=(float)value; next[total+offset+i]=(float)moment; next[2*total+offset+i]=(float)variance; }
+    }
+    if (bad) atomicCAS(status,0u,tag);
+}
+extern "C" __global__ void nya_train_adamw_commit(const unsigned long long *tensors,
+    const unsigned long long *mapping, const float *next, const unsigned *status, unsigned long long total)
+{
+    if (*status) return;
+    const unsigned long long *tensor=tensors+mapping[2*blockIdx.x]*6;
+    unsigned long long start=mapping[2*blockIdx.x+1],count=tensor[4]-start,offset=tensor[5]+start;
+    if (count>2048) count=2048;
+    float *w=reinterpret_cast<float *>(tensor[0])+start;
+    float *m=reinterpret_cast<float *>(tensor[2])+start;
+    float *v=reinterpret_cast<float *>(tensor[3])+start;
+    for (unsigned long long i=threadIdx.x;i<count;i+=256) {
+        w[i]=next[offset+i]; m[i]=next[total+offset+i]; v[i]=next[2*total+offset+i];
+    }
+}
+extern "C" __global__ void nya_train_adamw_finish(const double *scalar, unsigned long long *step,
+    const unsigned *status, double *norm)
+{
+    if (!*status) { ++*step; *norm=scalar[0]; }
+}
+/* Stable hard-label log softmax: double reductions, O(rows) saved state.
+   Inspired by the row/block reduction organization studied in PyTorch's
+   SoftMax.cu; original implementation, preserving Fyodor masking/precision. */
+extern "C" __global__ void nya_train_loss_rows(const float *x, const unsigned *labels,
+    const unsigned char *mask, double *state, unsigned long long columns)
+{
+    unsigned lane=threadIdx.x;
+    unsigned long long row=blockIdx.x, base=row*columns;
+    double *saved=state+row*4;
+    if (mask && !mask[row]) {
+        if (!lane) { saved[0]=0; saved[1]=1; saved[2]=0; saved[3]=0; }
+        return;
+    }
+    if ((unsigned long long)labels[row]>=columns) {
+        if (!lane) { saved[0]=__int_as_float(0x7fc00000); saved[1]=__int_as_float(0x7fc00000); saved[2]=__int_as_float(0x7fc00000); saved[3]=1; }
+        return;
+    }
+    __shared__ double values[256];
+    double maximum=-1.7976931348623157e308;
+    int bad=0;
+    for (unsigned long long j=lane;j<columns;j+=256) {
+        double v=x[base+j]; bad|=!isfinite(v); maximum=fmax(maximum,v);
+    }
+    if (__syncthreads_or(bad)) {
+        if (!lane) { saved[0]=__int_as_float(0x7fc00000); saved[1]=__int_as_float(0x7fc00000); saved[2]=__int_as_float(0x7fc00000); saved[3]=1; }
+        return;
+    }
+    values[lane]=maximum; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) values[lane]=fmax(values[lane],values[lane+stride]);
+        __syncthreads();
+    }
+    maximum=values[0]; __syncthreads();
+    double mass=0;
+    for (unsigned long long j=lane;j<columns;j+=256) mass+=exp((double)x[base+j]-maximum);
+    values[lane]=mass; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) values[lane]+=values[lane+stride];
+        __syncthreads();
+    }
+    if (!lane) {
+        saved[0]=maximum; saved[1]=values[0];
+        saved[2]=((double)x[base+labels[row]]-maximum)-log(values[0]); saved[3]=1;
+    }
+}
+extern "C" __global__ void nya_train_loss_reduce(double *state, float *y,
+    unsigned long long rows, unsigned operation)
+{
+    double total=0; unsigned long long active=0;
+    for (unsigned long long row=0;row<rows;++row) {
+        if (state[row*4+3]!=0) { ++active; total+=state[row*4+2]; }
+    }
+    double coefficient=active ? (operation ? 1.0 : -1.0/(double)active) : __int_as_float(0x7fc00000);
+    state[rows*4]=coefficient; *y=(float)(total*coefficient);
+}
+extern "C" __global__ void nya_train_loss_back(const float *x, const unsigned *labels,
+    const double *state, const float *dy, float *dx, unsigned long long rows, unsigned long long columns)
+{
+    unsigned long long row=blockIdx.x,base=row*columns;
+    if (state[row*4+3]==0) return;
+    double maximum=state[row*4],mass=state[row*4+1],scale=(double)*dy*state[rows*4];
+    for (unsigned long long j=threadIdx.x;j<columns;j+=256) {
+        double p=exp((double)x[base+j]-maximum)/mass;
+        float contribution=(float)(scale*((j==labels[row]?1.0:0.0)-p));
+        dx[base+j]=__fadd_rn(dx[base+j],contribution);
+    }
+}
+extern "C" __global__ void nya_train_dpo(const float *chosen, const float *rejected,
+    float *y, double *state, double reference_chosen, double reference_rejected, double beta)
+{
+    double margin=beta*(((double)*chosen-*rejected)-(reference_chosen-reference_rejected));
+    if (!isfinite(margin)) { *y=__int_as_float(0x7fc00000); *state=__int_as_float(0x7fc00000); return; }
+    *y=(float)(fmax(-margin,0.0)+log1p(exp(-fabs(margin))));
+    double e=exp(-fabs(margin));
+    *state=-beta*(margin>=0 ? e/(1.0+e) : 1.0/(1.0+e));
+}
+extern "C" __global__ void nya_train_dpo_back(const double *state, const float *dy,
+    float *dchosen, float *drejected)
+{
+    float contribution=(float)((double)(*dy)*(*state));
+    if (dchosen) *dchosen=__fadd_rn(*dchosen,contribution);
+    if (drejected) *drejected=__fsub_rn(*drejected,contribution);
+}
 extern "C" __global__ void nya_train_zero(unsigned char *data, unsigned long long bytes)
 {
     unsigned long long i = (unsigned long long)blockIdx.x*256+threadIdx.x;
@@ -170,10 +352,77 @@ extern "C" __global__ void nya_train_binary(const float *a, const float *b, cons
             out_b[i] = nya_train_binary_gradient(a,b,dy,out_b[i],i,ar,ac,br,bc,rows,cols,operation,1,0);
     }
 }
+/* Match CPU training forward semantics: dense F32 uses ordered double dots;
+   mapped lower-precision formats use ordered F32 products/additions, including
+   Q4_0's interleaved nibble order. Inference retains its separate faster kernels.
+   AdamW can amplify otherwise tiny forward differences near zero gradients. */
+__device__ __forceinline__ void nya_train_forward(const unsigned char *w, const float *x, float *y,
+    unsigned long long columns, unsigned long long row_bytes, unsigned rows, unsigned tokens, unsigned TYPE)
+{
+    /* Low-rank projections have at most eight output rows. Give each actual
+       output its own lane instead of loading a mostly empty 32-row tile and
+       synchronizing twice per input tile. Keep the ordered double dot exactly
+       as in the general dense path: this is a scheduling change only. Small
+       independent blocks spread small batches over multiple SMs. Larger
+       batches retain 32-token blocks to avoid excessive partial warps. */
+    if (TYPE==0 && rows<=8) {
+        unsigned long long output=(unsigned long long)blockIdx.x*blockDim.x+threadIdx.x;
+        unsigned row=(unsigned)(output%rows);
+        unsigned long long token=output/rows;
+        if (blockDim.y!=1) {
+            unsigned local=threadIdx.y*32+threadIdx.x;
+            if (local/rows>=32) return;
+            row=local%rows; token=(unsigned long long)blockIdx.y*32+local/rows;
+        }
+        if (token<tokens) {
+            double sum=0;
+            for (unsigned long long k=0;k<columns;++k)
+                sum=__dadd_rn(sum,__dmul_rn((double)nya_weight(w+(unsigned long long)row*row_bytes,k,0),
+                    (double)x[(unsigned long long)token*columns+k]));
+            y[(unsigned long long)token*rows+row]=(float)sum;
+        }
+        return;
+    }
+    __shared__ float weights[32][33],inputs[32][33];
+    unsigned lane=threadIdx.y*32+threadIdx.x,row=blockIdx.x*32+threadIdx.x,token=blockIdx.y*32+threadIdx.y;
+    double precise[4]={0}; float sum[4]={0};
+    for (unsigned long long base=0;base<columns;base+=32) {
+        #pragma unroll
+        for (unsigned slot=0;slot<4;++slot) {
+            unsigned r=lane/32+slot*8,k=lane%32,wr=blockIdx.x*32+r,xr=blockIdx.y*32+r;
+            weights[r][k]=wr<rows && base+k<columns?nya_weight(w+(unsigned long long)wr*row_bytes,base+k,TYPE):0;
+            inputs[r][k]=xr<tokens && base+k<columns?x[(unsigned long long)xr*columns+base+k]:0;
+        }
+        __syncthreads();
+        #pragma unroll
+        for (unsigned j=0;j<32;++j) {
+            unsigned k=TYPE==2?j/2+(j%2)*16:j;
+            if (row<rows && base+k<columns) {
+                float weight=weights[threadIdx.x][k];
+                #pragma unroll
+                for (unsigned slot=0;slot<4;++slot) if (token+slot*8<tokens) {
+                    float input=inputs[threadIdx.y+slot*8][k];
+                    if (TYPE==0) precise[slot]=__dadd_rn(precise[slot],__dmul_rn((double)weight,(double)input));
+                    else sum[slot]=__fadd_rn(sum[slot],__fmul_rn(weight,input));
+                }
+            }
+        }
+        __syncthreads();
+    }
+    if (row<rows) {
+        #pragma unroll
+        for (unsigned slot=0;slot<4;++slot) if (token+slot*8<tokens)
+            y[(unsigned long long)(token+slot*8)*rows+row]=TYPE==0?(float)precise[slot]:sum[slot];
+    }
+}
+#define NYA_TRAIN_FORWARD(TYPE) extern "C" __global__ void nya_train_forward_##TYPE(const unsigned char *w,const float *x,float *y,unsigned long long c,unsigned long long s,unsigned o,unsigned n) { nya_train_forward(w,x,y,c,s,o,n,TYPE); }
+NYA_TRAIN_FORWARD(0) NYA_TRAIN_FORWARD(1) NYA_TRAIN_FORWARD(2) NYA_TRAIN_FORWARD(8) NYA_TRAIN_FORWARD(12) NYA_TRAIN_FORWARD(14) NYA_TRAIN_FORWARD(30)
+#undef NYA_TRAIN_FORWARD
+template<unsigned TILE>
 __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float *dy, float *dx,
     unsigned long long inputs, unsigned long long row_bytes, unsigned outputs, unsigned tokens, unsigned TYPE)
 {
-    __shared__ float weights[32][33], gradients[32][33];
+    __shared__ float weights[32][TILE+1], gradients[32][TILE+1];
     unsigned linear = threadIdx.y*32+threadIdx.x;
     unsigned long long column = (unsigned long long)blockIdx.x*32+threadIdx.x;
     unsigned token = blockIdx.y*32+threadIdx.y;
@@ -184,22 +433,23 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
     for (unsigned slot = 0; slot < 4; ++slot)
         sum[slot] = column < inputs && token+slot*8 < tokens ?
             dx[(unsigned long long)(token+slot*8)*inputs+column] : 0;
-    for (unsigned long long base = 0; base < outputs; base += 32) {
+    for (unsigned long long base = 0; base < outputs; base += TILE) {
         #pragma unroll
-        for (unsigned slot = 0; slot < 4; ++slot) {
+        for (unsigned slot = 0; slot < TILE/8; ++slot) {
             unsigned row = linear%32, k = linear/32+slot*8;
             unsigned long long source_column = (unsigned long long)blockIdx.x*32+row;
             /* Lanes read adjacent original weight columns, then transpose into
                padded shared memory for the W^T multiply. */
             weights[row][k] = source_column < inputs && base+k < outputs ?
                 nya_weight(w+(base+k)*row_bytes,source_column,TYPE) : 0;
-            unsigned source_token = blockIdx.y*32+k;
-            gradients[k][row] = source_token < tokens && base+row < outputs ?
-                dy[(unsigned long long)source_token*outputs+base+row] : 0;
+            unsigned gradient_row=linear/TILE+slot*(256/TILE), gradient_column=linear%TILE;
+            unsigned source_token = blockIdx.y*32+gradient_row;
+            gradients[gradient_row][gradient_column] = source_token < tokens && base+gradient_column < outputs ?
+                dy[(unsigned long long)source_token*outputs+base+gradient_column] : 0;
         }
         __syncthreads();
         #pragma unroll
-        for (unsigned k = 0; k < 32; ++k) {
+        for (unsigned k = 0; k < TILE; ++k) {
             float weight = weights[threadIdx.x][k];
             #pragma unroll
             for (unsigned slot = 0; slot < 4; ++slot)
@@ -214,7 +464,9 @@ __device__ __forceinline__ void nya_train_dx(const unsigned char *w, const float
             if (token+slot*8 < tokens) dx[(unsigned long long)(token+slot*8)*inputs+column] = sum[slot];
     }
 }
-#define NYA_TRAIN_DX(TYPE) extern "C" __global__ void nya_train_dx_##TYPE(const unsigned char *w, const float *dy, float *dx, unsigned long long i, unsigned long long s, unsigned o, unsigned n) { nya_train_dx(w,dy,dx,i,s,o,n,TYPE); }
+/* Q4_K benefits from fewer synchronization points; Q6_K and other formats
+   retain the smaller tile. Both specializations preserve ordered F32 dots. */
+#define NYA_TRAIN_DX(TYPE) extern "C" __global__ void nya_train_dx_##TYPE(const unsigned char *w, const float *dy, float *dx, unsigned long long i, unsigned long long s, unsigned o, unsigned n) { nya_train_dx<(TYPE==12?64:32)>(w,dy,dx,i,s,o,n,TYPE); }
 NYA_TRAIN_DX(0) NYA_TRAIN_DX(1) NYA_TRAIN_DX(2) NYA_TRAIN_DX(8) NYA_TRAIN_DX(12) NYA_TRAIN_DX(14) NYA_TRAIN_DX(30)
 #undef NYA_TRAIN_DX
 
@@ -252,5 +504,174 @@ extern "C" __global__ void nya_train_dw(const float *x, const float *dy, float *
         #pragma unroll
         for (unsigned slot = 0; slot < 4; ++slot)
             if (row+slot*8 < outputs) dw[(unsigned long long)(row+slot*8)*inputs+column] = sum[slot];
+    }
+}
+
+/* One thread owns each pair. Double trigonometry and intermediate products
+   preserve the CPU graph contract; only storage and gradient addition are F32.
+   No atomics, saved activation, or synchronization is needed for the adjoint. */
+extern "C" __global__ void nya_train_rope(const float *source, const float *frequencies, float *out,
+    unsigned long long pairs, unsigned long long columns, unsigned long long dimension,
+    int split_half, int backward)
+{
+    unsigned long long pair=(unsigned long long)blockIdx.x*256+threadIdx.x;
+    if (pair>=pairs) return;
+    unsigned long long half=dimension/2, j=pair%half;
+    unsigned long long base=(pair/half)*dimension;
+    unsigned long long i=base+(split_half ? j : 2*j), k=i+(split_half ? half : 1);
+    double angle=(double)(base/columns)*(double)frequencies[j];
+    double c=cos(angle), s=sin(angle), a=source[i], b=source[k];
+    float first=(float)(backward ? a*c+b*s : a*c-b*s);
+    float second=(float)(backward ? b*c-a*s : b*c+a*s);
+    if (backward) { out[i]=__fadd_rn(out[i],first); out[k]=__fadd_rn(out[k],second); }
+    else { out[i]=first; out[k]=second; }
+}
+
+/* Attention saves O(tokens*heads) normalization state. Backward recomputes
+   probabilities into a bounded 16-query workspace, then gives every gradient
+   element one writer. Tile order preserves row/head accumulation across tiles. */
+__device__ __forceinline__ bool nya_train_attn_visible(unsigned long long row, unsigned long long col,
+    unsigned long long window, const unsigned *groups)
+{
+    if (window && row>=window && col<row-window+1) return false;
+    return col<=row || (window && groups && groups[row] && groups[row]==groups[col]);
+}
+__device__ __forceinline__ float nya_train_attn_score(const float *q,const float *k,
+    unsigned long long row,unsigned long long head,unsigned long long col,
+    unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,double scale)
+{
+    unsigned long long qi=(row*heads+head)*dim,ki=(col*kv_heads+head/(heads/kv_heads))*dim;
+    double dot=0;
+    for (unsigned long long j=0;j<dim;++j) dot+=(double)q[qi+j]*(double)k[ki+j];
+    double score=dot*scale;
+    /* Check before the F32 cast: a slight overflow can round back to FLT_MAX. */
+    if (!isfinite(score) || fabs(score)>(double)__int_as_float(0x7f7fffff)) return __int_as_float(0x7fc00000);
+    return (float)score;
+}
+extern "C" __global__ void nya_train_attention(const float *q,const float *k,const float *v,
+    const unsigned *groups,float *out,double *state,unsigned long long n,unsigned long long heads,
+    unsigned long long kv_heads,unsigned long long dim,unsigned long long window,double scale)
+{
+    __shared__ double reduction[256];
+    __shared__ float probability[256];
+    unsigned lane=threadIdx.x;
+    unsigned long long row=blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long first=window && row>=window?row-window+1:0;
+    unsigned long long end=window && groups?n:row+1;
+    double maximum=-(double)__int_as_float(0x7f800000);
+    int bad=0;
+    for (unsigned long long col=first+lane;col<end;col+=256) if (nya_train_attn_visible(row,col,window,groups)) {
+        float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+        if (!isfinite(score)) bad=1;
+        else if (score>maximum) maximum=score;
+    }
+    if (__syncthreads_or(bad)) {
+        if (!lane) { state[2*blockIdx.x]=__int_as_float(0x7fc00000); state[2*blockIdx.x+1]=__int_as_float(0x7fc00000); }
+        for (unsigned long long j=lane;j<dim;j+=256) out[((unsigned long long)blockIdx.x)*dim+j]=__int_as_float(0x7fc00000);
+        return;
+    }
+    reduction[lane]=maximum; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride && reduction[lane+stride]>reduction[lane]) reduction[lane]=reduction[lane+stride];
+        __syncthreads();
+    }
+    maximum=reduction[0];
+    double mass=0;
+    for (unsigned long long col=first+lane;col<end;col+=256) if (nya_train_attn_visible(row,col,window,groups)) {
+        float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+        mass+=(float)exp((double)score-maximum);
+    }
+    /* Every lane has read the shared maximum before overwriting reduction. */
+    __syncthreads(); reduction[lane]=mass; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) reduction[lane]+=reduction[lane+stride];
+        __syncthreads();
+    }
+    mass=reduction[0];
+    if (!lane) { state[2*blockIdx.x]=maximum; state[2*blockIdx.x+1]=mass; }
+    for (unsigned long long base_dim=0;base_dim<dim;base_dim+=256) {
+        unsigned long long j=base_dim+lane;
+        double sum=0;
+        for (unsigned long long base=first;base<end;base+=256) {
+            unsigned long long col=base+lane;
+            float p=0;
+            if (col<end && nya_train_attn_visible(row,col,window,groups)) {
+                float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+                p=(float)((float)exp((double)score-maximum)/mass);
+            }
+            probability[lane]=p; __syncthreads();
+            if (j<dim) for (unsigned t=0;t<256 && base+t<end;++t)
+                sum+=(double)probability[t]*v[((base+t)*kv_heads+kh)*dim+j];
+            __syncthreads();
+        }
+        if (j<dim) out[(row*heads+head)*dim+j]=(float)sum;
+    }
+}
+extern "C" __global__ void nya_train_attention_prepare(const float *q,const float *k,const float *v,
+    const unsigned *groups,const float *dy,const double *state,double *workspace,
+    unsigned long long n,unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,
+    unsigned long long window,double scale,unsigned long long start,int scores)
+{
+    __shared__ double reduction[256];
+    unsigned lane=threadIdx.x;
+    unsigned long long row=start+blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long qi=(row*heads+head)*dim,base=(unsigned long long)blockIdx.x*n;
+    double maximum=state[2*(row*heads+head)],mass=state[2*(row*heads+head)+1],average=0;
+    for (unsigned long long col=lane;col<n;col+=256) {
+        float p=0; double dp=0;
+        if (nya_train_attn_visible(row,col,window,groups)) {
+            float score=nya_train_attn_score(q,k,row,head,col,heads,kv_heads,dim,scale);
+            p=(float)((float)exp((double)score-maximum)/mass);
+            if (scores && p!=0) {
+                unsigned long long ki=(col*kv_heads+kh)*dim;
+                for (unsigned long long j=0;j<dim;++j) dp+=(double)dy[qi+j]*(double)v[ki+j];
+                average+=(double)p*dp;
+            }
+        }
+        workspace[2*(base+col)]=p; workspace[2*(base+col)+1]=dp;
+    }
+    reduction[lane]=average; __syncthreads();
+    for (unsigned stride=128;stride;stride>>=1) {
+        if (lane<stride) reduction[lane]+=reduction[lane+stride];
+        __syncthreads();
+    }
+    average=reduction[0];
+    for (unsigned long long col=lane;col<n;col+=256) {
+        double p=workspace[2*(base+col)],dp=workspace[2*(base+col)+1];
+        workspace[2*(base+col)+1]=p!=0?p*(dp-average)*scale:0;
+    }
+}
+extern "C" __global__ void nya_train_attention_dq(const float *k,const double *workspace,float *dq,
+    unsigned long long n,unsigned long long heads,unsigned long long kv_heads,unsigned long long dim,unsigned long long start)
+{
+    unsigned long long row=start+blockIdx.x/heads,head=blockIdx.x%heads,kh=head/(heads/kv_heads);
+    unsigned long long base=(unsigned long long)blockIdx.x*n;
+    for (unsigned long long j=threadIdx.x;j<dim;j+=256) {
+        unsigned long long qi=(row*heads+head)*dim+j;
+        float sum=dq[qi];
+        for (unsigned long long col=0;col<n;++col) if (workspace[2*(base+col)]!=0) {
+            double ds=workspace[2*(base+col)+1];
+            sum=__fadd_rn(sum,(float)(ds*(double)k[(col*kv_heads+kh)*dim+j]));
+        }
+        dq[qi]=sum;
+    }
+}
+extern "C" __global__ void nya_train_attention_dkv(const float *q,const float *dy,const double *workspace,
+    float *dk,float *dv,unsigned long long n,unsigned long long heads,unsigned long long kv_heads,
+    unsigned long long dim,unsigned long long start,unsigned long long count)
+{
+    unsigned long long col=blockIdx.x/kv_heads,kh=blockIdx.x%kv_heads,group=heads/kv_heads;
+    for (unsigned long long j=threadIdx.x;j<dim;j+=256) {
+        unsigned long long ki=(col*kv_heads+kh)*dim+j;
+        float sum_k=dk?dk[ki]:0,sum_v=dv?dv[ki]:0;
+        for (unsigned long long r=0;r<count;++r) for (unsigned long long h=kh*group;h<(kh+1)*group;++h) {
+            unsigned long long index=(r*heads+h)*n+col,qi=((start+r)*heads+h)*dim+j;
+            float p=(float)workspace[2*index];
+            if (p==0) continue;
+            if (dk) sum_k=__fadd_rn(sum_k,(float)(workspace[2*index+1]*(double)q[qi]));
+            if (dv) sum_v=__fadd_rn(sum_v,__fmul_rn(p,dy[qi]));
+        }
+        if (dk) dk[ki]=sum_k;
+        if (dv) dv[ki]=sum_v;
     }
 }

@@ -1,0 +1,28 @@
+[
+  {
+    "name": "progress-build",
+    "command": [
+      "cmake",
+      "--build",
+      "build-cuda",
+      "--target",
+      "fyodor-train",
+      "nya-test-train-runner",
+      "--parallel",
+      "6"
+    ],
+    "exit_code": 0
+  },
+  {
+    "name": "progress-tests",
+    "command": [
+      "ctest",
+      "--test-dir",
+      "build-cuda",
+      "-R",
+      "train-cuda-|train-evaluation|train-stop-workflows|train-accumulation",
+      "--output-on-failure"
+    ],
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,27 @@
+Test project C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cuda
+    Start 125: train-stop-workflows
+1/4 Test #125: train-stop-workflows .............   Passed    1.13 sec
+    Start 127: train-evaluation
+2/4 Test #127: train-evaluation .................   Passed    0.64 sec
+    Start 128: train-cuda-eval
+3/4 Test #128: train-cuda-eval ..................   Passed    8.91 sec
+    Start 129: train-cuda-stop
+4/4 Test #129: train-cuda-stop ..................***Failed    0.68 sec
+Traceback (most recent call last):
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\tests\train_stop.py", line 118, in <module>
+    stopped, checkpoint, _ = run(name, 5000, settings, stop=control)
+                             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\tests\train_stop.py", line 73, in run
+    assert first.startswith("step=1 "), first
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError: device=cuda step=1 timing_source=cuda_events forward_ms=3.501568 backward_ms=3.606080 optimizer_ms=0.078848 preparation_ms=3.258600 gradient_norm=4.58891615 device_used_bytes=729280 device_peak_bytes=858884 device_capacity_bytes=1073741824
+
+
+
+75% tests passed, 1 tests failed out of 4
+
+Total Test time (real) =  11.38 sec
+
+The following tests FAILED:
+	129 - train-cuda-stop (Failed)
+Errors while running CTest

@@ -1,0 +1,14 @@
+[  3%] Building C object CMakeFiles/nya-engine.dir/core/training_device.c.obj
+[  6%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/CUDA/cuda.c.obj
+[ 10%] Linking C static library libnya-engine.a
+[ 93%] Built target nya-engine
+[ 96%] Building C object CMakeFiles/nya-test-training-attention.dir/tests/test_training_attention.c.obj
+C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\tests\test_training_attention.c: In function 'attention_case':
+C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\tests\test_training_attention.c:55:60: error: conversion to 'size_t' {aka 'long long unsigned int'} from 'int' may change the sign of the result [-Werror=sign-conversion]
+   55 |     size_t tile_count=n/16+(n%16!=0),kernels=1+2*tile_count*(1+((optional&1)!=0)+((optional&6)!=0));
+      |                                                            ^
+cc1.exe: all warnings being treated as errors
+make[3]: *** [CMakeFiles\nya-test-training-attention.dir\build.make:79: CMakeFiles/nya-test-training-attention.dir/tests/test_training_attention.c.obj] Error 1
+make[2]: *** [CMakeFiles\Makefile2:2249: CMakeFiles/nya-test-training-attention.dir/all] Error 2
+make[1]: *** [CMakeFiles\Makefile2:2256: CMakeFiles/nya-test-training-attention.dir/rule] Error 2
+make: *** [Makefile:926: nya-test-training-attention] Error 2

@@ -4,7 +4,7 @@ import {readCompletionStream} from '../src/stream.js';
 import {messageBody} from '../src/message.js';
 import {parseBenchmark, benchmarkMarkup} from '../src/benchmark.js';
 import {formatConversation, normalizeChat, generationOptions} from '../src/session.js';
-import {parseTrainingMetric, parseEvaluationMetric, currentTrainingLines} from '../src/training-metrics.js';
+import {parseTrainingMetric, parseTrainingDeviceMetric, parseEvaluationMetric, currentTrainingLines} from '../src/training-metrics.js';
 
 test('Evaluation telemetry stays distinct from training and rejects invalid values',()=>{
   const line='[trainer] eval_step=4 validation_loss=1.234 eval_tokens=20 eval_units=15 eval_records=3 eval_ms=5';
@@ -87,4 +87,13 @@ test('Conversation validation and inference controls remain bounded',()=>{
   assert.throws(()=>normalizeChat({messages:[{role:'system',text:'bad'}]},'id'));
   assert.throws(()=>generationOptions({temperature:8,top_p:1,top_k:1,max_tokens:4,seed:''}));
   assert(formatConversation([{role:'user',content:'hi'}],'gemma4').includes('hi'));
+});
+
+test('GPU training telemetry reports measured arena usage without inventing VRAM',()=>{
+  const record=parseTrainingDeviceMetric('step=1 loss=2 compute=cuda gradient_norm=0.125 device_peak_bytes=1048576 device_capacity_bytes=2097152 forward_ms=1.5 backward_ms=2 optimizer_ms=0.1');
+  assert.equal(record.compute,'cuda');assert.equal(record.gradientNorm,0.125);assert.equal(record.devicePeakBytes,1048576);assert.equal(record.forwardMs,1.5);
+  assert.equal(parseTrainingDeviceMetric('step=1 loss=2'),null);
+  assert.equal(parseTrainingDeviceMetric('compute=cuda_bad'),null);
+  assert.equal(parseTrainingDeviceMetric('compute=cpu').devicePeakBytes,null);
+  for(const value of ['-1','1e999','NaN','1.5','9007199254740992'])assert.equal(parseTrainingDeviceMetric(`compute=cuda device_peak_bytes=${value}`).devicePeakBytes,null);
 });

@@ -253,6 +253,8 @@ Headers are found through `CUDA_PATH`/`CUDA_HOME` or explicit `NYA_CUDA_INCLUDE_
 
 CUDA supports F32, F16, BF16, Q4_0, Q8_0, Q4_K and Q6_K projections. Dense LLaMA and dense Gemma 4 (including shared KV) now use persistent device execution plans: compressed weights, activations, Q/K/V, attention/FFN scratch, KV and logits remain on the GPU. Prefill uses custom F32 64×64 tiled GEMM (32×32 for small shapes) in chunks of up to 512 tokens (`NYA_CUDA_BATCH=1..512`, reduced when the memory budget requires it); decode uses format-specialized warp reductions and reusable CUDA executable graphs. Only final logits return to the CPU. `NYA_CUDA_REFERENCE=1` selects the generic matvec kernel and disables fused multiply-add; normal mode permits FMA without enabling unsafe fast-math. `NYA_CUDA_GRAPHS=0` disables graph submission for diagnosis.
 
+Single-token non-Gemma decode fuses matching Q4_K gate/up projections and SiLU into one kernel, sharing activation reads while retaining each dot's accumulation order. Packed scale/minimum metadata is loaded as aligned 32-bit words and extracted with constant shifts; weight and activation precision are unchanged. The standalone Q4_K decode dot kernels use the same metadata loads. Q4_K/Q6_K decode scales use direct two-byte-aligned FP16 loads; the generic byte-based helper and reference-math conversion are retained. The fused gate/up block loop uses eight-way compiler unrolling while retaining each accumulation sequence. Other formats, batched execution and reference mode retain separate kernels. `NYA_CUDA_GATE_UP=0` disables this optimization for comparison; the selection is fixed when the execution plan is created. No extra buffers or host transfers are introduced.
+
 Decode retains at most two graphs per resident session and replays them without
 recapturing on each token. For 64/128-wide heads after 256 cached tokens,
 four blocks divide each head's context and a second kernel combines their F32
@@ -518,23 +520,22 @@ The SDKs are optional **client** dependencies. They were exercised against the l
 
 The [resident CUDA matrix foundation](benchmarks/TRAINING_DEVICE_20260927.md)
 provides private persistent buffers and matrix forward/input-gradient/weight-gradient
-kernels. It is not yet connected to the training graph; the CLI and UI still use
-CPU training. Complete resident loss, backward, optimizer and recovery semantics
-remain under development.
+kernels. These now underpin complete resident graph/session execution and public
+CPU/CUDA training selection, described below.
 Inference and training compile [separate CUDA modules](benchmarks/CUDA_MODULES_20260928.md),
 so inference initialization does not compile training derivatives. The native
 training context does not load optional inference matrix libraries.
 The private device also supports [reusable scratch scopes](benchmarks/TRAINING_SCRATCH_20260928.md).
 Ending a scope invalidates its temporary handles and recycles storage in stream
 order without adding a host fence; allocations preceding the scope survive.
-This prepares repeated graph execution while public training remains on CPU.
+Scratch scopes support repeated resident graph execution.
 Queued [finite checks](benchmarks/TRAINING_FINITE_20260928.md) can retain the
 first numerical failure in a four-byte device status across temporary-buffer
 reuse. They are private graph-building primitives, not a completed GPU trainer.
 Resident [elementwise forward/backward operations](benchmarks/TRAINING_ELEMENTWISE_20260929.md)
 now cover activations, scale, broadcast addition/multiplication and accumulating
 gradients. A composed gated branch and real TinyLlama frozen FFN match CPU
-autograd without intermediate host transfers; full GPU training remains unfinished.
+autograd without intermediate host transfers and feeds the decoder graph below.
 Resident [RMSNorm forward and backward](benchmarks/TRAINING_NORM_20260929.md)
 adds optional trainable normalization scales and caller-owned saved inverse state.
 The real-model normalized FFN probe checks full output, input-gradient and scale-gradient parity.
@@ -542,10 +543,44 @@ Resident [embedding forward/backward](benchmarks/TRAINING_EMBEDDING_20260929.md)
 uses immutable token maps and ordered repeated-token gradients. A real trainable
 embedding → normalized FFN component matches CPU autograd; matrix backward now
 preserves CPU F32 product/addition order, including existing gradients.
+Resident [RoPE forward/backward](benchmarks/TRAINING_ROPE_20261005.md) supports
+adjacent-pair and split-half layouts, with resident frequencies and accumulated
+input gradients. Large finite CPU training angles bypass inaccurate MinGW
+static trigonometry using the already-linked Windows CRT imports.
+Resident [causal/local attention forward/backward](benchmarks/TRAINING_ATTENTION_20261005.md)
+recomputes probabilities in bounded query tiles. It saves linear-sized
+normalization state and accumulates grouped-query gradients in CPU order.
+The real TinyLlama attention branch includes Q/K/V and output projections plus
+RoPE. Resident [masked cross-entropy, logprob and DPO](benchmarks/TRAINING_LOSS_20261006.md)
+now keep loss values, saved normalization and gradients on the device. The real
+TinyLlama vocabulary projection matches CPU autograd for CE and paired DPO
+without intermediate readbacks.
+Resident [transactional AdamW](benchmarks/TRAINING_OPTIMIZER_20261006.md) now
+stages all parameter and moment updates before committing a valid step. It
+supports global gradient clipping and a resident integer step counter. Real
+TinyLlama vocabulary-head LoRA trajectories match CPU updates; this validation
+also corrected training forward matrices to preserve CPU accumulation rules.
+The private [resident session bridge](benchmarks/TRAINING_SESSION_20261006.md)
+now leases parameters exclusively, rejects stale CPU access, and snapshots all
+four parameter arrays for portable checkpointing or an atomic handoff back to
+CPU. A fresh GPU session resumes the same accumulated training trajectory with
+byte-identical final checkpoints. Freeing an undetached session discards its GPU
+updates and retains the original CPU recovery snapshot.
+The private [resident decoder graph](benchmarks/TRAINING_GRAPH_20261007.md) now
+connects these kernels into complete CUDA forward/backward execution for dense
+LLaMA and supported imported Gemma decoders, including masked CE and paired DPO.
+Frozen packed weights upload once per session; graph construction prepares
+metadata before execution. Random-model pretraining supports portable checkpoints,
+exact fresh-session resume, evaluation and export through this private interface.
+The [public CPU/CUDA trainer](benchmarks/TRAINING_CLI_CUDA_20261008.md) exposes
+this path through `--compute cuda`, including accumulation, evaluation, safe stop,
+checkpoint/resume and export. CPU remains the default. The desktop selects CUDA
+only when its bundled trainer reports it usable; unsupported GPU requests fail
+without CPU replay. `--device-memory-mib` separately bounds the resident arena.
 
-`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. Training uses the eager C autograd API in `include/training.h`; it has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, complete GPU backward, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
+`fyodor-train` and `include/pretraining.h` provide runnable dense LLaMA and Gemma 4 training paths. It supports randomly initialized LLaMA decoders, full-weight training, and LoRA over mapped GGUF weights. Gemma training starts from an imported checkpoint; a random Gemma factory is not implemented. CPU training uses the eager C autograd API in `include/training.h`; CUDA uses the private recorded graph/session implementation. The trainer has no Python dependency or PyTorch ABI. MoE/MTP training, multimodal encoder training, mixed precision, distributed training and large-scale streaming loaders remain unfinished.
 
-The CLI uses persistent native C CPU workers for sufficiently large dense and
+With `--compute cpu`, the CLI uses persistent native C CPU workers for sufficiently large dense and
 mapped matrix operations. `--threads 0` (default) chooses host cores, capped at
 64; `--threads 1` is serial, and explicit counts 1–64 are supported. Windows
 auto selection counts physical cores; POSIX uses online processors. Thread
@@ -793,7 +828,7 @@ The benchmark times synthetic token-ID transformer execution. Model load, tokeni
 
 JSON includes GGUF storage-type counts, model size/shape, selected backend, actual execution mode, device weight/KV/scratch bytes, and resident-plan kernel/transfer/fence counts summed across measured repetitions. Zero device counters on CPU or legacy Vulkan mean uninstrumented/nonresident execution, not a claim of zero physical transfers. Token IDs passed as kernel parameters are not counted as buffer uploads. Weight upload and RoPE setup occur outside timing. Driver context/module overhead, GPU utilization and process RSS are not currently sampled by this executable.
 
-`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. Matrix entries additionally report storage type, rows, columns, batch size, execution path, call count, and total milliseconds. Diagnostic storage holds 63 distinct matrix shapes plus an explicit overflow bucket; allocation failure retains the aggregate profile. A `vendor-gemm` entry includes weight expansion and all internal chunks, not one vendor kernel. Counts and timings include warmup and untimed prefix preparation. Profiling disables executable graphs and adds timing overhead, including possible host submission gaps; profile results must not be presented as normal throughput. No matrix contents or tensor names are logged. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. The [benchmark index](benchmarks/README.md) links the historical stages and the latest [training/export validation and matched inference baseline](benchmarks/TRAINING_20260923.md).
+`NYA_CUDA_PROFILE=1` records CUDA-event timings by operation class and prints them to stderr when a plan is freed. Matrix entries additionally report storage type, rows, columns, batch size, execution path, call count, and total milliseconds. Diagnostic storage holds 63 distinct matrix shapes plus an explicit overflow bucket; allocation failure retains the aggregate profile. A `vendor-gemm` entry includes weight expansion and all internal chunks, not one vendor kernel. A `gate-up-q4` entry includes both projections and SiLU, counted once per layer; its operation count is therefore half the former pair of dot calls. Counts and timings include warmup and untimed prefix preparation. Profiling disables executable graphs and adds timing overhead, including possible host submission gaps; profile results must not be presented as normal throughput. No matrix contents or tensor names are logged. `NYA_CPU_PROFILE=1` prints coarse prefill wall-clock totals for projections and attention/RoPE. The [benchmark index](benchmarks/README.md) links the historical stages and the latest [training/export validation and matched inference baseline](benchmarks/TRAINING_20260923.md).
 
 ### Historical Stage 2 performance and verification
 

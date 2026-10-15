@@ -1,0 +1,106 @@
+{
+  "completed_runs": 18,
+  "expected_runs": 18,
+  "performance_accepted": false,
+  "reason": "NVIDIA overlays respawned; reference installation overlaps later runs",
+  "groups": [
+    {
+      "context": 8,
+      "compute": "cpu",
+      "repetitions": 3,
+      "tokens_per_second_mean": 11.273386111111112,
+      "between_run_sd": 0.9388228012425597,
+      "phase_means_ms": {
+        "forward_ms": 360.1521666666667,
+        "backward_ms": 328.1732888888889,
+        "optimizer_ms": 16.49868888888889,
+        "step_ms": 713.5073555555556
+      }
+    },
+    {
+      "context": 8,
+      "compute": "cuda",
+      "repetitions": 3,
+      "tokens_per_second_mean": 14.760339444444444,
+      "between_run_sd": 0.41891182260263216,
+      "phase_means_ms": {
+        "forward_ms": 364.52735044444444,
+        "backward_ms": 131.59250466666668,
+        "optimizer_ms": 0.7764231111111111,
+        "step_ms": 542.3591,
+        "preparation_ms": 43.8132
+      }
+    },
+    {
+      "context": 32,
+      "compute": "cpu",
+      "repetitions": 3,
+      "tokens_per_second_mean": 12.397315888888889,
+      "between_run_sd": 1.1083735868769018,
+      "phase_means_ms": {
+        "forward_ms": 1268.3910333333333,
+        "backward_ms": 1282.0550222222223,
+        "optimizer_ms": 15.840866666666665,
+        "step_ms": 2597.093977777778
+      }
+    },
+    {
+      "context": 32,
+      "compute": "cuda",
+      "repetitions": 3,
+      "tokens_per_second_mean": 55.91968244444445,
+      "between_run_sd": 1.3603318501633832,
+      "phase_means_ms": {
+        "forward_ms": 378.36799444444443,
+        "backward_ms": 145.68281877777778,
+        "optimizer_ms": 0.7833564444444444,
+        "step_ms": 572.5564555555555,
+        "preparation_ms": 46.21227777777778
+      }
+    },
+    {
+      "context": 128,
+      "compute": "cpu",
+      "repetitions": 3,
+      "tokens_per_second_mean": 12.462183222222222,
+      "between_run_sd": 0.875577886641879,
+      "phase_means_ms": {
+        "forward_ms": 4923.1367,
+        "backward_ms": 5306.2453888888895,
+        "optimizer_ms": 16.744799999999998,
+        "step_ms": 10321.560933333334
+      }
+    },
+    {
+      "context": 128,
+      "compute": "cuda",
+      "repetitions": 3,
+      "tokens_per_second_mean": 139.25986344444445,
+      "between_run_sd": 6.845425267961672,
+      "phase_means_ms": {
+        "forward_ms": 543.084024888889,
+        "backward_ms": 320.4939338888889,
+        "optimizer_ms": 0.7790151111111111,
+        "step_ms": 922.0224111111111,
+        "preparation_ms": 56.015255555555555
+      }
+    }
+  ],
+  "parity": [
+    {
+      "context": 8,
+      "maximum_scaled_state_error": 3.637816611960844e-12,
+      "tolerance": 1e-05
+    },
+    {
+      "context": 32,
+      "maximum_scaled_state_error": 2.3197980697066045e-10,
+      "tolerance": 1e-05
+    },
+    {
+      "context": 128,
+      "maximum_scaled_state_error": 6.565457393694733e-07,
+      "tolerance": 1e-05
+    }
+  ]
+}

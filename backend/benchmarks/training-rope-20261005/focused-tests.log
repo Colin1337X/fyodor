@@ -1,0 +1,28 @@
+Test project C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cuda
+    Start 43: training-rope-interface
+1/5 Test #43: training-rope-interface ..........   Passed    0.03 sec
+    Start 45: training-rope-cuda
+2/5 Test #45: training-rope-cuda ...............***Failed    4.10 sec
+expected 1.12973797321 actual -1.34228027
+line 43: close_value(nya_train_data(y)[i],actual[i]) ()
+line 176: !rope_case(d,8193,2,8,split,0) && !rope_case(d,65,3,16,split,1) ()
+
+    Start 46: training-rope-cuda-reference
+3/5 Test #46: training-rope-cuda-reference .....***Failed    3.93 sec
+expected 1.12973797321 actual -1.34228027
+line 43: close_value(nya_train_data(y)[i],actual[i]) ()
+line 176: !rope_case(d,8193,2,8,split,0) && !rope_case(d,65,3,16,split,1) ()
+
+    Start 47: training-rope-cuda-failure-3
+4/5 Test #47: training-rope-cuda-failure-3 .....   Passed    0.21 sec
+    Start 48: training-rope-cuda-failure-4
+5/5 Test #48: training-rope-cuda-failure-4 .....   Passed    0.20 sec
+
+60% tests passed, 2 tests failed out of 5
+
+Total Test time (real) =   8.50 sec
+
+The following tests FAILED:
+	 45 - training-rope-cuda (Failed)
+	 46 - training-rope-cuda-reference (Failed)
+Errors while running CTest

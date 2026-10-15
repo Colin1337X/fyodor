@@ -30,3 +30,17 @@ export function parseEvaluationMetric(line) {
   if (count!==null && (!Number.isSafeInteger(count) || count<1)) return null;
   return {step,loss,records:count};
 }
+
+// Device memory is the trainer's bounded arena, not total process/device VRAM.
+export function parseTrainingDeviceMetric(line) {
+  const compute=/\bcompute=(cpu|cuda)(?:\s|$)/.exec(line)?.[1];
+  if(!compute)return null;
+  const value=(key,integer=false)=>{
+    const text=new RegExp(`\\b${key}=([-+\\d.eE]+)(?:\\s|$)`).exec(line)?.[1];
+    const n=text===undefined?NaN:Number(text);
+    return Number.isFinite(n)&&n>=0&&(!integer||Number.isSafeInteger(n))?n:null;
+  };
+  return {compute,gradientNorm:value('gradient_norm'),devicePeakBytes:value('device_peak_bytes',true),
+    deviceCapacityBytes:value('device_capacity_bytes',true),forwardMs:value('forward_ms'),
+    backwardMs:value('backward_ms'),optimizerMs:value('optimizer_ms')};
+}

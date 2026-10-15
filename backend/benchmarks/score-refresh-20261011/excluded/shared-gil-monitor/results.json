@@ -1,0 +1,3433 @@
+{
+  "configuration": {
+    "device": "cuda",
+    "width": 64,
+    "ff": 176,
+    "layers": 2,
+    "heads": 4,
+    "kv_heads": 2,
+    "context": 32,
+    "steps": 30,
+    "warmup": 10,
+    "repeats": 4,
+    "output": "D:\\fyodor-validation\\score-refresh-training-20261011",
+    "diagnostic": false,
+    "optimizer": "default",
+    "reference_precision": "float32",
+    "finite_difference": false
+  },
+  "torch_version": "2.11.0+cu128",
+  "revision": "b8cf762207fbbba959a684c6cbdb56e95ba3c37c",
+  "trainer_sha256": "16610db9248d286bf965daaef4c6b230d7fd34f6706b165a245a0f385ea49143",
+  "script_sha256": "48c956614fcc39ea1dcc0e0b50f188289bf7f6f9fdbc53a4b9d6ba5a0d46db56",
+  "reference": "eager float32 decoder; double RMS/RoPE/clip; TF32 off; AdamW default",
+  "timing": "whole update; startup/export excluded; first warmup and last diagnostic update excluded",
+  "tolerance": 1e-05,
+  "timing_environment_verified": true,
+  "pairs": [
+    {
+      "repeat": 0,
+      "order": [
+        "native",
+        "torch"
+      ],
+      "native_command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-train.exe",
+        "--data",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\corpus.txt",
+        "--dimension",
+        "64",
+        "--ff",
+        "176",
+        "--layers",
+        "2",
+        "--heads",
+        "4",
+        "--kv-heads",
+        "2",
+        "--context",
+        "32",
+        "--steps",
+        "30",
+        "--threads",
+        "6",
+        "--memory-mib",
+        "4096",
+        "--output",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-0.gguf",
+        "--checkpoint",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-0.ckpt",
+        "--metrics",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-0.csv",
+        "--compute",
+        "cuda"
+      ],
+      "torch_step_ms": [
+        739.7999000095297,
+        7.636299997102469,
+        14.117300001089461,
+        6.695700009004213,
+        5.812599993078038,
+        7.660899995244108,
+        6.634699995629489,
+        6.3950999901862815,
+        6.313399993814528,
+        5.499500010046177,
+        6.80800000554882,
+        5.682600007276051,
+        9.676300003775395,
+        5.074100001365878,
+        5.025299993576482,
+        5.293200010783039,
+        6.18650000251364,
+        5.7305000082124025,
+        6.817500005126931,
+        5.325199992512353,
+        5.165200011106208,
+        5.9483999939402565,
+        5.3087999986018986,
+        5.425600000307895,
+        6.481800010078587,
+        5.915299989283085,
+        5.503899999894202,
+        6.865699993795715,
+        6.069499999284744,
+        5.143699992913753
+      ],
+      "torch_losses": [
+        5.659517288208008,
+        5.364336967468262,
+        5.270323276519775,
+        5.098968029022217,
+        4.996431350708008,
+        4.931854248046875,
+        4.80977201461792,
+        4.681330680847168,
+        4.618709564208984,
+        4.547211647033691,
+        4.376362323760986,
+        4.323058128356934,
+        4.189541816711426,
+        4.184303283691406,
+        4.030596733093262,
+        3.9416542053222656,
+        3.8811588287353516,
+        3.781186103820801,
+        3.6846041679382324,
+        3.6205897331237793,
+        3.5835509300231934,
+        3.4314310550689697,
+        3.3568809032440186,
+        3.2787647247314453,
+        3.26114559173584,
+        3.127439498901367,
+        3.0567593574523926,
+        3.017518997192383,
+        2.916581392288208,
+        2.8505852222442627
+      ],
+      "native_mean_ms": 7.581631578947368,
+      "torch_mean_ms": 6.01596842247282,
+      "maximum_loss_absolute_error": 9.583569333670994e-07,
+      "state_maximum_scaled_errors": {
+        "parameter": 6.927271442691563e-06,
+        "gradient": 2.8863374268439657e-07,
+        "moment": 9.540988088474478e-08,
+        "variance": 3.4915306756921893e-10
+      },
+      "state_details": [
+        {
+          "parameter": 0,
+          "array": "parameter",
+          "scaled_error": 8.853970712152659e-08,
+          "flat_index": 7729,
+          "torch": -0.004535650368779898,
+          "native": -0.0045357393100857735,
+          "initial": -0.015002246014773846,
+          "torch_raw_gradient": 0.0013088330160826445,
+          "native_raw_gradient": 0.001308809733018279
+        },
+        {
+          "parameter": 0,
+          "array": "gradient",
+          "scaled_error": 2.8863374268439657e-07,
+          "flat_index": 2294,
+          "torch": 0.03253107890486717,
+          "native": 0.032530780881643295
+        },
+        {
+          "parameter": 0,
+          "array": "moment",
+          "scaled_error": 1.6246987755152986e-08,
+          "flat_index": 2248,
+          "torch": -0.0031487306114286184,
+          "native": -0.0031487143132835627
+        },
+        {
+          "parameter": 0,
+          "array": "variance",
+          "scaled_error": 6.547801190137648e-11,
+          "flat_index": 2294,
+          "torch": 8.553364023100585e-05,
+          "native": 8.553370571462438e-05
+        },
+        {
+          "parameter": 1,
+          "array": "parameter",
+          "scaled_error": 4.6931577912801004e-07,
+          "flat_index": 14,
+          "torch": 1.0320535898208618,
+          "native": 1.0320526361465454,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.039073798805475235,
+          "native_raw_gradient": -0.03907376527786255
+        },
+        {
+          "parameter": 1,
+          "array": "gradient",
+          "scaled_error": 3.9385085415233334e-08,
+          "flat_index": 51,
+          "torch": -0.04044950008392334,
+          "native": -0.04044954106211662
+        },
+        {
+          "parameter": 1,
+          "array": "moment",
+          "scaled_error": 1.2851171682370932e-08,
+          "flat_index": 51,
+          "torch": -0.014577959664165974,
+          "native": -0.014577972702682018
+        },
+        {
+          "parameter": 1,
+          "array": "variance",
+          "scaled_error": 1.1823268926403063e-11,
+          "flat_index": 9,
+          "torch": 1.371862890664488e-05,
+          "native": 1.3718640730076004e-05
+        },
+        {
+          "parameter": 2,
+          "array": "parameter",
+          "scaled_error": 1.7689551157218375e-07,
+          "flat_index": 673,
+          "torch": 0.021374434232711792,
+          "native": 0.021374614909291267,
+          "initial": -0.0030176264699548483,
+          "torch_raw_gradient": -0.0016757732955738902,
+          "native_raw_gradient": -0.001675774110481143
+        },
+        {
+          "parameter": 2,
+          "array": "gradient",
+          "scaled_error": 2.2161746926485648e-07,
+          "flat_index": 2289,
+          "torch": -0.21028746664524078,
+          "native": -0.21028773486614227
+        },
+        {
+          "parameter": 2,
+          "array": "moment",
+          "scaled_error": 9.540988088474478e-08,
+          "flat_index": 2289,
+          "torch": -0.09326322376728058,
+          "native": -0.09326332807540894
+        },
+        {
+          "parameter": 2,
+          "array": "variance",
+          "scaled_error": 3.4915306756921893e-10,
+          "flat_index": 2289,
+          "torch": 0.00026605906896293163,
+          "native": 0.0002660594182088971
+        },
+        {
+          "parameter": 3,
+          "array": "parameter",
+          "scaled_error": 5.950244599262078e-07,
+          "flat_index": 57,
+          "torch": 1.0034363269805908,
+          "native": 1.0034351348876953,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.001787603017874062,
+          "native_raw_gradient": -0.001787603017874062
+        },
+        {
+          "parameter": 3,
+          "array": "gradient",
+          "scaled_error": 1.2298731810744812e-08,
+          "flat_index": 41,
+          "torch": 0.003357445588335395,
+          "native": 0.003357433248311281
+        },
+        {
+          "parameter": 3,
+          "array": "moment",
+          "scaled_error": 6.002464636445382e-10,
+          "flat_index": 61,
+          "torch": -3.333194035803899e-05,
+          "native": -3.333134009153582e-05
+        },
+        {
+          "parameter": 3,
+          "array": "variance",
+          "scaled_error": 1.2434497875801753e-13,
+          "flat_index": 61,
+          "torch": 4.6456548830065e-08,
+          "native": 4.645667317504376e-08
+        },
+        {
+          "parameter": 4,
+          "array": "parameter",
+          "scaled_error": 1.7350671441818122e-06,
+          "flat_index": 3666,
+          "torch": -0.0030771323945373297,
+          "native": -0.0030788728035986423,
+          "initial": -0.013897765427827835,
+          "torch_raw_gradient": 0.00013276787649374455,
+          "native_raw_gradient": 0.00013276866229716688
+        },
+        {
+          "parameter": 4,
+          "array": "gradient",
+          "scaled_error": 2.0360180208456313e-09,
+          "flat_index": 4068,
+          "torch": -0.0006140861660242081,
+          "native": -0.00061408820329234
+        },
+        {
+          "parameter": 4,
+          "array": "moment",
+          "scaled_error": 3.491837374802742e-10,
+          "flat_index": 70,
+          "torch": 0.00017825317627284676,
+          "native": 0.00017825352551881224
+        },
+        {
+          "parameter": 4,
+          "array": "variance",
+          "scaled_error": 3.885780586188048e-15,
+          "flat_index": 88,
+          "torch": 1.4261558600736635e-09,
+          "native": 1.4261597458542496e-09
+        },
+        {
+          "parameter": 5,
+          "array": "parameter",
+          "scaled_error": 1.8655488531749143e-07,
+          "flat_index": 465,
+          "torch": 0.018412601202726364,
+          "native": 0.018412411212921143,
+          "initial": 0.016095345839858055,
+          "torch_raw_gradient": -0.00028704479336738586,
+          "native_raw_gradient": -0.0002870448515750468
+        },
+        {
+          "parameter": 5,
+          "array": "gradient",
+          "scaled_error": 3.1830398317111985e-09,
+          "flat_index": 1603,
+          "torch": 6.021856461302377e-05,
+          "native": 6.021538138156757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "moment",
+          "scaled_error": 5.311336925828414e-10,
+          "flat_index": 1624,
+          "torch": -2.1149011445231736e-05,
+          "native": -2.114954259013757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "variance",
+          "scaled_error": 3.7192471324942744e-15,
+          "flat_index": 30,
+          "torch": 8.558347919240816e-10,
+          "native": 8.558385111712141e-10
+        },
+        {
+          "parameter": 6,
+          "array": "parameter",
+          "scaled_error": 4.7800416069776475e-08,
+          "flat_index": 747,
+          "torch": 0.01314548496156931,
+          "native": 0.01314543653279543,
+          "initial": 0.015570230782032013,
+          "torch_raw_gradient": 0.01696547493338585,
+          "native_raw_gradient": 0.016965404152870178
+        },
+        {
+          "parameter": 6,
+          "array": "gradient",
+          "scaled_error": 1.016437138900983e-07,
+          "flat_index": 1753,
+          "torch": -0.026213394477963448,
+          "native": -0.02621329016983509
+        },
+        {
+          "parameter": 6,
+          "array": "moment",
+          "scaled_error": 5.5812288124457154e-09,
+          "flat_index": 1955,
+          "torch": 0.0012015764368698,
+          "native": 0.0012015820248052478
+        },
+        {
+          "parameter": 6,
+          "array": "variance",
+          "scaled_error": 1.5461344010647693e-11,
+          "flat_index": 1771,
+          "torch": 4.32914930570405e-06,
+          "native": 4.32916476711398e-06
+        },
+        {
+          "parameter": 7,
+          "array": "parameter",
+          "scaled_error": 4.4141458488411445e-08,
+          "flat_index": 1911,
+          "torch": -0.012732423841953278,
+          "native": -0.012732379138469696,
+          "initial": -0.0065168095752596855,
+          "torch_raw_gradient": -0.0033685150556266308,
+          "native_raw_gradient": -0.0033685106318444014
+        },
+        {
+          "parameter": 7,
+          "array": "gradient",
+          "scaled_error": 8.077990543142732e-08,
+          "flat_index": 3885,
+          "torch": -0.014564129523932934,
+          "native": -0.014564047567546368
+        },
+        {
+          "parameter": 7,
+          "array": "moment",
+          "scaled_error": 4.656114604983941e-09,
+          "flat_index": 2925,
+          "torch": -0.00010705046588554978,
+          "native": -0.00010705512249842286
+        },
+        {
+          "parameter": 7,
+          "array": "variance",
+          "scaled_error": 4.320087690357077e-12,
+          "flat_index": 2404,
+          "torch": 2.8438391836971277e-06,
+          "native": 2.8438348635972943e-06
+        },
+        {
+          "parameter": 8,
+          "array": "parameter",
+          "scaled_error": 5.315284852258628e-07,
+          "flat_index": 42,
+          "torch": 1.0184886455535889,
+          "native": 1.018487572669983,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0005040040123276412,
+          "native_raw_gradient": -0.0005040014511905611
+        },
+        {
+          "parameter": 8,
+          "array": "gradient",
+          "scaled_error": 8.838206611017085e-09,
+          "flat_index": 43,
+          "torch": -0.0010588370496407151,
+          "native": -0.0010588282020762563
+        },
+        {
+          "parameter": 8,
+          "array": "moment",
+          "scaled_error": 4.792985452972687e-10,
+          "flat_index": 56,
+          "torch": 1.0684160770324524e-05,
+          "native": 1.068368146661669e-05
+        },
+        {
+          "parameter": 8,
+          "array": "variance",
+          "scaled_error": 3.375077994860476e-14,
+          "flat_index": 18,
+          "torch": 2.602386395267331e-08,
+          "native": 2.6023897703453258e-08
+        },
+        {
+          "parameter": 9,
+          "array": "parameter",
+          "scaled_error": 4.4383730823938095e-07,
+          "flat_index": 7825,
+          "torch": 0.009303072467446327,
+          "native": 0.009302624501287937,
+          "initial": 0.01689690351486206,
+          "torch_raw_gradient": -4.4578358938451856e-05,
+          "native_raw_gradient": -4.4579210225492716e-05
+        },
+        {
+          "parameter": 9,
+          "array": "gradient",
+          "scaled_error": 3.440413465227721e-08,
+          "flat_index": 6941,
+          "torch": 0.0015929030487313867,
+          "native": 0.0015928685897961259
+        },
+        {
+          "parameter": 9,
+          "array": "moment",
+          "scaled_error": 2.502294593753618e-09,
+          "flat_index": 6941,
+          "torch": -0.00025367806665599346,
+          "native": -0.00025368056958541274
+        },
+        {
+          "parameter": 9,
+          "array": "variance",
+          "scaled_error": 4.121147325307495e-13,
+          "flat_index": 4730,
+          "torch": 1.5465502656297758e-07,
+          "native": 1.5465543867776432e-07
+        },
+        {
+          "parameter": 10,
+          "array": "parameter",
+          "scaled_error": 2.468845252678875e-07,
+          "flat_index": 8922,
+          "torch": 0.026065483689308167,
+          "native": 0.026065737009048462,
+          "initial": 0.027069011703133583,
+          "torch_raw_gradient": -0.000867476686835289,
+          "native_raw_gradient": -0.0008674914133735001
+        },
+        {
+          "parameter": 10,
+          "array": "gradient",
+          "scaled_error": 3.195742692696513e-08,
+          "flat_index": 122,
+          "torch": 0.0017770049162209034,
+          "native": 0.001776972902007401
+        },
+        {
+          "parameter": 10,
+          "array": "moment",
+          "scaled_error": 3.055007358199191e-09,
+          "flat_index": 7617,
+          "torch": 0.0002928732428699732,
+          "native": 0.0002928701869677752
+        },
+        {
+          "parameter": 10,
+          "array": "variance",
+          "scaled_error": 5.96855626987941e-13,
+          "flat_index": 4097,
+          "torch": 4.6166127276592306e-07,
+          "native": 4.616618696218211e-07
+        },
+        {
+          "parameter": 11,
+          "array": "parameter",
+          "scaled_error": 1.9068590972892707e-06,
+          "flat_index": 7857,
+          "torch": -0.004165851045399904,
+          "native": -0.004163936246186495,
+          "initial": -0.011250484734773636,
+          "torch_raw_gradient": -0.0013069354463368654,
+          "native_raw_gradient": -0.0013069396372884512
+        },
+        {
+          "parameter": 11,
+          "array": "gradient",
+          "scaled_error": 2.9413360635999197e-08,
+          "flat_index": 3165,
+          "torch": 0.013224015012383461,
+          "native": 0.013223985210061073
+        },
+        {
+          "parameter": 11,
+          "array": "moment",
+          "scaled_error": 2.7343880493191364e-09,
+          "flat_index": 3165,
+          "torch": 0.0005016965442337096,
+          "native": 0.0005016938084736466
+        },
+        {
+          "parameter": 11,
+          "array": "variance",
+          "scaled_error": 3.6948216838514347e-13,
+          "flat_index": 3165,
+          "torch": 1.5205317538402596e-07,
+          "native": 1.5205280590180337e-07
+        },
+        {
+          "parameter": 12,
+          "array": "parameter",
+          "scaled_error": 4.1693931507325033e-07,
+          "flat_index": 48,
+          "torch": 1.001407265663147,
+          "native": 1.0014064311981201,
+          "initial": 1.0,
+          "torch_raw_gradient": 0.002078655641525984,
+          "native_raw_gradient": 0.0020786491222679615
+        },
+        {
+          "parameter": 12,
+          "array": "gradient",
+          "scaled_error": 8.817348629008848e-09,
+          "flat_index": 47,
+          "torch": 0.0034269236493855715,
+          "native": 0.0034269148018211126
+        },
+        {
+          "parameter": 12,
+          "array": "moment",
+          "scaled_error": 3.3465008542066244e-10,
+          "flat_index": 31,
+          "torch": 0.00013140009832568467,
+          "native": 0.00013139976363163441
+        },
+        {
+          "parameter": 12,
+          "array": "variance",
+          "scaled_error": 6.750155989720952e-14,
+          "flat_index": 26,
+          "torch": 3.726009367710503e-08,
+          "native": 3.726016117866493e-08
+        },
+        {
+          "parameter": 13,
+          "array": "parameter",
+          "scaled_error": 4.0523570987716084e-07,
+          "flat_index": 3309,
+          "torch": 0.015815570950508118,
+          "native": 0.015815159305930138,
+          "initial": 0.000135520298499614,
+          "torch_raw_gradient": -6.094760829000734e-05,
+          "native_raw_gradient": -6.0947524616494775e-05
+        },
+        {
+          "parameter": 13,
+          "array": "gradient",
+          "scaled_error": 1.0911583858685958e-09,
+          "flat_index": 1437,
+          "torch": 0.00021562303300015628,
+          "native": 0.00021562194160651416
+        },
+        {
+          "parameter": 13,
+          "array": "moment",
+          "scaled_error": 9.822202079456943e-11,
+          "flat_index": 2142,
+          "torch": -3.470015144557692e-05,
+          "native": -3.470005322014913e-05
+        },
+        {
+          "parameter": 13,
+          "array": "variance",
+          "scaled_error": 3.7470027081099033e-16,
+          "flat_index": 2781,
+          "torch": 2.16684017950719e-10,
+          "native": 2.166836432504482e-10
+        },
+        {
+          "parameter": 14,
+          "array": "parameter",
+          "scaled_error": 1.1816934630815012e-07,
+          "flat_index": 1371,
+          "torch": -0.002889445051550865,
+          "native": -0.002889563562348485,
+          "initial": 0.0009236534824594855,
+          "torch_raw_gradient": 0.00010526297410251573,
+          "native_raw_gradient": 0.0001052630614140071
+        },
+        {
+          "parameter": 14,
+          "array": "gradient",
+          "scaled_error": 1.259761628347178e-09,
+          "flat_index": 766,
+          "torch": -1.7934703464561608e-06,
+          "native": -1.794730110304954e-06
+        },
+        {
+          "parameter": 14,
+          "array": "moment",
+          "scaled_error": 1.964419599209677e-10,
+          "flat_index": 707,
+          "torch": -4.5343134843278676e-05,
+          "native": -4.534293839242309e-05
+        },
+        {
+          "parameter": 14,
+          "array": "variance",
+          "scaled_error": 5.689893001203927e-16,
+          "flat_index": 670,
+          "torch": 1.9827087194279613e-10,
+          "native": 1.9827144093209625e-10
+        },
+        {
+          "parameter": 15,
+          "array": "parameter",
+          "scaled_error": 3.300279516338378e-08,
+          "flat_index": 1103,
+          "torch": -0.01590217649936676,
+          "native": -0.015902142971754074,
+          "initial": -0.020759498700499535,
+          "torch_raw_gradient": -0.0011319925542920828,
+          "native_raw_gradient": -0.0011319887125864625
+        },
+        {
+          "parameter": 15,
+          "array": "gradient",
+          "scaled_error": 1.1176739178608841e-07,
+          "flat_index": 541,
+          "torch": 0.03325323015451431,
+          "native": 0.03325311467051506
+        },
+        {
+          "parameter": 15,
+          "array": "moment",
+          "scaled_error": 4.567600520033466e-09,
+          "flat_index": 182,
+          "torch": -0.00037235382478684187,
+          "native": -0.0003723583940882236
+        },
+        {
+          "parameter": 15,
+          "array": "variance",
+          "scaled_error": 8.640138951521159e-12,
+          "flat_index": 669,
+          "torch": 7.0835917540534865e-06,
+          "native": 7.08358311385382e-06
+        },
+        {
+          "parameter": 16,
+          "array": "parameter",
+          "scaled_error": 5.093162513958305e-08,
+          "flat_index": 169,
+          "torch": -0.024001669138669968,
+          "native": -0.02400161698460579,
+          "initial": -0.012781991623342037,
+          "torch_raw_gradient": 0.0019484360236674547,
+          "native_raw_gradient": 0.0019484395161271095
+        },
+        {
+          "parameter": 16,
+          "array": "gradient",
+          "scaled_error": 7.735206963843666e-08,
+          "flat_index": 2012,
+          "torch": 0.011363891884684563,
+          "native": 0.01136397011578083
+        },
+        {
+          "parameter": 16,
+          "array": "moment",
+          "scaled_error": 6.631116988842223e-09,
+          "flat_index": 1740,
+          "torch": 0.0006871664663776755,
+          "native": 0.0006871731020510197
+        },
+        {
+          "parameter": 16,
+          "array": "variance",
+          "scaled_error": 4.320088991399684e-12,
+          "flat_index": 2396,
+          "torch": 2.472931100783171e-06,
+          "native": 2.4729267806833377e-06
+        },
+        {
+          "parameter": 17,
+          "array": "parameter",
+          "scaled_error": 6.53663050798059e-07,
+          "flat_index": 39,
+          "torch": 1.0060840845108032,
+          "native": 1.0060827732086182,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0007541683153249323,
+          "native_raw_gradient": -0.000754169246647507
+        },
+        {
+          "parameter": 17,
+          "array": "gradient",
+          "scaled_error": 5.3497051233364346e-09,
+          "flat_index": 51,
+          "torch": 0.00100934156216681,
+          "native": 0.001009336207062006
+        },
+        {
+          "parameter": 17,
+          "array": "moment",
+          "scaled_error": 4.2926293075673527e-10,
+          "flat_index": 16,
+          "torch": -4.3297201045788825e-05,
+          "native": -4.329677176428959e-05
+        },
+        {
+          "parameter": 17,
+          "array": "variance",
+          "scaled_error": 8.881784197001252e-15,
+          "flat_index": 9,
+          "torch": 8.590426148202823e-09,
+          "native": 8.59043502998702e-09
+        },
+        {
+          "parameter": 18,
+          "array": "parameter",
+          "scaled_error": 1.6364664361390169e-06,
+          "flat_index": 2944,
+          "torch": -0.019839338958263397,
+          "native": -0.019837670028209686,
+          "initial": -0.027814440429210663,
+          "torch_raw_gradient": -0.0006473968969658017,
+          "native_raw_gradient": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "gradient",
+          "scaled_error": 3.420396055275887e-08,
+          "flat_index": 2944,
+          "torch": -0.0006473968969658017,
+          "native": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "moment",
+          "scaled_error": 8.19162604415169e-09,
+          "flat_index": 2973,
+          "torch": -0.00013453619612846524,
+          "native": -0.0001345443888567388
+        },
+        {
+          "parameter": 18,
+          "array": "variance",
+          "scaled_error": 6.181721801112872e-13,
+          "flat_index": 2953,
+          "torch": 9.500413788998685e-09,
+          "native": 9.501031961178796e-09
+        },
+        {
+          "parameter": 19,
+          "array": "parameter",
+          "scaled_error": 6.381814614542236e-07,
+          "flat_index": 3038,
+          "torch": 0.01569870486855507,
+          "native": 0.015699353069067,
+          "initial": 0.018101846799254417,
+          "torch_raw_gradient": -0.00021559538436122239,
+          "native_raw_gradient": -0.00021559141168836504
+        },
+        {
+          "parameter": 19,
+          "array": "gradient",
+          "scaled_error": 4.962551258813619e-08,
+          "flat_index": 750,
+          "torch": 0.0005162389134056866,
+          "native": 0.0005162885645404458
+        },
+        {
+          "parameter": 19,
+          "array": "moment",
+          "scaled_error": 7.3914523390783415e-09,
+          "flat_index": 1454,
+          "torch": 0.00012451145448721945,
+          "native": 0.00012451884686015546
+        },
+        {
+          "parameter": 19,
+          "array": "variance",
+          "scaled_error": 6.252774448385623e-13,
+          "flat_index": 829,
+          "torch": 2.1283769058300095e-07,
+          "native": 2.1283831586060842e-07
+        },
+        {
+          "parameter": 20,
+          "array": "parameter",
+          "scaled_error": 6.927271442691563e-06,
+          "flat_index": 2964,
+          "torch": -0.030094502493739128,
+          "native": -0.030101638287305832,
+          "initial": -0.033343009650707245,
+          "torch_raw_gradient": 0.00013915938325226307,
+          "native_raw_gradient": 0.00013916846364736557
+        },
+        {
+          "parameter": 20,
+          "array": "gradient",
+          "scaled_error": 2.7133209457019802e-08,
+          "flat_index": 2981,
+          "torch": 0.00022530446585733443,
+          "native": 0.00022533160517923534
+        },
+        {
+          "parameter": 20,
+          "array": "moment",
+          "scaled_error": 4.046309065586229e-09,
+          "flat_index": 2968,
+          "torch": 8.157069714798126e-06,
+          "native": 8.161116056726314e-06
+        },
+        {
+          "parameter": 20,
+          "array": "variance",
+          "scaled_error": 2.0961010704922955e-13,
+          "flat_index": 3658,
+          "torch": 3.9746630875470146e-08,
+          "native": 3.9746840485577195e-08
+        }
+      ],
+      "correctness_passed": true,
+      "finite_differences": [],
+      "throughput_percentage": 79.34925826754663
+    },
+    {
+      "repeat": 1,
+      "order": [
+        "torch",
+        "native"
+      ],
+      "native_command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-train.exe",
+        "--data",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\corpus.txt",
+        "--dimension",
+        "64",
+        "--ff",
+        "176",
+        "--layers",
+        "2",
+        "--heads",
+        "4",
+        "--kv-heads",
+        "2",
+        "--context",
+        "32",
+        "--steps",
+        "30",
+        "--threads",
+        "6",
+        "--memory-mib",
+        "4096",
+        "--output",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-1.gguf",
+        "--checkpoint",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-1.ckpt",
+        "--metrics",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-1.csv",
+        "--compute",
+        "cuda"
+      ],
+      "torch_step_ms": [
+        7.6182000047992915,
+        6.134800001746044,
+        9.349100000690669,
+        5.127500000526197,
+        5.21149999985937,
+        5.528099994990043,
+        4.786499994224869,
+        10.959199993521906,
+        5.005099999834783,
+        4.802800001925789,
+        5.16790000256151,
+        5.380100003094412,
+        9.139600006164983,
+        5.202999993343838,
+        4.671600006986409,
+        5.060199997387826,
+        4.66779999260325,
+        10.030000004917383,
+        5.579399992711842,
+        4.587700008414686,
+        4.902499989839271,
+        5.892700006370433,
+        5.275300005450845,
+        11.046300001908094,
+        6.992700000409968,
+        4.858600004808977,
+        4.778599992278032,
+        4.461499993340112,
+        5.996599997160956,
+        4.879200001596473
+      ],
+      "torch_losses": [
+        5.659517288208008,
+        5.364336967468262,
+        5.270323276519775,
+        5.098968029022217,
+        4.996431350708008,
+        4.931854248046875,
+        4.80977201461792,
+        4.681330680847168,
+        4.618709564208984,
+        4.547211647033691,
+        4.376362323760986,
+        4.323058128356934,
+        4.189541816711426,
+        4.184303283691406,
+        4.030596733093262,
+        3.9416542053222656,
+        3.8811588287353516,
+        3.781186103820801,
+        3.6846041679382324,
+        3.6205897331237793,
+        3.5835509300231934,
+        3.4314310550689697,
+        3.3568809032440186,
+        3.2787647247314453,
+        3.26114559173584,
+        3.127439498901367,
+        3.0567593574523926,
+        3.017518997192383,
+        2.916581392288208,
+        2.8505852222442627
+      ],
+      "native_mean_ms": 7.602721052631579,
+      "torch_mean_ms": 5.983794736829096,
+      "maximum_loss_absolute_error": 9.583569333670994e-07,
+      "state_maximum_scaled_errors": {
+        "parameter": 6.927271442691563e-06,
+        "gradient": 2.8863374268439657e-07,
+        "moment": 9.540988088474478e-08,
+        "variance": 3.4915306756921893e-10
+      },
+      "state_details": [
+        {
+          "parameter": 0,
+          "array": "parameter",
+          "scaled_error": 8.853970712152659e-08,
+          "flat_index": 7729,
+          "torch": -0.004535650368779898,
+          "native": -0.0045357393100857735,
+          "initial": -0.015002246014773846,
+          "torch_raw_gradient": 0.0013088330160826445,
+          "native_raw_gradient": 0.001308809733018279
+        },
+        {
+          "parameter": 0,
+          "array": "gradient",
+          "scaled_error": 2.8863374268439657e-07,
+          "flat_index": 2294,
+          "torch": 0.03253107890486717,
+          "native": 0.032530780881643295
+        },
+        {
+          "parameter": 0,
+          "array": "moment",
+          "scaled_error": 1.6246987755152986e-08,
+          "flat_index": 2248,
+          "torch": -0.0031487306114286184,
+          "native": -0.0031487143132835627
+        },
+        {
+          "parameter": 0,
+          "array": "variance",
+          "scaled_error": 6.547801190137648e-11,
+          "flat_index": 2294,
+          "torch": 8.553364023100585e-05,
+          "native": 8.553370571462438e-05
+        },
+        {
+          "parameter": 1,
+          "array": "parameter",
+          "scaled_error": 4.6931577912801004e-07,
+          "flat_index": 14,
+          "torch": 1.0320535898208618,
+          "native": 1.0320526361465454,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.039073798805475235,
+          "native_raw_gradient": -0.03907376527786255
+        },
+        {
+          "parameter": 1,
+          "array": "gradient",
+          "scaled_error": 3.9385085415233334e-08,
+          "flat_index": 51,
+          "torch": -0.04044950008392334,
+          "native": -0.04044954106211662
+        },
+        {
+          "parameter": 1,
+          "array": "moment",
+          "scaled_error": 1.2851171682370932e-08,
+          "flat_index": 51,
+          "torch": -0.014577959664165974,
+          "native": -0.014577972702682018
+        },
+        {
+          "parameter": 1,
+          "array": "variance",
+          "scaled_error": 1.1823268926403063e-11,
+          "flat_index": 9,
+          "torch": 1.371862890664488e-05,
+          "native": 1.3718640730076004e-05
+        },
+        {
+          "parameter": 2,
+          "array": "parameter",
+          "scaled_error": 1.7689551157218375e-07,
+          "flat_index": 673,
+          "torch": 0.021374434232711792,
+          "native": 0.021374614909291267,
+          "initial": -0.0030176264699548483,
+          "torch_raw_gradient": -0.0016757732955738902,
+          "native_raw_gradient": -0.001675774110481143
+        },
+        {
+          "parameter": 2,
+          "array": "gradient",
+          "scaled_error": 2.2161746926485648e-07,
+          "flat_index": 2289,
+          "torch": -0.21028746664524078,
+          "native": -0.21028773486614227
+        },
+        {
+          "parameter": 2,
+          "array": "moment",
+          "scaled_error": 9.540988088474478e-08,
+          "flat_index": 2289,
+          "torch": -0.09326322376728058,
+          "native": -0.09326332807540894
+        },
+        {
+          "parameter": 2,
+          "array": "variance",
+          "scaled_error": 3.4915306756921893e-10,
+          "flat_index": 2289,
+          "torch": 0.00026605906896293163,
+          "native": 0.0002660594182088971
+        },
+        {
+          "parameter": 3,
+          "array": "parameter",
+          "scaled_error": 5.950244599262078e-07,
+          "flat_index": 57,
+          "torch": 1.0034363269805908,
+          "native": 1.0034351348876953,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.001787603017874062,
+          "native_raw_gradient": -0.001787603017874062
+        },
+        {
+          "parameter": 3,
+          "array": "gradient",
+          "scaled_error": 1.2298731810744812e-08,
+          "flat_index": 41,
+          "torch": 0.003357445588335395,
+          "native": 0.003357433248311281
+        },
+        {
+          "parameter": 3,
+          "array": "moment",
+          "scaled_error": 6.002464636445382e-10,
+          "flat_index": 61,
+          "torch": -3.333194035803899e-05,
+          "native": -3.333134009153582e-05
+        },
+        {
+          "parameter": 3,
+          "array": "variance",
+          "scaled_error": 1.2434497875801753e-13,
+          "flat_index": 61,
+          "torch": 4.6456548830065e-08,
+          "native": 4.645667317504376e-08
+        },
+        {
+          "parameter": 4,
+          "array": "parameter",
+          "scaled_error": 1.7350671441818122e-06,
+          "flat_index": 3666,
+          "torch": -0.0030771323945373297,
+          "native": -0.0030788728035986423,
+          "initial": -0.013897765427827835,
+          "torch_raw_gradient": 0.00013276787649374455,
+          "native_raw_gradient": 0.00013276866229716688
+        },
+        {
+          "parameter": 4,
+          "array": "gradient",
+          "scaled_error": 2.0360180208456313e-09,
+          "flat_index": 4068,
+          "torch": -0.0006140861660242081,
+          "native": -0.00061408820329234
+        },
+        {
+          "parameter": 4,
+          "array": "moment",
+          "scaled_error": 3.491837374802742e-10,
+          "flat_index": 70,
+          "torch": 0.00017825317627284676,
+          "native": 0.00017825352551881224
+        },
+        {
+          "parameter": 4,
+          "array": "variance",
+          "scaled_error": 3.885780586188048e-15,
+          "flat_index": 88,
+          "torch": 1.4261558600736635e-09,
+          "native": 1.4261597458542496e-09
+        },
+        {
+          "parameter": 5,
+          "array": "parameter",
+          "scaled_error": 1.8655488531749143e-07,
+          "flat_index": 465,
+          "torch": 0.018412601202726364,
+          "native": 0.018412411212921143,
+          "initial": 0.016095345839858055,
+          "torch_raw_gradient": -0.00028704479336738586,
+          "native_raw_gradient": -0.0002870448515750468
+        },
+        {
+          "parameter": 5,
+          "array": "gradient",
+          "scaled_error": 3.1830398317111985e-09,
+          "flat_index": 1603,
+          "torch": 6.021856461302377e-05,
+          "native": 6.021538138156757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "moment",
+          "scaled_error": 5.311336925828414e-10,
+          "flat_index": 1624,
+          "torch": -2.1149011445231736e-05,
+          "native": -2.114954259013757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "variance",
+          "scaled_error": 3.7192471324942744e-15,
+          "flat_index": 30,
+          "torch": 8.558347919240816e-10,
+          "native": 8.558385111712141e-10
+        },
+        {
+          "parameter": 6,
+          "array": "parameter",
+          "scaled_error": 4.7800416069776475e-08,
+          "flat_index": 747,
+          "torch": 0.01314548496156931,
+          "native": 0.01314543653279543,
+          "initial": 0.015570230782032013,
+          "torch_raw_gradient": 0.01696547493338585,
+          "native_raw_gradient": 0.016965404152870178
+        },
+        {
+          "parameter": 6,
+          "array": "gradient",
+          "scaled_error": 1.016437138900983e-07,
+          "flat_index": 1753,
+          "torch": -0.026213394477963448,
+          "native": -0.02621329016983509
+        },
+        {
+          "parameter": 6,
+          "array": "moment",
+          "scaled_error": 5.5812288124457154e-09,
+          "flat_index": 1955,
+          "torch": 0.0012015764368698,
+          "native": 0.0012015820248052478
+        },
+        {
+          "parameter": 6,
+          "array": "variance",
+          "scaled_error": 1.5461344010647693e-11,
+          "flat_index": 1771,
+          "torch": 4.32914930570405e-06,
+          "native": 4.32916476711398e-06
+        },
+        {
+          "parameter": 7,
+          "array": "parameter",
+          "scaled_error": 4.4141458488411445e-08,
+          "flat_index": 1911,
+          "torch": -0.012732423841953278,
+          "native": -0.012732379138469696,
+          "initial": -0.0065168095752596855,
+          "torch_raw_gradient": -0.0033685150556266308,
+          "native_raw_gradient": -0.0033685106318444014
+        },
+        {
+          "parameter": 7,
+          "array": "gradient",
+          "scaled_error": 8.077990543142732e-08,
+          "flat_index": 3885,
+          "torch": -0.014564129523932934,
+          "native": -0.014564047567546368
+        },
+        {
+          "parameter": 7,
+          "array": "moment",
+          "scaled_error": 4.656114604983941e-09,
+          "flat_index": 2925,
+          "torch": -0.00010705046588554978,
+          "native": -0.00010705512249842286
+        },
+        {
+          "parameter": 7,
+          "array": "variance",
+          "scaled_error": 4.320087690357077e-12,
+          "flat_index": 2404,
+          "torch": 2.8438391836971277e-06,
+          "native": 2.8438348635972943e-06
+        },
+        {
+          "parameter": 8,
+          "array": "parameter",
+          "scaled_error": 5.315284852258628e-07,
+          "flat_index": 42,
+          "torch": 1.0184886455535889,
+          "native": 1.018487572669983,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0005040040123276412,
+          "native_raw_gradient": -0.0005040014511905611
+        },
+        {
+          "parameter": 8,
+          "array": "gradient",
+          "scaled_error": 8.838206611017085e-09,
+          "flat_index": 43,
+          "torch": -0.0010588370496407151,
+          "native": -0.0010588282020762563
+        },
+        {
+          "parameter": 8,
+          "array": "moment",
+          "scaled_error": 4.792985452972687e-10,
+          "flat_index": 56,
+          "torch": 1.0684160770324524e-05,
+          "native": 1.068368146661669e-05
+        },
+        {
+          "parameter": 8,
+          "array": "variance",
+          "scaled_error": 3.375077994860476e-14,
+          "flat_index": 18,
+          "torch": 2.602386395267331e-08,
+          "native": 2.6023897703453258e-08
+        },
+        {
+          "parameter": 9,
+          "array": "parameter",
+          "scaled_error": 4.4383730823938095e-07,
+          "flat_index": 7825,
+          "torch": 0.009303072467446327,
+          "native": 0.009302624501287937,
+          "initial": 0.01689690351486206,
+          "torch_raw_gradient": -4.4578358938451856e-05,
+          "native_raw_gradient": -4.4579210225492716e-05
+        },
+        {
+          "parameter": 9,
+          "array": "gradient",
+          "scaled_error": 3.440413465227721e-08,
+          "flat_index": 6941,
+          "torch": 0.0015929030487313867,
+          "native": 0.0015928685897961259
+        },
+        {
+          "parameter": 9,
+          "array": "moment",
+          "scaled_error": 2.502294593753618e-09,
+          "flat_index": 6941,
+          "torch": -0.00025367806665599346,
+          "native": -0.00025368056958541274
+        },
+        {
+          "parameter": 9,
+          "array": "variance",
+          "scaled_error": 4.121147325307495e-13,
+          "flat_index": 4730,
+          "torch": 1.5465502656297758e-07,
+          "native": 1.5465543867776432e-07
+        },
+        {
+          "parameter": 10,
+          "array": "parameter",
+          "scaled_error": 2.468845252678875e-07,
+          "flat_index": 8922,
+          "torch": 0.026065483689308167,
+          "native": 0.026065737009048462,
+          "initial": 0.027069011703133583,
+          "torch_raw_gradient": -0.000867476686835289,
+          "native_raw_gradient": -0.0008674914133735001
+        },
+        {
+          "parameter": 10,
+          "array": "gradient",
+          "scaled_error": 3.195742692696513e-08,
+          "flat_index": 122,
+          "torch": 0.0017770049162209034,
+          "native": 0.001776972902007401
+        },
+        {
+          "parameter": 10,
+          "array": "moment",
+          "scaled_error": 3.055007358199191e-09,
+          "flat_index": 7617,
+          "torch": 0.0002928732428699732,
+          "native": 0.0002928701869677752
+        },
+        {
+          "parameter": 10,
+          "array": "variance",
+          "scaled_error": 5.96855626987941e-13,
+          "flat_index": 4097,
+          "torch": 4.6166127276592306e-07,
+          "native": 4.616618696218211e-07
+        },
+        {
+          "parameter": 11,
+          "array": "parameter",
+          "scaled_error": 1.9068590972892707e-06,
+          "flat_index": 7857,
+          "torch": -0.004165851045399904,
+          "native": -0.004163936246186495,
+          "initial": -0.011250484734773636,
+          "torch_raw_gradient": -0.0013069354463368654,
+          "native_raw_gradient": -0.0013069396372884512
+        },
+        {
+          "parameter": 11,
+          "array": "gradient",
+          "scaled_error": 2.9413360635999197e-08,
+          "flat_index": 3165,
+          "torch": 0.013224015012383461,
+          "native": 0.013223985210061073
+        },
+        {
+          "parameter": 11,
+          "array": "moment",
+          "scaled_error": 2.7343880493191364e-09,
+          "flat_index": 3165,
+          "torch": 0.0005016965442337096,
+          "native": 0.0005016938084736466
+        },
+        {
+          "parameter": 11,
+          "array": "variance",
+          "scaled_error": 3.6948216838514347e-13,
+          "flat_index": 3165,
+          "torch": 1.5205317538402596e-07,
+          "native": 1.5205280590180337e-07
+        },
+        {
+          "parameter": 12,
+          "array": "parameter",
+          "scaled_error": 4.1693931507325033e-07,
+          "flat_index": 48,
+          "torch": 1.001407265663147,
+          "native": 1.0014064311981201,
+          "initial": 1.0,
+          "torch_raw_gradient": 0.002078655641525984,
+          "native_raw_gradient": 0.0020786491222679615
+        },
+        {
+          "parameter": 12,
+          "array": "gradient",
+          "scaled_error": 8.817348629008848e-09,
+          "flat_index": 47,
+          "torch": 0.0034269236493855715,
+          "native": 0.0034269148018211126
+        },
+        {
+          "parameter": 12,
+          "array": "moment",
+          "scaled_error": 3.3465008542066244e-10,
+          "flat_index": 31,
+          "torch": 0.00013140009832568467,
+          "native": 0.00013139976363163441
+        },
+        {
+          "parameter": 12,
+          "array": "variance",
+          "scaled_error": 6.750155989720952e-14,
+          "flat_index": 26,
+          "torch": 3.726009367710503e-08,
+          "native": 3.726016117866493e-08
+        },
+        {
+          "parameter": 13,
+          "array": "parameter",
+          "scaled_error": 4.0523570987716084e-07,
+          "flat_index": 3309,
+          "torch": 0.015815570950508118,
+          "native": 0.015815159305930138,
+          "initial": 0.000135520298499614,
+          "torch_raw_gradient": -6.094760829000734e-05,
+          "native_raw_gradient": -6.0947524616494775e-05
+        },
+        {
+          "parameter": 13,
+          "array": "gradient",
+          "scaled_error": 1.0911583858685958e-09,
+          "flat_index": 1437,
+          "torch": 0.00021562303300015628,
+          "native": 0.00021562194160651416
+        },
+        {
+          "parameter": 13,
+          "array": "moment",
+          "scaled_error": 9.822202079456943e-11,
+          "flat_index": 2142,
+          "torch": -3.470015144557692e-05,
+          "native": -3.470005322014913e-05
+        },
+        {
+          "parameter": 13,
+          "array": "variance",
+          "scaled_error": 3.7470027081099033e-16,
+          "flat_index": 2781,
+          "torch": 2.16684017950719e-10,
+          "native": 2.166836432504482e-10
+        },
+        {
+          "parameter": 14,
+          "array": "parameter",
+          "scaled_error": 1.1816934630815012e-07,
+          "flat_index": 1371,
+          "torch": -0.002889445051550865,
+          "native": -0.002889563562348485,
+          "initial": 0.0009236534824594855,
+          "torch_raw_gradient": 0.00010526297410251573,
+          "native_raw_gradient": 0.0001052630614140071
+        },
+        {
+          "parameter": 14,
+          "array": "gradient",
+          "scaled_error": 1.259761628347178e-09,
+          "flat_index": 766,
+          "torch": -1.7934703464561608e-06,
+          "native": -1.794730110304954e-06
+        },
+        {
+          "parameter": 14,
+          "array": "moment",
+          "scaled_error": 1.964419599209677e-10,
+          "flat_index": 707,
+          "torch": -4.5343134843278676e-05,
+          "native": -4.534293839242309e-05
+        },
+        {
+          "parameter": 14,
+          "array": "variance",
+          "scaled_error": 5.689893001203927e-16,
+          "flat_index": 670,
+          "torch": 1.9827087194279613e-10,
+          "native": 1.9827144093209625e-10
+        },
+        {
+          "parameter": 15,
+          "array": "parameter",
+          "scaled_error": 3.300279516338378e-08,
+          "flat_index": 1103,
+          "torch": -0.01590217649936676,
+          "native": -0.015902142971754074,
+          "initial": -0.020759498700499535,
+          "torch_raw_gradient": -0.0011319925542920828,
+          "native_raw_gradient": -0.0011319887125864625
+        },
+        {
+          "parameter": 15,
+          "array": "gradient",
+          "scaled_error": 1.1176739178608841e-07,
+          "flat_index": 541,
+          "torch": 0.03325323015451431,
+          "native": 0.03325311467051506
+        },
+        {
+          "parameter": 15,
+          "array": "moment",
+          "scaled_error": 4.567600520033466e-09,
+          "flat_index": 182,
+          "torch": -0.00037235382478684187,
+          "native": -0.0003723583940882236
+        },
+        {
+          "parameter": 15,
+          "array": "variance",
+          "scaled_error": 8.640138951521159e-12,
+          "flat_index": 669,
+          "torch": 7.0835917540534865e-06,
+          "native": 7.08358311385382e-06
+        },
+        {
+          "parameter": 16,
+          "array": "parameter",
+          "scaled_error": 5.093162513958305e-08,
+          "flat_index": 169,
+          "torch": -0.024001669138669968,
+          "native": -0.02400161698460579,
+          "initial": -0.012781991623342037,
+          "torch_raw_gradient": 0.0019484360236674547,
+          "native_raw_gradient": 0.0019484395161271095
+        },
+        {
+          "parameter": 16,
+          "array": "gradient",
+          "scaled_error": 7.735206963843666e-08,
+          "flat_index": 2012,
+          "torch": 0.011363891884684563,
+          "native": 0.01136397011578083
+        },
+        {
+          "parameter": 16,
+          "array": "moment",
+          "scaled_error": 6.631116988842223e-09,
+          "flat_index": 1740,
+          "torch": 0.0006871664663776755,
+          "native": 0.0006871731020510197
+        },
+        {
+          "parameter": 16,
+          "array": "variance",
+          "scaled_error": 4.320088991399684e-12,
+          "flat_index": 2396,
+          "torch": 2.472931100783171e-06,
+          "native": 2.4729267806833377e-06
+        },
+        {
+          "parameter": 17,
+          "array": "parameter",
+          "scaled_error": 6.53663050798059e-07,
+          "flat_index": 39,
+          "torch": 1.0060840845108032,
+          "native": 1.0060827732086182,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0007541683153249323,
+          "native_raw_gradient": -0.000754169246647507
+        },
+        {
+          "parameter": 17,
+          "array": "gradient",
+          "scaled_error": 5.3497051233364346e-09,
+          "flat_index": 51,
+          "torch": 0.00100934156216681,
+          "native": 0.001009336207062006
+        },
+        {
+          "parameter": 17,
+          "array": "moment",
+          "scaled_error": 4.2926293075673527e-10,
+          "flat_index": 16,
+          "torch": -4.3297201045788825e-05,
+          "native": -4.329677176428959e-05
+        },
+        {
+          "parameter": 17,
+          "array": "variance",
+          "scaled_error": 8.881784197001252e-15,
+          "flat_index": 9,
+          "torch": 8.590426148202823e-09,
+          "native": 8.59043502998702e-09
+        },
+        {
+          "parameter": 18,
+          "array": "parameter",
+          "scaled_error": 1.6364664361390169e-06,
+          "flat_index": 2944,
+          "torch": -0.019839338958263397,
+          "native": -0.019837670028209686,
+          "initial": -0.027814440429210663,
+          "torch_raw_gradient": -0.0006473968969658017,
+          "native_raw_gradient": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "gradient",
+          "scaled_error": 3.420396055275887e-08,
+          "flat_index": 2944,
+          "torch": -0.0006473968969658017,
+          "native": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "moment",
+          "scaled_error": 8.19162604415169e-09,
+          "flat_index": 2973,
+          "torch": -0.00013453619612846524,
+          "native": -0.0001345443888567388
+        },
+        {
+          "parameter": 18,
+          "array": "variance",
+          "scaled_error": 6.181721801112872e-13,
+          "flat_index": 2953,
+          "torch": 9.500413788998685e-09,
+          "native": 9.501031961178796e-09
+        },
+        {
+          "parameter": 19,
+          "array": "parameter",
+          "scaled_error": 6.381814614542236e-07,
+          "flat_index": 3038,
+          "torch": 0.01569870486855507,
+          "native": 0.015699353069067,
+          "initial": 0.018101846799254417,
+          "torch_raw_gradient": -0.00021559538436122239,
+          "native_raw_gradient": -0.00021559141168836504
+        },
+        {
+          "parameter": 19,
+          "array": "gradient",
+          "scaled_error": 4.962551258813619e-08,
+          "flat_index": 750,
+          "torch": 0.0005162389134056866,
+          "native": 0.0005162885645404458
+        },
+        {
+          "parameter": 19,
+          "array": "moment",
+          "scaled_error": 7.3914523390783415e-09,
+          "flat_index": 1454,
+          "torch": 0.00012451145448721945,
+          "native": 0.00012451884686015546
+        },
+        {
+          "parameter": 19,
+          "array": "variance",
+          "scaled_error": 6.252774448385623e-13,
+          "flat_index": 829,
+          "torch": 2.1283769058300095e-07,
+          "native": 2.1283831586060842e-07
+        },
+        {
+          "parameter": 20,
+          "array": "parameter",
+          "scaled_error": 6.927271442691563e-06,
+          "flat_index": 2964,
+          "torch": -0.030094502493739128,
+          "native": -0.030101638287305832,
+          "initial": -0.033343009650707245,
+          "torch_raw_gradient": 0.00013915938325226307,
+          "native_raw_gradient": 0.00013916846364736557
+        },
+        {
+          "parameter": 20,
+          "array": "gradient",
+          "scaled_error": 2.7133209457019802e-08,
+          "flat_index": 2981,
+          "torch": 0.00022530446585733443,
+          "native": 0.00022533160517923534
+        },
+        {
+          "parameter": 20,
+          "array": "moment",
+          "scaled_error": 4.046309065586229e-09,
+          "flat_index": 2968,
+          "torch": 8.157069714798126e-06,
+          "native": 8.161116056726314e-06
+        },
+        {
+          "parameter": 20,
+          "array": "variance",
+          "scaled_error": 2.0961010704922955e-13,
+          "flat_index": 3658,
+          "torch": 3.9746630875470146e-08,
+          "native": 3.9746840485577195e-08
+        }
+      ],
+      "correctness_passed": true,
+      "finite_differences": [],
+      "throughput_percentage": 78.7059619234338
+    },
+    {
+      "repeat": 2,
+      "order": [
+        "native",
+        "torch"
+      ],
+      "native_command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-train.exe",
+        "--data",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\corpus.txt",
+        "--dimension",
+        "64",
+        "--ff",
+        "176",
+        "--layers",
+        "2",
+        "--heads",
+        "4",
+        "--kv-heads",
+        "2",
+        "--context",
+        "32",
+        "--steps",
+        "30",
+        "--threads",
+        "6",
+        "--memory-mib",
+        "4096",
+        "--output",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-2.gguf",
+        "--checkpoint",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-2.ckpt",
+        "--metrics",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-2.csv",
+        "--compute",
+        "cuda"
+      ],
+      "torch_step_ms": [
+        6.4974999986588955,
+        5.327699996996671,
+        4.9999000038951635,
+        5.302999998093583,
+        5.431099998531863,
+        6.4901000005193055,
+        4.925500004901551,
+        9.538400001474656,
+        5.793300006189384,
+        4.859300010139123,
+        10.229899999103509,
+        4.957899989676662,
+        4.599000007146969,
+        4.860000000917353,
+        4.652799994801171,
+        10.20740000240039,
+        6.147500011138618,
+        4.591899996739812,
+        4.804299998795614,
+        4.624399996828288,
+        4.552400001557544,
+        5.349099999875762,
+        10.038999986136332,
+        5.468399991514161,
+        5.258599994704127,
+        4.788399994140491,
+        6.444600003305823,
+        9.283399995183572,
+        5.807399997138418,
+        4.744200006825849
+      ],
+      "torch_losses": [
+        5.659517288208008,
+        5.364336967468262,
+        5.270323276519775,
+        5.098968029022217,
+        4.996431350708008,
+        4.931854248046875,
+        4.80977201461792,
+        4.681330680847168,
+        4.618709564208984,
+        4.547211647033691,
+        4.376362323760986,
+        4.323058128356934,
+        4.189541816711426,
+        4.184303283691406,
+        4.030596733093262,
+        3.9416542053222656,
+        3.8811588287353516,
+        3.781186103820801,
+        3.6846041679382324,
+        3.6205897331237793,
+        3.5835509300231934,
+        3.4314310550689697,
+        3.3568809032440186,
+        3.2787647247314453,
+        3.26114559173584,
+        3.127439498901367,
+        3.0567593574523926,
+        3.017518997192383,
+        2.916581392288208,
+        2.8505852222442627
+      ],
+      "native_mean_ms": 7.286178947368421,
+      "torch_mean_ms": 6.140336840058137,
+      "maximum_loss_absolute_error": 9.583569333670994e-07,
+      "state_maximum_scaled_errors": {
+        "parameter": 6.927271442691563e-06,
+        "gradient": 2.8863374268439657e-07,
+        "moment": 9.540988088474478e-08,
+        "variance": 3.4915306756921893e-10
+      },
+      "state_details": [
+        {
+          "parameter": 0,
+          "array": "parameter",
+          "scaled_error": 8.853970712152659e-08,
+          "flat_index": 7729,
+          "torch": -0.004535650368779898,
+          "native": -0.0045357393100857735,
+          "initial": -0.015002246014773846,
+          "torch_raw_gradient": 0.0013088330160826445,
+          "native_raw_gradient": 0.001308809733018279
+        },
+        {
+          "parameter": 0,
+          "array": "gradient",
+          "scaled_error": 2.8863374268439657e-07,
+          "flat_index": 2294,
+          "torch": 0.03253107890486717,
+          "native": 0.032530780881643295
+        },
+        {
+          "parameter": 0,
+          "array": "moment",
+          "scaled_error": 1.6246987755152986e-08,
+          "flat_index": 2248,
+          "torch": -0.0031487306114286184,
+          "native": -0.0031487143132835627
+        },
+        {
+          "parameter": 0,
+          "array": "variance",
+          "scaled_error": 6.547801190137648e-11,
+          "flat_index": 2294,
+          "torch": 8.553364023100585e-05,
+          "native": 8.553370571462438e-05
+        },
+        {
+          "parameter": 1,
+          "array": "parameter",
+          "scaled_error": 4.6931577912801004e-07,
+          "flat_index": 14,
+          "torch": 1.0320535898208618,
+          "native": 1.0320526361465454,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.039073798805475235,
+          "native_raw_gradient": -0.03907376527786255
+        },
+        {
+          "parameter": 1,
+          "array": "gradient",
+          "scaled_error": 3.9385085415233334e-08,
+          "flat_index": 51,
+          "torch": -0.04044950008392334,
+          "native": -0.04044954106211662
+        },
+        {
+          "parameter": 1,
+          "array": "moment",
+          "scaled_error": 1.2851171682370932e-08,
+          "flat_index": 51,
+          "torch": -0.014577959664165974,
+          "native": -0.014577972702682018
+        },
+        {
+          "parameter": 1,
+          "array": "variance",
+          "scaled_error": 1.1823268926403063e-11,
+          "flat_index": 9,
+          "torch": 1.371862890664488e-05,
+          "native": 1.3718640730076004e-05
+        },
+        {
+          "parameter": 2,
+          "array": "parameter",
+          "scaled_error": 1.7689551157218375e-07,
+          "flat_index": 673,
+          "torch": 0.021374434232711792,
+          "native": 0.021374614909291267,
+          "initial": -0.0030176264699548483,
+          "torch_raw_gradient": -0.0016757732955738902,
+          "native_raw_gradient": -0.001675774110481143
+        },
+        {
+          "parameter": 2,
+          "array": "gradient",
+          "scaled_error": 2.2161746926485648e-07,
+          "flat_index": 2289,
+          "torch": -0.21028746664524078,
+          "native": -0.21028773486614227
+        },
+        {
+          "parameter": 2,
+          "array": "moment",
+          "scaled_error": 9.540988088474478e-08,
+          "flat_index": 2289,
+          "torch": -0.09326322376728058,
+          "native": -0.09326332807540894
+        },
+        {
+          "parameter": 2,
+          "array": "variance",
+          "scaled_error": 3.4915306756921893e-10,
+          "flat_index": 2289,
+          "torch": 0.00026605906896293163,
+          "native": 0.0002660594182088971
+        },
+        {
+          "parameter": 3,
+          "array": "parameter",
+          "scaled_error": 5.950244599262078e-07,
+          "flat_index": 57,
+          "torch": 1.0034363269805908,
+          "native": 1.0034351348876953,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.001787603017874062,
+          "native_raw_gradient": -0.001787603017874062
+        },
+        {
+          "parameter": 3,
+          "array": "gradient",
+          "scaled_error": 1.2298731810744812e-08,
+          "flat_index": 41,
+          "torch": 0.003357445588335395,
+          "native": 0.003357433248311281
+        },
+        {
+          "parameter": 3,
+          "array": "moment",
+          "scaled_error": 6.002464636445382e-10,
+          "flat_index": 61,
+          "torch": -3.333194035803899e-05,
+          "native": -3.333134009153582e-05
+        },
+        {
+          "parameter": 3,
+          "array": "variance",
+          "scaled_error": 1.2434497875801753e-13,
+          "flat_index": 61,
+          "torch": 4.6456548830065e-08,
+          "native": 4.645667317504376e-08
+        },
+        {
+          "parameter": 4,
+          "array": "parameter",
+          "scaled_error": 1.7350671441818122e-06,
+          "flat_index": 3666,
+          "torch": -0.0030771323945373297,
+          "native": -0.0030788728035986423,
+          "initial": -0.013897765427827835,
+          "torch_raw_gradient": 0.00013276787649374455,
+          "native_raw_gradient": 0.00013276866229716688
+        },
+        {
+          "parameter": 4,
+          "array": "gradient",
+          "scaled_error": 2.0360180208456313e-09,
+          "flat_index": 4068,
+          "torch": -0.0006140861660242081,
+          "native": -0.00061408820329234
+        },
+        {
+          "parameter": 4,
+          "array": "moment",
+          "scaled_error": 3.491837374802742e-10,
+          "flat_index": 70,
+          "torch": 0.00017825317627284676,
+          "native": 0.00017825352551881224
+        },
+        {
+          "parameter": 4,
+          "array": "variance",
+          "scaled_error": 3.885780586188048e-15,
+          "flat_index": 88,
+          "torch": 1.4261558600736635e-09,
+          "native": 1.4261597458542496e-09
+        },
+        {
+          "parameter": 5,
+          "array": "parameter",
+          "scaled_error": 1.8655488531749143e-07,
+          "flat_index": 465,
+          "torch": 0.018412601202726364,
+          "native": 0.018412411212921143,
+          "initial": 0.016095345839858055,
+          "torch_raw_gradient": -0.00028704479336738586,
+          "native_raw_gradient": -0.0002870448515750468
+        },
+        {
+          "parameter": 5,
+          "array": "gradient",
+          "scaled_error": 3.1830398317111985e-09,
+          "flat_index": 1603,
+          "torch": 6.021856461302377e-05,
+          "native": 6.021538138156757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "moment",
+          "scaled_error": 5.311336925828414e-10,
+          "flat_index": 1624,
+          "torch": -2.1149011445231736e-05,
+          "native": -2.114954259013757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "variance",
+          "scaled_error": 3.7192471324942744e-15,
+          "flat_index": 30,
+          "torch": 8.558347919240816e-10,
+          "native": 8.558385111712141e-10
+        },
+        {
+          "parameter": 6,
+          "array": "parameter",
+          "scaled_error": 4.7800416069776475e-08,
+          "flat_index": 747,
+          "torch": 0.01314548496156931,
+          "native": 0.01314543653279543,
+          "initial": 0.015570230782032013,
+          "torch_raw_gradient": 0.01696547493338585,
+          "native_raw_gradient": 0.016965404152870178
+        },
+        {
+          "parameter": 6,
+          "array": "gradient",
+          "scaled_error": 1.016437138900983e-07,
+          "flat_index": 1753,
+          "torch": -0.026213394477963448,
+          "native": -0.02621329016983509
+        },
+        {
+          "parameter": 6,
+          "array": "moment",
+          "scaled_error": 5.5812288124457154e-09,
+          "flat_index": 1955,
+          "torch": 0.0012015764368698,
+          "native": 0.0012015820248052478
+        },
+        {
+          "parameter": 6,
+          "array": "variance",
+          "scaled_error": 1.5461344010647693e-11,
+          "flat_index": 1771,
+          "torch": 4.32914930570405e-06,
+          "native": 4.32916476711398e-06
+        },
+        {
+          "parameter": 7,
+          "array": "parameter",
+          "scaled_error": 4.4141458488411445e-08,
+          "flat_index": 1911,
+          "torch": -0.012732423841953278,
+          "native": -0.012732379138469696,
+          "initial": -0.0065168095752596855,
+          "torch_raw_gradient": -0.0033685150556266308,
+          "native_raw_gradient": -0.0033685106318444014
+        },
+        {
+          "parameter": 7,
+          "array": "gradient",
+          "scaled_error": 8.077990543142732e-08,
+          "flat_index": 3885,
+          "torch": -0.014564129523932934,
+          "native": -0.014564047567546368
+        },
+        {
+          "parameter": 7,
+          "array": "moment",
+          "scaled_error": 4.656114604983941e-09,
+          "flat_index": 2925,
+          "torch": -0.00010705046588554978,
+          "native": -0.00010705512249842286
+        },
+        {
+          "parameter": 7,
+          "array": "variance",
+          "scaled_error": 4.320087690357077e-12,
+          "flat_index": 2404,
+          "torch": 2.8438391836971277e-06,
+          "native": 2.8438348635972943e-06
+        },
+        {
+          "parameter": 8,
+          "array": "parameter",
+          "scaled_error": 5.315284852258628e-07,
+          "flat_index": 42,
+          "torch": 1.0184886455535889,
+          "native": 1.018487572669983,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0005040040123276412,
+          "native_raw_gradient": -0.0005040014511905611
+        },
+        {
+          "parameter": 8,
+          "array": "gradient",
+          "scaled_error": 8.838206611017085e-09,
+          "flat_index": 43,
+          "torch": -0.0010588370496407151,
+          "native": -0.0010588282020762563
+        },
+        {
+          "parameter": 8,
+          "array": "moment",
+          "scaled_error": 4.792985452972687e-10,
+          "flat_index": 56,
+          "torch": 1.0684160770324524e-05,
+          "native": 1.068368146661669e-05
+        },
+        {
+          "parameter": 8,
+          "array": "variance",
+          "scaled_error": 3.375077994860476e-14,
+          "flat_index": 18,
+          "torch": 2.602386395267331e-08,
+          "native": 2.6023897703453258e-08
+        },
+        {
+          "parameter": 9,
+          "array": "parameter",
+          "scaled_error": 4.4383730823938095e-07,
+          "flat_index": 7825,
+          "torch": 0.009303072467446327,
+          "native": 0.009302624501287937,
+          "initial": 0.01689690351486206,
+          "torch_raw_gradient": -4.4578358938451856e-05,
+          "native_raw_gradient": -4.4579210225492716e-05
+        },
+        {
+          "parameter": 9,
+          "array": "gradient",
+          "scaled_error": 3.440413465227721e-08,
+          "flat_index": 6941,
+          "torch": 0.0015929030487313867,
+          "native": 0.0015928685897961259
+        },
+        {
+          "parameter": 9,
+          "array": "moment",
+          "scaled_error": 2.502294593753618e-09,
+          "flat_index": 6941,
+          "torch": -0.00025367806665599346,
+          "native": -0.00025368056958541274
+        },
+        {
+          "parameter": 9,
+          "array": "variance",
+          "scaled_error": 4.121147325307495e-13,
+          "flat_index": 4730,
+          "torch": 1.5465502656297758e-07,
+          "native": 1.5465543867776432e-07
+        },
+        {
+          "parameter": 10,
+          "array": "parameter",
+          "scaled_error": 2.468845252678875e-07,
+          "flat_index": 8922,
+          "torch": 0.026065483689308167,
+          "native": 0.026065737009048462,
+          "initial": 0.027069011703133583,
+          "torch_raw_gradient": -0.000867476686835289,
+          "native_raw_gradient": -0.0008674914133735001
+        },
+        {
+          "parameter": 10,
+          "array": "gradient",
+          "scaled_error": 3.195742692696513e-08,
+          "flat_index": 122,
+          "torch": 0.0017770049162209034,
+          "native": 0.001776972902007401
+        },
+        {
+          "parameter": 10,
+          "array": "moment",
+          "scaled_error": 3.055007358199191e-09,
+          "flat_index": 7617,
+          "torch": 0.0002928732428699732,
+          "native": 0.0002928701869677752
+        },
+        {
+          "parameter": 10,
+          "array": "variance",
+          "scaled_error": 5.96855626987941e-13,
+          "flat_index": 4097,
+          "torch": 4.6166127276592306e-07,
+          "native": 4.616618696218211e-07
+        },
+        {
+          "parameter": 11,
+          "array": "parameter",
+          "scaled_error": 1.9068590972892707e-06,
+          "flat_index": 7857,
+          "torch": -0.004165851045399904,
+          "native": -0.004163936246186495,
+          "initial": -0.011250484734773636,
+          "torch_raw_gradient": -0.0013069354463368654,
+          "native_raw_gradient": -0.0013069396372884512
+        },
+        {
+          "parameter": 11,
+          "array": "gradient",
+          "scaled_error": 2.9413360635999197e-08,
+          "flat_index": 3165,
+          "torch": 0.013224015012383461,
+          "native": 0.013223985210061073
+        },
+        {
+          "parameter": 11,
+          "array": "moment",
+          "scaled_error": 2.7343880493191364e-09,
+          "flat_index": 3165,
+          "torch": 0.0005016965442337096,
+          "native": 0.0005016938084736466
+        },
+        {
+          "parameter": 11,
+          "array": "variance",
+          "scaled_error": 3.6948216838514347e-13,
+          "flat_index": 3165,
+          "torch": 1.5205317538402596e-07,
+          "native": 1.5205280590180337e-07
+        },
+        {
+          "parameter": 12,
+          "array": "parameter",
+          "scaled_error": 4.1693931507325033e-07,
+          "flat_index": 48,
+          "torch": 1.001407265663147,
+          "native": 1.0014064311981201,
+          "initial": 1.0,
+          "torch_raw_gradient": 0.002078655641525984,
+          "native_raw_gradient": 0.0020786491222679615
+        },
+        {
+          "parameter": 12,
+          "array": "gradient",
+          "scaled_error": 8.817348629008848e-09,
+          "flat_index": 47,
+          "torch": 0.0034269236493855715,
+          "native": 0.0034269148018211126
+        },
+        {
+          "parameter": 12,
+          "array": "moment",
+          "scaled_error": 3.3465008542066244e-10,
+          "flat_index": 31,
+          "torch": 0.00013140009832568467,
+          "native": 0.00013139976363163441
+        },
+        {
+          "parameter": 12,
+          "array": "variance",
+          "scaled_error": 6.750155989720952e-14,
+          "flat_index": 26,
+          "torch": 3.726009367710503e-08,
+          "native": 3.726016117866493e-08
+        },
+        {
+          "parameter": 13,
+          "array": "parameter",
+          "scaled_error": 4.0523570987716084e-07,
+          "flat_index": 3309,
+          "torch": 0.015815570950508118,
+          "native": 0.015815159305930138,
+          "initial": 0.000135520298499614,
+          "torch_raw_gradient": -6.094760829000734e-05,
+          "native_raw_gradient": -6.0947524616494775e-05
+        },
+        {
+          "parameter": 13,
+          "array": "gradient",
+          "scaled_error": 1.0911583858685958e-09,
+          "flat_index": 1437,
+          "torch": 0.00021562303300015628,
+          "native": 0.00021562194160651416
+        },
+        {
+          "parameter": 13,
+          "array": "moment",
+          "scaled_error": 9.822202079456943e-11,
+          "flat_index": 2142,
+          "torch": -3.470015144557692e-05,
+          "native": -3.470005322014913e-05
+        },
+        {
+          "parameter": 13,
+          "array": "variance",
+          "scaled_error": 3.7470027081099033e-16,
+          "flat_index": 2781,
+          "torch": 2.16684017950719e-10,
+          "native": 2.166836432504482e-10
+        },
+        {
+          "parameter": 14,
+          "array": "parameter",
+          "scaled_error": 1.1816934630815012e-07,
+          "flat_index": 1371,
+          "torch": -0.002889445051550865,
+          "native": -0.002889563562348485,
+          "initial": 0.0009236534824594855,
+          "torch_raw_gradient": 0.00010526297410251573,
+          "native_raw_gradient": 0.0001052630614140071
+        },
+        {
+          "parameter": 14,
+          "array": "gradient",
+          "scaled_error": 1.259761628347178e-09,
+          "flat_index": 766,
+          "torch": -1.7934703464561608e-06,
+          "native": -1.794730110304954e-06
+        },
+        {
+          "parameter": 14,
+          "array": "moment",
+          "scaled_error": 1.964419599209677e-10,
+          "flat_index": 707,
+          "torch": -4.5343134843278676e-05,
+          "native": -4.534293839242309e-05
+        },
+        {
+          "parameter": 14,
+          "array": "variance",
+          "scaled_error": 5.689893001203927e-16,
+          "flat_index": 670,
+          "torch": 1.9827087194279613e-10,
+          "native": 1.9827144093209625e-10
+        },
+        {
+          "parameter": 15,
+          "array": "parameter",
+          "scaled_error": 3.300279516338378e-08,
+          "flat_index": 1103,
+          "torch": -0.01590217649936676,
+          "native": -0.015902142971754074,
+          "initial": -0.020759498700499535,
+          "torch_raw_gradient": -0.0011319925542920828,
+          "native_raw_gradient": -0.0011319887125864625
+        },
+        {
+          "parameter": 15,
+          "array": "gradient",
+          "scaled_error": 1.1176739178608841e-07,
+          "flat_index": 541,
+          "torch": 0.03325323015451431,
+          "native": 0.03325311467051506
+        },
+        {
+          "parameter": 15,
+          "array": "moment",
+          "scaled_error": 4.567600520033466e-09,
+          "flat_index": 182,
+          "torch": -0.00037235382478684187,
+          "native": -0.0003723583940882236
+        },
+        {
+          "parameter": 15,
+          "array": "variance",
+          "scaled_error": 8.640138951521159e-12,
+          "flat_index": 669,
+          "torch": 7.0835917540534865e-06,
+          "native": 7.08358311385382e-06
+        },
+        {
+          "parameter": 16,
+          "array": "parameter",
+          "scaled_error": 5.093162513958305e-08,
+          "flat_index": 169,
+          "torch": -0.024001669138669968,
+          "native": -0.02400161698460579,
+          "initial": -0.012781991623342037,
+          "torch_raw_gradient": 0.0019484360236674547,
+          "native_raw_gradient": 0.0019484395161271095
+        },
+        {
+          "parameter": 16,
+          "array": "gradient",
+          "scaled_error": 7.735206963843666e-08,
+          "flat_index": 2012,
+          "torch": 0.011363891884684563,
+          "native": 0.01136397011578083
+        },
+        {
+          "parameter": 16,
+          "array": "moment",
+          "scaled_error": 6.631116988842223e-09,
+          "flat_index": 1740,
+          "torch": 0.0006871664663776755,
+          "native": 0.0006871731020510197
+        },
+        {
+          "parameter": 16,
+          "array": "variance",
+          "scaled_error": 4.320088991399684e-12,
+          "flat_index": 2396,
+          "torch": 2.472931100783171e-06,
+          "native": 2.4729267806833377e-06
+        },
+        {
+          "parameter": 17,
+          "array": "parameter",
+          "scaled_error": 6.53663050798059e-07,
+          "flat_index": 39,
+          "torch": 1.0060840845108032,
+          "native": 1.0060827732086182,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0007541683153249323,
+          "native_raw_gradient": -0.000754169246647507
+        },
+        {
+          "parameter": 17,
+          "array": "gradient",
+          "scaled_error": 5.3497051233364346e-09,
+          "flat_index": 51,
+          "torch": 0.00100934156216681,
+          "native": 0.001009336207062006
+        },
+        {
+          "parameter": 17,
+          "array": "moment",
+          "scaled_error": 4.2926293075673527e-10,
+          "flat_index": 16,
+          "torch": -4.3297201045788825e-05,
+          "native": -4.329677176428959e-05
+        },
+        {
+          "parameter": 17,
+          "array": "variance",
+          "scaled_error": 8.881784197001252e-15,
+          "flat_index": 9,
+          "torch": 8.590426148202823e-09,
+          "native": 8.59043502998702e-09
+        },
+        {
+          "parameter": 18,
+          "array": "parameter",
+          "scaled_error": 1.6364664361390169e-06,
+          "flat_index": 2944,
+          "torch": -0.019839338958263397,
+          "native": -0.019837670028209686,
+          "initial": -0.027814440429210663,
+          "torch_raw_gradient": -0.0006473968969658017,
+          "native_raw_gradient": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "gradient",
+          "scaled_error": 3.420396055275887e-08,
+          "flat_index": 2944,
+          "torch": -0.0006473968969658017,
+          "native": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "moment",
+          "scaled_error": 8.19162604415169e-09,
+          "flat_index": 2973,
+          "torch": -0.00013453619612846524,
+          "native": -0.0001345443888567388
+        },
+        {
+          "parameter": 18,
+          "array": "variance",
+          "scaled_error": 6.181721801112872e-13,
+          "flat_index": 2953,
+          "torch": 9.500413788998685e-09,
+          "native": 9.501031961178796e-09
+        },
+        {
+          "parameter": 19,
+          "array": "parameter",
+          "scaled_error": 6.381814614542236e-07,
+          "flat_index": 3038,
+          "torch": 0.01569870486855507,
+          "native": 0.015699353069067,
+          "initial": 0.018101846799254417,
+          "torch_raw_gradient": -0.00021559538436122239,
+          "native_raw_gradient": -0.00021559141168836504
+        },
+        {
+          "parameter": 19,
+          "array": "gradient",
+          "scaled_error": 4.962551258813619e-08,
+          "flat_index": 750,
+          "torch": 0.0005162389134056866,
+          "native": 0.0005162885645404458
+        },
+        {
+          "parameter": 19,
+          "array": "moment",
+          "scaled_error": 7.3914523390783415e-09,
+          "flat_index": 1454,
+          "torch": 0.00012451145448721945,
+          "native": 0.00012451884686015546
+        },
+        {
+          "parameter": 19,
+          "array": "variance",
+          "scaled_error": 6.252774448385623e-13,
+          "flat_index": 829,
+          "torch": 2.1283769058300095e-07,
+          "native": 2.1283831586060842e-07
+        },
+        {
+          "parameter": 20,
+          "array": "parameter",
+          "scaled_error": 6.927271442691563e-06,
+          "flat_index": 2964,
+          "torch": -0.030094502493739128,
+          "native": -0.030101638287305832,
+          "initial": -0.033343009650707245,
+          "torch_raw_gradient": 0.00013915938325226307,
+          "native_raw_gradient": 0.00013916846364736557
+        },
+        {
+          "parameter": 20,
+          "array": "gradient",
+          "scaled_error": 2.7133209457019802e-08,
+          "flat_index": 2981,
+          "torch": 0.00022530446585733443,
+          "native": 0.00022533160517923534
+        },
+        {
+          "parameter": 20,
+          "array": "moment",
+          "scaled_error": 4.046309065586229e-09,
+          "flat_index": 2968,
+          "torch": 8.157069714798126e-06,
+          "native": 8.161116056726314e-06
+        },
+        {
+          "parameter": 20,
+          "array": "variance",
+          "scaled_error": 2.0961010704922955e-13,
+          "flat_index": 3658,
+          "torch": 3.9746630875470146e-08,
+          "native": 3.9746840485577195e-08
+        }
+      ],
+      "correctness_passed": true,
+      "finite_differences": [],
+      "throughput_percentage": 84.27375836378364
+    },
+    {
+      "repeat": 3,
+      "order": [
+        "torch",
+        "native"
+      ],
+      "native_command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-train.exe",
+        "--data",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\corpus.txt",
+        "--dimension",
+        "64",
+        "--ff",
+        "176",
+        "--layers",
+        "2",
+        "--heads",
+        "4",
+        "--kv-heads",
+        "2",
+        "--context",
+        "32",
+        "--steps",
+        "30",
+        "--threads",
+        "6",
+        "--memory-mib",
+        "4096",
+        "--output",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-3.gguf",
+        "--checkpoint",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-3.ckpt",
+        "--metrics",
+        "D:\\fyodor-validation\\score-refresh-training-20261011\\native-3.csv",
+        "--compute",
+        "cuda"
+      ],
+      "torch_step_ms": [
+        6.373199998051859,
+        5.06929999392014,
+        5.077699999674223,
+        5.593399997451343,
+        4.906499991193414,
+        4.747200000565499,
+        9.6754999976838,
+        5.197799997404218,
+        5.629999999655411,
+        4.98189999780152,
+        4.870999997365288,
+        9.442800001124851,
+        4.860799992457032,
+        4.913500000839122,
+        4.643599997507408,
+        4.610199990565889,
+        10.188399988692254,
+        4.701400001067668,
+        4.493300002650358,
+        5.315099988365546,
+        4.455500005860813,
+        4.4464999955380335,
+        4.4907000119565055,
+        8.904599992092699,
+        4.945699998643249,
+        4.75449999794364,
+        5.933499996899627,
+        4.55750001128763,
+        5.225799992331304,
+        4.684400002588518
+      ],
+      "torch_losses": [
+        5.659517288208008,
+        5.364336967468262,
+        5.270323276519775,
+        5.098968029022217,
+        4.996431350708008,
+        4.931854248046875,
+        4.80977201461792,
+        4.681330680847168,
+        4.618709564208984,
+        4.547211647033691,
+        4.376362323760986,
+        4.323058128356934,
+        4.189541816711426,
+        4.184303283691406,
+        4.030596733093262,
+        3.9416542053222656,
+        3.8811588287353516,
+        3.781186103820801,
+        3.6846041679382324,
+        3.6205897331237793,
+        3.5835509300231934,
+        3.4314310550689697,
+        3.3568809032440186,
+        3.2787647247314453,
+        3.26114559173584,
+        3.127439498901367,
+        3.0567593574523926,
+        3.017518997192383,
+        2.916581392288208,
+        2.8505852222442627
+      ],
+      "native_mean_ms": 7.537373684210526,
+      "torch_mean_ms": 5.566021050694154,
+      "maximum_loss_absolute_error": 9.583569333670994e-07,
+      "state_maximum_scaled_errors": {
+        "parameter": 6.927271442691563e-06,
+        "gradient": 2.8863374268439657e-07,
+        "moment": 9.540988088474478e-08,
+        "variance": 3.4915306756921893e-10
+      },
+      "state_details": [
+        {
+          "parameter": 0,
+          "array": "parameter",
+          "scaled_error": 8.853970712152659e-08,
+          "flat_index": 7729,
+          "torch": -0.004535650368779898,
+          "native": -0.0045357393100857735,
+          "initial": -0.015002246014773846,
+          "torch_raw_gradient": 0.0013088330160826445,
+          "native_raw_gradient": 0.001308809733018279
+        },
+        {
+          "parameter": 0,
+          "array": "gradient",
+          "scaled_error": 2.8863374268439657e-07,
+          "flat_index": 2294,
+          "torch": 0.03253107890486717,
+          "native": 0.032530780881643295
+        },
+        {
+          "parameter": 0,
+          "array": "moment",
+          "scaled_error": 1.6246987755152986e-08,
+          "flat_index": 2248,
+          "torch": -0.0031487306114286184,
+          "native": -0.0031487143132835627
+        },
+        {
+          "parameter": 0,
+          "array": "variance",
+          "scaled_error": 6.547801190137648e-11,
+          "flat_index": 2294,
+          "torch": 8.553364023100585e-05,
+          "native": 8.553370571462438e-05
+        },
+        {
+          "parameter": 1,
+          "array": "parameter",
+          "scaled_error": 4.6931577912801004e-07,
+          "flat_index": 14,
+          "torch": 1.0320535898208618,
+          "native": 1.0320526361465454,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.039073798805475235,
+          "native_raw_gradient": -0.03907376527786255
+        },
+        {
+          "parameter": 1,
+          "array": "gradient",
+          "scaled_error": 3.9385085415233334e-08,
+          "flat_index": 51,
+          "torch": -0.04044950008392334,
+          "native": -0.04044954106211662
+        },
+        {
+          "parameter": 1,
+          "array": "moment",
+          "scaled_error": 1.2851171682370932e-08,
+          "flat_index": 51,
+          "torch": -0.014577959664165974,
+          "native": -0.014577972702682018
+        },
+        {
+          "parameter": 1,
+          "array": "variance",
+          "scaled_error": 1.1823268926403063e-11,
+          "flat_index": 9,
+          "torch": 1.371862890664488e-05,
+          "native": 1.3718640730076004e-05
+        },
+        {
+          "parameter": 2,
+          "array": "parameter",
+          "scaled_error": 1.7689551157218375e-07,
+          "flat_index": 673,
+          "torch": 0.021374434232711792,
+          "native": 0.021374614909291267,
+          "initial": -0.0030176264699548483,
+          "torch_raw_gradient": -0.0016757732955738902,
+          "native_raw_gradient": -0.001675774110481143
+        },
+        {
+          "parameter": 2,
+          "array": "gradient",
+          "scaled_error": 2.2161746926485648e-07,
+          "flat_index": 2289,
+          "torch": -0.21028746664524078,
+          "native": -0.21028773486614227
+        },
+        {
+          "parameter": 2,
+          "array": "moment",
+          "scaled_error": 9.540988088474478e-08,
+          "flat_index": 2289,
+          "torch": -0.09326322376728058,
+          "native": -0.09326332807540894
+        },
+        {
+          "parameter": 2,
+          "array": "variance",
+          "scaled_error": 3.4915306756921893e-10,
+          "flat_index": 2289,
+          "torch": 0.00026605906896293163,
+          "native": 0.0002660594182088971
+        },
+        {
+          "parameter": 3,
+          "array": "parameter",
+          "scaled_error": 5.950244599262078e-07,
+          "flat_index": 57,
+          "torch": 1.0034363269805908,
+          "native": 1.0034351348876953,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.001787603017874062,
+          "native_raw_gradient": -0.001787603017874062
+        },
+        {
+          "parameter": 3,
+          "array": "gradient",
+          "scaled_error": 1.2298731810744812e-08,
+          "flat_index": 41,
+          "torch": 0.003357445588335395,
+          "native": 0.003357433248311281
+        },
+        {
+          "parameter": 3,
+          "array": "moment",
+          "scaled_error": 6.002464636445382e-10,
+          "flat_index": 61,
+          "torch": -3.333194035803899e-05,
+          "native": -3.333134009153582e-05
+        },
+        {
+          "parameter": 3,
+          "array": "variance",
+          "scaled_error": 1.2434497875801753e-13,
+          "flat_index": 61,
+          "torch": 4.6456548830065e-08,
+          "native": 4.645667317504376e-08
+        },
+        {
+          "parameter": 4,
+          "array": "parameter",
+          "scaled_error": 1.7350671441818122e-06,
+          "flat_index": 3666,
+          "torch": -0.0030771323945373297,
+          "native": -0.0030788728035986423,
+          "initial": -0.013897765427827835,
+          "torch_raw_gradient": 0.00013276787649374455,
+          "native_raw_gradient": 0.00013276866229716688
+        },
+        {
+          "parameter": 4,
+          "array": "gradient",
+          "scaled_error": 2.0360180208456313e-09,
+          "flat_index": 4068,
+          "torch": -0.0006140861660242081,
+          "native": -0.00061408820329234
+        },
+        {
+          "parameter": 4,
+          "array": "moment",
+          "scaled_error": 3.491837374802742e-10,
+          "flat_index": 70,
+          "torch": 0.00017825317627284676,
+          "native": 0.00017825352551881224
+        },
+        {
+          "parameter": 4,
+          "array": "variance",
+          "scaled_error": 3.885780586188048e-15,
+          "flat_index": 88,
+          "torch": 1.4261558600736635e-09,
+          "native": 1.4261597458542496e-09
+        },
+        {
+          "parameter": 5,
+          "array": "parameter",
+          "scaled_error": 1.8655488531749143e-07,
+          "flat_index": 465,
+          "torch": 0.018412601202726364,
+          "native": 0.018412411212921143,
+          "initial": 0.016095345839858055,
+          "torch_raw_gradient": -0.00028704479336738586,
+          "native_raw_gradient": -0.0002870448515750468
+        },
+        {
+          "parameter": 5,
+          "array": "gradient",
+          "scaled_error": 3.1830398317111985e-09,
+          "flat_index": 1603,
+          "torch": 6.021856461302377e-05,
+          "native": 6.021538138156757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "moment",
+          "scaled_error": 5.311336925828414e-10,
+          "flat_index": 1624,
+          "torch": -2.1149011445231736e-05,
+          "native": -2.114954259013757e-05
+        },
+        {
+          "parameter": 5,
+          "array": "variance",
+          "scaled_error": 3.7192471324942744e-15,
+          "flat_index": 30,
+          "torch": 8.558347919240816e-10,
+          "native": 8.558385111712141e-10
+        },
+        {
+          "parameter": 6,
+          "array": "parameter",
+          "scaled_error": 4.7800416069776475e-08,
+          "flat_index": 747,
+          "torch": 0.01314548496156931,
+          "native": 0.01314543653279543,
+          "initial": 0.015570230782032013,
+          "torch_raw_gradient": 0.01696547493338585,
+          "native_raw_gradient": 0.016965404152870178
+        },
+        {
+          "parameter": 6,
+          "array": "gradient",
+          "scaled_error": 1.016437138900983e-07,
+          "flat_index": 1753,
+          "torch": -0.026213394477963448,
+          "native": -0.02621329016983509
+        },
+        {
+          "parameter": 6,
+          "array": "moment",
+          "scaled_error": 5.5812288124457154e-09,
+          "flat_index": 1955,
+          "torch": 0.0012015764368698,
+          "native": 0.0012015820248052478
+        },
+        {
+          "parameter": 6,
+          "array": "variance",
+          "scaled_error": 1.5461344010647693e-11,
+          "flat_index": 1771,
+          "torch": 4.32914930570405e-06,
+          "native": 4.32916476711398e-06
+        },
+        {
+          "parameter": 7,
+          "array": "parameter",
+          "scaled_error": 4.4141458488411445e-08,
+          "flat_index": 1911,
+          "torch": -0.012732423841953278,
+          "native": -0.012732379138469696,
+          "initial": -0.0065168095752596855,
+          "torch_raw_gradient": -0.0033685150556266308,
+          "native_raw_gradient": -0.0033685106318444014
+        },
+        {
+          "parameter": 7,
+          "array": "gradient",
+          "scaled_error": 8.077990543142732e-08,
+          "flat_index": 3885,
+          "torch": -0.014564129523932934,
+          "native": -0.014564047567546368
+        },
+        {
+          "parameter": 7,
+          "array": "moment",
+          "scaled_error": 4.656114604983941e-09,
+          "flat_index": 2925,
+          "torch": -0.00010705046588554978,
+          "native": -0.00010705512249842286
+        },
+        {
+          "parameter": 7,
+          "array": "variance",
+          "scaled_error": 4.320087690357077e-12,
+          "flat_index": 2404,
+          "torch": 2.8438391836971277e-06,
+          "native": 2.8438348635972943e-06
+        },
+        {
+          "parameter": 8,
+          "array": "parameter",
+          "scaled_error": 5.315284852258628e-07,
+          "flat_index": 42,
+          "torch": 1.0184886455535889,
+          "native": 1.018487572669983,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0005040040123276412,
+          "native_raw_gradient": -0.0005040014511905611
+        },
+        {
+          "parameter": 8,
+          "array": "gradient",
+          "scaled_error": 8.838206611017085e-09,
+          "flat_index": 43,
+          "torch": -0.0010588370496407151,
+          "native": -0.0010588282020762563
+        },
+        {
+          "parameter": 8,
+          "array": "moment",
+          "scaled_error": 4.792985452972687e-10,
+          "flat_index": 56,
+          "torch": 1.0684160770324524e-05,
+          "native": 1.068368146661669e-05
+        },
+        {
+          "parameter": 8,
+          "array": "variance",
+          "scaled_error": 3.375077994860476e-14,
+          "flat_index": 18,
+          "torch": 2.602386395267331e-08,
+          "native": 2.6023897703453258e-08
+        },
+        {
+          "parameter": 9,
+          "array": "parameter",
+          "scaled_error": 4.4383730823938095e-07,
+          "flat_index": 7825,
+          "torch": 0.009303072467446327,
+          "native": 0.009302624501287937,
+          "initial": 0.01689690351486206,
+          "torch_raw_gradient": -4.4578358938451856e-05,
+          "native_raw_gradient": -4.4579210225492716e-05
+        },
+        {
+          "parameter": 9,
+          "array": "gradient",
+          "scaled_error": 3.440413465227721e-08,
+          "flat_index": 6941,
+          "torch": 0.0015929030487313867,
+          "native": 0.0015928685897961259
+        },
+        {
+          "parameter": 9,
+          "array": "moment",
+          "scaled_error": 2.502294593753618e-09,
+          "flat_index": 6941,
+          "torch": -0.00025367806665599346,
+          "native": -0.00025368056958541274
+        },
+        {
+          "parameter": 9,
+          "array": "variance",
+          "scaled_error": 4.121147325307495e-13,
+          "flat_index": 4730,
+          "torch": 1.5465502656297758e-07,
+          "native": 1.5465543867776432e-07
+        },
+        {
+          "parameter": 10,
+          "array": "parameter",
+          "scaled_error": 2.468845252678875e-07,
+          "flat_index": 8922,
+          "torch": 0.026065483689308167,
+          "native": 0.026065737009048462,
+          "initial": 0.027069011703133583,
+          "torch_raw_gradient": -0.000867476686835289,
+          "native_raw_gradient": -0.0008674914133735001
+        },
+        {
+          "parameter": 10,
+          "array": "gradient",
+          "scaled_error": 3.195742692696513e-08,
+          "flat_index": 122,
+          "torch": 0.0017770049162209034,
+          "native": 0.001776972902007401
+        },
+        {
+          "parameter": 10,
+          "array": "moment",
+          "scaled_error": 3.055007358199191e-09,
+          "flat_index": 7617,
+          "torch": 0.0002928732428699732,
+          "native": 0.0002928701869677752
+        },
+        {
+          "parameter": 10,
+          "array": "variance",
+          "scaled_error": 5.96855626987941e-13,
+          "flat_index": 4097,
+          "torch": 4.6166127276592306e-07,
+          "native": 4.616618696218211e-07
+        },
+        {
+          "parameter": 11,
+          "array": "parameter",
+          "scaled_error": 1.9068590972892707e-06,
+          "flat_index": 7857,
+          "torch": -0.004165851045399904,
+          "native": -0.004163936246186495,
+          "initial": -0.011250484734773636,
+          "torch_raw_gradient": -0.0013069354463368654,
+          "native_raw_gradient": -0.0013069396372884512
+        },
+        {
+          "parameter": 11,
+          "array": "gradient",
+          "scaled_error": 2.9413360635999197e-08,
+          "flat_index": 3165,
+          "torch": 0.013224015012383461,
+          "native": 0.013223985210061073
+        },
+        {
+          "parameter": 11,
+          "array": "moment",
+          "scaled_error": 2.7343880493191364e-09,
+          "flat_index": 3165,
+          "torch": 0.0005016965442337096,
+          "native": 0.0005016938084736466
+        },
+        {
+          "parameter": 11,
+          "array": "variance",
+          "scaled_error": 3.6948216838514347e-13,
+          "flat_index": 3165,
+          "torch": 1.5205317538402596e-07,
+          "native": 1.5205280590180337e-07
+        },
+        {
+          "parameter": 12,
+          "array": "parameter",
+          "scaled_error": 4.1693931507325033e-07,
+          "flat_index": 48,
+          "torch": 1.001407265663147,
+          "native": 1.0014064311981201,
+          "initial": 1.0,
+          "torch_raw_gradient": 0.002078655641525984,
+          "native_raw_gradient": 0.0020786491222679615
+        },
+        {
+          "parameter": 12,
+          "array": "gradient",
+          "scaled_error": 8.817348629008848e-09,
+          "flat_index": 47,
+          "torch": 0.0034269236493855715,
+          "native": 0.0034269148018211126
+        },
+        {
+          "parameter": 12,
+          "array": "moment",
+          "scaled_error": 3.3465008542066244e-10,
+          "flat_index": 31,
+          "torch": 0.00013140009832568467,
+          "native": 0.00013139976363163441
+        },
+        {
+          "parameter": 12,
+          "array": "variance",
+          "scaled_error": 6.750155989720952e-14,
+          "flat_index": 26,
+          "torch": 3.726009367710503e-08,
+          "native": 3.726016117866493e-08
+        },
+        {
+          "parameter": 13,
+          "array": "parameter",
+          "scaled_error": 4.0523570987716084e-07,
+          "flat_index": 3309,
+          "torch": 0.015815570950508118,
+          "native": 0.015815159305930138,
+          "initial": 0.000135520298499614,
+          "torch_raw_gradient": -6.094760829000734e-05,
+          "native_raw_gradient": -6.0947524616494775e-05
+        },
+        {
+          "parameter": 13,
+          "array": "gradient",
+          "scaled_error": 1.0911583858685958e-09,
+          "flat_index": 1437,
+          "torch": 0.00021562303300015628,
+          "native": 0.00021562194160651416
+        },
+        {
+          "parameter": 13,
+          "array": "moment",
+          "scaled_error": 9.822202079456943e-11,
+          "flat_index": 2142,
+          "torch": -3.470015144557692e-05,
+          "native": -3.470005322014913e-05
+        },
+        {
+          "parameter": 13,
+          "array": "variance",
+          "scaled_error": 3.7470027081099033e-16,
+          "flat_index": 2781,
+          "torch": 2.16684017950719e-10,
+          "native": 2.166836432504482e-10
+        },
+        {
+          "parameter": 14,
+          "array": "parameter",
+          "scaled_error": 1.1816934630815012e-07,
+          "flat_index": 1371,
+          "torch": -0.002889445051550865,
+          "native": -0.002889563562348485,
+          "initial": 0.0009236534824594855,
+          "torch_raw_gradient": 0.00010526297410251573,
+          "native_raw_gradient": 0.0001052630614140071
+        },
+        {
+          "parameter": 14,
+          "array": "gradient",
+          "scaled_error": 1.259761628347178e-09,
+          "flat_index": 766,
+          "torch": -1.7934703464561608e-06,
+          "native": -1.794730110304954e-06
+        },
+        {
+          "parameter": 14,
+          "array": "moment",
+          "scaled_error": 1.964419599209677e-10,
+          "flat_index": 707,
+          "torch": -4.5343134843278676e-05,
+          "native": -4.534293839242309e-05
+        },
+        {
+          "parameter": 14,
+          "array": "variance",
+          "scaled_error": 5.689893001203927e-16,
+          "flat_index": 670,
+          "torch": 1.9827087194279613e-10,
+          "native": 1.9827144093209625e-10
+        },
+        {
+          "parameter": 15,
+          "array": "parameter",
+          "scaled_error": 3.300279516338378e-08,
+          "flat_index": 1103,
+          "torch": -0.01590217649936676,
+          "native": -0.015902142971754074,
+          "initial": -0.020759498700499535,
+          "torch_raw_gradient": -0.0011319925542920828,
+          "native_raw_gradient": -0.0011319887125864625
+        },
+        {
+          "parameter": 15,
+          "array": "gradient",
+          "scaled_error": 1.1176739178608841e-07,
+          "flat_index": 541,
+          "torch": 0.03325323015451431,
+          "native": 0.03325311467051506
+        },
+        {
+          "parameter": 15,
+          "array": "moment",
+          "scaled_error": 4.567600520033466e-09,
+          "flat_index": 182,
+          "torch": -0.00037235382478684187,
+          "native": -0.0003723583940882236
+        },
+        {
+          "parameter": 15,
+          "array": "variance",
+          "scaled_error": 8.640138951521159e-12,
+          "flat_index": 669,
+          "torch": 7.0835917540534865e-06,
+          "native": 7.08358311385382e-06
+        },
+        {
+          "parameter": 16,
+          "array": "parameter",
+          "scaled_error": 5.093162513958305e-08,
+          "flat_index": 169,
+          "torch": -0.024001669138669968,
+          "native": -0.02400161698460579,
+          "initial": -0.012781991623342037,
+          "torch_raw_gradient": 0.0019484360236674547,
+          "native_raw_gradient": 0.0019484395161271095
+        },
+        {
+          "parameter": 16,
+          "array": "gradient",
+          "scaled_error": 7.735206963843666e-08,
+          "flat_index": 2012,
+          "torch": 0.011363891884684563,
+          "native": 0.01136397011578083
+        },
+        {
+          "parameter": 16,
+          "array": "moment",
+          "scaled_error": 6.631116988842223e-09,
+          "flat_index": 1740,
+          "torch": 0.0006871664663776755,
+          "native": 0.0006871731020510197
+        },
+        {
+          "parameter": 16,
+          "array": "variance",
+          "scaled_error": 4.320088991399684e-12,
+          "flat_index": 2396,
+          "torch": 2.472931100783171e-06,
+          "native": 2.4729267806833377e-06
+        },
+        {
+          "parameter": 17,
+          "array": "parameter",
+          "scaled_error": 6.53663050798059e-07,
+          "flat_index": 39,
+          "torch": 1.0060840845108032,
+          "native": 1.0060827732086182,
+          "initial": 1.0,
+          "torch_raw_gradient": -0.0007541683153249323,
+          "native_raw_gradient": -0.000754169246647507
+        },
+        {
+          "parameter": 17,
+          "array": "gradient",
+          "scaled_error": 5.3497051233364346e-09,
+          "flat_index": 51,
+          "torch": 0.00100934156216681,
+          "native": 0.001009336207062006
+        },
+        {
+          "parameter": 17,
+          "array": "moment",
+          "scaled_error": 4.2926293075673527e-10,
+          "flat_index": 16,
+          "torch": -4.3297201045788825e-05,
+          "native": -4.329677176428959e-05
+        },
+        {
+          "parameter": 17,
+          "array": "variance",
+          "scaled_error": 8.881784197001252e-15,
+          "flat_index": 9,
+          "torch": 8.590426148202823e-09,
+          "native": 8.59043502998702e-09
+        },
+        {
+          "parameter": 18,
+          "array": "parameter",
+          "scaled_error": 1.6364664361390169e-06,
+          "flat_index": 2944,
+          "torch": -0.019839338958263397,
+          "native": -0.019837670028209686,
+          "initial": -0.027814440429210663,
+          "torch_raw_gradient": -0.0006473968969658017,
+          "native_raw_gradient": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "gradient",
+          "scaled_error": 3.420396055275887e-08,
+          "flat_index": 2944,
+          "torch": -0.0006473968969658017,
+          "native": -0.0006474311230704188
+        },
+        {
+          "parameter": 18,
+          "array": "moment",
+          "scaled_error": 8.19162604415169e-09,
+          "flat_index": 2973,
+          "torch": -0.00013453619612846524,
+          "native": -0.0001345443888567388
+        },
+        {
+          "parameter": 18,
+          "array": "variance",
+          "scaled_error": 6.181721801112872e-13,
+          "flat_index": 2953,
+          "torch": 9.500413788998685e-09,
+          "native": 9.501031961178796e-09
+        },
+        {
+          "parameter": 19,
+          "array": "parameter",
+          "scaled_error": 6.381814614542236e-07,
+          "flat_index": 3038,
+          "torch": 0.01569870486855507,
+          "native": 0.015699353069067,
+          "initial": 0.018101846799254417,
+          "torch_raw_gradient": -0.00021559538436122239,
+          "native_raw_gradient": -0.00021559141168836504
+        },
+        {
+          "parameter": 19,
+          "array": "gradient",
+          "scaled_error": 4.962551258813619e-08,
+          "flat_index": 750,
+          "torch": 0.0005162389134056866,
+          "native": 0.0005162885645404458
+        },
+        {
+          "parameter": 19,
+          "array": "moment",
+          "scaled_error": 7.3914523390783415e-09,
+          "flat_index": 1454,
+          "torch": 0.00012451145448721945,
+          "native": 0.00012451884686015546
+        },
+        {
+          "parameter": 19,
+          "array": "variance",
+          "scaled_error": 6.252774448385623e-13,
+          "flat_index": 829,
+          "torch": 2.1283769058300095e-07,
+          "native": 2.1283831586060842e-07
+        },
+        {
+          "parameter": 20,
+          "array": "parameter",
+          "scaled_error": 6.927271442691563e-06,
+          "flat_index": 2964,
+          "torch": -0.030094502493739128,
+          "native": -0.030101638287305832,
+          "initial": -0.033343009650707245,
+          "torch_raw_gradient": 0.00013915938325226307,
+          "native_raw_gradient": 0.00013916846364736557
+        },
+        {
+          "parameter": 20,
+          "array": "gradient",
+          "scaled_error": 2.7133209457019802e-08,
+          "flat_index": 2981,
+          "torch": 0.00022530446585733443,
+          "native": 0.00022533160517923534
+        },
+        {
+          "parameter": 20,
+          "array": "moment",
+          "scaled_error": 4.046309065586229e-09,
+          "flat_index": 2968,
+          "torch": 8.157069714798126e-06,
+          "native": 8.161116056726314e-06
+        },
+        {
+          "parameter": 20,
+          "array": "variance",
+          "scaled_error": 2.0961010704922955e-13,
+          "flat_index": 3658,
+          "torch": 3.9746630875470146e-08,
+          "native": 3.9746840485577195e-08
+        }
+      ],
+      "correctness_passed": true,
+      "finite_differences": [],
+      "throughput_percentage": 73.84562957723577
+    }
+  ]
+}
