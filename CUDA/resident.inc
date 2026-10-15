@@ -20,13 +20,13 @@ typedef struct nya_cuda_plan {
     size_t blas_expansion;
     CUdeviceptr *tensors;
     CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
-    CUfunction decode_request, attention_prefill, attention_split, attention_combine;
+    CUfunction qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     int failed;
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
-    int use_graphs, split_attention, fuse_gate_up;
+    int use_graphs, split_attention, fuse_gate_up, fuse_qkv;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
@@ -73,7 +73,7 @@ static void cuda_plan_free(void *opaque)
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -173,6 +173,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->split_attention = partial_count != 0;
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
+    const char *qkv = getenv("NYA_CUDA_QKV");
+    p->fuse_qkv = !qkv || strcmp(qkv,"0");
     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
     p->fuse_gate_up = !gate_up || strcmp(gate_up,"0");
     const char *profile = getenv("NYA_CUDA_PROFILE");
@@ -288,6 +290,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (c->function_get(&p->gather, c->module, "nya_gather") != CUDA_SUCCESS ||
         c->function_get(&p->decode_request, c->module, "nya_decode_request") != CUDA_SUCCESS ||
         c->function_get(&p->gather_batch, c->module, "nya_gather_batch") != CUDA_SUCCESS ||
+        c->function_get(&p->qkv[0], c->module, "nya_qkv_12") != CUDA_SUCCESS ||
+        c->function_get(&p->qkv[1], c->module, "nya_qkv_14") != CUDA_SUCCESS ||
         c->function_get(&p->norm_op, c->module, "nya_norm") != CUDA_SUCCESS ||
         c->function_get(&p->add_norm, c->module, "nya_add_norm") != CUDA_SUCCESS ||
         c->function_get(&p->rope, c->module, "nya_rope") != CUDA_SUCCESS ||
@@ -415,6 +419,18 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
     p->matrix_profile=0;
     return result;
 }
+static int plan_qkv(nya_cuda_plan *p, const nya_llm_layer *w, CUdeviceptr key,
+    CUdeviceptr value, size_t qrows, size_t krows, size_t columns)
+{
+    CUdeviceptr q=plan_tensor(p,w->query), k=plan_tensor(p,w->key), v=plan_tensor(p,w->value);
+    unsigned long long cols=columns, qs=w->query->data_size/qrows, vs=w->value->data_size/krows;
+    unsigned long long qr=qrows, kr=krows;
+    void *args[]={&q,&k,&v,&p->norm,&p->q,&key,&value,&cols,&qs,&vs,&qr,&kr};
+    p->matrix_profile=plan_matrix_slot(p,qrows+2*krows,columns,w->value->type,6);
+    int result=plan_launch(p,p->qkv[w->value->type==14],(qrows+7)/8+2*((krows+7)/8),args);
+    p->matrix_profile=0;
+    return result;
+}
 static int plan_norm(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr in, const nya_llm_tensor *t, size_t n, size_t rows)
 {
     CUdeviceptr weight = plan_tensor(p, t);
@@ -514,12 +530,19 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         CUdeviceptr frequencies = p->frequencies + freq_offset * sizeof(float);
         freq_offset += hd / 2;
         RUN(plan_norm(p, p->norm, p->x, w->attention_norm, d, 1));
-        RUN(plan_matvec(p, p->q, w->query, p->norm, qdim, d));
+        int qkv = count == 1 && p->fuse_qkv && !m->is_gemma && !c->reference &&
+            w->kv_source == layer && w->key && w->value && w->query->type == 12 &&
+            w->key->type == 12 && (w->value->type == 12 || w->value->type == 14) &&
+            w->query->data_size/qdim == w->key->data_size/kvdim;
+        if (qkv) RUN(plan_qkv(p,w,key,value,qdim,kvdim,d));
+        else RUN(plan_matvec(p, p->q, w->query, p->norm, qdim, d));
         if (m->is_gemma) RUN(plan_norm(p, p->q, p->q, w->query_norm, hd, heads));
         if (w->kv_source == layer) {
+            if (!qkv) {
             RUN(plan_matvec(p, key, w->key, p->norm, kvdim, d));
             if (w->value) RUN(plan_matvec(p, value, w->value, p->norm, kvdim, d));
             else RUN(plan_vector(p, value, key, 0, kvdim, 0, 1));
+            }
             if (m->is_gemma) {
                 RUN(plan_norm(p, key, key, w->key_norm, hd, kvheads));
                 RUN(plan_norm(p, value, value, NULL, hd, kvheads));
