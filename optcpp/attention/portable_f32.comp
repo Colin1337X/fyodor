@@ -1,0 +1,60 @@
+#version 450
+// Original Fyodor portable F32 online-softmax attention; no subgroup assumptions.
+layout(local_size_x=256) in;
+layout(set=0,binding=0,std430) readonly buffer Q { float q[]; };
+layout(set=0,binding=1,std430) readonly buffer K { float keys[]; };
+layout(set=0,binding=2,std430) readonly buffer V { float values[]; };
+layout(set=0,binding=3,std430) writeonly buffer O { float output_values[]; };
+layout(push_constant) uniform Shape {
+    uint width, heads, kvheads, window, position, count;
+    float scale;
+} shape;
+shared float dots[256], probabilities[64], correction, denominator, maximum;
+void main() {
+    uint head=gl_WorkGroupID.x, query=gl_WorkGroupID.y, tid=gl_LocalInvocationID.x;
+    if (query>=shape.count) return;
+    uint end=shape.position+query;
+    uint first=shape.window != 0 && end>=shape.window ? end-shape.window+1 : 0;
+    uint kh=head/(shape.heads/shape.kvheads);
+    uint stride=shape.kvheads*shape.width;
+    uint qoffset=(query*shape.heads+head)*shape.width;
+    uint ooffset=(query*shape.heads+head)*shape.width;
+    float numerator=0.0f;
+    if (tid == 0) { maximum=uintBitsToFloat(0xff800000u); denominator=0.0f; }
+    barrier();
+    for (uint base=first; base<=end; base+=64) {
+        uint key_index=tid/4, component=tid%4;
+        uint token=base+key_index;
+        float dot=0.0f;
+        if (token<=end) for (uint j=component;j<shape.width;j+=4)
+            dot+=q[qoffset+j]*keys[token*stride+kh*shape.width+j];
+        dots[tid]=dot;
+        barrier();
+        if (tid<64) {
+            float score=((dots[tid*4]+dots[tid*4+1])+dots[tid*4+2])+dots[tid*4+3];
+            probabilities[tid]=base+tid<=end ? score*shape.scale : uintBitsToFloat(0xff800000u);
+        }
+        barrier();
+        if (tid == 0) {
+            float next=maximum;
+            for (uint i=0;i<64 && base+i<=end;++i) next=max(next,probabilities[i]);
+            correction=exp(maximum-next);
+            maximum=next;
+        }
+        barrier();
+        if (tid<64) probabilities[tid]=base+tid<=end ? exp(probabilities[tid]-maximum) : 0.0f;
+        barrier();
+        if (tid == 0) {
+            float sum=0.0f;
+            for (uint i=0;i<64;++i) sum+=probabilities[i];
+            denominator=denominator*correction+sum;
+        }
+        if (tid<shape.width) {
+            numerator*=correction;
+            for (uint i=0;i<64 && base+i<=end;++i)
+                numerator+=probabilities[i]*values[(base+i)*stride+kh*shape.width+tid];
+        }
+        barrier();
+    }
+    if (tid<shape.width) output_values[ooffset+tid]=numerator/denominator;
+}

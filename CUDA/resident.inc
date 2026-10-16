@@ -19,6 +19,14 @@ typedef struct nya_cuda_plan {
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors;
+#ifdef NYA_PORTABLE_ATTENTION
+    CUfunction portable_attention;
+    int use_portable_attention;
+#endif
+#ifdef NYA_FLASH_DECODING_PP
+    CUfunction fdpp_partial, fdpp_combine;
+    int use_fdpp;
+#endif
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
@@ -117,6 +125,12 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     size_t heads = 0, rope_count = 0, total = 0, weights = 0, maximum_kv = 0, partial_count = 0;
     const char *split_setting = getenv("NYA_CUDA_SPLIT_ATTENTION");
     int split_attention = !c->reference && capacity > 256 && (!split_setting || strcmp(split_setting,"0"));
+    int use_fdpp = 0;
+#ifdef NYA_FLASH_DECODING_PP
+    const char *fdpp_setting = getenv("NYA_CUDA_FLASH_DECODING_PP");
+    use_fdpp = !c->reference && fdpp_setting && !strcmp(fdpp_setting,"1");
+#endif
+    int has_split_attention = 0;
     int all_tiled = !c->reference;
     for (size_t i = 0; i < m->block_count; ++i) {
         if (m->layers[i].head_dimension != 64 && m->layers[i].head_dimension != 128) all_tiled = 0;
@@ -125,7 +139,10 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         size_t kv = m->layers[i].kv_head_count * m->layers[i].head_dimension;
         if (kv > maximum_kv) maximum_kv = kv;
         if (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128) &&
-            (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256)) {
+            (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256)) has_split_attention = 1;
+        if ((use_fdpp && m->layers[i].head_dimension <= 256) ||
+            (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128) &&
+            (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256))) {
             size_t width = m->layers[i].head_dimension+2;
             if (m->layers[i].head_count > SIZE_MAX/width/4) return NULL;
             size_t partials = m->layers[i].head_count*width*4;
@@ -170,11 +187,18 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (p == NULL) return NULL;
     p->cuda = c; p->model = m; p->capacity = capacity; p->bytes = total;
     p->batch = 1; p->maximum_batch = batch;
-    p->split_attention = partial_count != 0;
+    p->split_attention = has_split_attention;
+#ifdef NYA_FLASH_DECODING_PP
+    p->use_fdpp = use_fdpp;
+#endif
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
     const char *residual = getenv("NYA_CUDA_RESIDUAL");
     p->fuse_residual = !residual || strcmp(residual,"0");
+#ifdef NYA_PORTABLE_ATTENTION
+    const char *portable_attention = getenv("NYA_CUDA_PORTABLE_ATTENTION");
+    p->use_portable_attention = portable_attention && !strcmp(portable_attention,"1");
+#endif
     const char *rope_pair = getenv("NYA_CUDA_ROPE_PAIR");
     p->fuse_rope_pair = !rope_pair || strcmp(rope_pair,"0");
     const char *qkv = getenv("NYA_CUDA_QKV");
@@ -213,6 +237,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p); return NULL; }
     size_t start_weights = c->weight_count, free_bytes, total_bytes;
+#ifdef NYA_PORTABLE_ATTENTION
+    if (c->function_get(&p->portable_attention,c->module,"nya_attention_portable_f32") != CUDA_SUCCESS) goto failure;
+#ifdef NYA_FLASH_DECODING_PP
+    if (c->function_get(&p->fdpp_partial,c->module,"nya_fdpp_partial") != CUDA_SUCCESS ||
+        c->function_get(&p->fdpp_combine,c->module,"nya_fdpp_combine") != CUDA_SUCCESS) goto failure;
+#endif
+#endif
     size_t missing = 0;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         const nya_llm_tensor *t = &m->tensors[i];
@@ -333,6 +364,12 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
         timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope || f == p->rope_pair ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
+#ifdef NYA_PORTABLE_ATTENTION
+        if (f == p->portable_attention) timing->kind = 4U;
+#ifdef NYA_FLASH_DECODING_PP
+        if (f == p->fdpp_partial || f == p->fdpp_combine) timing->kind = 4U;
+#endif
+#endif
         ++p->timing_count;
         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
     }
@@ -589,6 +626,26 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         unsigned end = (unsigned)position, capacity = (unsigned)p->capacity;
         scale = m->is_gemma ? 1 : 1 / sqrtf((float)hd);
         void *attention[] = {&p->q, &keys, &values, &p->norm, &p->scores, &width, &nh, &nk, &window, &end, &capacity, &scale, &p->active_request};
+#ifdef NYA_FLASH_DECODING_PP
+        if (p->use_fdpp && count == 1 && width <= 256) {
+            /* Partition choice is fixed within each captured graph. Device
+               request positions determine bounds on every graph replay. */
+            unsigned partitions = graph_index ? 4U : 1U;
+            void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
+                &window,&end,&scale,&p->active_request,&partitions};
+            RUN(plan_grid(p,p->fdpp_partial,heads,partitions,256,1,partial));
+            void *combine[]={&p->q,&keys,&values,&p->norm,&p->attention_parts,&width,&nh,&nk,
+                &window,&end,&scale,&p->active_request,&partitions};
+            RUN(plan_grid(p,p->fdpp_combine,heads,1,256,1,combine));
+        } else
+#endif
+#ifdef NYA_PORTABLE_ATTENTION
+        if (p->use_portable_attention && !c->reference && width <= 256) {
+            unsigned batch_count=(unsigned)count;
+            void *portable[]={&p->q,&keys,&values,&p->norm,&width,&nh,&nk,&window,&end,&batch_count,&scale,&p->active_request};
+            RUN(plan_grid(p,p->portable_attention,heads,count,256,1,portable));
+        } else
+#endif
         if (!p->cuda->reference && count >= 8 && (width == 64 || width == 128)) {
             unsigned batch_count = (unsigned)count;
             void *tiled[] = {&p->q, &keys, &values, &p->norm, &width, &nh, &nk, &window, &end, &batch_count, &scale};

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Independent double-precision causal/GQA oracle. Odd head widths exercise
    SIMD tails, while multiple queries exercise worker partitioning and windows. */
@@ -38,16 +39,17 @@ static int check(const nya_compute_attention *a)
     return 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     float q[33*4*37], k[65*2*37], v[65*2*37], out[33*4*37+2];
     for (size_t i = 0; i < sizeof(q)/sizeof(q[0]); ++i) q[i] = sinf((float)i*0.13f);
     for (size_t i = 0; i < sizeof(k)/sizeof(k[0]); ++i) { k[i] = cosf((float)i*0.17f); v[i] = sinf((float)i*0.07f); }
-    nya_compute_context *c = nya_compute_create_for("cpu");
+    nya_compute_context *c = nya_compute_create_for(argc > 1 ? argv[1] : "cpu");
     if (!c) return 1;
+    if (argc > 1 && strcmp(nya_compute_name(c),argv[1])) { nya_compute_free(c); return 77; }
     const size_t positions[] = {0,7,17,32,0}, batches[] = {1,17,33,33,1}, windows[] = {1,7,0,17,0};
     nya_compute_attention a = {q,k,v,out+1,1,4,2,37,65,0,0,0.16439899f};
-    int supported = nya_cpu_select_attention() != NULL;
+    int supported = argc > 1 || nya_cpu_select_attention() != NULL;
     for (size_t p = 0; p < 5; ++p) {
         a.position = positions[p]; a.batch = batches[p]; a.window = windows[p];
         out[0] = out[a.batch*a.heads*a.width+1] = 12345;
