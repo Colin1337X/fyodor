@@ -61,3 +61,35 @@ extern "C" __global__ void nya_fdpp_partial_warp(const float *q,
         parts[width]=sum;parts[width+1]=(float)retry;
     }
 }
+
+/* Same unified-scale reduction, but unsafe heads use Fyodor's coalesced
+   stable CUDA implementation and its already budgeted per-head score scratch.
+   The generic optional implementation remains independent of this helper. */
+extern "C" __global__ void nya_fdpp_combine_warp(const float *q,
+    const float *keys, const float *values, float *out, const float *parts,
+    unsigned width, unsigned heads, unsigned kvheads, unsigned window,
+    unsigned position, float scale, const unsigned *request, unsigned partitions,
+    float *scores, unsigned capacity)
+{
+    unsigned h=blockIdx.x, tid=threadIdx.x;
+    const float *p=parts+(unsigned long long)h*partitions*(width+2);
+    __shared__ unsigned retry;
+    __shared__ float denominator;
+    if (!tid) {
+        retry=0; denominator=0.0f;
+        for (unsigned i=0;i<partitions;++i) {
+            retry|=p[i*(width+2)+width+1]!=0.0f;
+            denominator+=p[i*(width+2)+width];
+        }
+        if (!(denominator>0.0f) || !isfinite(denominator)) retry=1;
+    }
+    __syncthreads();
+    if (retry) {
+        nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,
+            window,position,capacity,scale,request,1);
+    } else if (tid<width) {
+        float sum=0.0f;
+        for (unsigned i=0;i<partitions;++i) sum+=p[i*(width+2)+tid];
+        out[(unsigned long long)h*width+tid]=sum/denominator;
+    }
+}

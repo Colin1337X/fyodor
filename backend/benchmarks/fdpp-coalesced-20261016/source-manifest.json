@@ -1,0 +1,46 @@
+{
+  "base_commit": "9ea81fd32c57a7167ba4d1d30138c982155d4ca6",
+  "sha256": {
+    "CUDA/CMakeLists.txt": "9696c703fe28bd712703bbceaa93504cbeed518d334efc959e60d7a1a2c950c2",
+    "CUDA/resident.inc": "d2a4107f73c4c12d526e03aa9d70681d90c120514f3491f56de49bad1350c10a",
+    "optcpp/attention/flash_decoding_pp.cu": "bfa599fc184a5e719cc943e78f7d207e71ad3b283c92f28686ca6316fc2f201e",
+    "optcpp/attention/flash_decoding_pp_warp.cu": "0229393fc9e2a8315838ca6e83c70c2f0360e245ea24796f9c5df2c818e8d5e4",
+    "optcpp/attention/portable_f32.cu": "859ad2d5d960426be2f4ba9c121360ffdca92a7b003a6f770525193d296d1789",
+    "CUDA/resident.cu": "7860c6dc07146be8edb8c5376751b1ef505556a3790a43e03b38461fda09bda9"
+  },
+  "precision": "F32 Q/K/V and accumulation; unchanged 2e-6 direct oracle and existing real-model tolerance",
+  "builds": {
+    "build-cuda": [
+      "CMAKE_BUILD_TYPE:STRING=Release",
+      "CMAKE_C_COMPILER:STRING=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "NYA_C_STANDARD:STRING=17",
+      "NYA_ENABLE_CUDA:BOOL=ON",
+      "NYA_ENABLE_CUTLASS:BOOL=ON",
+      "NYA_ENABLE_IPO:BOOL=OFF",
+      "NYA_ENABLE_MLX:BOOL=ON",
+      "NYA_ENABLE_ONNXRUNTIME:BOOL=OFF",
+      "NYA_ENABLE_OPTCPP:BOOL=ON",
+      "NYA_ENABLE_PORTABLE_ATTENTION:BOOL=ON",
+      "NYA_ENABLE_ROCM:BOOL=ON",
+      "NYA_ENABLE_SANITIZERS:BOOL=OFF",
+      "NYA_ENABLE_VULKAN:BOOL=ON",
+      "NYA_WARNINGS_AS_ERRORS:BOOL=ON"
+    ],
+    "build-cuda-c23": [
+      "CMAKE_BUILD_TYPE:STRING=Release",
+      "CMAKE_C_COMPILER:STRING=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+      "NYA_C_STANDARD:STRING=23",
+      "NYA_ENABLE_CUDA:BOOL=ON",
+      "NYA_ENABLE_CUTLASS:BOOL=ON",
+      "NYA_ENABLE_IPO:BOOL=OFF",
+      "NYA_ENABLE_MLX:BOOL=ON",
+      "NYA_ENABLE_ONNXRUNTIME:BOOL=OFF",
+      "NYA_ENABLE_OPTCPP:BOOL=ON",
+      "NYA_ENABLE_PORTABLE_ATTENTION:BOOL=ON",
+      "NYA_ENABLE_ROCM:BOOL=ON",
+      "NYA_ENABLE_SANITIZERS:BOOL=OFF",
+      "NYA_ENABLE_VULKAN:BOOL=ON",
+      "NYA_WARNINGS_AS_ERRORS:BOOL=ON"
+    ]
+  }
+}
