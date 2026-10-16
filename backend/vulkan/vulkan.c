@@ -50,8 +50,14 @@ struct nya_vulkan_context {
     size_t weight_count;
     VkDeviceSize cached_bytes;
     int failed;
+#ifdef NYA_PORTABLE_VULKAN_ATTENTION
+    void *attention_state;
+#endif
 };
 
+#ifdef NYA_PORTABLE_VULKAN_ATTENTION
+static void nya_vk_attention_free(nya_vulkan_context *c);
+#endif
 /* A poisoned context no longer runs GPU commands even though its allocations
  * remain alive until model unload. Diagnostics must report that CPU fallback. */
 int nya_vulkan_active(const nya_vulkan_context *context)
@@ -192,6 +198,9 @@ void nya_vulkan_free(nya_vulkan_context *context)
         for (index = 0; index < context->weight_count; ++index) nya_vk_buffer_free(context, &context->weights[index].storage);
         nya_vk_buffer_free(context, &context->input);
         nya_vk_buffer_free(context, &context->output);
+#ifdef NYA_PORTABLE_VULKAN_ATTENTION
+        nya_vk_attention_free(context);
+#endif
         if (context->pipeline != VK_NULL_HANDLE) vkDestroyPipeline(context->device, context->pipeline, NULL);
         if (context->pipeline_layout != VK_NULL_HANDLE) vkDestroyPipelineLayout(context->device, context->pipeline_layout, NULL);
         if (context->descriptor_pool != VK_NULL_HANDLE) vkDestroyDescriptorPool(context->device, context->descriptor_pool, NULL);
@@ -435,6 +444,12 @@ int nya_vulkan_matvec(nya_vulkan_context *context, const void *weights,
 /* Vulkan currently implements synchronous F32 projections. Advertising only
    that capability prevents a scheduler from assuming resident transformer ops. */
 #include "compute_backend.h"
+#ifdef NYA_PORTABLE_VULKAN_ATTENTION
+#include "../../optcpp/attention/vulkan.inc"
+#define NYA_VK_ATTENTION nya_vk_attention
+#else
+#define NYA_VK_ATTENTION NULL
+#endif
 static void *vk_backend_create(void) { return nya_vulkan_create(); }
 static void vk_backend_free(void *p) { nya_vulkan_free(p); }
 static int vk_backend_active(const void *p) { return nya_vulkan_active(p); }
@@ -444,6 +459,6 @@ static int vk_backend_matvec(void *p, const void *w, size_t r, size_t c,
 const nya_backend_interface *nya_vulkan_backend(void)
 {
     static const nya_backend_interface api = {NYA_BACKEND_VULKAN, "vulkan", NYA_COMPUTE_MATVEC,
-        vk_backend_create, vk_backend_free, vk_backend_active, vk_backend_matvec, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+        vk_backend_create, vk_backend_free, vk_backend_active, vk_backend_matvec, NULL, NULL, NULL, NULL, NULL, NULL, NYA_VK_ATTENTION, NULL, NULL};
     return &api;
 }

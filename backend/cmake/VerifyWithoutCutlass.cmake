@@ -16,7 +16,7 @@ file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
 if(EXISTS "${check_root}/source/CUDA/cutlass" OR NOT EXISTS "${check_root}/source/CUDA/cuda.c")
     message(FATAL_ERROR "Verification source does not have CUDA-without-CUTLASS layout")
 endif()
-foreach(provider IN ITEMS rocm mlx)
+foreach(provider IN ITEMS rocm mlx optcpp)
     if(EXISTS "${NYA_SOURCE_ROOT}/${provider}")
         file(COPY "${NYA_SOURCE_ROOT}/${provider}" DESTINATION "${check_root}/source" PATTERN "build*" EXCLUDE)
     endif()

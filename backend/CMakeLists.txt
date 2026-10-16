@@ -9,6 +9,8 @@ set_property(CACHE NYA_C_STANDARD PROPERTY STRINGS 17 23)
 if(NOT NYA_C_STANDARD MATCHES "^(17|23)$")
     message(FATAL_ERROR "NYA_C_STANDARD must be 17 or 23")
 endif()
+option(NYA_ENABLE_OPTCPP "Enable physically removable root optcpp components" ON)
+option(NYA_ENABLE_PORTABLE_ATTENTION "Compile experimental portable attention kernels" OFF)
 option(NYA_ENABLE_VULKAN "Enable independent Vulkan compute acceleration" OFF)
 option(NYA_ENABLE_CUDA "Enable optional CUDA driver/NVRTC provider when its directory and headers exist" OFF)
 option(NYA_ENABLE_ROCM "Enable detachable ROCm C adapter (optional runtime libraries)" ON)
@@ -178,6 +180,11 @@ if(NYA_ENABLE_VULKAN)
     # Vulkan has its own dependency and source list; CUDA is never probed.
     find_package(Vulkan 1.3 REQUIRED)
     target_sources(nya-engine PRIVATE vulkan/vulkan.c)
+    if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_PORTABLE_ATTENTION AND
+       EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/vulkan.inc" AND
+       EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/portable_spv.h")
+        target_compile_definitions(nya-engine PRIVATE NYA_PORTABLE_VULKAN_ATTENTION=1)
+    endif()
     target_compile_definitions(nya-engine PRIVATE NYA_ENABLE_VULKAN=1)
     target_link_libraries(nya-engine PUBLIC Vulkan::Vulkan)
 endif()
@@ -234,7 +241,7 @@ nya_copy_provider(fyodor-backend)
 nya_copy_provider(fyodor-train)
 
 set(NYA_VERIFY_MODEL "" CACHE FILEPATH "Optional real GGUF for physical-removal benchmark comparison")
-foreach(optional IN ITEMS rocm mlx optcpp)
+foreach(optional IN ITEMS rocm mlx optcpp non-c)
     add_custom_target(verify-without-${optional}
         COMMAND "${CMAKE_COMMAND}"
             "-DNYA_EXCLUDE=${optional}"
@@ -374,6 +381,13 @@ if(BUILD_TESTING)
     nya_target_policy(nya-test-attention)
     target_include_directories(nya-test-attention PRIVATE core)
     target_link_libraries(nya-test-attention PRIVATE nya-engine)
+    if(NYA_ENABLE_VULKAN AND NYA_ENABLE_OPTCPP AND NYA_ENABLE_PORTABLE_ATTENTION AND
+       EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/vulkan.inc" AND
+       EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/portable_spv.h")
+        add_test(NAME attention-vulkan-portable COMMAND nya-test-attention vulkan)
+        set_tests_properties(attention-vulkan-portable PROPERTIES
+            ENVIRONMENT "NYA_VULKAN_PORTABLE_ATTENTION=1" SKIP_RETURN_CODE 77 TIMEOUT 60)
+    endif()
     nya_target_policy(nya-test-quant-kernels)
     target_include_directories(nya-test-quant-kernels PRIVATE core)
     target_link_libraries(nya-test-quant-kernels PRIVATE nya-engine)
@@ -638,6 +652,14 @@ if(BUILD_TESTING)
         set_tests_properties(inference-vulkan-logits PROPERTIES FIXTURES_REQUIRED trained_model ENVIRONMENT "NYA_COMPUTE=vulkan" SKIP_RETURN_CODE 77 TIMEOUT 60)
     endif()
     if(NYA_CUDA_AVAILABLE)
+        if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_PORTABLE_ATTENTION AND
+           EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/portable_f32.cu" AND
+           EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp.cu")
+            add_test(NAME inference-cuda-flash-decoding-pp COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-fdpp")
+            set_tests_properties(inference-cuda-flash-decoding-pp PROPERTIES
+                ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1;NYA_CUDA_FLASH_DECODING_PP=1"
+                SKIP_RETURN_CODE 77 TIMEOUT 180)
+        endif()
         add_test(NAME inference-cuda-attention-shapes COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-shape")
         set_tests_properties(inference-cuda-attention-shapes PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1" SKIP_RETURN_CODE 77 TIMEOUT 180)
         add_test(NAME inference-cuda-attention-unsplit COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-unsplit")

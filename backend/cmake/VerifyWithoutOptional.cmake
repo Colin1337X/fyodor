@@ -1,16 +1,23 @@
 # Copy only source directories into a unique verification root. Never move or
 # delete anything in the user's checkout. Preserve every other provider.
-if(NOT NYA_EXCLUDE MATCHES "^(rocm|mlx|optcpp)$")
+if(NOT NYA_EXCLUDE MATCHES "^(rocm|mlx|optcpp|non-c)$")
     message(FATAL_ERROR "Invalid optional directory")
 endif()
 string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef suffix)
 set(root "${NYA_VERIFY_PARENT}/without-${NYA_EXCLUDE}-${suffix}")
 file(MAKE_DIRECTORY "${root}/source")
 file(COPY "${NYA_SOURCE_ROOT}/CMakeLists.txt" "${NYA_SOURCE_ROOT}/config.yaml" DESTINATION "${root}/source")
-foreach(directory IN ITEMS backend CUDA rocm mlx)
+set(exclusions PATTERN "${NYA_EXCLUDE}" EXCLUDE)
+if(NYA_EXCLUDE STREQUAL "non-c")
+    set(exclusions PATTERN optcpp EXCLUDE PATTERN cutlass EXCLUDE PATTERN cute EXCLUDE)
+endif()
+foreach(directory IN ITEMS backend CUDA rocm mlx optcpp)
+    if(NYA_EXCLUDE STREQUAL "non-c" AND directory STREQUAL "optcpp")
+        continue()
+    endif()
     if(EXISTS "${NYA_SOURCE_ROOT}/${directory}" AND NOT directory STREQUAL NYA_EXCLUDE)
         file(COPY "${NYA_SOURCE_ROOT}/${directory}" DESTINATION "${root}/source"
-            PATTERN "${NYA_EXCLUDE}" EXCLUDE PATTERN vendor EXCLUDE PATTERN "build*" EXCLUDE
+            ${exclusions} PATTERN vendor EXCLUDE PATTERN "build*" EXCLUDE
             PATTERN benchmarks EXCLUDE)
     endif()
 endforeach()
@@ -20,9 +27,17 @@ file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
 if(EXISTS "${root}/source/${NYA_EXCLUDE}" OR EXISTS "${root}/source/backend/${NYA_EXCLUDE}")
     message(FATAL_ERROR "Excluded directory exists in verification copy")
 endif()
+if(NYA_EXCLUDE STREQUAL "non-c")
+    foreach(component IN ITEMS optcpp backend/optcpp CUDA/cutlass CUDA/cute)
+        if(EXISTS "${root}/source/${component}")
+            message(FATAL_ERROR "Non-C component remains: ${component}")
+        endif()
+    endforeach()
+endif()
 set(options -G "${NYA_GENERATOR}" "-DCMAKE_C_COMPILER=${NYA_COMPILER}"
     -DCMAKE_BUILD_TYPE=Release "-DNYA_C_STANDARD=${NYA_STANDARD}" -DNYA_WARNINGS_AS_ERRORS=ON
-    -DNYA_ENABLE_ONNXRUNTIME=OFF -DBUILD_TESTING=ON -DNYA_ENABLE_ROCM=ON -DNYA_ENABLE_MLX=ON
+    -DNYA_ENABLE_ONNXRUNTIME=OFF -DBUILD_TESTING=ON
+    -DNYA_ENABLE_OPTCPP=ON -DNYA_ENABLE_PORTABLE_ATTENTION=ON -DNYA_ENABLE_ROCM=ON -DNYA_ENABLE_MLX=ON
     "-DNYA_ENABLE_CUDA=${NYA_CUDA}" "-DNYA_ENABLE_VULKAN=${NYA_VULKAN}"
     "-DNYA_CUDA_INCLUDE_DIR=${NYA_CUDA_INCLUDE}" "-DNYA_NVRTC_INCLUDE_DIR=${NYA_NVRTC_INCLUDE}"
     "-DNYA_CUDA_NVRTC_LIBRARY=${NYA_NVRTC_LIBRARY}"
