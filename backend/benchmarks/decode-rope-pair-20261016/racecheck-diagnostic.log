@@ -1,0 +1,10 @@
+========= COMPUTE-SANITIZER
+{"width": 64, "query_heads": 32, "kv_heads": 4, "position": 0, "request": false, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 30.154767990112305, "pair": 15.651935577392578}, "gain_percent": {"separate": 0.0, "pair": 92.65839576842751}}
+{"width": 64, "query_heads": 32, "kv_heads": 4, "position": 257, "request": true, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 31.438560485839844, "pair": 15.697791576385498}, "gain_percent": {"separate": 0.0, "pair": 100.27377948585774}}
+{"width": 128, "query_heads": 32, "kv_heads": 8, "position": 1023, "request": true, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 31.573904037475586, "pair": 15.671296119689941}, "gain_percent": {"separate": 0.0, "pair": 101.47602212560503}}
+Traceback (most recent call last):
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\benchmarks\decode-rope-pair-20261016\check_production.py", line 116, in <module>
+    raise AssertionError((width,qh,kh,pos,name,len(differences)))
+AssertionError: (256, 32, 8, 257, 'pair', 2048)
+========= Target application returned an error
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

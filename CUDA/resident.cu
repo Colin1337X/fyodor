@@ -352,3 +352,24 @@ extern "C" __global__ void nya_attention_prefill(const float *q, const float *ke
         if (valid && lane+i*32 < width)
             out[((unsigned long long)query_index*heads+head)*width+lane+i*32] = numerator[i]/denominator;
 }
+
+/* Single-token interleaved Q/K RoPE; preserves the separate kernel arithmetic. */
+extern "C" __global__ void nya_rope_pair(float *q,float *k,const float *frequencies,
+ unsigned width,unsigned qheads,unsigned kheads,unsigned position,const unsigned *request,
+ float *cache_keys,float *cache_values,const float *value) {
+ if(request) position=request[1];
+ unsigned i=blockIdx.x*256+threadIdx.x,half=width/2,qp=qheads*half;
+
+ if(i>=qp+kheads*half) return;
+ bool key=i>=qp; unsigned local=key?i-qp:i;
+ float *x=key?k:q;
+ unsigned head=local/half,pair=local%half,a=head*width+pair*2,b=a+1;
+ float co=cosf((float)position*frequencies[pair]);float si=sinf((float)position*frequencies[pair]);
+ float first=x[a],second=x[b];
+ x[a]=first*co-second*si; x[b]=second*co+first*si;
+ if(key && cache_keys) {
+  unsigned long long off=(unsigned long long)position*kheads*width;
+  cache_keys[off+a]=x[a];cache_keys[off+b]=x[b];
+  cache_values[off+a]=value[a];cache_values[off+b]=value[b];
+ }
+}

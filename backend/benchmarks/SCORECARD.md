@@ -6,26 +6,28 @@ parity on that workload, not a percentage of engineering completion.
 | Workload | Fyodor | Reference | Relative throughput |
 | --- | ---: | ---: | ---: |
 | Inference prefill, 512 tokens | 4,595.77 ± 33.02 tok/s | 15,021.92 ± 591.61 tok/s | **30.6%** |
-| Inference decode, 128 tokens, prefix 0 | 354.82 ± 0.58 tok/s | 383.95 ± 1.15 tok/s | **92.4%** |
-| Inference decode, 128 tokens, prefix 1,024 | 306.47 ± 0.37 tok/s | 269.97 ± 0.62 tok/s | **113.5%** |
+| Inference decode, 128 tokens, prefix 0 | 358.02 � 0.70 tok/s | 384.22 � 0.75 tok/s | **93.2%** |
+| Inference decode, 128 tokens, prefix 1,024 | 308.64 � 0.29 tok/s | 270.01 � 1.25 tok/s | **114.3%** |
 | Small full-rank CUDA training update | 7.699 ± 0.029 ms | 5.466 ± 0.450 ms | **71.0%** |
 
 Decode was rerun October 16; prefill and training remain historical October 12
-measurements. Work is focused exclusively on decode until it exceeds parity.
-The current refresh fuses eligible decode projections with residual addition,
-removing another 44 launches per TinyLlama token without extra buffers or changed
-arithmetic. Initial plus confirmation comparisons pool to +1.87% short throughput
-(20 samples each); prefix 512 improves 1.13% and long 0.91% (ten each). Short
-baseline variance limits precision, and every observation is retained. Both
-orders improve in both short rounds. A wider isolated projection regressed
-0.7%; gains on larger real models are not established. Short remains below
-parity, so optimization stays focused on decode.
+measurements. Work is focused exclusively on decode until both short and long decode reach at least 125% of llama.cpp throughput.
+The current refresh combines query/key RoPE into one launch per eligible decode
+layer. Exact logits and KV are preserved across 795 graph decodes; C17/C23
+regression passes and all four bounded GPU sanitizers pass. The synthetic
+harness needed explicit upload ordering; failed runs are retained. All twelve
+monitored baseline activities and eight reference activities passed idle and
+contamination checks, with no competitor termination needed.
 
-[Decode methodology and validation](decode-residual-20261016/README.md),
-[decode scores](decode-residual-20261016/summary.json),
-[pooled short baseline comparison](decode-residual-20261016/pooled-short.json), and
-[decode provenance](decode-residual-20261016/reference-20261016/metadata.json).
-The [previous refresh](decode-qkv-20261015/README.md) retains 91.2% / 112.4%.
+Paired baseline gains pool to 2.72% short, 1.51% prefix 512 and 0.58% long.
+Short baseline variance and small long gains limit precision. Both orders are
+positive, but the reverse long gain is only 0.01%; larger-model gains are not
+established. Both workloads remain below the 125% target.
+
+[Decode methodology and validation](decode-rope-pair-20261016/README.md),
+[decode scores](decode-rope-pair-20261016/summary.json), and
+[decode provenance](decode-rope-pair-20261016/reference-20261016/metadata.json).
+The [previous refresh](decode-residual-20261016/README.md) retains 92.4% / 113.5%.
 Differences across refreshes are not isolated code effects.
 
 Inference uses TinyLlama Q4_K_M against pinned llama.cpp b10809, F32 KV,

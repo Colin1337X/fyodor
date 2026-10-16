@@ -1,0 +1,167 @@
+{
+  "source_sha256": "71d9dfa7f523d5e00d250e78b2b77b28fd096092f873c4eef083a374475eb2c8",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "cases": [
+    {
+      "width": 64,
+      "query_heads": 32,
+      "kv_heads": 4,
+      "position": 0,
+      "request": false,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007147520184516907,
+          0.0007045120000839233
+        ],
+        "pair": [
+          0.00016179199516773223,
+          0.00020070399343967437
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.000709632009267807,
+        "pair": 0.0001812479943037033
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 291.525441147079
+      }
+    },
+    {
+      "width": 64,
+      "query_heads": 32,
+      "kv_heads": 4,
+      "position": 257,
+      "request": true,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007024639844894409,
+          0.000729088008403778
+        ],
+        "pair": [
+          0.000159743994474411,
+          0.00017004799842834471
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.0007157759964466095,
+        "pair": 0.00016489599645137787
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 334.07724374779895
+      }
+    },
+    {
+      "width": 128,
+      "query_heads": 32,
+      "kv_heads": 8,
+      "position": 1023,
+      "request": true,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007311360239982605,
+          0.0007927680015563965
+        ],
+        "pair": [
+          0.00019654400646686553,
+          0.00018016000092029572
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.0007619520127773284,
+        "pair": 0.00018835200369358063
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 304.5361864145102
+      }
+    },
+    {
+      "width": 256,
+      "query_heads": 32,
+      "kv_heads": 8,
+      "position": 257,
+      "request": false,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007455360293388367,
+          0.0007536640167236328
+        ],
+        "pair": [
+          0.0002149759978055954,
+          0.0002006399929523468
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.0007496000230312347,
+        "pair": 0.0002078079953789711
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 260.7176045677257
+      }
+    },
+    {
+      "width": 80,
+      "query_heads": 3,
+      "kv_heads": 1,
+      "position": 17,
+      "request": true,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007188479900360107,
+          0.0007065600156784058
+        ],
+        "pair": [
+          0.0001719679981470108,
+          0.00018028800189495088
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.0007127040028572083,
+        "pair": 0.00017612800002098083
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 304.6511643647285
+      }
+    },
+    {
+      "width": 512,
+      "query_heads": 8,
+      "kv_heads": 2,
+      "position": 63,
+      "request": true,
+      "exact_including_cache_and_guards": true,
+      "timings_ms": {
+        "separate": [
+          0.0007247999906539917,
+          0.0007127040028572083
+        ],
+        "pair": [
+          0.00017203199863433837,
+          0.0001719679981470108
+        ]
+      },
+      "mean_ms": {
+        "separate": 0.0007187519967556,
+        "pair": 0.0001719999983906746
+      },
+      "gain_percent": {
+        "separate": 0.0,
+        "pair": 317.87907179106634
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+========= COMPUTE-SANITIZER
+{"width": 64, "query_heads": 32, "kv_heads": 4, "position": 0, "request": false, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 0.06374831962585449, "pair": 0.03195321559906006}, "gain_percent": {"separate": 0.0, "pair": 99.50517790056072}}
+{"width": 64, "query_heads": 32, "kv_heads": 4, "position": 257, "request": true, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 0.06351740837097168, "pair": 0.03260086441040039}, "gain_percent": {"separate": 0.0, "pair": 94.83350984616298}}
+{"width": 128, "query_heads": 32, "kv_heads": 8, "position": 1023, "request": true, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 0.06255363082885743, "pair": 0.0311944637298584}, "gain_percent": {"separate": 0.0, "pair": 100.52798910270404}}
+{"width": 256, "query_heads": 32, "kv_heads": 8, "position": 257, "request": false, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 0.061619935989379884, "pair": 0.03273519992828369}, "gain_percent": {"separate": 0.0, "pair": 88.2375428418855}}
+{"width": 80, "query_heads": 3, "kv_heads": 1, "position": 17, "request": true, "exact_including_cache_and_guards": true, "mean_ms": {"separate": 0.0621319351196289, "pair": 0.030883551597595215}, "gain_percent": {"separate": 0.0, "pair": 101.1813146661114}}
+Traceback (most recent call last):
+  File "C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\benchmarks\decode-rope-pair-20261016\check_production.py", line 108, in <module>
+    reset();invoke();check(sync());assert [read(a,len(d)) for a,d in zip(addresses,original)]==expected,(width,qh,kh,pos,name)
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (512, 8, 2, 63, 'separate')
+========= Target application returned an error
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

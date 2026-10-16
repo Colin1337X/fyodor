@@ -19,14 +19,14 @@ typedef struct nya_cuda_plan {
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors;
-    CUfunction gather, gather_batch, norm_op, add_norm, rope, vector, attention;
+    CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     int failed;
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
-    int use_graphs, split_attention, fuse_gate_up, fuse_qkv, fuse_residual;
+    int use_graphs, split_attention, fuse_gate_up, fuse_qkv, fuse_residual, fuse_rope_pair;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
@@ -175,6 +175,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
     const char *residual = getenv("NYA_CUDA_RESIDUAL");
     p->fuse_residual = !residual || strcmp(residual,"0");
+    const char *rope_pair = getenv("NYA_CUDA_ROPE_PAIR");
+    p->fuse_rope_pair = !rope_pair || strcmp(rope_pair,"0");
     const char *qkv = getenv("NYA_CUDA_QKV");
     p->fuse_qkv = !qkv || strcmp(qkv,"0");
     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
@@ -299,6 +301,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         c->function_get(&p->norm_op, c->module, "nya_norm") != CUDA_SUCCESS ||
         c->function_get(&p->add_norm, c->module, "nya_add_norm") != CUDA_SUCCESS ||
         c->function_get(&p->rope, c->module, "nya_rope") != CUDA_SUCCESS ||
+        c->function_get(&p->rope_pair, c->module, "nya_rope_pair") != CUDA_SUCCESS ||
         c->function_get(&p->vector, c->module, "nya_vector") != CUDA_SUCCESS ||
         c->function_get(&p->attention, c->module, c->reference ? "nya_attention_reference" : "nya_attention") != CUDA_SUCCESS ||
         c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS ||
@@ -329,7 +332,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         timing->matrix = p->matrix_profile;
         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
-        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
+        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope || f == p->rope_pair ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
         ++p->timing_count;
         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
     }
@@ -480,6 +483,15 @@ static int plan_rope(nya_cuda_plan *p, CUdeviceptr x, CUdeviceptr frequencies, u
     return plan_launch(p, p->rope, ((size_t)hd / 2 * heads * batch + 255) / 256, args);
 }
 
+static int plan_rope_pair(nya_cuda_plan *p, CUdeviceptr key, CUdeviceptr frequencies,
+    unsigned hd, unsigned heads, unsigned kvheads, unsigned position,
+    CUdeviceptr keys, CUdeviceptr values, CUdeviceptr value)
+{
+    void *args[] = {&p->q, &key, &frequencies, &hd, &heads, &kvheads, &position,
+        &p->active_request, &keys, &values, &value};
+    return plan_launch(p, p->rope_pair, ((size_t)hd / 2 * (heads + (size_t)kvheads) + 255) / 256, args);
+}
+
 static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, size_t position, int logits, float *output)
 {
     nya_cuda_plan *p = opaque;
@@ -545,6 +557,9 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         CUdeviceptr frequencies = p->frequencies + freq_offset * sizeof(float);
         freq_offset += hd / 2;
         RUN(plan_norm(p, p->norm, p->x, w->attention_norm, d, 1));
+        int rope_pair = count == 1 && p->fuse_rope_pair && !m->is_gemma &&
+            !c->reference && w->kv_source == layer &&
+            kvdim <= UINT32_MAX && qdim <= UINT32_MAX - kvdim;
         int qkv = count == 1 && p->fuse_qkv && !m->is_gemma && !c->reference &&
             w->kv_source == layer && w->key && w->value && w->query->type == 12 &&
             w->key->type == 12 && (w->value->type == 12 || w->value->type == 14) &&
@@ -562,10 +577,13 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
                 RUN(plan_norm(p, key, key, w->key_norm, hd, kvheads));
                 RUN(plan_norm(p, value, value, NULL, hd, kvheads));
             }
-            RUN(plan_rope(p, key, frequencies, (unsigned)hd, (unsigned)kvheads, (unsigned)position,
+            if (rope_pair) RUN(plan_rope_pair(p, key, frequencies, (unsigned)hd, (unsigned)heads,
+                (unsigned)kvheads, (unsigned)position,
+                p->active_request ? keys : 0, p->active_request ? values : 0, value));
+            else RUN(plan_rope(p, key, frequencies, (unsigned)hd, (unsigned)kvheads, (unsigned)position,
                 p->active_request ? keys : 0, p->active_request ? values : 0, value));
         }
-        RUN(plan_rope(p, p->q, frequencies, (unsigned)hd, (unsigned)heads, (unsigned)position, 0, 0, 0));
+        if (!rope_pair) RUN(plan_rope(p, p->q, frequencies, (unsigned)hd, (unsigned)heads, (unsigned)position, 0, 0, 0));
         unsigned width = (unsigned)hd, nh = (unsigned)heads, nk = (unsigned)kvheads;
         unsigned window = w->sliding_window;
         unsigned end = (unsigned)position, capacity = (unsigned)p->capacity;
