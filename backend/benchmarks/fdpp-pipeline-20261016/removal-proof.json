@@ -1,0 +1,52 @@
+{
+  "source": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\without-specialized-8e84da5ef3f3\\source",
+  "configure": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\cmake.exe",
+    "-S",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\without-specialized-8e84da5ef3f3\\source",
+    "-B",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\without-specialized-8e84da5ef3f3\\build",
+    "-G",
+    "MinGW Makefiles",
+    "-DCMAKE_BUILD_TYPE=Release",
+    "-DNYA_C_STANDARD=17",
+    "-DNYA_WARNINGS_AS_ERRORS=ON",
+    "-DBUILD_TESTING=OFF",
+    "-DNYA_ENABLE_ONNXRUNTIME=OFF",
+    "-DNYA_ENABLE_OPTCPP=ON",
+    "-DNYA_ENABLE_PORTABLE_ATTENTION=ON",
+    "-DNYA_ENABLE_CUDA=ON",
+    "-DNYA_ENABLE_VULKAN=ON",
+    "-DCMAKE_C_COMPILER=C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe",
+    "-DCMAKE_MAKE_PROGRAM=C:/Users/Colin/fyodor/.tools/w64devkit/bin/mingw32-make.exe",
+    "-DNYA_CUDA_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_cudart-windows-x86_64-13.1.80-archive/include",
+    "-DNYA_NVRTC_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/include",
+    "-DNYA_CUDA_NVRTC_LIBRARY=C:/Users/Colin/fyodor/.tools/cuda-sdk/cuda_nvrtc-windows-x86_64-13.1.115-archive/bin/x64/nvrtc64_130_0.dll",
+    "-DVulkan_INCLUDE_DIR=C:/Users/Colin/fyodor/.tools/vulkan-headers/Vulkan-Headers-vulkan-sdk-1.4.357.0/include",
+    "-DVulkan_LIBRARY=C:/Windows/System32/vulkan-1.dll"
+  ],
+  "smoke": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\without-specialized-8e84da5ef3f3\\build\\fyodor-bench.exe",
+    "-m",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\tinyllama-q4_k_m.gguf",
+    "-b",
+    "cuda",
+    "-p",
+    "0",
+    "-n",
+    "2",
+    "-r",
+    "1",
+    "--warmup",
+    "1",
+    "--json"
+  ],
+  "absent": {
+    "optcpp": true,
+    "backend/optcpp": true,
+    "CUDA/cutlass": true,
+    "CUDA/cute": true
+  },
+  "smoke_exit": 0,
+  "CXX_compiler_present": false
+}

@@ -26,6 +26,9 @@ typedef struct nya_cuda_plan {
 #ifdef NYA_FLASH_DECODING_PP
     CUfunction fdpp_partial, fdpp_combine;
     int use_fdpp, trace_fdpp;
+#ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+    CUfunction fdpp_partial_64, fdpp_partial_128;
+#endif
 #endif
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
@@ -255,6 +258,14 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
 #endif
     if (c->function_get(&p->fdpp_partial,c->module,fdpp_partial_name) != CUDA_SUCCESS ||
         c->function_get(&p->fdpp_combine,c->module,fdpp_combine_name) != CUDA_SUCCESS) goto failure;
+#ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+    p->fdpp_partial_64 = p->fdpp_partial_128 = p->fdpp_partial;
+    const char *fdpp_generic = getenv("NYA_CUDA_FDPP_GENERIC");
+    if ((!fdpp_generic || strcmp(fdpp_generic,"1")) && !strcmp(fdpp_partial_name,"nya_fdpp_partial_warp")) {
+        if (c->function_get(&p->fdpp_partial_64,c->module,"nya_fdpp_w64_u4_r32") != CUDA_SUCCESS ||
+            c->function_get(&p->fdpp_partial_128,c->module,"nya_fdpp_w128_u1_r32") != CUDA_SUCCESS) goto failure;
+    }
+#endif
 #endif
 #endif
     size_t missing = 0;
@@ -381,6 +392,9 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         if (f == p->portable_attention) timing->kind = 4U;
 #ifdef NYA_FLASH_DECODING_PP
         if (f == p->fdpp_partial || f == p->fdpp_combine) timing->kind = 4U;
+#ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+        if (f == p->fdpp_partial_64 || f == p->fdpp_partial_128) timing->kind = 4U;
+#endif
 #endif
 #endif
         ++p->timing_count;
@@ -646,7 +660,12 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             unsigned partitions = graph_index ? 4U : 1U;
             void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
                 &window,&end,&scale,&p->active_request,&partitions};
-            RUN(plan_grid(p,p->fdpp_partial,heads,partitions,256,1,partial));
+            CUfunction partial_function = p->fdpp_partial;
+#ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+            if (width == 64) partial_function = p->fdpp_partial_64;
+            else if (width == 128) partial_function = p->fdpp_partial_128;
+#endif
+            RUN(plan_grid(p,partial_function,heads,partitions,256,1,partial));
             if (p->trace_fdpp) {
                 size_t partial_bytes = heads*partitions*(width+2)*sizeof(float);
                 float *host_parts = malloc(partial_bytes);

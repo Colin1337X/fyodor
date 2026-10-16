@@ -1,6 +1,6 @@
 /* Original CUDA specialization of unified-scale attention. Eight independent
    warp partitions stream coalesced K/V, retaining unnormalized sums in registers.
-   Experimental: not selected by the runtime until separately validated. */
+   Selected only within the optional FDPP path. */
 extern "C" __global__ void nya_fdpp_partial_warp(const float *q,
     const float *keys, const float *values, float *parts, unsigned width,
     unsigned heads, unsigned kvheads, unsigned window, unsigned position,

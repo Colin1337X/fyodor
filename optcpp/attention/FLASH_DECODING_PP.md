@@ -21,8 +21,11 @@ and denominators. There are no float atomics or cross-block spin waits. GPU
 graphs retain their existing two-context scheduling policy; request metadata
 supplies the current position on replay. Windowing and GQA are preserved.
 
-A score outside [-16,16], including NaN, or a value with magnitude >1e12 marks
-the partition for retry. These conservative limits protect exponent evaluation
+A score outside the selected safe interval, including NaN, or a value with
+magnitude >1e12 marks
+the partition for retry. Generic kernels use [-16,16]; specialized width64/128
+kernels use [-32,32], whose worst-case accumulation bound is below 3.4e35 for
+uint32 context lengths and the existing value limit. These limits protect exponent evaluation
 and accumulation for uint32 context lengths. The whole head is then recomputed
 with stable online softmax by the combine kernel, without host synchronization.
 No clipping, silent downcast, tolerance weakening or probability truncation is
@@ -57,3 +60,10 @@ native decode and stays opt-in. C17/C23, direct/real-model oracles, sanitizers,
 SM75-SM120 compilation and physical-removal build/smoke evidence are recorded
 in backend/benchmarks/fdpp-coalesced-20261016. The new comparison does not
 replace the accepted llama.cpp scorecard.
+
+Width64/128 specialization now reduces the measured FDPP deficit to 0.93%
+short / 2.70% long, still opt-in. NYA_CUDA_FDPP_GENERIC=1 selects the preceding
+coalesced implementation; a missing specialization file does the same.
+Fifteen direct cases, all CUDA sanitizers, C17/C23 lifecycle tests, real-model
+CPU parity, SM75-SM120 compilation and removal build/smoke evidence are under
+backend/benchmarks/fdpp-pipeline-20261016. Tolerances and F32 precision are unchanged.
