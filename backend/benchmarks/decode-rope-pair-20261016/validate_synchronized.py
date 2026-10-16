@@ -1,0 +1,13 @@
+from pathlib import Path
+import os,subprocess,json,sys
+r=Path(__file__).resolve().parents[3];o=Path(__file__).resolve().parent
+env={k:v for k,v in os.environ.items() if not k.startswith('NYA_')}
+env.update(NYA_COMPUTE='cuda',NYA_CUDA_CUTLASS='0',NYA_CUDA_BLAS_LIBRARY=str(r/'.tools/llama-b10809-cuda/cublas64_13.dll'),NYA_CPU_THREADS='6')
+results={}
+def run(name,cmd,e=env):
+ with (o/(name+'.log')).open('wb') as f:p=subprocess.run(cmd,env=e,stdout=f,stderr=subprocess.STDOUT,timeout=240)
+ results[name]=p.returncode;(o/'synchronized-exits.json').write_text(json.dumps(results,indent=2));print(name,p.returncode,flush=True);assert p.returncode==0
+run('kernel-synchronized',[sys.executable,str(o/'check_production.py'),str(o/'production-synchronized')])
+san=r/'.tools/cuda-sanitizer/cuda_sanitizer_api-windows-x86_64-13.1.118-archive/compute-sanitizer/compute-sanitizer.exe'
+for tool in ('memcheck','initcheck','racecheck','synccheck'):
+ run(tool+'-synchronized',[str(san),'--tool',tool,'--target-processes','application-only','--error-exitcode','99',sys.executable,str(o/'check_production.py'),str(o/(tool+'-synchronized')),'--check-only'])
