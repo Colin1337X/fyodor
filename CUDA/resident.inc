@@ -27,7 +27,7 @@ typedef struct nya_cuda_plan {
     CUfunction fdpp_partial, fdpp_combine;
     int use_fdpp, trace_fdpp;
 #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
-    CUfunction fdpp_partial_64, fdpp_partial_128;
+    CUfunction fdpp_partial_64, fdpp_partial_128, fdpp_direct_64, fdpp_direct_128;
 #endif
 #endif
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
@@ -264,6 +264,11 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if ((!fdpp_generic || strcmp(fdpp_generic,"1")) && !strcmp(fdpp_partial_name,"nya_fdpp_partial_warp")) {
         if (c->function_get(&p->fdpp_partial_64,c->module,"nya_fdpp_w64_u4_r32") != CUDA_SUCCESS ||
             c->function_get(&p->fdpp_partial_128,c->module,"nya_fdpp_w128_u1_r32") != CUDA_SUCCESS) goto failure;
+        const char *fdpp_direct = getenv("NYA_CUDA_FDPP_DIRECT");
+        if (!fdpp_direct || strcmp(fdpp_direct,"0")) {
+            if (c->function_get(&p->fdpp_direct_64,c->module,"nya_fdpp_w64_direct") != CUDA_SUCCESS ||
+                c->function_get(&p->fdpp_direct_128,c->module,"nya_fdpp_w128_direct") != CUDA_SUCCESS) goto failure;
+        }
     }
 #endif
 #endif
@@ -393,7 +398,8 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
 #ifdef NYA_FLASH_DECODING_PP
         if (f == p->fdpp_partial || f == p->fdpp_combine) timing->kind = 4U;
 #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
-        if (f == p->fdpp_partial_64 || f == p->fdpp_partial_128) timing->kind = 4U;
+        if (f == p->fdpp_partial_64 || f == p->fdpp_partial_128 ||
+            f == p->fdpp_direct_64 || f == p->fdpp_direct_128) timing->kind = 4U;
 #endif
 #endif
 #endif
@@ -658,6 +664,15 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             /* Partition choice is fixed within each captured graph. Device
                request positions determine bounds on every graph replay. */
             unsigned partitions = graph_index ? 4U : 1U;
+#ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+            CUfunction direct = width == 64 ? p->fdpp_direct_64 : width == 128 ? p->fdpp_direct_128 : NULL;
+            if (partitions == 1 && direct && !p->trace_fdpp) {
+                void *args[]={&p->q,&keys,&values,&p->norm,&width,&nh,&nk,&window,&end,
+                    &scale,&p->active_request,&partitions,&p->scores,&capacity};
+                RUN(plan_grid(p,direct,heads,1,256,1,args));
+            } else
+#endif
+            {
             void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
                 &window,&end,&scale,&p->active_request,&partitions};
             CUfunction partial_function = p->fdpp_partial;
@@ -688,6 +703,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             void *combine[]={&p->q,&keys,&values,&p->norm,&p->attention_parts,&width,&nh,&nk,
                 &window,&end,&scale,&p->active_request,&partitions,&p->scores,&capacity};
             RUN(plan_grid(p,p->fdpp_combine,heads,1,256,1,combine));
+            }
         } else
 #endif
 #ifdef NYA_PORTABLE_ATTENTION
