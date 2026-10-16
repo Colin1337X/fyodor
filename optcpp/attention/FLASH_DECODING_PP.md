@@ -29,7 +29,8 @@ No clipping, silent downcast, tolerance weakening or probability truncation is
 used. Nonfinite input is not promised a finite output; normal runtime rejection
 semantics still apply. The stable path retains ordinary F32 arithmetic limits.
 
-No tensor cores, warp-size assumptions, TMA or TMEM are used. Compilation has
+The generic path uses no warp-size assumptions. The CUDA specialization uses
+NVIDIA 32-lane warp shuffles. Neither uses tensor cores, TMA or TMEM. Compilation has
 been checked for compute 75/80/86/89/90/100/120, execution only on SM120.
 HIP syntax portability is not validated AMD support. Vulkan currently has the
 separate online attention shader; porting this split unified-scale path and
@@ -44,4 +45,15 @@ these correctness tests; accepted scores remain 93.18% short / 114.31% long.
 The first monitored end-to-end test regressed 15.87% short and 64.29% long
 against the existing native path. It remains opt-in; it is not an accepted
 performance optimization. A CUDA-only coalesced specialization in
-flash_decoding_pp_warp.cu is currently diagnostic and not loaded by the runtime.
+flash_decoding_pp_warp.cu is now selected within the FDPP opt-in when present.
+NYA_CUDA_FDPP_PORTABLE=1 retains the generic implementation. The specialized
+combine invokes native stable CUDA attention on retry heads, using existing
+score scratch. NYA_CUDA_FDPP_TRACE=1 logs retry-head counts and disables graphs;
+its additional allocations/transfers are diagnostic, not benchmark execution.
+
+The coalesced/native-fallback integration reduces the measured regression to
+3.17% short and 27.52% long in a new monitored paired run; it still loses to
+native decode and stays opt-in. C17/C23, direct/real-model oracles, sanitizers,
+SM75-SM120 compilation and physical-removal build/smoke evidence are recorded
+in backend/benchmarks/fdpp-coalesced-20261016. The new comparison does not
+replace the accepted llama.cpp scorecard.

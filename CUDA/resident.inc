@@ -25,7 +25,7 @@ typedef struct nya_cuda_plan {
 #endif
 #ifdef NYA_FLASH_DECODING_PP
     CUfunction fdpp_partial, fdpp_combine;
-    int use_fdpp;
+    int use_fdpp, trace_fdpp;
 #endif
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
@@ -190,9 +190,14 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->split_attention = has_split_attention;
 #ifdef NYA_FLASH_DECODING_PP
     p->use_fdpp = use_fdpp;
+    const char *fdpp_trace = getenv("NYA_CUDA_FDPP_TRACE");
+    p->trace_fdpp = fdpp_trace && !strcmp(fdpp_trace,"1");
 #endif
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
     p->use_graphs = graphs == NULL || strcmp(graphs, "0") != 0;
+#ifdef NYA_FLASH_DECODING_PP
+    if (p->trace_fdpp) p->use_graphs = 0;
+#endif
     const char *residual = getenv("NYA_CUDA_RESIDUAL");
     p->fuse_residual = !residual || strcmp(residual,"0");
 #ifdef NYA_PORTABLE_ATTENTION
@@ -240,8 +245,16 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
 #ifdef NYA_PORTABLE_ATTENTION
     if (c->function_get(&p->portable_attention,c->module,"nya_attention_portable_f32") != CUDA_SUCCESS) goto failure;
 #ifdef NYA_FLASH_DECODING_PP
-    if (c->function_get(&p->fdpp_partial,c->module,"nya_fdpp_partial") != CUDA_SUCCESS ||
-        c->function_get(&p->fdpp_combine,c->module,"nya_fdpp_combine") != CUDA_SUCCESS) goto failure;
+    const char *fdpp_partial_name = "nya_fdpp_partial", *fdpp_combine_name = "nya_fdpp_combine";
+#ifdef NYA_FLASH_DECODING_PP_WARP
+    const char *fdpp_portable = getenv("NYA_CUDA_FDPP_PORTABLE");
+    if (!fdpp_portable || strcmp(fdpp_portable,"1")) {
+        fdpp_partial_name = "nya_fdpp_partial_warp";
+        fdpp_combine_name = "nya_fdpp_combine_warp";
+    }
+#endif
+    if (c->function_get(&p->fdpp_partial,c->module,fdpp_partial_name) != CUDA_SUCCESS ||
+        c->function_get(&p->fdpp_combine,c->module,fdpp_combine_name) != CUDA_SUCCESS) goto failure;
 #endif
 #endif
     size_t missing = 0;
@@ -634,8 +647,27 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
                 &window,&end,&scale,&p->active_request,&partitions};
             RUN(plan_grid(p,p->fdpp_partial,heads,partitions,256,1,partial));
+            if (p->trace_fdpp) {
+                size_t partial_bytes = heads*partitions*(width+2)*sizeof(float);
+                float *host_parts = malloc(partial_bytes);
+                if (!host_parts) goto failure;
+                CUresult traced = c->stream_sync(c->stream);
+                if (traced == CUDA_SUCCESS) traced = c->download(host_parts,p->attention_parts,partial_bytes);
+                unsigned retries = 0;
+                if (traced == CUDA_SUCCESS) for (size_t head = 0; head < heads; ++head) {
+                    int retry = 0;
+                    for (unsigned part = 0; part < partitions; ++part)
+                        retry |= host_parts[(head*partitions+part)*(width+2)+width+1] != 0;
+                    retries += retry != 0;
+                }
+                free(host_parts);
+                if (traced != CUDA_SUCCESS) goto failure;
+                ++p->stats.downloads; ++p->stats.synchronizations;
+                fprintf(stderr,"FDPP trace: layer=%zu position=%zu heads=%zu retry_heads=%u partitions=%u\n",
+                    layer,position,heads,retries,partitions);
+            }
             void *combine[]={&p->q,&keys,&values,&p->norm,&p->attention_parts,&width,&nh,&nk,
-                &window,&end,&scale,&p->active_request,&partitions};
+                &window,&end,&scale,&p->active_request,&partitions,&p->scores,&capacity};
             RUN(plan_grid(p,p->fdpp_combine,heads,1,256,1,combine));
         } else
 #endif
