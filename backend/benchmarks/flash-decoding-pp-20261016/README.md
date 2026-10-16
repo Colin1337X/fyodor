@@ -34,3 +34,40 @@ Final C17 selection: 39/39 passed. C23 selection: 40/40 passed, including the
 new permanent inference-cuda-flash-decoding-pp test. Both language modes rebuild
 and pass the dedicated Vulkan test after adding a 32-bit host byte-size guard.
 All validation is correctness evidence, not a throughput result.
+
+## Controlled first implementation timing
+
+Eight serial, continuously monitored activities passed the same desktop idle
+and contamination gates as prior accepted measurements. No competing process
+required termination. Same executable, FDPP off/on, reverse order, TinyLlama
+Q4_K_M, F32 KV, CPU threads 6, maximum batch 512, two warmups, five repetitions
+per process, 128 decode tokens, graph execution and host logits every token.
+Ten samples per variant/context are pooled without discarding observations.
+
+| Prefix | Existing tok/s | Initial FDPP tok/s | Change |
+| --- | ---: | ---: | ---: |
+| 0 | 354.429 +/- 3.154 | 298.186 +/- 0.704 | -15.87% |
+| 1024 | 305.812 +/- 6.758 | 109.199 +/- 2.031 | -64.29% |
+
+The feature remains opt-in and is rejected as a default performance change.
+This is a self-comparison, not a refreshed llama.cpp score. Accepted reference
+scores remain 93.18% short and 114.31% long. Raw clean/environment.json,
+metadata.json and paired-summary.json retain all evidence.
+
+## Coalesced warp diagnostic
+
+optcpp/attention/flash_decoding_pp_warp.cu is a CUDA-only experimental partial
+kernel, not selected by production dispatch. Eight warp-local partitions stream
+contiguous K/V elements and retain numerator/denominator in registers, then
+reduce using the same shared phi. Stable whole-head retry is unchanged.
+Ten numerical cases pass unchanged 2e-6 tolerance. Graph diagnostics add the
+real 32-query/4-KV-head, width64, prefix1024 shape, also passing the oracle.
+That isolated pair improves from 0.06893 ms to 0.02266 ms; the late retry case
+still costs about 0.355 ms. These diagnostics use snapshots rather than the
+continuous acceptance monitor and are NOT end-to-end performance claims.
+The initial host-submission probe also destroyed events after releasing the
+CUDA context; its failure is retained, and the corrected probe uses graphs and
+correct cleanup ordering. Runtime integration and matched timing remain next.
+
+The coalesced partial kernel also passes memcheck, initcheck, racecheck and
+synccheck on all ten direct numerical cases (warp-sanitizer-exits.json).
