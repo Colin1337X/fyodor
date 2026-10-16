@@ -12,7 +12,7 @@ NYA_CUDA_FLASH_DECODING_PP=1. Default execution stays unchanged. The flag takes
 precedence over portable online attention for a single decoded query with
 head width <=256. Prefill, reference arithmetic and unsupported widths retain
 existing execution. Root optcpp can be physically absent; no host C++ compiler
-or optional library is required. The two kernels are runtime-compiled by NVRTC.
+or optional library is required. The kernels are runtime-compiled by NVRTC.
 
 Each head has one or four independent KV partitions, all using phi=0. Each
 partition writes its unnormalized numerator, denominator and retry flag into
@@ -67,3 +67,10 @@ coalesced implementation; a missing specialization file does the same.
 Fifteen direct cases, all CUDA sanitizers, C17/C23 lifecycle tests, real-model
 CPU parity, SM75-SM120 compilation and removal build/smoke evidence are under
 backend/benchmarks/fdpp-pipeline-20261016. Tolerances and F32 precision are unchanged.
+
+For one-partition width64/128 decode, the specialized kernel now normalizes
+and writes output directly, removing the separate combine launch. A guarded
+retry executes native stable attention in that same launch. Four-partition
+decode keeps the existing combine. NYA_CUDA_FDPP_DIRECT=0 restores the
+two-launch path; trace mode also uses that path so retry flags remain visible.
+Direct-path evidence is in backend/benchmarks/fdpp-direct-20261017.
