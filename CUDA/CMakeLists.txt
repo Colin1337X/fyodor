@@ -44,6 +44,13 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_PORTABLE_ATTENTION AND
             file(READ "${nya_fdpp_warp_source}" nya_fdpp_warp_hex HEX)
             string(APPEND nya_cuda_hex "0a" "${nya_fdpp_warp_hex}")
             target_compile_definitions(nya-engine PRIVATE NYA_FLASH_DECODING_PP_WARP=1)
+            if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp_specialized.cu")
+                set(nya_fdpp_specialized "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp_specialized.cu")
+                set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_fdpp_specialized}")
+                file(READ "${nya_fdpp_specialized}" nya_fdpp_specialized_hex HEX)
+                string(APPEND nya_cuda_hex "0a" "${nya_fdpp_specialized_hex}")
+                target_compile_definitions(nya-engine PRIVATE NYA_FLASH_DECODING_PP_SPECIALIZED=1)
+            endif()
         endif()
     endif()
 
