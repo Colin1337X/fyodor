@@ -40,3 +40,8 @@ The independent double oracle uses a 2e-6 scaled-error limit and covers short,
 long, odd widths, GQA, windows, empty partitions and forced stable retries.
 All four CUDA sanitizers passed. No performance improvement is claimed from
 these correctness tests; accepted scores remain 93.18% short / 114.31% long.
+
+The first monitored end-to-end test regressed 15.87% short and 64.29% long
+against the existing native path. It remains opt-in; it is not an accepted
+performance optimization. A CUDA-only coalesced specialization in
+flash_decoding_pp_warp.cu is currently diagnostic and not loaded by the runtime.
