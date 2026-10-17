@@ -25,7 +25,7 @@ typedef struct nya_cuda_plan {
 #endif
 #ifdef NYA_FLASH_DECODING_PP
     CUfunction fdpp_partial, fdpp_combine;
-    int use_fdpp, trace_fdpp;
+    int use_fdpp, trace_fdpp, fdpp_short_split;
 #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
     CUfunction fdpp_partial_64, fdpp_partial_128, fdpp_direct_64, fdpp_direct_128;
 #endif
@@ -249,6 +249,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (c->function_get(&p->portable_attention,c->module,"nya_attention_portable_f32") != CUDA_SUCCESS) goto failure;
 #ifdef NYA_FLASH_DECODING_PP
     const char *fdpp_partial_name = "nya_fdpp_partial", *fdpp_combine_name = "nya_fdpp_combine";
+    const char *fdpp_short_split = getenv("NYA_CUDA_FDPP_SHORT_SPLIT");
+    p->fdpp_short_split = fdpp_short_split && !strcmp(fdpp_short_split,"1");
 #ifdef NYA_FLASH_DECODING_PP_WARP
     const char *fdpp_portable = getenv("NYA_CUDA_FDPP_PORTABLE");
     if (!fdpp_portable || strcmp(fdpp_portable,"1")) {
@@ -663,7 +665,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         if (p->use_fdpp && count == 1 && width <= 256) {
             /* Partition choice is fixed within each captured graph. Device
                request positions determine bounds on every graph replay. */
-            unsigned partitions = graph_index ? 4U : 1U;
+            unsigned partitions = graph_index || p->fdpp_short_split ? 4U : 1U;
 #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
             CUfunction direct = width == 64 ? p->fdpp_direct_64 : width == 128 ? p->fdpp_direct_128 : NULL;
             if (partitions == 1 && direct && !p->trace_fdpp) {
