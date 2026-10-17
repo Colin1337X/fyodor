@@ -74,3 +74,11 @@ retry executes native stable attention in that same launch. Four-partition
 decode keeps the existing combine. NYA_CUDA_FDPP_DIRECT=0 restores the
 two-launch path; trace mode also uses that path so retry flags remain visible.
 Direct-path evidence is in backend/benchmarks/fdpp-direct-20261017.
+
+NYA_CUDA_FDPP_SHORT_SPLIT=1 instead uses four partitions in the short-context
+graph as well. This bypasses the direct kernel, using the existing partial
+scratch and combine operation. Empty partitions are valid, including the
+first decoded token and small windows. The choice is fixed at plan creation,
+so captured graphs do not depend on a host-side token-position decision.
+Partition-sweep and runtime evidence is in
+backend/benchmarks/fdpp-partitions-20261017. Long-context scheduling is unchanged.
