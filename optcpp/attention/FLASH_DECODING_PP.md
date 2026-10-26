@@ -82,3 +82,12 @@ first decoded token and small windows. The choice is fixed at plan creation,
 so captured graphs do not depend on a host-side token-position decision.
 Partition-sweep and runtime evidence is in
 backend/benchmarks/fdpp-partitions-20261017. Long-context scheduling is unchanged.
+
+NYA_CUDA_FLASH_DECODING_PP=short selects four-partition FDPP only at token
+positions 0 through 255. At position256 and beyond, execution returns to the
+existing attention selection (native by default). This mode preserves two
+cached graph topologies even with native splitting disabled or small sliding
+windows, and reset/rewind selects the corresponding graph again. The short
+mode forces four partitions independently of NYA_CUDA_FDPP_SHORT_SPLIT.
+NYA_CUDA_FLASH_DECODING_PP=1 still enables full-context FDPP; absent/zero retains
+native inference. Evidence: backend/benchmarks/fdpp-selective-20261026.

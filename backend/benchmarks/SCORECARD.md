@@ -72,3 +72,24 @@ context 128; context 8 was effectively unchanged. This uses a separately
 documented windowed desktop protocol and does not update or increase the
 inference/PyTorch percentages above. Training and prefill percentages come from the October 12 refresh; decode
 percentages come from the October 15 refresh including aligned decode scale loads.
+
+
+## October 26, 2026: selective FDPP decode
+
+A fresh matched TinyLlama Q4_K_M comparison measures optional selective FDPP
+at **94.70% of llama.cpp on short decode and 114.23% on long decode**.
+Native-only in that same run measures 92.74% / 113.97%. The earlier dated
+93.18% / 114.31% native result remains historical evidence, not a current rerun.
+
+Selective mode uses four-partition FDPP through position255 and native
+attention afterward. Set `NYA_CUDA_FLASH_DECODING_PP=short` in a build with
+optional attention enabled. Default inference is unchanged. Short throughput
+improves 2.12% versus native; the long-path 0.23% difference is timing variation.
+
+F32 KV, full GPU offload, llama FA off, batch512, six CPU threads, prefixes0/1024,
+128 decoded tokens, ten warmups and twenty repetitions in each order. All
+12 monitored activities pass; all forty observations per cell are retained.
+C17/C23 transition tests, real-model CPU checks and physical-removal build/smoke
+pass. The 125% target remains unmet on both contexts.
+
+[Raw results and method](fdpp-selective-20261026/README.md)

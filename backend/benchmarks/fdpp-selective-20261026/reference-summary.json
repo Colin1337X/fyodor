@@ -1,0 +1,48 @@
+{
+  "convention": "Fyodor throughput / llama.cpp throughput * 100; 100 is parity",
+  "policy": "selective mode remains opt-in; native default unchanged",
+  "comparisons": [
+    {
+      "prefix": 0,
+      "native": {
+        "samples": 40,
+        "tokens_per_second": 355.51790300000005,
+        "sample_stdev": 1.2268754618291424
+      },
+      "selective": {
+        "samples": 40,
+        "tokens_per_second": 363.054782,
+        "sample_stdev": 6.9190464030039545
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 383.354617,
+        "sample_stdev": 2.21973364355576
+      },
+      "native_llama_percent": 92.73865169073993,
+      "selective_llama_percent": 94.70468487927458,
+      "selective_native_gain_percent": 2.119971719117597
+    },
+    {
+      "prefix": 1024,
+      "native": {
+        "samples": 40,
+        "tokens_per_second": 306.869122,
+        "sample_stdev": 2.946444823230882
+      },
+      "selective": {
+        "samples": 40,
+        "tokens_per_second": 307.573892,
+        "sample_stdev": 1.0165436051495336
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 269.253993,
+        "sample_stdev": 1.4485886828665133
+      },
+      "native_llama_percent": 113.97012856927252,
+      "selective_llama_percent": 114.23187770515256,
+      "selective_native_gain_percent": 0.22966468421674602
+    }
+  ]
+}
