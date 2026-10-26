@@ -94,6 +94,10 @@ static int check_graph_reuse(nya_llm_session *candidate, nya_llm_session *refere
             if ((model->layers[i].head_dimension == 64 || model->layers[i].head_dimension == 128) &&
                 (!model->layers[i].sliding_window || model->layers[i].sliding_window > 256)) expected_captures = 2;
     const char *graphs = getenv("NYA_CUDA_GRAPHS");
+    /* The optional selective FDPP test changes topology at position256 even
+       for window1 or disabled native splitting. Verify both cached graphs. */
+    if (getenv("NYA_TEST_FDPP_SHORT") && capacity > 256 &&
+        (!reference_math || strcmp(reference_math,"1"))) expected_captures = 2;
     unsigned long long checked_decodes = expected_replays;
     if (graphs && !strcmp(graphs,"0")) { expected_captures = 0; expected_replays = 0; }
     /* A CPU fallback or recapture on every token must not pass as reuse. */

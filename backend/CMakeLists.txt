@@ -659,6 +659,12 @@ if(BUILD_TESTING)
             set_tests_properties(inference-cuda-flash-decoding-pp PROPERTIES
                 ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1;NYA_CUDA_FLASH_DECODING_PP=1"
                 SKIP_RETURN_CODE 77 TIMEOUT 180)
+            foreach(native_split IN ITEMS 0 1)
+                add_test(NAME inference-cuda-fdpp-short-${native_split} COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-fdpp-short-${native_split}")
+                set_tests_properties(inference-cuda-fdpp-short-${native_split} PROPERTIES
+                    ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1;NYA_TEST_FDPP_SHORT=1;NYA_CUDA_FLASH_DECODING_PP=short;NYA_CUDA_SPLIT_ATTENTION=${native_split}"
+                    SKIP_RETURN_CODE 77 TIMEOUT 180)
+            endforeach()
         endif()
         add_test(NAME inference-cuda-attention-shapes COMMAND nya-test-inference --attention-shapes "${nya_fixtures}/attention-shape")
         set_tests_properties(inference-cuda-attention-shapes PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1;NYA_TEST_ATTENTION_TILES=1" SKIP_RETURN_CODE 77 TIMEOUT 180)

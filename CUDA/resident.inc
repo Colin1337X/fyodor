@@ -132,6 +132,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
 #ifdef NYA_FLASH_DECODING_PP
     const char *fdpp_setting = getenv("NYA_CUDA_FLASH_DECODING_PP");
     use_fdpp = !c->reference && fdpp_setting && !strcmp(fdpp_setting,"1");
+    if (!c->reference && fdpp_setting && !strcmp(fdpp_setting,"short")) use_fdpp = 2;
 #endif
     int has_split_attention = 0;
     int all_tiled = !c->reference;
@@ -581,7 +582,13 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
        Reset/rewind select the matching cached graph; neither graph embeds a
        stale token or position. Prefill remains independently batched. */
     int capturing = 0;
-    unsigned graph_index = p->split_attention && count == 1 && position >= 256 ? 1U : 0U;
+    int separate_long_graph = p->split_attention;
+#ifdef NYA_FLASH_DECODING_PP
+    /* Selective FDPP changes topology at this boundary even when native
+       split attention is disabled or every layer uses a small window. */
+    if (p->use_fdpp == 2) separate_long_graph = 1;
+#endif
+    unsigned graph_index = separate_long_graph && count == 1 && position >= 256 ? 1U : 0U;
     CUgraph graph = NULL;
     unsigned long long capture_start = 0;
     p->active_request = 0;
@@ -662,10 +669,10 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         scale = m->is_gemma ? 1 : 1 / sqrtf((float)hd);
         void *attention[] = {&p->q, &keys, &values, &p->norm, &p->scores, &width, &nh, &nk, &window, &end, &capacity, &scale, &p->active_request};
 #ifdef NYA_FLASH_DECODING_PP
-        if (p->use_fdpp && count == 1 && width <= 256) {
+        if (p->use_fdpp && (p->use_fdpp != 2 || !graph_index) && count == 1 && width <= 256) {
             /* Partition choice is fixed within each captured graph. Device
                request positions determine bounds on every graph replay. */
-            unsigned partitions = graph_index || p->fdpp_short_split ? 4U : 1U;
+            unsigned partitions = graph_index || p->fdpp_short_split || p->use_fdpp == 2 ? 4U : 1U;
 #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
             CUfunction direct = width == 64 ? p->fdpp_direct_64 : width == 128 ? p->fdpp_direct_128 : NULL;
             if (partitions == 1 && direct && !p->trace_fdpp) {
@@ -721,7 +728,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             RUN(plan_grid_shared(p, p->attention_prefill, heads, (count+7)/8, 256, 1,
                 73*width*(unsigned)sizeof(float), tiled));
             ++p->stats.tiled_attention_calls;
-        } else if (graph_index && (width == 64 || width == 128) && (!window || window > 256)) {
+        } else if (p->split_attention && graph_index && (width == 64 || width == 128) && (!window || window > 256)) {
             attention[3] = &p->attention_parts;
             RUN(plan_grid(p, p->attention_split, heads, 4, 256, 1, attention));
             void *combine[] = {&p->attention_parts, &p->norm, &width};
