@@ -1,0 +1,80 @@
+diff --git a/CUDA/cuda.c b/CUDA/cuda.c
+index 38f2bc7..a9b9da1 100644
+--- a/CUDA/cuda.c
++++ b/CUDA/cuda.c
+@@ -67,6 +67,9 @@ typedef struct nya_cuda_context {
+     CUresult (CUDAAPI *deallocate)(CUdeviceptr);
+     CUresult (CUDAAPI *upload)(CUdeviceptr, const void *, size_t);
+     CUresult (CUDAAPI *download)(void *, CUdeviceptr, size_t);
++    CUresult (CUDAAPI *download_async)(void *, CUdeviceptr, size_t, CUstream);
++    CUresult (CUDAAPI *host_allocate)(void **, size_t, unsigned int);
++    CUresult (CUDAAPI *host_free)(void *);
+     CUresult (CUDAAPI *module_load)(CUmodule *, const void *);
+     CUresult (CUDAAPI *module_unload)(CUmodule);
+     CUresult (CUDAAPI *function_get)(CUfunction *, CUmodule, const char *);
+@@ -225,6 +228,8 @@ static nya_cuda_context *nya_cuda_create_for(int training)
+     DRIVER(push, "cuCtxPushCurrent_v2"); DRIVER(pop, "cuCtxPopCurrent_v2");
+     DRIVER(memory_info, "cuMemGetInfo_v2"); DRIVER(allocate, "cuMemAlloc_v2"); DRIVER(deallocate, "cuMemFree_v2");
+     DRIVER(upload, "cuMemcpyHtoD_v2"); DRIVER(download, "cuMemcpyDtoH_v2");
++    DRIVER(download_async, "cuMemcpyDtoHAsync_v2");
++    DRIVER(host_allocate, "cuMemHostAlloc"); DRIVER(host_free, "cuMemFreeHost");
+     DRIVER(module_load, "cuModuleLoadData"); DRIVER(module_unload, "cuModuleUnload"); DRIVER(function_get, "cuModuleGetFunction");
+     DRIVER(stream_create, "cuStreamCreate"); DRIVER(stream_destroy, "cuStreamDestroy_v2"); DRIVER(stream_sync, "cuStreamSynchronize");
+     DRIVER(launch, "cuLaunchKernel");
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 10a5126..15eab40 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -18,6 +18,7 @@ typedef struct nya_cuda_plan {
+     CUdeviceptr blas_storage, attention_parts;
+     CUdeviceptr request, decode_key, decode_value, active_request;
+     size_t blas_expansion;
++    float *host_logits;
+     CUdeviceptr *tensors;
+ #ifdef NYA_PORTABLE_ATTENTION
+     CUfunction portable_attention;
+@@ -77,6 +78,7 @@ static void cuda_plan_free(void *opaque)
+         p->cuda->stream_sync(p->cuda->stream);
+         plan_profile_flush(p);
+         for (size_t i = 0; i < 2; ++i) if (p->executable[i]) p->cuda->graph_exec_free(p->executable[i]);
++        if (p->host_logits) p->cuda->host_free(p->host_logits);
+         p->cuda->deallocate(p->storage);
+         if (p->blas_storage) p->cuda->deallocate(p->blas_storage);
+         p->cuda->pop(&previous);
+@@ -319,6 +321,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+ #endif
+         p->bytes += optional;
+     }
++    const char *pinned_logits = getenv("NYA_CUDA_PINNED_LOGITS");
++    if (pinned_logits && strcmp(pinned_logits, "1") == 0) {
++        void *host = NULL;
++        if (c->host_allocate(&host, m->tokenizer.vocabulary_size * sizeof(float), 0) == CUDA_SUCCESS)
++            p->host_logits = host;
++        else fprintf(stderr, "CUDA pinned logits unavailable; using synchronous download\n");
++    }
+     CUdeviceptr *buffers[] = {&p->x, &p->norm, &p->residual, &p->gate, &p->up, &p->q,
+         &p->scores, &p->keys, &p->values, &p->logits, &p->frequencies,
+         &p->decode_key, &p->decode_value, &p->request, &p->attention_parts};
+@@ -785,11 +794,18 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
+             if (c->graph_launch(p->executable[graph_index], c->stream) != CUDA_SUCCESS) goto failure;
+             ++p->stats.graph_replays;
+         }
+-read_logits:
+-        ++p->stats.synchronizations;
+-        if (c->stream_sync(c->stream) != CUDA_SUCCESS) goto failure;
++read_logits:;
++        size_t logits_bytes = m->tokenizer.vocabulary_size * sizeof(float);
+         ++p->stats.downloads;
+-        if (c->download(output, p->logits, m->tokenizer.vocabulary_size * sizeof(float)) != CUDA_SUCCESS) goto failure;
++        ++p->stats.synchronizations;
++        if (p->host_logits) {
++            if (c->download_async(p->host_logits, p->logits, logits_bytes, c->stream) != CUDA_SUCCESS ||
++                c->stream_sync(c->stream) != CUDA_SUCCESS) goto failure;
++            memcpy(output, p->host_logits, logits_bytes);
++        } else {
++            if (c->stream_sync(c->stream) != CUDA_SUCCESS ||
++                c->download(output, p->logits, logits_bytes) != CUDA_SUCCESS) goto failure;
++        }
+         for (size_t i = 0; i < m->tokenizer.vocabulary_size; ++i) if (!isfinite(output[i])) goto failure;
+         for (size_t i = 0; i < m->tokenizer.suppressed_count; ++i) output[m->tokenizer.suppressed_tokens[i]] = -INFINITY;
+     }
