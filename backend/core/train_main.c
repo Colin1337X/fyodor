@@ -41,6 +41,7 @@ typedef struct train_options {
     nya_train_session *session;
     size_t device_memory;
     float rate, beta;
+    int rate_explicit;
     nya_train_decoder_config config;
 } train_options;
 
@@ -51,6 +52,7 @@ static void usage(void)
          "  --base MODEL.gguf       Required for cpt/sft/dpo; dense LLaMA or Gemma 4\n"
          "  --rank N                LoRA rank (default 8); 0 trains all weights\n"
          "  --steps N --lr X        Updates and learning rate (default 100, 0.001)\n"
+         "                         On resume, explicit --lr must match the checkpoint\n"
          "  --accumulate N          Sequences/pairs per update, 1..1024 (default 1)\n"
          "  --compute cpu|cuda      Training device (default cpu); CUDA never silently falls back\n"
          "  --device-memory-mib N   CUDA arena budget including persistent state (default 1024)\n"
@@ -110,7 +112,7 @@ static int options(int argc, char **argv, train_options *o)
         else if (strcmp(key,"--resume") == 0) o->resume = value;
         else if (strcmp(key,"--metrics") == 0) o->metrics = value;
         else if (strcmp(key,"--eval-data") == 0) o->eval_data = value;
-        else if (strcmp(key,"--lr") == 0) { if (real(value,&o->rate) != 0) return -1; }
+        else if (strcmp(key,"--lr") == 0) { if (real(value,&o->rate) != 0) return -1; o->rate_explicit = 1; }
         else if (strcmp(key,"--beta") == 0) { if (real(value,&o->beta) != 0) return -1; }
         else {
             if (integer(value,&n) != 0) return -1;
@@ -579,6 +581,10 @@ static int train_main(int argc, char **argv)
             nya_train_checkpoint_read(f,&optimizer,parameters,parameter_count) == 0;
         if (f != NULL) fclose(f);
         if (!loaded) { snprintf(error,sizeof(error),"checkpoint is unreadable, corrupt, legacy, or mismatches model/data/objective/context; CLI resume requires a matching NYARUN v1 checkpoint"); goto cleanup; }
+        if (o.rate_explicit && o.rate != optimizer.learning_rate) {
+            snprintf(error,sizeof(error),"explicit --lr mismatches checkpoint learning rate %.9g; omit --lr for exact optimizer resume",(double)optimizer.learning_rate);
+            goto cleanup;
+        }
     }
     if(!strcmp(o.compute,"cuda")) {
         o.session=nya_train_session_create("cuda",o.device_memory,&optimizer,parameters,parameter_count,error,sizeof(error));
