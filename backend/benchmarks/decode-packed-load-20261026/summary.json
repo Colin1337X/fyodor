@@ -1,0 +1,157 @@
+{
+  "variant_names": {
+    "1": "native",
+    "2": "packed word plus shuffles",
+    "4": "early scalar payload loads",
+    "8": "shared input vector"
+  },
+  "caveat": "Diagnostic graph timings only; no runtime promotion",
+  "source_sha256": {
+    "CUDA/matvec.cu": "b0c5074bca38638825f01cd4fb385f583e83968d0b3b913d8b59eae121dde216",
+    "optcpp/matvec/packed_gate.cu": "cdf8fbd57841565cbde35ec887b62d36c944f516c6d894109bd9a218793c4089",
+    "optcpp/matvec/shared_input_gate.cu": "1a0a28d3b89a1264c2451b6fedbc2debca99a4d796f13e154964cc57b14a65c0"
+  },
+  "cases": [
+    {
+      "run": "hot",
+      "rows": 9,
+      "columns": 256,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 0.035650481838911396,
+        "4": -0.017828259418151138
+      }
+    },
+    {
+      "run": "hot",
+      "rows": 5632,
+      "columns": 2048,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 7.881138542691546,
+        "4": -1.078706130158491
+      }
+    },
+    {
+      "run": "hot",
+      "rows": 11008,
+      "columns": 4096,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.790185553935667,
+        "4": -0.7978938036760419
+      }
+    },
+    {
+      "run": "extended",
+      "rows": 65,
+      "columns": 768,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 2.9095488432375305,
+        "4": 0.4948540108111743
+      }
+    },
+    {
+      "run": "extended",
+      "rows": 257,
+      "columns": 2304,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 8.310851635906058,
+        "4": 2.355829482919436
+      }
+    },
+    {
+      "run": "extended",
+      "rows": 28672,
+      "columns": 8192,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 4.61496006320643,
+        "4": -1.364766795185457
+      }
+    },
+    {
+      "run": "rotating",
+      "rows": 5632,
+      "columns": 2048,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.446710295760315,
+        "4": -1.3583146543533875
+      }
+    },
+    {
+      "run": "rotating",
+      "rows": 11008,
+      "columns": 4096,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.693210231313928,
+        "4": -0.8616586368676016
+      }
+    },
+    {
+      "run": "shared-hot",
+      "rows": 9,
+      "columns": 256,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 0.04808939682090507,
+        "4": 0.004862181118880926,
+        "8": 10.508455620811707
+      }
+    },
+    {
+      "run": "shared-hot",
+      "rows": 5632,
+      "columns": 2048,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 7.948864498758401,
+        "4": -1.00783332980805,
+        "8": 12.84288038376593
+      }
+    },
+    {
+      "run": "shared-hot",
+      "rows": 11008,
+      "columns": 4096,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.713845736849743,
+        "4": -0.7463355092038326,
+        "8": 9.817433757333616
+      }
+    },
+    {
+      "run": "shared-rotating",
+      "rows": 5632,
+      "columns": 2048,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.220960010957509,
+        "4": -1.4172975721011616,
+        "8": 9.695030742068544
+      }
+    },
+    {
+      "run": "shared-rotating",
+      "rows": 11008,
+      "columns": 4096,
+      "exact": true,
+      "latency_change_percent": {
+        "2": 5.521318968872402,
+        "4": -0.9167788866863869,
+        "8": 9.485881539077523
+      }
+    }
+  ],
+  "after_validation": "Removed extra trailing blank lines only; tested hashes above are retained.",
+  "final_source_sha256": {
+    "CUDA/matvec.cu": "b0c5074bca38638825f01cd4fb385f583e83968d0b3b913d8b59eae121dde216",
+    "optcpp/matvec/packed_gate.cu": "df6a6c607e7daa12954ad2229c9d02a1ae8f0f964dd10136693e8842f68b72a9",
+    "optcpp/matvec/shared_input_gate.cu": "d090601a576753bde3bb2895e55f7cbf26ed0ea97f18b96c295c0e219b79e97f"
+  }
+}
