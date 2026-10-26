@@ -22,3 +22,12 @@ from 144 to 192 bytes with precomputed float scales/minima. It matches tested
 outputs but loses about 9% on rotating weights and is rejected. Evidence:
 backend/benchmarks/decode-unroll-20261026 and decode-prepacked-scales-20261026.
 These are diagnostic-only sources, never runtime dispatch options.
+
+`warp_pair_gate.cu` assigns separate warps to gate/up and combines through a
+block barrier; it is exact on diagnostic cases but loses 13-14% on rotating
+model-sized weights. `transposed_payload_gate.cu` preserves 144-byte blocks,
+transposes payload bytes for per-lane word loads, and avoids shuffles; it loses
+0.8-1.5% on rotating weights. Neither is integrated. See the matching
+backend/benchmarks/decode-warp-pair-20261026 and decode-transposed-payload-20261026
+evidence directories. These results do not support more compiler/load-hint
+tuning without a new mechanism or hardware profiling evidence.
