@@ -21,6 +21,17 @@ def snapshot():
             'memory':gpu.findtext('fb_memory_usage/used'),'temperature':gpu.findtext('temperature/gpu_temp'),
             'power':power,'processes':processes}
 
+# Only OS/development desktop surfaces may be retained automatically. A game
+# can report C+G too; its presence before configure must not whitelist it.
+DESKTOP_NAMES=frozenset(('dwm.exe','explorer.exe','shellexperiencehost.exe',
+    'startmenuexperiencehost.exe','searchhost.exe','textinputhost.exe',
+    'applicationframehost.exe','lockapp.exe','systemsettings.exe',
+    'codex.exe','code.exe','chrome.exe','msedge.exe','msedgewebview2.exe',
+    'windowsterminal.exe','openconsole.exe'))
+def desktop_identity_allowed(process):
+    name=process['name'].replace('\\','/').rsplit('/',1)[-1].lower()
+    return process['type']=='C+G' and name in DESKTOP_NAMES
+
 def competitors(state):
     allowed={str(os.getpid()),str(active_pid)}
     return [p for p in state['processes'] if p['pid'] not in allowed and
@@ -42,7 +53,7 @@ def configure(path,window=False):
     directory=path
     desktop_window=window
     state=snapshot()
-    desktop={(p['pid'],p['name']) for p in state['processes'] if p['type']=='C+G' and 'NVIDIA Overlay' not in p['name']}
+    desktop={(p['pid'],p['name']) for p in state['processes'] if desktop_identity_allowed(p)}
     record={'initial':state,'hardware':subprocess.check_output(['nvidia-smi','--query-gpu=name,driver_version,memory.total','--format=csv'],text=True),
             'method':'Three consecutive <=30% and <=15W desktop-idle samples; reject unknown GPU identities, overlay and other compute; DWM/development UI remains',
             'monitoring':'Separate process; no shared Python GIL with reference training','activities':[]}
