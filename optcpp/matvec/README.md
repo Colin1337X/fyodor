@@ -31,3 +31,8 @@ transposes payload bytes for per-lane word loads, and avoids shuffles; it loses
 backend/benchmarks/decode-warp-pair-20261026 and decode-transposed-payload-20261026
 evidence directories. These results do not support more compiler/load-hint
 tuning without a new mechanism or hardware profiling evidence.
+
+`fixed_width_gate.cu` retains six constant-width variants for diagnostics.
+Only the 2048-column candidate merits a runtime trial (+2.93% with rotating
+weights, +0.44% hot); wider cases regress, with local-memory use at width2304.
+No runtime dispatch is added. Evidence: backend/benchmarks/decode-fixed-width-20261027.
