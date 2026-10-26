@@ -15,3 +15,10 @@ Packed loads and shared staging regressed tested workloads. Early scalar loads
 show small diagnostic gains but have not earned runtime integration. Exact
 output, resource and timing evidence is in
 backend/benchmarks/decode-packed-load-20261026. No end-to-end gain is claimed.
+
+`unroll_gate.cu` rechecks outer-loop factors with monitored rotating weights;
+keep the existing factor eight. `prepacked_scales_gate.cu` expands Q4 blocks
+from 144 to 192 bytes with precomputed float scales/minima. It matches tested
+outputs but loses about 9% on rotating weights and is rejected. Evidence:
+backend/benchmarks/decode-unroll-20261026 and decode-prepacked-scales-20261026.
+These are diagnostic-only sources, never runtime dispatch options.
