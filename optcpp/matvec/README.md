@@ -64,3 +64,9 @@ uses NYA_ENABLE_INTEGER_DOT=ON and NYA_CUDA_INTEGER_DOT=1 for Q4 dot/add/QKV,
 with native fallback and reference/training excluded. Validation evidence is in
 decode-integer-dot-runtime-20261027. Kernel evidence:
 backend/benchmarks/decode-integer-dot-20261027.
+
+`integer_scale_q6.cu` tests signed Q6 scale products, preserving zero sign.
+The exhaustive finite-half coefficient check and GPU output/guard comparisons
+pass. Rotating weights gain 2.6-4.7% on larger tested shapes, while small shapes
+can regress. Diagnostic only; shape-gated runtime validation remains pending.
+Evidence: backend/benchmarks/decode-q6-integer-20261028.
