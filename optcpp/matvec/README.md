@@ -41,3 +41,8 @@ NYA_CUDA_FIXED_GATE=1 before creating a CUDA context. Missing source/symbol or
 other widths use generic kernels. All other widths remain diagnostic-only.
 Evidence: backend/benchmarks/decode-fixed-width-20261027 and
 decode-fixed-runtime-20261027.
+
+`fixed_width_dot.cu` tests the same constant-dimension idea in native Q4/Q6
+row dots. All18 cases match exactly, but model-sized cases show no consistent
+gain. This extension is rejected and never CMake-compiled. Evidence:
+backend/benchmarks/decode-dot-fixed-20261027, including the updated runtime profile.
