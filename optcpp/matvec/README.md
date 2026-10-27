@@ -46,3 +46,10 @@ decode-fixed-runtime-20261027.
 row dots. All18 cases match exactly, but model-sized cases show no consistent
 gain. This extension is rejected and never CMake-compiled. Evidence:
 backend/benchmarks/decode-dot-fixed-20261027, including the updated runtime profile.
+
+`integer_scale_gate.cu` combines the Q4 integer scale and nibble before float
+conversion. The finite-half coefficient check is exhaustive and tested GPU
+outputs are byte-exact. Clean rotating-weight diagnostics improve about 7%
+against fixed-width baselines at widths 2048/4096; width 2304 regresses.
+This candidate is diagnostic-only pending real-model validation and runtime
+trials. Evidence: backend/benchmarks/decode-integer-scale-20261027.
