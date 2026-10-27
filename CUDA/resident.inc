@@ -495,7 +495,10 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
     unsigned long long cols=columns, stride=gate->data_size/rows, count=rows;
     void *args[]={&g,&u,&p->norm,&p->gate,&cols,&stride,&count};
     p->matrix_profile=plan_matrix_slot(p,rows,columns,12,5);
-    int result=plan_launch(p,p->cuda->gate_up_q4,(rows+7)/8,args);
+    CUfunction function=p->cuda->gate_up_q4;
+    if (p->cuda->gate_up_2048 && columns==2048 && stride==1152 && up->data_size/rows==1152)
+        function=p->cuda->gate_up_2048;
+    int result=plan_launch(p,function,(rows+7)/8,args);
     p->matrix_profile=0;
     return result;
 }

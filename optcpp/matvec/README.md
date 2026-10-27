@@ -1,9 +1,9 @@
 # Decode matrix diagnostics
 
-These original Fyodor device sources are unselected experiments. They require
-the native `nya_half_aligned` helper and are compiled only by diagnostic
-scripts, not by CMake or runtime dispatch. Removing this directory has no build
-or execution effect. They are not a complete Flash-Decoding++ flat-GEMM engine.
+These original Fyodor device sources are experiments. They require
+the native `nya_half_aligned` helper. All except the fixed-width source are
+compiled only by diagnostic scripts. Removing this directory keeps generic
+native dispatch available. They are not a complete Flash-Decoding++ flat-GEMM engine.
 
 `packed_gate.cu` retains the ordered gate/up arithmetic while trying a packed
 32-bit payload load with warp shuffles, or earlier scalar payload loads.
@@ -35,4 +35,9 @@ tuning without a new mechanism or hardware profiling evidence.
 `fixed_width_gate.cu` retains six constant-width variants for diagnostics.
 Only the 2048-column candidate merits a runtime trial (+2.93% with rotating
 weights, +0.44% hot); wider cases regress, with local-memory use at width2304.
-No runtime dispatch is added. Evidence: backend/benchmarks/decode-fixed-width-20261027.
+The follow-up optional runtime dispatch selects only width2048, with matching
+1152-byte Q4 strides. Enable CMake NYA_ENABLE_FIXED_GATE=ON (default OFF), then
+NYA_CUDA_FIXED_GATE=1 before creating a CUDA context. Missing source/symbol or
+other widths use generic kernels. All other widths remain diagnostic-only.
+Evidence: backend/benchmarks/decode-fixed-width-20261027 and
+decode-fixed-runtime-20261027.
