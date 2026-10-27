@@ -93,3 +93,16 @@ C17/C23 transition tests, real-model CPU checks and physical-removal build/smoke
 pass. The 125% target remains unmet on both contexts.
 
 [Raw results and method](fdpp-selective-20261026/README.md)
+
+
+## October 27: optional fixed-width decode gate
+
+With selective FDPP plus NYA_ENABLE_FIXED_GATE=ON and NYA_CUDA_FIXED_GATE=1,
+matched TinyLlama F32-KV decode is **96.33% short / 115.36% long** of llama.cpp.
+Forty observations per cell, ten warmups per process, both orders, all twelve
+activities pass monitoring. Generic Fyodor with selective FDPP scores 95.13% /
+114.35% in this same trial; fixed-width gains are 1.26% / 0.88%. Default dispatch
+is unchanged; only 2048-column Q4 gate/up with matching strides opts in. C17/C23
+lifecycle tests, real-model CPU oracles and physical-removal build/smoke pass.
+The 125% target on both remains unmet. Full results, variance and limitations:
+[fixed-width runtime](decode-fixed-runtime-20261027/README.md).

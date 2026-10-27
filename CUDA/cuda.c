@@ -37,7 +37,7 @@ typedef struct nya_cuda_context {
     CUcontext context;
     CUmodule module;
     CUfunction function;
-    CUfunction dot[31], gate_up_q4;
+    CUfunction dot[31], gate_up_q4, gate_up_2048;
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
@@ -294,6 +294,14 @@ static nya_cuda_context *nya_cuda_create_for(int training)
     if (c->module_load(&c->module, ptx) != CUDA_SUCCESS || c->function_get(&c->function, c->module, "nya_matvec") != CUDA_SUCCESS ||
         c->stream_create(&c->stream, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS || c->memory_info(&free_bytes, &total_bytes) != CUDA_SUCCESS) goto failure;
     if (c->function_get(&c->gate_up_q4, c->module, "nya_gate_up_q4") != CUDA_SUCCESS) goto failure;
+#ifdef NYA_FIXED_GATE
+    const char *fixed_gate = getenv("NYA_CUDA_FIXED_GATE");
+    if (fixed_gate && !strcmp(fixed_gate,"1")) {
+        CUfunction candidate = NULL;
+        if (c->function_get(&candidate,c->module,"nya_gate_up_q4_w2_2048") == CUDA_SUCCESS)
+            c->gate_up_2048 = candidate;
+    }
+#endif
     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
     for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
         char name[32]; snprintf(name, sizeof(name), "nya_dot_%u", types[i]);

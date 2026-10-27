@@ -1,0 +1,65 @@
+diff --git a/CUDA/CMakeLists.txt b/CUDA/CMakeLists.txt
+index e8439f3..2851104 100644
+--- a/CUDA/CMakeLists.txt
++++ b/CUDA/CMakeLists.txt
+@@ -58,6 +58,16 @@ elseif(NYA_ENABLE_PORTABLE_ATTENTION)
+     message(STATUS "Optional attention sources disabled or absent: retaining native attention")
+ endif()
+ 
++option(NYA_ENABLE_FIXED_GATE "Compile experimental fixed-width decode gate" OFF)
++if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_FIXED_GATE AND
++   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/fixed_width_gate.cu")
++    set(nya_fixed_gate "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/fixed_width_gate.cu")
++    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_fixed_gate}")
++    file(READ "${nya_fixed_gate}" nya_fixed_gate_hex HEX)
++    string(APPEND nya_cuda_hex "0a" "${nya_fixed_gate_hex}")
++    target_compile_definitions(nya-engine PRIVATE NYA_FIXED_GATE=1)
++endif()
++
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
+ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
+ string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
+diff --git a/CUDA/cuda.c b/CUDA/cuda.c
+index 38f2bc7..b8d2381 100644
+--- a/CUDA/cuda.c
++++ b/CUDA/cuda.c
+@@ -37,7 +37,7 @@ typedef struct nya_cuda_context {
+     CUcontext context;
+     CUmodule module;
+     CUfunction function;
+-    CUfunction dot[31], gate_up_q4;
++    CUfunction dot[31], gate_up_q4, gate_up_2048;
+     CUfunction gemm[31];
+     CUfunction gemm_large[31];
+     CUfunction expand[31];
+@@ -294,6 +294,14 @@ static nya_cuda_context *nya_cuda_create_for(int training)
+     if (c->module_load(&c->module, ptx) != CUDA_SUCCESS || c->function_get(&c->function, c->module, "nya_matvec") != CUDA_SUCCESS ||
+         c->stream_create(&c->stream, CU_STREAM_NON_BLOCKING) != CUDA_SUCCESS || c->memory_info(&free_bytes, &total_bytes) != CUDA_SUCCESS) goto failure;
+     if (c->function_get(&c->gate_up_q4, c->module, "nya_gate_up_q4") != CUDA_SUCCESS) goto failure;
++#ifdef NYA_FIXED_GATE
++    const char *fixed_gate = getenv("NYA_CUDA_FIXED_GATE");
++    if (fixed_gate && !strcmp(fixed_gate,"1")) {
++        CUfunction candidate = NULL;
++        if (c->function_get(&candidate,c->module,"nya_gate_up_q4_w2_2048") == CUDA_SUCCESS)
++            c->gate_up_2048 = candidate;
++    }
++#endif
+     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
+     for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
+         char name[32]; snprintf(name, sizeof(name), "nya_dot_%u", types[i]);
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 10a5126..07be928 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -495,7 +495,10 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
+     unsigned long long cols=columns, stride=gate->data_size/rows, count=rows;
+     void *args[]={&g,&u,&p->norm,&p->gate,&cols,&stride,&count};
+     p->matrix_profile=plan_matrix_slot(p,rows,columns,12,5);
+-    int result=plan_launch(p,p->cuda->gate_up_q4,(rows+7)/8,args);
++    CUfunction function=p->cuda->gate_up_q4;
++    if (p->cuda->gate_up_2048 && columns==2048 && stride==1152 && up->data_size/rows==1152)
++        function=p->cuda->gate_up_2048;
++    int result=plan_launch(p,function,(rows+7)/8,args);
+     p->matrix_profile=0;
+     return result;
+ }
