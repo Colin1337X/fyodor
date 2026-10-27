@@ -56,3 +56,9 @@ OFF) and NYA_CUDA_INTEGER_GATE=1. It takes priority over fixed-gate selection;
 missing source/symbol leaves fixed (if requested) or generic dispatch in place.
 Other widths remain diagnostic-only. Real-model validation is tracked separately
 in decode-integer-runtime-20261027. Kernel evidence: backend/benchmarks/decode-integer-scale-20261027.
+
+`integer_scale_dot.cu` tests the same integer-product technique in generic Q4
+row dots. Nine shapes plus finite-scale stress cases match byte-for-byte;
+rotating weights gain 9.5-10.4% on three shapes. Diagnostic only, pending runtime
+checks for fused dot-add/QKV and real models. Evidence:
+backend/benchmarks/decode-integer-dot-20261027.
