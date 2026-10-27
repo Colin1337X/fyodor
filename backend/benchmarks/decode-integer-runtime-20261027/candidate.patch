@@ -1,0 +1,53 @@
+diff --git a/CUDA/CMakeLists.txt b/CUDA/CMakeLists.txt
+index 2851104..676ff42 100644
+--- a/CUDA/CMakeLists.txt
++++ b/CUDA/CMakeLists.txt
+@@ -68,6 +68,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_FIXED_GATE AND
+     target_compile_definitions(nya-engine PRIVATE NYA_FIXED_GATE=1)
+ endif()
+ 
++option(NYA_ENABLE_INTEGER_GATE "Compile experimental integer scale-product decode gate" OFF)
++if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_GATE AND
++   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_gate.cu")
++    set(nya_integer_gate "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_gate.cu")
++    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_integer_gate}")
++    file(READ "${nya_integer_gate}" nya_integer_gate_hex HEX)
++    string(APPEND nya_cuda_hex "0a" "${nya_integer_gate_hex}")
++    target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_GATE=1)
++endif()
++
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
+ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
+ string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
+diff --git a/CUDA/cuda.c b/CUDA/cuda.c
+index b8d2381..9a86aa7 100644
+--- a/CUDA/cuda.c
++++ b/CUDA/cuda.c
+@@ -301,6 +301,14 @@ static nya_cuda_context *nya_cuda_create_for(int training)
+         if (c->function_get(&candidate,c->module,"nya_gate_up_q4_w2_2048") == CUDA_SUCCESS)
+             c->gate_up_2048 = candidate;
+     }
++#endif
++#ifdef NYA_INTEGER_GATE
++    const char *integer_gate = getenv("NYA_CUDA_INTEGER_GATE");
++    if (integer_gate && !strcmp(integer_gate,"1")) {
++        CUfunction candidate = NULL;
++        if (c->function_get(&candidate,c->module,"nya_gate_up_integer_2048") == CUDA_SUCCESS)
++            c->gate_up_2048 = candidate;
++    }
+ #endif
+     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
+     for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
+diff --git a/optcpp/matvec/integer_scale_gate.cu b/optcpp/matvec/integer_scale_gate.cu
+index c6df4a5..1a7a130 100644
+--- a/optcpp/matvec/integer_scale_gate.cu
++++ b/optcpp/matvec/integer_scale_gate.cu
+@@ -1,7 +1,7 @@
+ /* Original Fyodor diagnostic: multiply integer scale and Q4 nibble before
+  * conversion to float. Accumulation/reduction order stays unchanged.
+  * Finite-half coefficient proof and GPU evidence: decode-integer-scale-20261027.
+- * Diagnostic only; no runtime dispatch. */
++ * Optional width-2048 runtime dispatch; all other widths diagnostic only. */
+ extern "C" __global__ __launch_bounds__(256,4) void nya_gate_up_integer_256(const unsigned char *gate,
+     const unsigned char *up, const float *input, float *output,
+     unsigned long long ignored_columns, unsigned long long ignored_stride, unsigned long long rows)
