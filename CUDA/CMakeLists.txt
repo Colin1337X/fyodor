@@ -78,6 +78,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_GATE AND
     target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_GATE=1)
 endif()
 
+option(NYA_ENABLE_INTEGER_DOT "Compile experimental Q4 integer scale-product decode dots" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_DOT AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_dot.cu")
+    set(nya_integer_dot "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_dot.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_integer_dot}")
+    file(READ "${nya_integer_dot}" nya_integer_dot_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_integer_dot_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_DOT=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")

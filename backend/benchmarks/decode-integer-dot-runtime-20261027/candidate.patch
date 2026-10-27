@@ -1,0 +1,99 @@
+diff --git a/CUDA/CMakeLists.txt b/CUDA/CMakeLists.txt
+index 676ff42..590c099 100644
+--- a/CUDA/CMakeLists.txt
++++ b/CUDA/CMakeLists.txt
+@@ -78,6 +78,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_GATE AND
+     target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_GATE=1)
+ endif()
+ 
++option(NYA_ENABLE_INTEGER_DOT "Compile experimental Q4 integer scale-product decode dots" OFF)
++if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_DOT AND
++   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_dot.cu")
++    set(nya_integer_dot "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_dot.cu")
++    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_integer_dot}")
++    file(READ "${nya_integer_dot}" nya_integer_dot_hex HEX)
++    string(APPEND nya_cuda_hex "0a" "${nya_integer_dot_hex}")
++    target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_DOT=1)
++endif()
++
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
+ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
+ string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
+diff --git a/CUDA/cuda.c b/CUDA/cuda.c
+index 9a86aa7..e189bf4 100644
+--- a/CUDA/cuda.c
++++ b/CUDA/cuda.c
+@@ -38,6 +38,7 @@ typedef struct nya_cuda_context {
+     CUmodule module;
+     CUfunction function;
+     CUfunction dot[31], gate_up_q4, gate_up_2048;
++    CUfunction integer_add, integer_qkv[2];
+     CUfunction gemm[31];
+     CUfunction gemm_large[31];
+     CUfunction expand[31];
+@@ -325,6 +326,22 @@ static nya_cuda_context *nya_cuda_create_for(int training)
+         snprintf(name, sizeof(name), "nya_expand_t_%u", types[i]);
+         if (c->function_get(&c->expand_transposed[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
+     }
++#ifdef NYA_INTEGER_DOT
++    const char *integer_dot = getenv("NYA_CUDA_INTEGER_DOT");
++    if (!training && !c->reference && integer_dot && !strcmp(integer_dot,"1")) {
++        CUfunction dot = NULL, add = NULL, qkv12 = NULL, qkv14 = NULL;
++        /* Publish only a complete optional kernel group; otherwise keep native. */
++        if (c->function_get(&dot,c->module,"nya_dot_integer_12") == CUDA_SUCCESS &&
++            c->function_get(&add,c->module,"nya_add_integer_12") == CUDA_SUCCESS &&
++            c->function_get(&qkv12,c->module,"nya_qkv_integer_12") == CUDA_SUCCESS &&
++            c->function_get(&qkv14,c->module,"nya_qkv_integer_14") == CUDA_SUCCESS) {
++            c->dot[12] = dot;
++            c->integer_add = add;
++            c->integer_qkv[0] = qkv12;
++            c->integer_qkv[1] = qkv14;
++        }
++    }
++#endif
+     if (!training) {
+     nya_blas_open(c);
+ #ifdef NYA_ENABLE_CUTLASS
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 07be928..ab84463 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -370,6 +370,11 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+         c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS ||
+         c->function_get(&p->attention_split, c->module, "nya_attention_split") != CUDA_SUCCESS ||
+         c->function_get(&p->attention_combine, c->module, "nya_attention_combine") != CUDA_SUCCESS) goto failure;
++    if (c->integer_add) {
++        p->dot_add[0] = c->integer_add;
++        p->qkv[0] = c->integer_qkv[0];
++        p->qkv[1] = c->integer_qkv[1];
++    }
+     if (c->pop(&previous) != CUDA_SUCCESS) { p->failed = 1; cuda_plan_free(p); return NULL; }
+     return p;
+ failure:
+diff --git a/optcpp/matvec/integer_scale_dot.cu b/optcpp/matvec/integer_scale_dot.cu
+index 0edf6bb..ac481a1 100644
+--- a/optcpp/matvec/integer_scale_dot.cu
++++ b/optcpp/matvec/integer_scale_dot.cu
+@@ -1,4 +1,4 @@
+-/* Original Fyodor Q4 integer-product diagnostic; no runtime dispatch. */
++/* Original Fyodor Q4 integer-product optional decode implementation; Q4 integer product only. */
+ __device__ __forceinline__ void nya_row_dot_integer_at(const unsigned char *weights,
+     const float *input, float *output, unsigned long long columns,
+     unsigned long long row_bytes, unsigned long long rows, unsigned TYPE, unsigned long long row, unsigned add = 0)
+@@ -43,3 +43,16 @@ __device__ __forceinline__ void nya_row_dot_integer_at(const unsigned char *weig
+ }
+ 
+ extern "C" __global__ void nya_dot_integer_12(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_integer_at(w,x,y,c,s,r,12,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
++
++#define NYA_QKV(VTYPE) \
++extern "C" __global__ void nya_qkv_integer_##VTYPE(const unsigned char *q, const unsigned char *k, const unsigned char *v, \
++    const float *x, float *yq, float *yk, float *yv, unsigned long long columns, \
++    unsigned long long qs, unsigned long long vs, unsigned long long qr, unsigned long long kr) { \
++    unsigned long long qb=(qr+7)/8, kb=(kr+7)/8, b=blockIdx.x; \
++    if (b<qb) nya_row_dot_integer_at(q,x,yq,columns,qs,qr,12,b*8+(threadIdx.x>>5)); \
++    else if (b<qb+kb) nya_row_dot_integer_at(k,x,yk,columns,qs,kr,12,(b-qb)*8+(threadIdx.x>>5)); \
++    else nya_row_dot_integer_at(v,x,yv,columns,vs,kr,VTYPE,(b-qb-kb)*8+(threadIdx.x>>5)); \
++}
++NYA_QKV(12) NYA_QKV(14)
++#undef NYA_QKV
++extern "C" __global__ void nya_add_integer_12(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_integer_at(w,x,y,c,s,r,12,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5),1); }
