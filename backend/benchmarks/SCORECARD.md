@@ -125,3 +125,21 @@ and excluded. C17/C23 six selected tests each, real-model CPU oracles at capacit
 relaxed. Enable NYA_ENABLE_INTEGER_GATE=ON and NYA_CUDA_INTEGER_GATE=1; remains
 off by default, native/fixed fallbacks retained. Training/prefill unchanged.
 See decode-integer-runtime-20261027/README.md and reference-summary.json.
+
+## Q4 integer-product row-dot runtime (2026-10-28)
+
+Fresh matched TinyLlama Q4_K_M/F32-KV decode reaches **101.88% short / 120.66%
+long relative to llama.cpp**. Both exceed parity; >=125% on both remains unmet.
+The accepted integer-gate baseline gives376.147/315.798tok/s; adding Q4 integer
+dot/add/QKV gives388.168/323.800; llama.cpp gives380.999/268.351, at prefixes0/1024
+and128 decode tokens. Gains versus baseline are3.20%/2.53%. Forty observations
+per cell, reverse orders,10 warmups/process, host logits every token, full GPU,
+llama FA off. All12 contamination gates pass in one uninterrupted run.
+
+C17/C23 six selected tests each, real-model CPU comparisons at capacities129/273,
+and fresh physical-removal build/inference smoke pass without tolerance changes.
+Enable NYA_ENABLE_INTEGER_DOT=ON and NYA_CUDA_INTEGER_DOT=1 along with accepted
+integer gate/selective FDPP settings. Default off; native fallback preserved;
+explicit reference and training contexts excluded; Q6 arithmetic unchanged.
+See decode-integer-dot-runtime-20261027/README.md and reference-summary.json.
+Training and prefill scores remain unchanged.

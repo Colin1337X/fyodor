@@ -59,6 +59,8 @@ in decode-integer-runtime-20261027. Kernel evidence: backend/benchmarks/decode-i
 
 `integer_scale_dot.cu` tests the same integer-product technique in generic Q4
 row dots. Nine shapes plus finite-scale stress cases match byte-for-byte;
-rotating weights gain 9.5-10.4% on three shapes. Diagnostic only, pending runtime
-checks for fused dot-add/QKV and real models. Evidence:
+rotating weights gain 9.5-10.4% on three shapes. The optional runtime trial
+uses NYA_ENABLE_INTEGER_DOT=ON and NYA_CUDA_INTEGER_DOT=1 for Q4 dot/add/QKV,
+with native fallback and reference/training excluded. Validation evidence is in
+decode-integer-dot-runtime-20261027. Kernel evidence:
 backend/benchmarks/decode-integer-dot-20261027.

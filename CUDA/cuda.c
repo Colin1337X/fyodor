@@ -38,6 +38,7 @@ typedef struct nya_cuda_context {
     CUmodule module;
     CUfunction function;
     CUfunction dot[31], gate_up_q4, gate_up_2048;
+    CUfunction integer_add, integer_qkv[2];
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
@@ -325,6 +326,22 @@ static nya_cuda_context *nya_cuda_create_for(int training)
         snprintf(name, sizeof(name), "nya_expand_t_%u", types[i]);
         if (c->function_get(&c->expand_transposed[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
     }
+#ifdef NYA_INTEGER_DOT
+    const char *integer_dot = getenv("NYA_CUDA_INTEGER_DOT");
+    if (!training && !c->reference && integer_dot && !strcmp(integer_dot,"1")) {
+        CUfunction dot = NULL, add = NULL, qkv12 = NULL, qkv14 = NULL;
+        /* Publish only a complete optional kernel group; otherwise keep native. */
+        if (c->function_get(&dot,c->module,"nya_dot_integer_12") == CUDA_SUCCESS &&
+            c->function_get(&add,c->module,"nya_add_integer_12") == CUDA_SUCCESS &&
+            c->function_get(&qkv12,c->module,"nya_qkv_integer_12") == CUDA_SUCCESS &&
+            c->function_get(&qkv14,c->module,"nya_qkv_integer_14") == CUDA_SUCCESS) {
+            c->dot[12] = dot;
+            c->integer_add = add;
+            c->integer_qkv[0] = qkv12;
+            c->integer_qkv[1] = qkv14;
+        }
+    }
+#endif
     if (!training) {
     nya_blas_open(c);
 #ifdef NYA_ENABLE_CUTLASS

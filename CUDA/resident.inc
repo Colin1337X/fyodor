@@ -370,6 +370,11 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS ||
         c->function_get(&p->attention_split, c->module, "nya_attention_split") != CUDA_SUCCESS ||
         c->function_get(&p->attention_combine, c->module, "nya_attention_combine") != CUDA_SUCCESS) goto failure;
+    if (c->integer_add) {
+        p->dot_add[0] = c->integer_add;
+        p->qkv[0] = c->integer_qkv[0];
+        p->qkv[1] = c->integer_qkv[1];
+    }
     if (c->pop(&previous) != CUDA_SUCCESS) { p->failed = 1; cuda_plan_free(p); return NULL; }
     return p;
 failure:
