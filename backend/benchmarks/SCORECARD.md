@@ -106,3 +106,22 @@ is unchanged; only 2048-column Q4 gate/up with matching strides opts in. C17/C23
 lifecycle tests, real-model CPU oracles and physical-removal build/smoke pass.
 The 125% target on both remains unmet. Full results, variance and limitations:
 [fixed-width runtime](decode-fixed-runtime-20261027/README.md).
+
+## Integer scale-product decode runtime (2026-10-27)
+
+Accepted opt-in width-2048 Q4 gate/up optimization in root optcpp. Fresh matched
+TinyLlama Q4_K_M/F32-KV results after stopping verified Epic GPU competitors:
+**98.97% short / 117.99% long relative to llama.cpp**. Target >=125% both remains
+unmet. Fixed baseline 366.000/309.815 tok/s; integer candidate 374.013/316.095;
+llama.cpp 377.890/267.903 at prefixes 0/1024, 128 decode tokens. Candidate gains
+2.19%/2.03% against the fixed baseline. Forty observations/cell, reverse orders,
+10 warmups/process, full host logits per token, full GPU, llama FA off.
+
+All 12 accepted environment gates pass. Tool interruption split the accepted
+protocol into nine plus three observations with matching binary/model/dependency
+hashes. Rejected competitor runs and the incomplete paired trial are retained
+and excluded. C17/C23 six selected tests each, real-model CPU oracles at capacities
+129/273, and fresh physical-removal build/inference smoke pass. No tolerances
+relaxed. Enable NYA_ENABLE_INTEGER_GATE=ON and NYA_CUDA_INTEGER_GATE=1; remains
+off by default, native/fixed fallbacks retained. Training/prefill unchanged.
+See decode-integer-runtime-20261027/README.md and reference-summary.json.

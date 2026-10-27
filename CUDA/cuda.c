@@ -302,6 +302,14 @@ static nya_cuda_context *nya_cuda_create_for(int training)
             c->gate_up_2048 = candidate;
     }
 #endif
+#ifdef NYA_INTEGER_GATE
+    const char *integer_gate = getenv("NYA_CUDA_INTEGER_GATE");
+    if (integer_gate && !strcmp(integer_gate,"1")) {
+        CUfunction candidate = NULL;
+        if (c->function_get(&candidate,c->module,"nya_gate_up_integer_2048") == CUDA_SUCCESS)
+            c->gate_up_2048 = candidate;
+    }
+#endif
     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};
     for (size_t i = 0; i < sizeof(types)/sizeof(types[0]); ++i) {
         char name[32]; snprintf(name, sizeof(name), "nya_dot_%u", types[i]);

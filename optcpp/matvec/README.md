@@ -1,7 +1,7 @@
 # Decode matrix diagnostics
 
 These original Fyodor device sources are experiments. They require
-the native `nya_half_aligned` helper. All except the fixed-width source are
+the native `nya_half_aligned` helper. All except the fixed-width and integer scale-product sources are
 compiled only by diagnostic scripts. Removing this directory keeps generic
 native dispatch available. They are not a complete Flash-Decoding++ flat-GEMM engine.
 
@@ -51,5 +51,8 @@ backend/benchmarks/decode-dot-fixed-20261027, including the updated runtime prof
 conversion. The finite-half coefficient check is exhaustive and tested GPU
 outputs are byte-exact. Clean rotating-weight diagnostics improve about 7%
 against fixed-width baselines at widths 2048/4096; width 2304 regresses.
-This candidate is diagnostic-only pending real-model validation and runtime
-trials. Evidence: backend/benchmarks/decode-integer-scale-20261027.
+The width-2048 runtime trial uses CMake NYA_ENABLE_INTEGER_GATE=ON (default
+OFF) and NYA_CUDA_INTEGER_GATE=1. It takes priority over fixed-gate selection;
+missing source/symbol leaves fixed (if requested) or generic dispatch in place.
+Other widths remain diagnostic-only. Real-model validation is tracked separately
+in decode-integer-runtime-20261027. Kernel evidence: backend/benchmarks/decode-integer-scale-20261027.

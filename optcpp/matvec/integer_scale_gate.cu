@@ -1,7 +1,7 @@
 /* Original Fyodor diagnostic: multiply integer scale and Q4 nibble before
  * conversion to float. Accumulation/reduction order stays unchanged.
  * Finite-half coefficient proof and GPU evidence: decode-integer-scale-20261027.
- * Diagnostic only; no runtime dispatch. */
+ * Optional width-2048 runtime dispatch; all other widths diagnostic only. */
 extern "C" __global__ __launch_bounds__(256,4) void nya_gate_up_integer_256(const unsigned char *gate,
     const unsigned char *up, const float *input, float *output,
     unsigned long long ignored_columns, unsigned long long ignored_stride, unsigned long long rows)
