@@ -121,19 +121,46 @@ static CUresult plan_allocate(nya_cuda_plan *p, CUdeviceptr *out, size_t bytes)
     return result;
 }
 
+/* A packed tensor is usable only for its complete, block-aligned matrix. */
+static int plan_byte_shape(const nya_llm_tensor *t, size_t rows, size_t cols)
+{
+    return t && t->type==12 && t->dimension_count==2 && rows && cols &&
+        cols%256==0 && cols/256<=SIZE_MAX/160 &&
+        t->dimensions[0]==cols && t->dimensions[1]==rows &&
+        rows<=SIZE_MAX/(cols/256*144) && t->data_size==rows*(cols/256*144);
+}
+static CUdeviceptr plan_byte_tensor(nya_cuda_plan *p, const nya_llm_tensor *t,
+    size_t rows, size_t cols)
+{
+    if (!p->byte_tensors || !plan_byte_shape(t,rows,cols)) return 0;
+    return p->byte_tensors[(size_t)(t-p->model->tensors)];
+}
+static void plan_byte_mark(CUdeviceptr *table, const nya_llm_context *m,
+    const nya_llm_tensor *t)
+{
+    if (t && plan_byte_shape(t,(size_t)t->dimensions[1],(size_t)t->dimensions[0]))
+        table[(size_t)(t-m->tensors)]=1;
+}
+
 /* Optional plan-owned copy: native weights remain available for prefill and
    fallback. All packing/allocation happens before graph capture, never decode. */
 static void plan_byte_weights(nya_cuda_plan *p)
 {
     nya_cuda_context *c=p->cuda;
     const nya_llm_context *m=p->model;
-    if (!c->byte_gate || !p->fuse_gate_up || m->is_gemma) return;
+    if (!c->byte_dot && (!c->byte_gate || !p->fuse_gate_up || m->is_gemma)) return;
     CUdeviceptr *table=calloc(m->tensor_count,sizeof(*table));
     if (!table) return;
     for (size_t layer=0;layer<m->block_count;++layer) {
         const nya_llm_layer *w=&m->layers[layer];
         const nya_llm_tensor *pair[]={w->feed_forward_gate,w->feed_forward_up};
-        int eligible=1;
+        if (c->byte_dot) {
+            const nya_llm_tensor *projections[]={w->query,w->key,w->value,w->attention_output,
+                w->feed_forward_gate,w->feed_forward_up,w->feed_forward_down};
+            for (unsigned j=0;j<sizeof(projections)/sizeof(projections[0]);++j)
+                plan_byte_mark(table,m,projections[j]);
+        }
+        int eligible=c->byte_gate && p->fuse_gate_up && !m->is_gemma;
         for (unsigned j=0;j<2;++j) {
             const nya_llm_tensor *t=pair[j];
             if (!t || t->type!=12 || t->dimension_count!=2 || t->dimensions[0]!=2048 ||
@@ -142,6 +169,7 @@ static void plan_byte_weights(nya_cuda_plan *p)
         }
         if (eligible) for (unsigned j=0;j<2;++j) table[(size_t)(pair[j]-m->tensors)]=1;
     }
+    if (c->byte_dot) plan_byte_mark(table,m,m->output);
     size_t bytes=0, largest=0;
     for (size_t i=0;i<m->tensor_count;++i) if (table[i]) {
         size_t amount=nya_q4_byte_size(m->tensors[i].data_size);
@@ -522,7 +550,10 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
     if (p->cuda->reference) return plan_launch(p, p->cuda->function, rows, args);
     unsigned long long row_count = rows;
     args[5] = &row_count;
-    return plan_launch(p, p->cuda->dot[type], (rows + 7) / 8, args);
+    CUfunction function=p->cuda->dot[type];
+    CUdeviceptr packed=p->cuda->byte_dot ? plan_byte_tensor(p,t,rows,columns) : 0;
+    if (packed) { matrix=packed; stride=columns/256*160; function=p->cuda->byte_dot; }
+    return plan_launch(p, function, (rows + 7) / 8, args);
 }
 /* One profile entry denotes one dispatched operation; gate/up represents
    both projections and their activation, so its count is one per layer. */
@@ -561,7 +592,7 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
     CUfunction function=p->cuda->gate_up_q4;
     if (p->cuda->gate_up_2048 && columns==2048 && stride==1152 && up->data_size/rows==1152)
         function=p->cuda->gate_up_2048;
-    if (p->byte_tensors && columns==2048 && stride==1152 && up->data_size/rows==1152) {
+    if (p->cuda->byte_gate && p->byte_tensors && columns==2048 && stride==1152 && up->data_size/rows==1152) {
         CUdeviceptr packed_gate=p->byte_tensors[(size_t)(gate-p->model->tensors)];
         CUdeviceptr packed_up=p->byte_tensors[(size_t)(up-p->model->tensors)];
         if (packed_gate && packed_up) { g=packed_gate; u=packed_up; stride=1280; function=p->cuda->byte_gate; }
@@ -577,7 +608,10 @@ static int plan_matvec_add(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tens
     unsigned long long cols=columns, stride=t->data_size/rows, count=rows;
     void *args[]={&matrix,&in,&out,&cols,&stride,&count};
     p->matrix_profile=plan_matrix_slot(p,rows,columns,t->type,7);
-    int result=plan_launch(p,p->dot_add[t->type==14],(rows+7)/8,args);
+    CUfunction function=p->dot_add[t->type==14];
+    CUdeviceptr packed=p->cuda->byte_add ? plan_byte_tensor(p,t,rows,columns) : 0;
+    if (packed) { matrix=packed; stride=columns/256*160; function=p->cuda->byte_add; }
+    int result=plan_launch(p,function,(rows+7)/8,args);
     p->matrix_profile=0;
     return result;
 }
@@ -589,7 +623,19 @@ static int plan_qkv(nya_cuda_plan *p, const nya_llm_layer *w, CUdeviceptr key,
     unsigned long long qr=qrows, kr=krows;
     void *args[]={&q,&k,&v,&p->norm,&p->q,&key,&value,&cols,&qs,&vs,&qr,&kr};
     p->matrix_profile=plan_matrix_slot(p,qrows+2*krows,columns,w->value->type,6);
-    int result=plan_launch(p,p->qkv[w->value->type==14],(qrows+7)/8+2*((krows+7)/8),args);
+    unsigned q6=w->value->type==14;
+    CUfunction function=p->qkv[q6];
+    if (p->cuda->byte_qkv[q6]) {
+        CUdeviceptr pq=plan_byte_tensor(p,w->query,qrows,columns);
+        CUdeviceptr pk=plan_byte_tensor(p,w->key,krows,columns);
+        CUdeviceptr pv=q6 ? v : plan_byte_tensor(p,w->value,krows,columns);
+        if (pq && pk && pv) {
+            q=pq; k=pk; v=pv; qs=columns/256*160;
+            if (!q6) vs=qs;
+            function=p->cuda->byte_qkv[q6];
+        }
+    }
+    int result=plan_launch(p,function,(qrows+7)/8+2*((krows+7)/8),args);
     p->matrix_profile=0;
     return result;
 }

@@ -108,6 +108,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_BYTE_GATE AND
     target_compile_definitions(nya-engine PRIVATE NYA_BYTE_GATE=1)
 endif()
 
+option(NYA_ENABLE_BYTE_DOT "Compile experimental aligned byte-metadata Q4 projections" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_BYTE_DOT AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/byte_scale_dot.cu")
+    set(nya_byte_dot "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/byte_scale_dot.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_byte_dot}")
+    file(READ "${nya_byte_dot}" nya_byte_dot_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_byte_dot_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_BYTE_DOT=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")

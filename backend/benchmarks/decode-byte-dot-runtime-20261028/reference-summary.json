@@ -1,0 +1,48 @@
+{
+  "convention": "Fyodor throughput / llama.cpp throughput * 100; 100 is parity",
+  "policy": "Default-off aligned Q4 projection packing; both Fyodor variants include accepted gate packing and selective FDPP",
+  "comparisons": [
+    {
+      "prefix": 0,
+      "baseline": {
+        "samples": 40,
+        "tokens_per_second": 405.19803349999995,
+        "sample_stdev": 2.181782359101313
+      },
+      "fixed": {
+        "samples": 40,
+        "tokens_per_second": 421.52434400000004,
+        "sample_stdev": 2.481454603021759
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 381.441991,
+        "sample_stdev": 2.4133436063254514
+      },
+      "baseline_llama_percent": 106.22795682188016,
+      "fixed_llama_percent": 110.50811235934432,
+      "fixed_baseline_gain_percent": 4.029217604778945
+    },
+    {
+      "prefix": 1024,
+      "baseline": {
+        "samples": 40,
+        "tokens_per_second": 336.39259549999997,
+        "sample_stdev": 1.2814322387864105
+      },
+      "fixed": {
+        "samples": 40,
+        "tokens_per_second": 346.866625,
+        "sample_stdev": 1.231682786452105
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 267.852857,
+        "sample_stdev": 2.826134025273808
+      },
+      "baseline_llama_percent": 125.58857847090277,
+      "fixed_llama_percent": 129.49894538552562,
+      "fixed_baseline_gain_percent": 3.1136325948054377
+    }
+  ]
+}
