@@ -196,3 +196,23 @@ after a pre-timing Roblox competitor rejection and verified process stop.
 Additional packed weights cost 505.625 MiB; defaults remain off.
 Evidence: [byte projection runtime](decode-byte-dot-runtime-20261028/README.md).
 PyTorch training scores unchanged and not remeasured.
+
+
+## 2026-10-29: user-selected Gemma 4 12B context baseline
+
+Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M, RTX 5060 Ti,
+F32 KV, 32 decode tokens, six observations per cell in reverse orders:
+
+| Prefix | Fyodor tok/s | llama.cpp tok/s | Fyodor / llama.cpp |
+| --- | --- | --- | --- |
+| 0 | 41.0511 | 48.6580 | 84.3666% |
+| 1024 | 25.8442 | 42.0848 | 61.4099% |
+| 4096 | 18.9536 | 31.1867 | 60.7745% |
+| 8192 | 14.5695 | 23.1048 | 63.0582% |
+
+All 16 clean monitoring gates passed after verified Epic competitor shutdown.
+All contexts stayed resident; optional weight copies were skipped at 4K/8K.
+CPU/CUDA small-prefix parity, image/audio projector smoke and four-token MTP
+greedy parity passed. Nomic MoE embedding execution is unsupported in this build.
+These Gemma numbers supersede no TinyLlama or training result and do not meet
+125%. See [method, deviations and limitations](gemma4-local-20261029/README.md).
