@@ -1,0 +1,42 @@
+[  2%] Built target nya-mock-vendor
+[  4%] Built target nya-mock-missing-vendor
+[  6%] Built target nya-make-test-models
+[  9%] Built target nya-test-config
+[ 10%] Building C object CMakeFiles/nya-engine.dir/core/cpu_backend.c.obj
+[ 11%] Building C object CMakeFiles/nya-engine.dir/core/cpu_kernels.c.obj
+[ 12%] Building C object CMakeFiles/nya-engine.dir/core/llm_quant.c.obj
+[ 13%] Building C object CMakeFiles/nya-engine.dir/core/thread.c.obj
+[ 14%] Building C object CMakeFiles/nya-engine.dir/core/vendor.c.obj
+[ 15%] Building C object CMakeFiles/nya-engine.dir/core/compute.c.obj
+[ 16%] Building C object CMakeFiles/nya-engine.dir/core/execution.c.obj
+[ 17%] Building C object CMakeFiles/nya-engine.dir/core/generation.c.obj
+[ 18%] Building C object CMakeFiles/nya-engine.dir/core/file.c.obj
+[ 19%] Building C object CMakeFiles/nya-engine.dir/core/format.c.obj
+[ 20%] Building C object CMakeFiles/nya-engine.dir/core/format_gguf.c.obj
+[ 21%] Building C object CMakeFiles/nya-engine.dir/core/format_onnx.c.obj
+[ 22%] Building C object CMakeFiles/nya-engine.dir/core/format_safetensors.c.obj
+[ 23%] Building C object CMakeFiles/nya-engine.dir/core/llm_cpu.c.obj
+[ 24%] Building C object CMakeFiles/nya-engine.dir/core/llm_gguf.c.obj
+[ 25%] Building C object CMakeFiles/nya-engine.dir/core/multimodal.c.obj
+[ 26%] Building C object CMakeFiles/nya-engine.dir/core/model.c.obj
+[ 27%] Building C object CMakeFiles/nya-engine.dir/core/runtime.c.obj
+[ 28%] Building C object CMakeFiles/nya-engine.dir/core/training.c.obj
+[ 29%] Building C object CMakeFiles/nya-engine.dir/core/training_device.c.obj
+[ 30%] Building C object CMakeFiles/nya-engine.dir/core/train_executor.c.obj
+[ 31%] Building C object CMakeFiles/nya-engine.dir/core/training_indices.c.obj
+[ 32%] Building C object CMakeFiles/nya-engine.dir/core/training_session.c.obj
+[ 33%] Building C object CMakeFiles/nya-engine.dir/core/pretraining.c.obj
+[ 34%] Building C object CMakeFiles/nya-engine.dir/vulkan/vulkan.c.obj
+[ 35%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/rocm/rocm.c.obj
+[ 36%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/mlx/mlx.c.obj
+[ 37%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/CUDA/cuda.c.obj
+In file included from C:\Users\Colin\.codex\worktrees\resident-training\fyodor\CUDA\resident.inc:6,
+                 from C:\Users\Colin\.codex\worktrees\resident-training\fyodor\CUDA\cuda.c:503:
+C:\Users\Colin\.codex\worktrees\resident-training\fyodor\CUDA\q4_byte_pack.h: In function 'nya_q4_byte_pack':
+C:\Users\Colin\.codex\worktrees\resident-training\fyodor\CUDA\q4_byte_pack.h:23:58: error: operand of '?:' changes signedness from 'int' to 'unsigned int' due to unsignedness of other operand [-Werror=sign-compare]
+   23 |             out[12+j]=(unsigned char)(j<4 ? s[j+4]&63U : (s[j+4]>>4)|((s[j]>>6)<<4));
+      |                                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~
+cc1.exe: all warnings being treated as errors
+make[2]: *** [CMakeFiles\nya-engine.dir\build.make:484: CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/CUDA/cuda.c.obj] Error 1
+make[1]: *** [CMakeFiles\Makefile2:1205: CMakeFiles/nya-engine.dir/all] Error 2
+make: *** [Makefile:100: all] Error 2

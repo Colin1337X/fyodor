@@ -78,7 +78,10 @@ Evidence: backend/benchmarks/decode-q6-integer-20261028.
 regresses and is rejected. `byte_scale_gate_aligned.cu` uses160-byte blocks,
 32-byte aligned payload and word metadata loads. It matches all tested outputs
 and gains about13% on two rotating model-sized shapes, with11.1% extra weight
-storage. Both remain diagnostic-only; the aligned width2048 candidate needs
-C-owned packing/cache integration and real-model validation. Evidence:
+storage. The148-byte layout remains diagnostic-only. Aligned width2048 has an optional
+runtime integration: NYA_ENABLE_BYTE_GATE=ON and NYA_CUDA_BYTE_GATE=1. C owns
+plan-local packing and budget/failure fallback; native weights are retained,
+so memory cost is a full additional packed copy. Runtime evidence:
+backend/benchmarks/decode-byte-runtime-20261028. Kernel evidence:
 backend/benchmarks/decode-byte-scales-20261028 and
 decode-byte-scales-aligned-20261028.

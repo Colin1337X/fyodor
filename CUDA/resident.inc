@@ -3,6 +3,7 @@
    is read-only; every live request owns one scratch allocation and KV prefix. */
 #include "../backend/core/llm_internal.h"
 #include <math.h>
+#include "q4_byte_pack.h"
 typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; } nya_cuda_timing;
 typedef struct nya_cuda_matrix_profile {
     size_t rows, columns, batch;
@@ -18,7 +19,9 @@ typedef struct nya_cuda_plan {
     CUdeviceptr blas_storage, attention_parts;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
-    CUdeviceptr *tensors;
+    CUdeviceptr *tensors, *byte_tensors;
+    CUdeviceptr byte_storage;
+    size_t byte_weights;
 #ifdef NYA_PORTABLE_ATTENTION
     CUfunction portable_attention;
     int use_portable_attention;
@@ -79,6 +82,7 @@ static void cuda_plan_free(void *opaque)
         for (size_t i = 0; i < 2; ++i) if (p->executable[i]) p->cuda->graph_exec_free(p->executable[i]);
         p->cuda->deallocate(p->storage);
         if (p->blas_storage) p->cuda->deallocate(p->blas_storage);
+        if (p->byte_storage) p->cuda->deallocate(p->byte_storage);
         p->cuda->pop(&previous);
     }
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
@@ -91,7 +95,7 @@ static void cuda_plan_free(void *opaque)
                 paths[m->path], m->type, m->rows, m->columns, m->batch, m->calls, m->milliseconds);
         }
     }
-    free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p);
+    free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
 static int plan_add(size_t *total, size_t count)
@@ -115,6 +119,58 @@ static CUresult plan_allocate(nya_cuda_plan *p, CUdeviceptr *out, size_t bytes)
     if (result == CUDA_SUCCESS) ++p->allocations;
     else fprintf(stderr, "CUDA resident allocation of %zu bytes failed: driver status %d\n", bytes, (int)result);
     return result;
+}
+
+/* Optional plan-owned copy: native weights remain available for prefill and
+   fallback. All packing/allocation happens before graph capture, never decode. */
+static void plan_byte_weights(nya_cuda_plan *p)
+{
+    nya_cuda_context *c=p->cuda;
+    const nya_llm_context *m=p->model;
+    if (!c->byte_gate || !p->fuse_gate_up || m->is_gemma) return;
+    CUdeviceptr *table=calloc(m->tensor_count,sizeof(*table));
+    if (!table) return;
+    for (size_t layer=0;layer<m->block_count;++layer) {
+        const nya_llm_layer *w=&m->layers[layer];
+        const nya_llm_tensor *pair[]={w->feed_forward_gate,w->feed_forward_up};
+        int eligible=1;
+        for (unsigned j=0;j<2;++j) {
+            const nya_llm_tensor *t=pair[j];
+            if (!t || t->type!=12 || t->dimension_count!=2 || t->dimensions[0]!=2048 ||
+                !t->dimensions[1] || t->dimensions[1]>SIZE_MAX/1152 ||
+                t->data_size!=(size_t)t->dimensions[1]*1152) eligible=0;
+        }
+        if (eligible) for (unsigned j=0;j<2;++j) table[(size_t)(pair[j]-m->tensors)]=1;
+    }
+    size_t bytes=0, largest=0;
+    for (size_t i=0;i<m->tensor_count;++i) if (table[i]) {
+        size_t amount=nya_q4_byte_size(m->tensors[i].data_size);
+        if (!amount || amount>SIZE_MAX-bytes) { free(table); return; }
+        bytes+=amount; if (amount>largest) largest=amount;
+    }
+    size_t free_bytes,total_bytes;
+    if (!bytes || c->cached_bytes>c->cache_limit || p->bytes>c->cache_limit-c->cached_bytes ||
+        bytes>c->cache_limit-c->cached_bytes-p->bytes ||
+        c->memory_info(&free_bytes,&total_bytes)!=CUDA_SUCCESS) { free(table); return; }
+    size_t reserve=free_bytes/10;
+    if (reserve<256U*1024U*1024U) reserve=256U*1024U*1024U;
+    if (free_bytes<=reserve || bytes>free_bytes-reserve) { free(table); return; }
+    void *host=malloc(largest);
+    CUdeviceptr storage=0;
+    if (!host || plan_allocate(p,&storage,bytes)!=CUDA_SUCCESS) { free(host); free(table); return; }
+    size_t offset=0; int success=1;
+    for (size_t i=0;i<m->tensor_count;++i) if (table[i]) {
+        const nya_llm_tensor *t=&m->tensors[i];
+        size_t amount=nya_q4_byte_size(t->data_size);
+        if (nya_q4_byte_pack(host,largest,t->data,t->data_size) ||
+            c->upload(storage+offset,host,amount)!=CUDA_SUCCESS) { success=0; break; }
+        table[i]=storage+offset; offset+=amount;
+    }
+    free(host);
+    if (!success) { c->deallocate(storage); free(table); return; }
+    p->byte_storage=storage; p->byte_tensors=table; p->byte_weights=bytes;
+    p->stats.weights_bytes+=bytes; p->bytes+=bytes;
+    if (getenv("NYA_CUDA_DEBUG")) fprintf(stderr,"CUDA aligned Q4 gate copy: %zu extra device bytes\n",bytes);
 }
 
 static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t capacity)
@@ -376,6 +432,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         p->qkv[0] = c->integer_qkv[0];
         p->qkv[1] = c->integer_qkv[1];
     }
+    plan_byte_weights(p);
     if (c->pop(&previous) != CUDA_SUCCESS) { p->failed = 1; cuda_plan_free(p); return NULL; }
     return p;
 failure:
@@ -504,6 +561,11 @@ static int plan_gate_up(nya_cuda_plan *p, const nya_llm_tensor *gate,
     CUfunction function=p->cuda->gate_up_q4;
     if (p->cuda->gate_up_2048 && columns==2048 && stride==1152 && up->data_size/rows==1152)
         function=p->cuda->gate_up_2048;
+    if (p->byte_tensors && columns==2048 && stride==1152 && up->data_size/rows==1152) {
+        CUdeviceptr packed_gate=p->byte_tensors[(size_t)(gate-p->model->tensors)];
+        CUdeviceptr packed_up=p->byte_tensors[(size_t)(up-p->model->tensors)];
+        if (packed_gate && packed_up) { g=packed_gate; u=packed_up; stride=1280; function=p->cuda->byte_gate; }
+    }
     int result=plan_launch(p,function,(rows+7)/8,args);
     p->matrix_profile=0;
     return result;

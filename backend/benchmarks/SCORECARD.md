@@ -163,3 +163,22 @@ Default off; missing sources/symbols fall back; training/reference excluded.
 See decode-q6-runtime-20261028/README.md and reference-summary.json. Training
 and prefill scores remain unchanged. llama short-context variance is retained
 in the evidence rather than substituted with a historical reference score.
+
+## Aligned Q4 byte-metadata gate runtime (2026-10-28)
+
+Fresh matched TinyLlama Q4_K_M/F32-KV decode reaches **106.29% short /124.95%
+long relative to llama.cpp**. 124.95 remains below125; target on both unmet.
+Accepted baseline390.547/325.883tok/s; packed candidate404.749/336.578; llama.cpp
+380.815/269.371, prefixes0/1024 and128 decode tokens. Gains3.64%/3.28%. Forty
+observations/cell, reverse orders,10 warmups/process, host logits every token,
+full GPU, llama FA off. All12 contamination gates pass in a complete run.
+
+Opt-in NYA_ENABLE_BYTE_GATE=ON plus NYA_CUDA_BYTE_GATE=1 adds aligned metadata
+copies for width2048 Q4 gate/up pairs. Native weights remain for prefill/fallback:
+extra VRAM317,194,240 bytes (302.5MiB) here, not merely11.1% overhead. C owns
+packing/admission/cleanup. Insufficient budget or optional allocation failure
+preserves resident native execution. Default off; no host C++ requirement.
+C17/C23 six selected tests each, independent packing/guard/size tests, real-model
+CPU oracles129/273, injected allocation failure,900MiB budget fallback, and fresh
+physical-removal build/inference smoke pass. See decode-byte-runtime-20261028.
+Training/prefill scores unchanged; preparation cost is excluded from decode timing.
