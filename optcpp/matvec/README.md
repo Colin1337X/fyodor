@@ -73,3 +73,12 @@ NYA_CUDA_INTEGER_Q6=1 for dot/add with rows and columns >=2048; smaller shapes
 use native arithmetic and QKV remains unchanged. Validation evidence:
 backend/benchmarks/decode-q6-runtime-20261028.
 Evidence: backend/benchmarks/decode-q6-integer-20261028.
+
+`byte_scale_gate.cu` expands Q4 scales/minima to bytes in148-byte blocks; it
+regresses and is rejected. `byte_scale_gate_aligned.cu` uses160-byte blocks,
+32-byte aligned payload and word metadata loads. It matches all tested outputs
+and gains about13% on two rotating model-sized shapes, with11.1% extra weight
+storage. Both remain diagnostic-only; the aligned width2048 candidate needs
+C-owned packing/cache integration and real-model validation. Evidence:
+backend/benchmarks/decode-byte-scales-20261028 and
+decode-byte-scales-aligned-20261028.
