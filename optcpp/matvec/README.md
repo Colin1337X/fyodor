@@ -85,3 +85,9 @@ so memory cost is a full additional packed copy. Runtime evidence:
 backend/benchmarks/decode-byte-runtime-20261028. Kernel evidence:
 backend/benchmarks/decode-byte-scales-20261028 and
 decode-byte-scales-aligned-20261028.
+
+`byte_scale_dot.cu` applies the160-byte aligned layout to generic Q4 row dots,
+compared against the accepted integer-product baseline. All tested outputs and
+guards match; three rotating cases gain10.2-13.4%. Diagnostic-only pending
+packed dot/add/QKV runtime integration and memory/correctness validation.
+Evidence: backend/benchmarks/decode-byte-dot-20261028.
