@@ -98,6 +98,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_Q6 AND
     target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_Q6=1)
 endif()
 
+option(NYA_ENABLE_BYTE_GATE "Compile experimental aligned byte-metadata Q4 gate" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_BYTE_GATE AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/byte_scale_gate_aligned.cu")
+    set(nya_byte_gate "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/byte_scale_gate_aligned.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_byte_gate}")
+    file(READ "${nya_byte_gate}" nya_byte_gate_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_byte_gate_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_BYTE_GATE=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
