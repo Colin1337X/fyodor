@@ -182,3 +182,17 @@ C17/C23 six selected tests each, independent packing/guard/size tests, real-mode
 CPU oracles129/273, injected allocation failure,900MiB budget fallback, and fresh
 physical-removal build/inference smoke pass. See decode-byte-runtime-20261028.
 Training/prefill scores unchanged; preparation cost is excluded from decode timing.
+
+
+## 2026-10-28: aligned byte-metadata Q4 projections
+
+Matched TinyLlama Q4_K_M/F32-KV decode on RTX 5060 Ti, 40 observations per cell:
+short **110.5081%** of llama.cpp (421.5243 vs 381.4420 tok/s), long
+**129.4989%** (346.8666 vs 267.8529 tok/s). Same-run gains over accepted
+byte-gate baseline: **4.0292% / 3.1136%**. Long reaches the 125% target;
+short does not. C17/C23 selected tests, CPU parity, optional-source removal,
+and allocation/budget fallback checks passed. Clean run passed all 12 gates
+after a pre-timing Roblox competitor rejection and verified process stop.
+Additional packed weights cost 505.625 MiB; defaults remain off.
+Evidence: [byte projection runtime](decode-byte-dot-runtime-20261028/README.md).
+PyTorch training scores unchanged and not remeasured.

@@ -43,3 +43,16 @@ __device__ __forceinline__ void nya_row_dot_byte_at(const unsigned char *weights
 }
 
 extern "C" __global__ void nya_dot_byte_12(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_byte_at(w,x,y,c,s,r,12,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
+
+#define NYA_QKV(VTYPE) \
+extern "C" __global__ void nya_qkv_byte_##VTYPE(const unsigned char *q, const unsigned char *k, const unsigned char *v, \
+    const float *x, float *yq, float *yk, float *yv, unsigned long long columns, \
+    unsigned long long qs, unsigned long long vs, unsigned long long qr, unsigned long long kr) { \
+    unsigned long long qb=(qr+7)/8, kb=(kr+7)/8, b=blockIdx.x; \
+    if (b<qb) nya_row_dot_byte_at(q,x,yq,columns,qs,qr,12,b*8+(threadIdx.x>>5)); \
+    else if (b<qb+kb) nya_row_dot_byte_at(k,x,yk,columns,qs,kr,12,(b-qb)*8+(threadIdx.x>>5)); \
+    else nya_row_dot_byte_at(v,x,yv,columns,vs,kr,VTYPE,(b-qb-kb)*8+(threadIdx.x>>5)); \
+}
+NYA_QKV(12) NYA_QKV(14)
+#undef NYA_QKV
+extern "C" __global__ void nya_add_byte_12(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_byte_at(w,x,y,c,s,r,12,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5),1); }

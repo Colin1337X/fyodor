@@ -39,6 +39,7 @@ typedef struct nya_cuda_context {
     CUfunction function;
     CUfunction dot[31], gate_up_q4, gate_up_2048;
     CUfunction integer_add, integer_qkv[2], integer_q6_add, byte_gate;
+    CUfunction byte_dot, byte_add, byte_qkv[2];
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
@@ -359,6 +360,19 @@ static nya_cuda_context *nya_cuda_create_for(int training)
         CUfunction candidate = NULL;
         if (c->function_get(&candidate,c->module,"nya_gate_up_byte_scales_2048") == CUDA_SUCCESS)
             c->byte_gate = candidate;
+    }
+#endif
+#ifdef NYA_BYTE_DOT
+    const char *byte_dot = getenv("NYA_CUDA_BYTE_DOT");
+    if (!training && !c->reference && byte_dot && !strcmp(byte_dot,"1")) {
+        CUfunction dot=NULL, add=NULL, qkv12=NULL, qkv14=NULL;
+        if (c->function_get(&dot,c->module,"nya_dot_byte_12")==CUDA_SUCCESS &&
+            c->function_get(&add,c->module,"nya_add_byte_12")==CUDA_SUCCESS &&
+            c->function_get(&qkv12,c->module,"nya_qkv_byte_12")==CUDA_SUCCESS &&
+            c->function_get(&qkv14,c->module,"nya_qkv_byte_14")==CUDA_SUCCESS) {
+            c->byte_dot=dot; c->byte_add=add;
+            c->byte_qkv[0]=qkv12; c->byte_qkv[1]=qkv14;
+        }
     }
 #endif
     if (!training) {

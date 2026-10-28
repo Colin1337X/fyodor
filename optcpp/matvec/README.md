@@ -91,3 +91,9 @@ compared against the accepted integer-product baseline. All tested outputs and
 guards match; three rotating cases gain10.2-13.4%. Diagnostic-only pending
 packed dot/add/QKV runtime integration and memory/correctness validation.
 Evidence: backend/benchmarks/decode-byte-dot-20261028.
+
+The byte row-dot source also exports add and QKV entry points for the optional
+`NYA_ENABLE_BYTE_DOT` / `NYA_CUDA_BYTE_DOT=1` resident integration. C owns packing,
+allocation and shape checks. Q6 V in mixed QKV retains its native layout and
+arithmetic. Prefill retains the original weights; see the runtime evidence in
+`backend/benchmarks/decode-byte-dot-runtime-20261028`.
