@@ -38,7 +38,7 @@ typedef struct nya_cuda_context {
     CUmodule module;
     CUfunction function;
     CUfunction dot[31], gate_up_q4, gate_up_2048;
-    CUfunction integer_add, integer_qkv[2];
+    CUfunction integer_add, integer_qkv[2], integer_q6_add;
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction expand[31];
@@ -339,6 +339,17 @@ static nya_cuda_context *nya_cuda_create_for(int training)
             c->integer_add = add;
             c->integer_qkv[0] = qkv12;
             c->integer_qkv[1] = qkv14;
+        }
+    }
+#endif
+#ifdef NYA_INTEGER_Q6
+    const char *integer_q6 = getenv("NYA_CUDA_INTEGER_Q6");
+    if (!training && !c->reference && integer_q6 && !strcmp(integer_q6,"1")) {
+        CUfunction dot = NULL, add = NULL;
+        if (c->function_get(&dot,c->module,"nya_dot_q6_large") == CUDA_SUCCESS &&
+            c->function_get(&add,c->module,"nya_add_q6_large") == CUDA_SUCCESS) {
+            c->dot[14] = dot;
+            c->integer_q6_add = add;
         }
     }
 #endif

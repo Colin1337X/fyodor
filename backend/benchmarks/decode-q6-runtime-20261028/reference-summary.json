@@ -1,0 +1,48 @@
+{
+  "convention": "Fyodor throughput / llama.cpp throughput * 100; 100 is parity",
+  "policy": "integer scale-product remains opt-in; selective FDPP used by both Fyodor variants",
+  "comparisons": [
+    {
+      "prefix": 0,
+      "baseline": {
+        "samples": 40,
+        "tokens_per_second": 387.40277000000003,
+        "sample_stdev": 2.0164035756735754
+      },
+      "fixed": {
+        "samples": 40,
+        "tokens_per_second": 390.451934,
+        "sample_stdev": 1.9596687502225678
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 380.59830700000003,
+        "sample_stdev": 7.128575822582603
+      },
+      "baseline_llama_percent": 101.78783322859078,
+      "fixed_llama_percent": 102.58898340291354,
+      "fixed_baseline_gain_percent": 0.7870785229542765
+    },
+    {
+      "prefix": 1024,
+      "baseline": {
+        "samples": 40,
+        "tokens_per_second": 324.180609,
+        "sample_stdev": 1.0660009308396337
+      },
+      "fixed": {
+        "samples": 40,
+        "tokens_per_second": 326.1373635,
+        "sample_stdev": 1.0141301937022162
+      },
+      "llama": {
+        "samples": 40,
+        "tokens_per_second": 268.61597300000005,
+        "sample_stdev": 1.1694164006985168
+      },
+      "baseline_llama_percent": 120.68552937468091,
+      "fixed_llama_percent": 121.41398735807864,
+      "fixed_baseline_gain_percent": 0.6036001061371365
+    }
+  ]
+}

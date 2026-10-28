@@ -1,0 +1,78 @@
+diff --git a/CUDA/CMakeLists.txt b/CUDA/CMakeLists.txt
+index 590c099..7b7261c 100644
+--- a/CUDA/CMakeLists.txt
++++ b/CUDA/CMakeLists.txt
+@@ -88,6 +88,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_DOT AND
+     target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_DOT=1)
+ endif()
+ 
++option(NYA_ENABLE_INTEGER_Q6 "Compile experimental signed Q6 integer-product decode dots" OFF)
++if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTEGER_Q6 AND
++   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_q6.cu")
++    set(nya_integer_q6 "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/integer_scale_q6.cu")
++    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_integer_q6}")
++    file(READ "${nya_integer_q6}" nya_integer_q6_hex HEX)
++    string(APPEND nya_cuda_hex "0a" "${nya_integer_q6_hex}")
++    target_compile_definitions(nya-engine PRIVATE NYA_INTEGER_Q6=1)
++endif()
++
+ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
+ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
+ string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
+diff --git a/CUDA/cuda.c b/CUDA/cuda.c
+index e189bf4..9e3eca2 100644
+--- a/CUDA/cuda.c
++++ b/CUDA/cuda.c
+@@ -38,7 +38,7 @@ typedef struct nya_cuda_context {
+     CUmodule module;
+     CUfunction function;
+     CUfunction dot[31], gate_up_q4, gate_up_2048;
+-    CUfunction integer_add, integer_qkv[2];
++    CUfunction integer_add, integer_qkv[2], integer_q6_add;
+     CUfunction gemm[31];
+     CUfunction gemm_large[31];
+     CUfunction expand[31];
+@@ -341,6 +341,17 @@ static nya_cuda_context *nya_cuda_create_for(int training)
+             c->integer_qkv[1] = qkv14;
+         }
+     }
++#endif
++#ifdef NYA_INTEGER_Q6
++    const char *integer_q6 = getenv("NYA_CUDA_INTEGER_Q6");
++    if (!training && !c->reference && integer_q6 && !strcmp(integer_q6,"1")) {
++        CUfunction dot = NULL, add = NULL;
++        if (c->function_get(&dot,c->module,"nya_dot_q6_large") == CUDA_SUCCESS &&
++            c->function_get(&add,c->module,"nya_add_q6_large") == CUDA_SUCCESS) {
++            c->dot[14] = dot;
++            c->integer_q6_add = add;
++        }
++    }
+ #endif
+     if (!training) {
+     nya_blas_open(c);
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index ab84463..7204273 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -370,6 +370,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+         c->function_get(&p->attention_prefill, c->module, "nya_attention_prefill") != CUDA_SUCCESS ||
+         c->function_get(&p->attention_split, c->module, "nya_attention_split") != CUDA_SUCCESS ||
+         c->function_get(&p->attention_combine, c->module, "nya_attention_combine") != CUDA_SUCCESS) goto failure;
++    if (c->integer_q6_add) p->dot_add[1] = c->integer_q6_add;
+     if (c->integer_add) {
+         p->dot_add[0] = c->integer_add;
+         p->qkv[0] = c->integer_qkv[0];
+diff --git a/optcpp/matvec/integer_scale_q6.cu b/optcpp/matvec/integer_scale_q6.cu
+index ce8d322..9bcc627 100644
+--- a/optcpp/matvec/integer_scale_q6.cu
++++ b/optcpp/matvec/integer_scale_q6.cu
+@@ -44,3 +44,9 @@ __device__ __forceinline__ void nya_row_dot_q6_integer_at(const unsigned char *w
+ }
+ 
+ extern "C" __global__ void nya_dot_q6_integer_14(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_q6_integer_at(w,x,y,c,s,r,14,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
++
++/* Larger projections earned a runtime trial; small shapes keep native arithmetic. */
++#define NYA_Q6_LARGE(NAME, ADD) extern "C" __global__ void NAME(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) {     unsigned long long row=(unsigned long long)blockIdx.x*8+(threadIdx.x>>5);     if (c>=2048 && r>=2048) nya_row_dot_q6_integer_at(w,x,y,c,s,r,14,row,ADD);     else nya_row_dot_at(w,x,y,c,s,r,14,row,ADD); }
++NYA_Q6_LARGE(nya_dot_q6_large,0)
++NYA_Q6_LARGE(nya_add_q6_large,1)
++#undef NYA_Q6_LARGE
