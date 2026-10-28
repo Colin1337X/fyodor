@@ -68,5 +68,8 @@ backend/benchmarks/decode-integer-dot-20261027.
 `integer_scale_q6.cu` tests signed Q6 scale products, preserving zero sign.
 The exhaustive finite-half coefficient check and GPU output/guard comparisons
 pass. Rotating weights gain 2.6-4.7% on larger tested shapes, while small shapes
-can regress. Diagnostic only; shape-gated runtime validation remains pending.
+can regress. Optional runtime trial uses NYA_ENABLE_INTEGER_Q6=ON and
+NYA_CUDA_INTEGER_Q6=1 for dot/add with rows and columns >=2048; smaller shapes
+use native arithmetic and QKV remains unchanged. Validation evidence:
+backend/benchmarks/decode-q6-runtime-20261028.
 Evidence: backend/benchmarks/decode-q6-integer-20261028.

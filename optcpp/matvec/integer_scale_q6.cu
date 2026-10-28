@@ -44,3 +44,9 @@ __device__ __forceinline__ void nya_row_dot_q6_integer_at(const unsigned char *w
 }
 
 extern "C" __global__ void nya_dot_q6_integer_14(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) { nya_row_dot_q6_integer_at(w,x,y,c,s,r,14,(unsigned long long)blockIdx.x*8+(threadIdx.x>>5)); }
+
+/* Larger projections earned a runtime trial; small shapes keep native arithmetic. */
+#define NYA_Q6_LARGE(NAME, ADD) extern "C" __global__ void NAME(const unsigned char *w, const float *x, float *y, unsigned long long c, unsigned long long s, unsigned long long r) {     unsigned long long row=(unsigned long long)blockIdx.x*8+(threadIdx.x>>5);     if (c>=2048 && r>=2048) nya_row_dot_q6_integer_at(w,x,y,c,s,r,14,row,ADD);     else nya_row_dot_at(w,x,y,c,s,r,14,row,ADD); }
+NYA_Q6_LARGE(nya_dot_q6_large,0)
+NYA_Q6_LARGE(nya_add_q6_large,1)
+#undef NYA_Q6_LARGE

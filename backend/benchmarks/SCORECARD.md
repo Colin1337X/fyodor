@@ -143,3 +143,23 @@ integer gate/selective FDPP settings. Default off; native fallback preserved;
 explicit reference and training contexts excluded; Q6 arithmetic unchanged.
 See decode-integer-dot-runtime-20261027/README.md and reference-summary.json.
 Training and prefill scores remain unchanged.
+
+## Larger Q6 integer-product runtime (2026-10-28)
+
+Fresh matched TinyLlama Q4_K_M/F32-KV decode reaches **102.59% short /121.41%
+long relative to llama.cpp**. >=125% on both remains unmet. Baseline with Q4
+integer dot/gate and selective FDPP gives387.403/324.181tok/s; adding larger-Q6
+dot/add gives390.452/326.137; llama.cpp gives380.598/268.616, prefixes0/1024 and
+128 decode tokens. Gains against baseline are0.79%/0.60%, positive in both
+execution orders. Forty observations/cell,10 warmups/process, full host logits,
+full GPU, llama FA off. All12 contamination gates pass in one complete run.
+
+C17/C23 six selected tests each, real-model CPU oracles at capacities129/273,
+and fresh physical-removal build/inference smoke pass unchanged tolerances.
+Enable NYA_ENABLE_INTEGER_Q6=ON and NYA_CUDA_INTEGER_Q6=1 alongside the accepted
+Q4/FDPP settings. Optional dot/add wrappers use integer arithmetic only with
+rows and columns >=2048; small shapes and QKV retain native Q6 arithmetic.
+Default off; missing sources/symbols fall back; training/reference excluded.
+See decode-q6-runtime-20261028/README.md and reference-summary.json. Training
+and prefill scores remain unchanged. llama short-context variance is retained
+in the evidence rather than substituted with a historical reference score.
