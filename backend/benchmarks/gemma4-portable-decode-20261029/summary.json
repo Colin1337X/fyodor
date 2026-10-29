@@ -1,0 +1,53 @@
+{
+  "decision": "Do not promote unpartitioned portable attention for Gemma decode",
+  "environment_gates_passed": 12,
+  "contract": "F32 KV; full GPU; llama FA off; identical deterministic tokens; host logits each token; serial reverse orders; interactive desktop gates",
+  "results": [
+    {
+      "context": 0,
+      "engines": {
+        "baseline": {
+          "observations": 6,
+          "mean_tokens_per_second": 40.933811350000006,
+          "pooled_sample_stddev": 0.28196712900266585
+        },
+        "fixed": {
+          "observations": 6,
+          "mean_tokens_per_second": 41.08841455,
+          "pooled_sample_stddev": 0.06893004176839149
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 48.528765,
+          "pooled_sample_stddev": 0.06506953260120955
+        }
+      },
+      "portable_percent_of_llama": 84.66816443814304,
+      "native_percent_of_llama": 84.34958390142425,
+      "portable_change_percent": 0.37769070336031163
+    },
+    {
+      "context": 1024,
+      "engines": {
+        "baseline": {
+          "observations": 6,
+          "mean_tokens_per_second": 33.73087625,
+          "pooled_sample_stddev": 0.2526734803880098
+        },
+        "fixed": {
+          "observations": 6,
+          "mean_tokens_per_second": 21.582351749999997,
+          "pooled_sample_stddev": 0.09239509647807832
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 41.95558415,
+          "pooled_sample_stddev": 0.18634067333504595
+        }
+      },
+      "portable_percent_of_llama": 51.440951633133196,
+      "native_percent_of_llama": 80.39663118359896,
+      "portable_change_percent": -36.016035901231604
+    }
+  ]
+}

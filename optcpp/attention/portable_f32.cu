@@ -4,42 +4,49 @@
 __device__ void nya_attention_portable_body(const float *q,
     const float *keys, const float *values, float *out, unsigned width,
     unsigned heads, unsigned kvheads, unsigned window, unsigned position,
-    unsigned count, float scale, const unsigned *request)
+    unsigned count, float scale, const unsigned *request, unsigned partitions)
 {
-    unsigned head=blockIdx.x, query=blockIdx.y, tid=threadIdx.x;
+    unsigned head=blockIdx.x, query=partitions==1?blockIdx.y:0, tid=threadIdx.x;
     if (query>=count) return;
     unsigned end=(request?request[1]:position)+query;
     unsigned first=window && end>=window ? end-window+1 : 0;
+    unsigned long long begin=first, limit=(unsigned long long)end+1;
+    if (partitions>1) {
+        unsigned long long span=(limit-begin+partitions-1)/partitions;
+        begin+=span*blockIdx.y;
+        unsigned long long next=begin+span;
+        if (next<limit) limit=next;
+    }
     unsigned kh=head/(heads/kvheads);
     unsigned long long stride=(unsigned long long)kvheads*width;
     q+=((unsigned long long)query*heads+head)*width;
-    out+=((unsigned long long)query*heads+head)*width;
+    out+=partitions==1 ? ((unsigned long long)query*heads+head)*width : ((unsigned long long)head*partitions+blockIdx.y)*(width+2);
     __shared__ float dots[256], probabilities[64], correction, denominator;
     __shared__ float maximum;
     float numerator=0.0f, numerator_high=0.0f;
     if (!tid) { maximum=-__int_as_float(0x7f800000); denominator=0.0f; }
     __syncthreads();
-    for (unsigned long long base=first; base<=end; base+=64) {
+    for (unsigned long long base=begin; base<limit; base+=64) {
         unsigned key_index=tid/4, component=tid%4;
         unsigned long long token=base+key_index;
         float dot=0.0f;
-        if (token<=end) for (unsigned j=component;j<width;j+=4)
+        if (token<limit) for (unsigned j=component;j<width;j+=4)
             dot+=q[j]*keys[token*stride+(unsigned long long)kh*width+j];
         dots[tid]=dot;
         __syncthreads();
         if (tid<64) {
             float score=((dots[tid*4]+dots[tid*4+1])+dots[tid*4+2])+dots[tid*4+3];
-            probabilities[tid]=base+tid<=end ? score*scale : -__int_as_float(0x7f800000);
+            probabilities[tid]=base+tid<limit ? score*scale : -__int_as_float(0x7f800000);
         }
         __syncthreads();
         if (!tid) {
             float next=maximum;
-            for (unsigned i=0;i<64 && base+i<=end;++i) next=fmaxf(next,probabilities[i]);
+            for (unsigned i=0;i<64 && base+i<limit;++i) next=fmaxf(next,probabilities[i]);
             correction=expf(maximum-next);
             maximum=next;
         }
         __syncthreads();
-        if (tid<64) probabilities[tid]=base+tid<=end ? expf(probabilities[tid]-maximum) : 0.0f;
+        if (tid<64) probabilities[tid]=base+tid<limit ? expf(probabilities[tid]-maximum) : 0.0f;
         __syncthreads();
         if (!tid) {
             float sum=0.0f;
@@ -48,18 +55,19 @@ __device__ void nya_attention_portable_body(const float *q,
         }
         if (tid<width) {
             numerator*=correction;
-            for (unsigned i=0;i<64 && base+i<=end;++i)
+            for (unsigned i=0;i<64 && base+i<limit;++i)
                 numerator+=probabilities[i]*values[(base+i)*stride+(unsigned long long)kh*width+tid];
         }
         if (tid+256<width) {
             numerator_high*=correction;
-            for (unsigned i=0;i<64 && base+i<=end;++i)
+            for (unsigned i=0;i<64 && base+i<limit;++i)
                 numerator_high+=probabilities[i]*values[(base+i)*stride+(unsigned long long)kh*width+tid+256];
         }
         __syncthreads();
     }
-    if (tid<width) out[tid]=numerator/denominator;
-    if (tid+256<width) out[tid+256]=numerator_high/denominator;
+    if (tid<width) out[tid]=partitions==1 ? numerator/denominator : numerator;
+    if (tid+256<width) out[tid+256]=partitions==1 ? numerator_high/denominator : numerator_high;
+    if (partitions>1 && !tid) { out[width]=maximum;out[width+1]=denominator; }
 }
 
 extern "C" __global__ void nya_attention_portable_f32(const float *q,
@@ -68,5 +76,16 @@ extern "C" __global__ void nya_attention_portable_f32(const float *q,
     unsigned count, float scale, const unsigned *request)
 {
     nya_attention_portable_body(q,keys,values,out,width,heads,kvheads,window,
-        position,count,scale,request);
+        position,count,scale,request,1);
+}
+
+/* Four independently normalized KV ranges, merged by native stable rescaling.
+   Empty partitions emit (-inf,0,zero numerator), including a one-token prefix. */
+extern "C" __global__ void nya_attention_portable_split_f32(const float *q,
+    const float *keys, const float *values, float *out, unsigned width,
+    unsigned heads, unsigned kvheads, unsigned window, unsigned position,
+    unsigned count, float scale, const unsigned *request)
+{
+    nya_attention_portable_body(q,keys,values,out,width,heads,kvheads,window,
+        position,count,scale,request,4);
 }
