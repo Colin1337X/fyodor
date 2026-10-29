@@ -57,7 +57,7 @@ pending. No fixed statistical maximum may silently overflow.
 
 Configure NYA_ENABLE_PORTABLE_ATTENTION=ON with CUDA enabled, then set
 NYA_CUDA_PORTABLE_ATTENTION=1 at runtime. The initial kernel accepts head widths
-up to 256, GQA, causal batched queries, sliding windows and device request
+up to 512, GQA, causal batched queries, sliding windows and device request
 positions. Other widths and reference execution retain existing kernels.
 NYA_ENABLE_OPTCPP=OFF or a physically absent root optcpp directory removes all
 references to this kernel. No host C++ compiler is enabled. CUDA's existing
@@ -90,3 +90,14 @@ Vulkan: NYA_VULKAN_PORTABLE_ATTENTION=1 selects the original online-softmax
 shader, not Flash-Decoding++. Existing double-oracle tests pass at 2e-6 and the
 TinyLlama full inference test passes. The current Vulkan adapter uploads host
 KV for each call; resident KV and performance optimization remain pending.
+
+## 512-wide compatibility path (2026-10-29)
+
+The original FlashAttention-style tiled online-softmax path now handles widths
+through 512 on CUDA and Vulkan using two accumulator lanes per thread. It still
+launches 256 threads and requires no tensor cores, TMEM, TMA or subgroup-size
+assumptions. Odd widths above 256 exercise the tail. This extends the existing
+opt-in compatibility implementation; it is not upstream FlashAttention-4 AOT
+integration and does not establish AMD runtime support or a decode speedup.
+TurboQuant's native C CPU precision mode is documented in
+`backend/docs/turboquant.md`; the GPU attention providers still consume F32 KV.

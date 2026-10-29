@@ -50,7 +50,7 @@ static int nya_vk_attention(void *opaque,const nya_compute_attention *a)
     nya_vulkan_context *c=opaque;
     const char *setting=getenv("NYA_VULKAN_PORTABLE_ATTENTION");
     if (!setting || strcmp(setting,"1") || !nya_vulkan_active(c) || !a || !a->query || !a->keys || !a->values || !a->output ||
-        !a->batch || !a->heads || !a->kv_heads || !a->width || a->width>256 || a->heads%a->kv_heads ||
+        !a->batch || !a->heads || !a->kv_heads || !a->width || a->width>512 || a->heads%a->kv_heads ||
         a->capacity>UINT32_MAX || a->position>=a->capacity || a->batch>a->capacity-a->position || a->window>UINT32_MAX || !isfinite(a->scale)) return -1;
     if (a->heads>UINT32_MAX/a->width || a->batch>UINT32_MAX/(a->heads*a->width) || a->capacity>UINT32_MAX/(a->kv_heads*a->width)) return -1;
     if (a->batch>SIZE_MAX/sizeof(float)/(a->heads*a->width) ||

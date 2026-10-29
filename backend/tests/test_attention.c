@@ -41,7 +41,7 @@ static int check(const nya_compute_attention *a)
 
 int main(int argc, char **argv)
 {
-    float q[33*4*37], k[65*2*37], v[65*2*37], out[33*4*37+2];
+    static float q[33*4*512], k[65*2*512], v[65*2*512], out[33*4*512+2];
     for (size_t i = 0; i < sizeof(q)/sizeof(q[0]); ++i) q[i] = sinf((float)i*0.13f);
     for (size_t i = 0; i < sizeof(k)/sizeof(k[0]); ++i) { k[i] = cosf((float)i*0.17f); v[i] = sinf((float)i*0.07f); }
     nya_compute_context *c = nya_compute_create_for(argc > 1 ? argv[1] : "cpu");
@@ -57,6 +57,15 @@ int main(int argc, char **argv)
         if ((supported ? result != 0 : result != -1) || (supported && check(&a)) ||
             out[0] != 12345 || out[a.batch*a.heads*a.width+1] != 12345) return 1;
     }
+    /* Odd second tile and Gemma full-attention width, including causal batches. */
+    for (size_t width=257;width<=512;width+=255) {
+        a.width=width;a.position=32;a.batch=3;a.window=17;a.scale=1/sqrtf((float)width);
+        out[0]=out[a.batch*a.heads*a.width+1]=12345;
+        int status=nya_compute_attention_f32(c,&a);
+        if ((supported ? status!=0 : status!=-1) || (supported && check(&a)) ||
+            out[0]!=12345 || out[a.batch*a.heads*a.width+1]!=12345) return 1;
+    }
+    a.width=37;a.position=0;a.batch=1;a.window=0;
     if (nya_compute_attention_f32(c,NULL) != -1 || nya_compute_attention_f32(NULL,&a) != -1) return 1;
     /* Rejection must precede size multiplication or any output write. */
     for (unsigned p = 0; p < 7; ++p) {

@@ -19,7 +19,7 @@ void main() {
     uint stride=shape.kvheads*shape.width;
     uint qoffset=(query*shape.heads+head)*shape.width;
     uint ooffset=(query*shape.heads+head)*shape.width;
-    float numerator=0.0f;
+    float numerator=0.0f, numerator_high=0.0f;
     if (tid == 0) { maximum=uintBitsToFloat(0xff800000u); denominator=0.0f; }
     barrier();
     for (uint base=first; base<=end; base+=64) {
@@ -54,7 +54,13 @@ void main() {
             for (uint i=0;i<64 && base+i<=end;++i)
                 numerator+=probabilities[i]*values[(base+i)*stride+kh*shape.width+tid];
         }
+        if (tid+256<shape.width) {
+            numerator_high*=correction;
+            for (uint i=0;i<64 && base+i<=end;++i)
+                numerator_high+=probabilities[i]*values[(base+i)*stride+kh*shape.width+tid+256];
+        }
         barrier();
     }
     if (tid<shape.width) output_values[ooffset+tid]=numerator/denominator;
+    if (tid+256<shape.width) output_values[ooffset+tid+256]=numerator_high/denominator;
 }
