@@ -77,7 +77,7 @@ extern "C" __global__ void nya_fdpp_combine(const float *q,
     __syncthreads();
     if (retry) {
         nya_attention_portable_body(q,keys,values,out,width,heads,kvheads,
-            window,position,1,scale,request);
+            window,position,1,scale,request,1);
     } else if (tid<width) {
         float sum=0.0f;
         for (unsigned i=0;i<partitions;++i) sum+=p[i*(width+2)+tid];
