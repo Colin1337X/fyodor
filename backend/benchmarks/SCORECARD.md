@@ -229,3 +229,21 @@ score only; other context performance must be remeasured. C17/C23 selected tests
 and real-model boundary comparisons passed, including C17 4K/8K logit checks.
 Default remains off; F32 KV and existing numerical tolerances are unchanged.
 [Evidence and limitations](gemma4-profile-20261029/README.md).
+
+
+### 2026-10-29: Gemma wide-head split, 4K/8K follow-up
+
+Matched F32 KV, 32-token decode, six observations per cell across reverse
+orders; llama.cpp b10809 FA off, RTX 5060 Ti. At 4096 prefix tokens, native
+18.97081 ± 0.01741, wide split 27.89756 ± 0.02347, llama.cpp
+31.16875 ± 0.01708 tok/s: **89.505% of llama.cpp**, +47.055% over native.
+At 8192: native 14.57291 ± 0.00199, wide split 23.98581 ± 0.08605,
+llama.cpp 22.44376 ± 1.20447 tok/s: **106.871%**, +64.592% over native.
+The 8K reference has higher variance; these are descriptive ratios, not
+confidence-bound guarantees. Neither reaches the 125% target.
+One candidate activity was rejected after a competing Thorium GPU process
+appeared; only the missing activities were resumed with identical binaries
+and fresh clean monitoring. Full evidence and qualifications:
+[gemma4-wide-long-20261029](gemma4-wide-long-20261029/README.md).
+TinyLlama short/1K scores remain 110.508% / 129.499%; training is unchanged.
+TurboQuant and portable attention are not enabled in these F32 measurements.
