@@ -40,7 +40,7 @@ typedef struct nya_cuda_plan {
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
-    int use_graphs, split_attention, fuse_gate_up, fuse_qkv, fuse_residual, fuse_rope_pair;
+    int use_graphs, split_attention, wide_split_attention, fuse_gate_up, fuse_qkv, fuse_residual, fuse_rope_pair;
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
@@ -218,6 +218,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     use_fdpp = !c->reference && fdpp_setting && !strcmp(fdpp_setting,"1");
     if (!c->reference && fdpp_setting && !strcmp(fdpp_setting,"short")) use_fdpp = 2;
 #endif
+    const char *wide_split_setting=getenv("NYA_CUDA_WIDE_SPLIT");
+    int wide_split=wide_split_setting && !strcmp(wide_split_setting,"1");
     int has_split_attention = 0;
     int all_tiled = !c->reference;
     for (size_t i = 0; i < m->block_count; ++i) {
@@ -226,10 +228,12 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         if (!m->layers[i].head_dimension || m->layers[i].kv_head_count > SIZE_MAX / m->layers[i].head_dimension) return NULL;
         size_t kv = m->layers[i].kv_head_count * m->layers[i].head_dimension;
         if (kv > maximum_kv) maximum_kv = kv;
-        if (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128) &&
+        if (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128 ||
+            (wide_split && (m->layers[i].head_dimension == 256 || m->layers[i].head_dimension == 512))) &&
             (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256)) has_split_attention = 1;
         if ((use_fdpp && m->layers[i].head_dimension <= 256) ||
-            (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128) &&
+            (split_attention && (m->layers[i].head_dimension == 64 || m->layers[i].head_dimension == 128 ||
+            (wide_split && (m->layers[i].head_dimension == 256 || m->layers[i].head_dimension == 512))) &&
             (!m->layers[i].sliding_window || m->layers[i].sliding_window > 256))) {
             size_t width = m->layers[i].head_dimension+2;
             if (m->layers[i].head_count > SIZE_MAX/width/4) return NULL;
@@ -276,6 +280,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->cuda = c; p->model = m; p->capacity = capacity; p->bytes = total;
     p->batch = 1; p->maximum_batch = batch;
     p->split_attention = has_split_attention;
+    p->wide_split_attention = wide_split;
 #ifdef NYA_FLASH_DECODING_PP
     p->use_fdpp = use_fdpp;
     const char *fdpp_trace = getenv("NYA_CUDA_FDPP_TRACE");
@@ -845,11 +850,11 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             RUN(plan_grid_shared(p, p->attention_prefill, heads, (count+7)/8, 256, 1,
                 73*width*(unsigned)sizeof(float), tiled));
             ++p->stats.tiled_attention_calls;
-        } else if (p->split_attention && graph_index && (width == 64 || width == 128) && (!window || window > 256)) {
+        } else if (p->split_attention && graph_index && (width == 64 || width == 128 || (p->wide_split_attention && (width == 256 || width == 512))) && (!window || window > 256)) {
             attention[3] = &p->attention_parts;
             RUN(plan_grid(p, p->attention_split, heads, 4, 256, 1, attention));
             void *combine[] = {&p->attention_parts, &p->norm, &width};
-            RUN(plan_grid(p, p->attention_combine, heads, 1, 128, 1, combine));
+            RUN(plan_grid(p, p->attention_combine, heads, 1, width > 128 ? width : 128, 1, combine));
         } else RUN(plan_grid(p, p->attention, heads, count, 256, 1, attention));
         int add_attention = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
             !c->reference && (w->attention_output->type == 12 || w->attention_output->type == 14);
