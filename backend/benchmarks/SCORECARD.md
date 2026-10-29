@@ -247,3 +247,19 @@ and fresh clean monitoring. Full evidence and qualifications:
 [gemma4-wide-long-20261029](gemma4-wide-long-20261029/README.md).
 TinyLlama short/1K scores remain 110.508% / 129.499%; training is unchanged.
 TurboQuant and portable attention are not enabled in these F32 measurements.
+
+
+### 2026-10-29: portable online attention decode experiment
+
+Matched Gemma 12B F32-KV runs passed all 12 environment gates. Unpartitioned
+portable attention delivered 84.6682% of llama.cpp at prefix 0, but only
+51.4410% at prefix 1024 (36.02% below native split attention). Do not promote.
+The matched native controls were 84.3496% and 80.3966%, respectively. See
+[results](gemma4-portable-decode-20261029/README.md) for pooled deviations.
+
+A four-part portable prototype improves its own kernel latency 3.3-3.6x;
+it beats the native split kernel only at the tested 512-wide 8K shape, by
+6.90% latency. This is warm-bank microbenchmark evidence, not a model win.
+Split and unsplit double oracles pass unchanged tolerance; CUDA memcheck,
+racecheck, synccheck and initcheck pass for both. Runtime dispatch and accepted
+performance remain unchanged. [Evidence](portable-split-20261029/README.md).
