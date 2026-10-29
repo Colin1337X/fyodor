@@ -216,3 +216,16 @@ CPU/CUDA small-prefix parity, image/audio projector smoke and four-token MTP
 greedy parity passed. Nomic MoE embedding execution is unsupported in this build.
 These Gemma numbers supersede no TinyLlama or training result and do not meet
 125%. See [method, deviations and limitations](gemma4-local-20261029/README.md).
+
+
+## 2026-10-29: opt-in wide-head split attention
+
+`NYA_CUDA_WIDE_SPLIT=1` extends the existing CUDA split-attention dispatch to
+256/512-wide heads. Gemma 4 12B at a 1024-token prefix improves from 25.8363 to
+33.8580 tok/s (**31.0486%**); llama.cpp measures 42.0766 tok/s, yielding
+**80.4676% of llama.cpp**, still below parity/125%. Six observations per cell,
+forward/reverse orders, all six monitoring gates passed. This updates the 1K
+score only; other context performance must be remeasured. C17/C23 selected tests
+and real-model boundary comparisons passed, including C17 4K/8K logit checks.
+Default remains off; F32 KV and existing numerical tolerances are unchanged.
+[Evidence and limitations](gemma4-profile-20261029/README.md).
