@@ -35,3 +35,16 @@ Partitioning is 3.3-3.6 times faster than the unpartitioned portable path, but
 still slower than native split attention except at the tested 8K shape (6.90%
 lower kernel latency). Full-model validation and matched timing are required
 before integrating a dispatch policy. No AMD or Vulkan split execution claim.
+
+## Combined runtime regression found and fixed
+
+A subsequent real-model runtime check found that the new helper argument had
+not been propagated to `flash_decoding_pp.cu`'s stable retry path. The isolated
+oracle compiled only portable attention and therefore missed this caller;
+the assembled runtime failed NVRTC compilation and selected CPU fallback.
+The retry now explicitly requests one partition. The direct oracle now compiles
+all four optional attention source files together, matching their runtime
+ordering. Earlier isolated sanitizer results remain valid for the tested
+kernels, but did not prove runtime integration. Real-model resident execution
+was rechecked after the fix; combined FDPP regression results are in
+`../gemma4-qkv-20261029`.

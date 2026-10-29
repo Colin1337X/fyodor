@@ -37,6 +37,9 @@ def read(address,size):
  host=C.create_string_buffer(size);check(download(host,Q(address),size));return host.raw
 source=b'\n'.join((root/'CUDA'/f).read_bytes() for f in ('matvec.cu','gemm.cu','resident.cu'))
 source+=b'\n'+(root/'optcpp/attention/portable_f32.cu').read_bytes()
+# Compile the actual optional attention chain, including the FDPP retry caller.
+for name in ('flash_decoding_pp.cu','flash_decoding_pp_warp.cu','flash_decoding_pp_specialized.cu'):
+ source+=b'\n'+(root/'optcpp/attention'/name).read_bytes()
 program=P();module=P()
 check(create(C.byref(program),source,b'gate_pair_test.cu',0,None,None))
 opts=[f'--gpu-architecture=compute_{major}{minor}'.encode(),b'--std=c++11',b'--fmad=true',b'-DNYA_CUDA_FAST_MATH=1']
