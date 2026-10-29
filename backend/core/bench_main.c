@@ -127,8 +127,8 @@ int main(int argc, char **argv)
         const char *implementations[]={"native","cublas-f32","cutlass-3xtf32","rocblas-f32","mlx-f32"};
         const char *implementation=memory.external_matmul_kind<sizeof(implementations)/sizeof(implementations[0]) ?
             implementations[memory.external_matmul_kind] : "unknown";
-        printf(",\"kv_type\":\"f32\",\"prefill_implementation\":\"%s\",\"external_matmul_bytes\":%zu",
-            implementation, memory.external_matmul_bytes);
+        printf(",\"kv_type\":\"%s\",\"prefill_implementation\":\"%s\",\"external_matmul_bytes\":%zu",
+            nya_llm_session_kv_type(s), implementation, memory.external_matmul_bytes);
         printf(",\"model_bytes\":%llu,\"architecture\":\"%s\",\"layers\":%u,\"embedding\":%u,\"quant_tensor_counts\":{",
             (unsigned long long)file_bytes, c->is_gemma ? "gemma4" : "llama", c->block_count, c->embedding_length);
         int comma = 0;

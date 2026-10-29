@@ -1,5 +1,6 @@
 #include "llm_internal.h"
 #include "runtime.h"
+#include "turboquant.h"
 
 #include <float.h>
 #include <math.h>
@@ -18,6 +19,9 @@ typedef struct nya_llm_run_state {
     float *query;
     float *attention;
     float *logits;
+    nya_turboquant_cache **turboquant;
+    size_t turboquant_layers;
+    unsigned turboquant_bits;
     float *key_cache;
     float *value_cache;
     float *rope_frequencies;
@@ -143,6 +147,27 @@ static int nya_llm_state_create(
     size_t index;
 
     memset(state, 0, sizeof(*state));
+    const char *kv = getenv("NYA_KV_TYPE");
+    if (kv && *kv && strcmp(kv,"f32")) {
+        if (!strcmp(kv,"turboquant3")) state->turboquant_bits=3;
+        else if (!strcmp(kv,"turboquant4")) state->turboquant_bits=4;
+        else { nya_llm_cpu_error(error,error_capacity,"unsupported NYA_KV_TYPE"); return -1; }
+        if (strcmp(nya_compute_name(context->compute),"cpu") || context->is_assistant) {
+            nya_llm_cpu_error(error,error_capacity,"TurboQuant currently requires the CPU text backend; resident GPU and MTP are unsupported");return -1;
+        }
+        state->turboquant_layers=context->block_count;
+        state->turboquant=calloc(context->block_count,sizeof(*state->turboquant));
+        if (!state->turboquant) return -1;
+        for (size_t layer=0;layer<context->block_count;++layer) {
+            const nya_llm_layer *w=&context->layers[layer];
+            if (w->kv_source!=layer) continue;
+            state->turboquant[layer]=nya_turboquant_create(w->head_dimension,w->kv_head_count,
+                sequence_capacity,state->turboquant_bits,UINT64_C(0x66796f646f72)+layer);
+            if (!state->turboquant[layer]) {
+                nya_llm_cpu_error(error,error_capacity,"TurboQuant cache allocation or shape unsupported (head width 32..512)");return -1;
+            }
+        }
+    }
     dimension = context->embedding_length;
     hidden = context->maximum_hidden_length;
     vocabulary = context->tokenizer.vocabulary_size;
@@ -152,7 +177,7 @@ static int nya_llm_state_create(
             rope_pairs = context->layers[index].head_dimension / 2;
     if (sequence_capacity == 0 ||
         nya_llm_cpu_product(sequence_capacity, sizeof(float), &attention_bytes) != 0 ||
-        nya_llm_cpu_product(context->cache_width, sequence_capacity, &cache_count) != 0 ||
+        nya_llm_cpu_product(context->cache_width, state->turboquant ? 1 : sequence_capacity, &cache_count) != 0 ||
         nya_llm_cpu_product(cache_count, sizeof(float), &cache_bytes) != 0 ||
         dimension > SIZE_MAX / sizeof(float) || hidden > SIZE_MAX / sizeof(float) ||
         vocabulary > SIZE_MAX / sizeof(float)) {
@@ -233,13 +258,13 @@ static int nya_llm_state_create(
        the complete reference path rather than falling back matrix by matrix. */
     const char *reference = getenv("NYA_INFERENCE_REFERENCE");
     state->reference_only = reference != NULL && strcmp(reference, "1") == 0;
-    if (!state->reference_only && (nya_compute_capabilities(context->compute) & NYA_COMPUTE_RESIDENT)) {
+    if (!state->turboquant && !state->reference_only && (nya_compute_capabilities(context->compute) & NYA_COMPUTE_RESIDENT)) {
         state->device_tokens = malloc(sequence_capacity * sizeof(uint32_t));
         if (state->device_tokens != NULL)
             state->device_plan = nya_compute_plan_create(context->compute, context, sequence_capacity);
         if (state->device_plan == NULL) state->reference_only = 1;
     }
-    if (!state->reference_only && !state->device_plan &&
+    if (!state->turboquant && !state->reference_only && !state->device_plan &&
         (nya_compute_capabilities(context->compute) & NYA_COMPUTE_MATMUL) &&
         !context->is_assistant && !context->expert_count && !context->per_layer_embedding_length) {
         size_t batch = 32;
@@ -278,6 +303,8 @@ static void nya_llm_state_free(nya_llm_run_state *state)
     free(state->query);
     free(state->attention);
     free(state->logits);
+    for (size_t i=0;state->turboquant && i<state->turboquant_layers;++i) nya_turboquant_free(state->turboquant[i]);
+    free(state->turboquant);
     free(state->key_cache);
     free(state->value_cache);
     free(state->rope_frequencies);
@@ -467,7 +494,7 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
         const nya_llm_layer *w = &c->layers[layer];
         size_t hd = w->head_dimension, heads = w->head_count, kv_heads = w->kv_head_count;
         size_t qdim = heads * hd, kvdim = kv_heads * hd, h = w->hidden_length;
-        size_t offset = w->cache_offset * s->sequence_capacity;
+        size_t offset = w->cache_offset * (s->turboquant ? 1 : s->sequence_capacity);
         const float *read_keys = s->key_cache, *read_values = s->value_cache;
         size_t attention_end = position;
         if (w->sliding_window != 0 && s->attention_extent > position) attention_end = s->attention_extent;
@@ -482,8 +509,8 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
         const float *co = s->rope_cosines + rope_offset, *si = s->rope_sines + rope_offset;
         /* Do not even form out-of-bounds pointers into the assistant's empty
            KV allocation: pointer arithmetic beyond an object is itself UB. */
-        float *key = c->is_assistant ? NULL : s->key_cache + offset + position * kvdim;
-        float *value = c->is_assistant ? NULL : s->value_cache + offset + position * kvdim;
+        float *key = c->is_assistant ? NULL : s->key_cache + offset + (s->turboquant ? 0 : position * kvdim);
+        float *value = c->is_assistant ? NULL : s->value_cache + offset + (s->turboquant ? 0 : position * kvdim);
         /* Gemma's vision overlay extends the causal upper boundary to the end
            of this image; the local window supplies only the lower boundary.
            MTP instead reads the final window of its fixed borrowed prefix. */
@@ -504,6 +531,8 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
                 nya_llm_gemma_rope(key, kv_heads, hd, co, si);
             } else nya_llm_rope(key, kv_heads, hd, co, si);
         }
+        if (s->turboquant && w->kv_source==layer &&
+            nya_turboquant_store(s->turboquant[layer],position,key,value)) return -1;
         if (s->prepare_kv_only) continue;
         if (c->is_gemma) nya_llm_gemma_rope(s->query, heads, hd, co, si);
         else nya_llm_rope(s->query, heads, hd, co, si);
@@ -511,8 +540,13 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
             s->sequence_capacity,attention_end,w->sliding_window,c->is_gemma ? 1 : 1/sqrtf((float)hd)};
         /* Multimodal bidirectional spans and borrowed MTP prefixes have
            different window anchors from the causal backend descriptor. */
-        int attention_ready = !s->reference_only && !c->is_assistant && attention_end == position &&
+        int attention_ready = !s->turboquant && !s->reference_only && !c->is_assistant && attention_end == position &&
             !nya_compute_attention_f32(c->compute,&attention);
+        if (s->turboquant) {
+            if (nya_turboquant_attention(s->turboquant[w->kv_source],s->query,heads,position,
+                    w->sliding_window,attention.scale,s->normalized)) return -1;
+            attention_ready=1;
+        }
         if (!attention_ready)
         for (size_t head = 0; head < heads; ++head) {
             const float *query = s->query + head * hd;
@@ -634,6 +668,9 @@ static int nya_llm_prefill(const nya_llm_context *c, nya_llm_run_state *s,
         if (batched != 1) return batched;
         for (size_t i = 0; i < count; ++i) if (nya_llm_forward(c, s, tokens[i], i, i + 1 == count) != 0) return -1;
         return 0;
+    }
+    if (s->turboquant) {
+        nya_llm_cpu_error(error,capacity,"TurboQuant multimodal prompts are not yet supported");return -1;
     }
     /* Vision overlays need future image KV entries and remain on the validated
        layer-first path until the device planner supports that attention mask. */
@@ -761,9 +798,15 @@ const float *nya_llm_session_logits(const nya_llm_session *s)
     return s != NULL && s->has_logits && !s->failed ? s->state.logits : NULL;
 }
 
+const char *nya_llm_session_kv_type(const nya_llm_session *s)
+{
+    if (!s) return "unavailable";
+    return s->state.turboquant_bits==3 ? "turboquant3" : s->state.turboquant_bits==4 ? "turboquant4" : "f32";
+}
 const char *nya_llm_session_execution(const nya_llm_session *s)
 {
     if (s == NULL) return "unavailable";
+    if (s->state.turboquant) return "cpu-turboquant-reference";
     if (s->state.device_plan) return "resident";
     if (s->state.reference_only || !nya_compute_capabilities(s->context->compute)) return "cpu-reference";
     if (!strcmp(nya_compute_name(s->context->compute), "cpu")) return "cpu-optimized";
@@ -775,6 +818,11 @@ void nya_llm_session_stats(const nya_llm_session *s, nya_compute_stats *stats)
     if (s != NULL && stats != NULL && s->state.device_plan == NULL) {
         nya_compute_context_stats(s->context->compute,stats);
         stats->prefill_batch = s->state.prefill_batch;
+        if (s->state.turboquant) {
+            stats->kv_bytes=0;
+            for (size_t i=0;i<s->state.turboquant_layers;++i)
+                stats->kv_bytes+=nya_turboquant_bytes(s->state.turboquant[i]);
+        }
     }
 }
 
@@ -787,6 +835,11 @@ int nya_llm_session_read_kv(nya_llm_session *s, size_t layer, size_t position,
     size_t width = w->head_dimension * w->kv_head_count;
     if (!width || count > SIZE_MAX/width || elements != count*width || elements > SIZE_MAX/sizeof(float)) return -1;
     if (s->state.device_plan) return nya_compute_plan_read_kv(s->state.device_plan,layer,position,count,keys,values,elements);
+    if (s->state.turboquant) {
+        for (size_t i=0;i<count;++i)
+            if (nya_turboquant_read(s->state.turboquant[w->kv_source],position+i,keys+i*width,values+i*width)) return -1;
+        return 0;
+    }
     size_t offset = w->cache_offset*s->state.sequence_capacity+position*width;
     memcpy(keys,s->state.key_cache+offset,elements*sizeof(float));
     memcpy(values,s->state.value_cache+offset,elements*sizeof(float));
@@ -1176,6 +1229,10 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
         !isfinite(r->temperature) || r->temperature < 0.0f || r->temperature > 5.0f ||
         !isfinite(r->top_p) || r->top_p <= 0.0f || r->top_p > 1.0f) {
         nya_llm_cpu_error(error, error_capacity, "invalid speculative generation request"); return -1;
+    }
+    const char *kv_mode=getenv("NYA_KV_TYPE");
+    if (kv_mode && *kv_mode && strcmp(kv_mode,"f32")) {
+        nya_llm_cpu_error(error,error_capacity,"TurboQuant speculative/MTP generation is not yet supported");return -1;
     }
     if (!nya_llm_tokenizers_match(&c->tokenizer, &draft->tokenizer, draft->is_assistant)) {
         nya_llm_cpu_error(error, error_capacity, "target and draft tokenizers are incompatible"); return -1;

@@ -838,7 +838,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         } else
 #endif
 #ifdef NYA_PORTABLE_ATTENTION
-        if (p->use_portable_attention && !c->reference && width <= 256) {
+        if (p->use_portable_attention && !c->reference && width <= 512) {
             unsigned batch_count=(unsigned)count;
             void *portable[]={&p->q,&keys,&values,&p->norm,&width,&nh,&nk,&window,&end,&batch_count,&scale,&p->active_request};
             RUN(plan_grid(p,p->portable_attention,heads,count,256,1,portable));

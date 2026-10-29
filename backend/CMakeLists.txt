@@ -80,7 +80,7 @@ endfunction()
 # Compile the model engine once, independently from HTTP. The server and tests
 # reuse the same objects, so neither can drift into a different implementation.
 add_library(nya-engine STATIC
-    core/cpu_backend.c core/cpu_kernels.c core/llm_quant.c core/thread.c core/vendor.c
+    core/cpu_backend.c core/cpu_kernels.c core/turboquant.c core/llm_quant.c core/thread.c core/vendor.c
     core/compute.c core/execution.c core/generation.c core/file.c core/format.c
     core/format_gguf.c core/format_onnx.c core/format_safetensors.c
     core/llm_cpu.c core/llm_gguf.c core/multimodal.c core/model.c core/runtime.c core/training.c core/train_executor.c core/training_device.c core/training_indices.c core/training_session.c core/pretraining.c)
@@ -287,6 +287,16 @@ if(BUILD_TESTING)
     add_executable(nya-test-inference tests/test_inference.c)
     add_executable(nya-test-quant-kernels tests/test_quant_kernels.c)
     add_executable(nya-test-attention tests/test_attention.c)
+    add_executable(nya-test-turboquant tests/test_turboquant.c)
+    nya_target_policy(nya-test-turboquant)
+    target_link_libraries(nya-test-turboquant PRIVATE nya-engine)
+    add_test(NAME turboquant COMMAND nya-test-turboquant)
+    add_executable(nya-test-turboquant-inference tests/test_turboquant_inference.c)
+    nya_target_policy(nya-test-turboquant-inference)
+    target_include_directories(nya-test-turboquant-inference PRIVATE core)
+    target_link_libraries(nya-test-turboquant-inference PRIVATE nya-engine)
+    add_test(NAME turboquant-inference COMMAND nya-test-turboquant-inference)
+    set_tests_properties(turboquant-inference PROPERTIES ENVIRONMENT "NYA_COMPUTE=cpu;NYA_CPU_THREADS=2" TIMEOUT 120)
     add_executable(nya-test-kv-precision tests/test_kv_precision.c)
     nya_target_policy(nya-test-kv-precision)
     target_link_libraries(nya-test-kv-precision PRIVATE nya-engine)

@@ -187,6 +187,7 @@ void nya_llm_session_reset(nya_llm_session *session);
 int nya_llm_session_run(nya_llm_session *session, const uint32_t *tokens, size_t count,
     int logits_each_token);
 const float *nya_llm_session_logits(const nya_llm_session *session);
+const char *nya_llm_session_kv_type(const nya_llm_session *session);
 const char *nya_llm_session_execution(const nya_llm_session *session);
 void nya_llm_session_stats(const nya_llm_session *session, nya_compute_stats *stats);
 int nya_llm_session_read_kv(nya_llm_session *session, size_t layer, size_t position,

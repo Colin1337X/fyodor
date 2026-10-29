@@ -16,7 +16,7 @@ __device__ void nya_attention_portable_body(const float *q,
     out+=((unsigned long long)query*heads+head)*width;
     __shared__ float dots[256], probabilities[64], correction, denominator;
     __shared__ float maximum;
-    float numerator=0.0f;
+    float numerator=0.0f, numerator_high=0.0f;
     if (!tid) { maximum=-__int_as_float(0x7f800000); denominator=0.0f; }
     __syncthreads();
     for (unsigned long long base=first; base<=end; base+=64) {
@@ -51,9 +51,15 @@ __device__ void nya_attention_portable_body(const float *q,
             for (unsigned i=0;i<64 && base+i<=end;++i)
                 numerator+=probabilities[i]*values[(base+i)*stride+(unsigned long long)kh*width+tid];
         }
+        if (tid+256<width) {
+            numerator_high*=correction;
+            for (unsigned i=0;i<64 && base+i<=end;++i)
+                numerator_high+=probabilities[i]*values[(base+i)*stride+(unsigned long long)kh*width+tid+256];
+        }
         __syncthreads();
     }
     if (tid<width) out[tid]=numerator/denominator;
+    if (tid+256<width) out[tid+256]=numerator_high/denominator;
 }
 
 extern "C" __global__ void nya_attention_portable_f32(const float *q,
