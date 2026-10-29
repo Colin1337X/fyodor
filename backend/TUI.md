@@ -74,3 +74,8 @@ follow from these tests. All three TUI tests pass in C17, C23 and ASan/UBSan.
 This is an initial resource workspace. Chat, models, training, evaluations,
 benchmarks, nodes, Explore, Writing/Dataset editors, agents, settings, command
 search/history, Unicode rendering and shared themes remain work in progress.
+
+Model inspection and training telemetry are available in the same executable via
+`fyodor-tui --monitor --model PATH` or `fyodor-tui --monitor --metrics CSV`.
+See [monitor usage](docs/tui.md). Resource browsing remains the default; shared
+navigation and semantic themes for the monitor are still pending.

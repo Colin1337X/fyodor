@@ -1,6 +1,13 @@
 #include "fyodor_client.h"
 #ifdef FYODOR_TUI_MAIN
 #include "fyodor_tui.h"
+#include "../tui/tui.h"
+#include <string.h>
+static int terminal_run(int argc,char **argv)
+{
+    if(argc>1 && !strcmp(argv[1],"--monitor")) return fyodor_monitor_run(argc-1,argv+1);
+    return fyodor_tui_run(argc,argv);
+}
 #endif
 #include <stdint.h>
 #include <stdlib.h>
@@ -22,7 +29,7 @@ int wmain(int argc,wchar_t **wide)
     }
     if(_setmode(_fileno(stdin),_O_BINARY)==-1||_setmode(_fileno(stdout),_O_BINARY)==-1) goto cleanup;
 #ifdef FYODOR_TUI_MAIN
-    result=fyodor_tui_run(argc,argv);
+    result=terminal_run(argc,argv);
 #else
     result=fyodor_command_run(argc,argv,stdin,stdout,stderr);
 #endif
@@ -33,7 +40,7 @@ cleanup:
 #else
 int main(int argc,char **argv) {
 #ifdef FYODOR_TUI_MAIN
-    return fyodor_tui_run(argc,argv);
+    return terminal_run(argc,argv);
 #else
     return fyodor_command_run(argc,argv,stdin,stdout,stderr);
 #endif

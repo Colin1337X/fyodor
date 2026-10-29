@@ -239,5 +239,5 @@ int fyodor_tui_run(int argc,char **argv)
     }
     fyodor_resource_summaries_free(state->items,state->count); fyodor_store_close(state->store); free(state); return code;
 usage:
-    fputs("Usage: fyodor-tui --store PATH --namespace NAME [--plain] [--theme ID] [--color auto|truecolor|256|16|none]\n       fyodor-tui --themes\n",stderr); return 2;
+    fputs("Usage: fyodor-tui --store PATH --namespace NAME [--plain] [--theme ID] [--color auto|truecolor|256|16|none]\n       fyodor-tui --themes\n       fyodor-tui --monitor [--model PATH] [--metrics CSV] [--snapshot]\n",stderr); return 2;
 }
