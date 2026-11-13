@@ -28,6 +28,9 @@ uint64_t nya_runtime_uptime_seconds(const nya_runtime *runtime);
 /* A process-independent monotonic clock for elapsed times and I/O deadlines. */
 uint64_t nya_runtime_monotonic_milliseconds(void);
 
+/* High-resolution monotonic seconds for diagnostics; zero on clock failure. */
+double nya_runtime_monotonic_seconds(void);
+
 /* Fill a buffer with random bytes supplied by the operating system. */
 int nya_runtime_random_bytes(void *buffer, size_t length);
 

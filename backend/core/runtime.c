@@ -11,6 +11,14 @@
 #include <bcrypt.h>
 #endif
 
+#include "train_clock.h"
+
+/* Keep platform clock headers inside this implementation unit. */
+double nya_runtime_monotonic_seconds(void)
+{
+    return tr_seconds();
+}
+
 /* Initialize the tiny process runtime. */
 int nya_runtime_init(nya_runtime *runtime)
 {

@@ -56,8 +56,9 @@ C17 and C23 each pass all nine selected CPU/Vulkan/CUDA generation, architecture
 MTP ring/linear, fallback and speculative tests, with profiling enabled. Existing
 MTP checks cover greedy windows 1..8 and sixteen sampled seeds against independent
 host execution. The CPU architecture test also passes under ASan/UBSan with
-sampled MTP comparisons enabled. Logs are retained. Matched real-model B512 timing
-and cross-revision parity are still being collected; no final improvement claimed.
+sampled MTP comparisons enabled. Logs are retained. Matched real-model B512 timing and cross-revision parity are complete. All 48
+requests (two revisions, two contexts, three rounds, four modes) match their
+ordinary reference, and reference text matches across revisions.
 
 ## Superseded B8 diagnostic
 
@@ -100,3 +101,43 @@ The standalone weight-reuse experiment in ../small-batch-reuse-20261113 has
 not been compiled or run. It is outside runtime dispatch and the queued candidate
 build. Its correctness and profiling jobs must wait until the existing timing
 sequence exits; Python syntax checks alone do not validate its CUDA behavior.
+
+## Completed matched B512 results
+
+Mean decode-loop milliseconds, two warmed observations per cell. Initial round
+excluded; full observations and sample standard deviations in summary.json.
+This is diagnostic desktop timing, not an accepted llama.cpp comparison.
+
+| Context | Mode | Before ms | After ms | Observed speed change |
+| --- | --- | ---: | ---: | ---: |
+| short | ordinary | 757.027 | 758.072 | -0.138% |
+| short | mtp-serial2 | 905.028 | 855.298 | +5.814% |
+| short | mtp-batch2 | 1136.854 | 1089.441 | +4.352% |
+| short | mtp-batch4 | 1285.692 | 1254.843 | +2.458% |
+| long | ordinary | 935.921 | 935.714 | +0.022% |
+| long | mtp-serial2 | 1209.234 | 1115.543 | +8.399% |
+| long | mtp-batch2 | 1784.089 | 1693.774 | +5.332% |
+| long | mtp-batch4 | 1818.948 | 1757.924 | +3.471% |
+
+The unchanged ordinary path is the negative control and stays within 0.14%.
+Assistant forwards fall from 33 to 22 for window 2 and 40 to 32 for window 4.
+MTP still trails ordinary generation on this workload. Removing discarded work
+is useful but does not establish a speculative-decoding win or meet the 125%
+llama.cpp goal. Larger sampled/quality studies and uncontaminated comparisons
+remain outstanding; two repetitions do not establish broad workload performance.
+
+## Clock header isolation correction
+
+The first profiler included train_clock.h directly from llm_cpu.c. A later full
+physical-removal build exposed Windows interface-macro leakage into the training
+graph test, which includes that implementation file. The clock is now exposed as
+nya_runtime_monotonic_seconds through the plain C runtime header; only runtime.c
+includes the platform clock helper. Its QPC/monotonic implementation is unchanged.
+The completed probe binaries retain their recorded hashes and timing semantics.
+
+The corrected tree passes all 82 registered physical-removal tests (four expected
+unavailable ROCm/MLX hardware skips), plus train/export/infer. Initial failure and
+fixed logs are retained in ../small-batch-reuse-20261113/physical-removal*.log.
+Three targeted tests each in C17/C23 pass with profiling enabled, including the
+training graph interface; clock-api-*.log records them. This correction changes
+header isolation, not model math, and no performance score is promoted.
