@@ -179,8 +179,14 @@ int tui_inspect(tui_state *s)
     FILE *f=nya_file_open_read(s->model_path);
     if (!f) {snprintf(s->status,sizeof(s->status),"Cannot open model file");return -1;}
     int failed=nya_file_regular_size(f,&s->model_bytes);fclose(f);
-    if (failed || nya_format_inspect(s->model_path,s->model_bytes,&s->model)!=NYA_FORMAT_OK) {
-        snprintf(s->status,sizeof(s->status),"Model container is invalid, unsupported, or exceeds inspection limits");return -1;
+    nya_format_result result=failed?NYA_FORMAT_IO_ERROR:nya_format_inspect(s->model_path,s->model_bytes,&s->model);
+    if (result!=NYA_FORMAT_OK) {
+        const char *message="Model container is malformed or truncated";
+        if(result==NYA_FORMAT_UNSUPPORTED) message="Model container format or version is not supported";
+        else if(result==NYA_FORMAT_RESOURCE_LIMIT) message="Model container exceeds inspection resource limits";
+        else if(result==NYA_FORMAT_IO_ERROR) message="Cannot read model file; it may have changed during inspection";
+        s->model_bytes=0;
+        snprintf(s->status,sizeof(s->status),"%s",message);return -1;
     }
     s->model_valid=1;snprintf(s->status,sizeof(s->status),"Container inspected. No inference context or GPU allocation created.");return 0;
 }

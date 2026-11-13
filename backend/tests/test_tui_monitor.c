@@ -14,6 +14,19 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* Surface parser failures without retaining earlier model information. */
+    CHECK(strlen(argv[1])<sizeof(s.model_path));strcpy(s.model_path,argv[1]);
+    CHECK(!write_csv(argv[1],"unrecognized container"));
+    s.model_valid=1;s.model.tensor_count=99;s.model_bytes=999;
+    CHECK(tui_inspect(&s)<0 && strstr(s.status,"not supported"));
+    CHECK(!s.model_valid && !s.model.tensor_count && !s.model_bytes);
+    CHECK(!write_csv(argv[1],"GGUF"));
+    CHECK(tui_inspect(&s)<0 && strstr(s.status,"malformed or truncated"));
+    CHECK(!s.model_valid && !s.model.tensor_count && !s.model_bytes);
+    CHECK(!remove(argv[1]));
+    CHECK(tui_inspect(&s)<0 && strstr(s.status,"Cannot open"));
+    CHECK(!s.model_valid && !s.model.tensor_count && !s.model_bytes);
+    tui_init(&s);
     /* Editing shortcuts preserve UTF-8 boundaries, recall, and execution state. */
     CHECK(send(&s,"training")==TUI_NONE);tui_key(&s,':');
     tui_key(&s,'x');tui_key(&s,' ');tui_key(&s,0xac00);tui_key(&s,0x1f600);
