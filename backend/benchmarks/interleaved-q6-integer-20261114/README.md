@@ -35,3 +35,23 @@ finite coefficient/sign edge cases, real Compute Sanitizer validation, paired
 kernel timing, and model-level parity/timing. Do not admit these kernels based
 on compilation or the earlier coefficient proof. Q4's separate candidate and
 its pending tests remain unchanged. No Q6 speedup is claimed.
+
+## Prepared raw sweep
+
+`check_kernel.py` prepares 712 cases: both batch widths over six shapes (three
+small row tails and the three profiled Q6 shapes), plus all 350 combinations of
+fourteen finite half patterns, five signed scales and five signed quantized
+values at 256 columns/nine rows for each width. Scale/value sets include both
+signs, zero and extrema. The large vocabulary matrix is 3840 by 262144.
+
+Input interleaving is checked against a CPU transpose with guards. Existing
+interleaved and candidate outputs must match native small-batch bytes and guards.
+Small cases additionally retain the established float64 error bound of 2e-6
+absolute-product sum plus 1e-6. The helper compiles both batch widths together;
+source and harness hashes plus partial failure evidence are retained.
+
+The script checks integrated sanitizer success and completed native generation
+before its GPU-creating helper import. Syntax checking and the live-workload
+negative preflight passed without creating an oracle. The sweep has NOT run.
+`--memcheck` only selects the output filename; an actual Compute Sanitizer
+invocation and terminal zero-error log are required separately.
