@@ -17,6 +17,7 @@ settings.update(NYA_CUDA_BATCH='512',NYA_CUDA_RING_KV='1',NYA_CUDA_SMALL_BATCH='
 settings.update(NYA_CUDA_SMALL_BATCH_REUSE=os.environ.get('NYA_CUDA_SMALL_BATCH_REUSE','0'),NYA_CUDA_MTP_WIDE_VALUE=os.environ.get('NYA_CUDA_MTP_WIDE_VALUE','0'))
 settings['NYA_CUDA_WIDE_BATCH']=os.environ.get('NYA_CUDA_WIDE_BATCH','0')
 settings['NYA_SPECULATIVE_EARLY_REJECT']=os.environ.get('NYA_SPECULATIVE_EARLY_REJECT','0')
+settings['NYA_CUDA_BATCH_LOGITS']=os.environ.get('NYA_CUDA_BATCH_LOGITS','0')
 env=os.environ.copy();env.update(settings)
 exe=root/(sys.argv[2] if len(sys.argv)>2 else 'build-cuda/mtp-cost.exe')
 meta={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'environment':settings,'gate_passed':accepted,'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in [root/'backend/core/llm_cpu.c',Path(__file__),Path(__file__).with_name('model.c')]},'runs':[]}
