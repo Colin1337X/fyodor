@@ -96,3 +96,18 @@ The census is static PTX, not executed instruction counts, final SASS, physical
 register allocation, occupancy, numerical proof or timing. Keep the candidate
 unintegrated until the raw/model checks and paired measurements establish value.
 The JSON retains both opcode inventories and virtual-register declarations.
+
+## Prepared sanitizer launcher
+
+`run_memcheck.py` runs the 207-case sweep under the actual Compute Sanitizer
+executable with `--tool memcheck --error-exitcode 99`. It waits for the integrated
+sanitizer audit and ordinary raw oracle before launch, checks matching source
+and harness hashes, and refuses existing evidence. It retains separate stdout
+and stderr, the child exit code, elapsed time, source/tool hashes and raw result
+hashes. Success requires exit zero, exactly one zero-error summary across both
+streams, complete byte parity and guards, and unchanged inputs.
+
+Five offline tests cover both summary streams, failed/invalid exits, missing,
+nonzero or duplicate summaries, incomplete sweeps and failed guards. The pending
+audit preflight was verified to reject launch without creating output files.
+This launcher has not executed a GPU test and does not establish performance.
