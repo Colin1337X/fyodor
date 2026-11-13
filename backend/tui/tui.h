@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #define TUI_HISTORY 192
+#define TUI_COMMAND_HISTORY 16
 #define TUI_WIDTH 240
 #define TUI_HEIGHT 80
 typedef struct tui_sample {
@@ -16,6 +17,9 @@ typedef struct tui_sample {
 } tui_sample;
 typedef struct tui_state {
     char model_path[1024], metrics_path[1024], status[256], command[1100];
+    char commands[TUI_COMMAND_HISTORY][1100], command_draft[1100];
+    size_t commands_count, command_cursor;
+    int draft_overflow;
     nya_format_info model;
     uint64_t model_bytes;
     int model_valid, view, help, editing, paused, quit, overflow, chart;

@@ -294,3 +294,13 @@ short-context improvement. Keep it opt-in. The freed KV allocation enables packe
 gate/up copies for all 48 layers instead of 11. Accepted Gemma scores remain
 85.6103% short / 106.8707% at 8K; the 125% short-and-long target is unmet.
 [Commands, deviations, process cleanup and environment evidence](gemma4-ring-timing-20261113/README.md).
+
+## 2026-11-13 wide-value decode diagnostics (not accepted)
+
+
+| Prefix | Prior ring tokens/s | Wide tokens/s | llama.cpp tokens/s | Wide / llama | Wide change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 40.05112 +/- 0.32531 | 39.09101 +/- 1.44688 | 46.28506 +/- 0.57514 | 84.4571% | -2.3972% |
+| 8192 | 24.27951 +/- 0.39680 | 31.60897 +/- 1.00413 | 22.06691 +/- 0.21621 | 143.2415% | +30.1878% |
+
+F32 KV, matched deterministic decode, full GPU, llama FA off; forward/reverse order, six observations per cell. The unchanged environment gate rejected retained desktop GPU activity. Wide attention is inactive on the short graph; short variation is a negative control for noise. Both 8K orders improve, with identical allocations and launch counts, but the feature stays opt-in. **Accepted scores remain 85.61% short and 106.87% at 8K; the 125% goal remains unmet.** Training was not rerun. [Raw evidence and methodology](gemma4-wide-timing-20261113/README.md).

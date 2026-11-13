@@ -140,3 +140,5 @@ The UB sweep retained byte-safe packed weight decoding, checked allocation/strid
 
 - [Per-layer attention profiling](gemma4-attention-profile-20261113/README.md): decode-scoped layer attribution and C17/C23 checks.
 - [Optional wide value reduction](gemma4-wide-value-20261113/README.md): exact Gemma parity and sanitizer validation; isolated kernel timing only.
+
+- [Wide-value full-model timing](gemma4-wide-timing-20261113/README.md): 143.24% of matched llama.cpp at 8K in contaminated diagnostics; accepted scores unchanged.
