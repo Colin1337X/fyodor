@@ -177,3 +177,13 @@ overwritten. A negative preflight while the 8K test was live rejected launch
 before creating a run folder. Generation has not yet executed with this binary.
 Run both setting orders and retain output parity and coverage before comparing;
 the current kernel timings do not justify an accepted end-to-end speedup.
+
+## Completed 8K lifecycle
+
+The subsequent 8192-token ring-KV test exited zero. Both resets retained maximum
+scaled error 1.63989979e-05 under the unchanged 0.0005 bound, including rewind and
+replacement. The candidate trace records 568 actual Q4 integer kernel calls,
+with aligned prefix, batched attention and output projection also exercised.
+This is correctness evidence only; the concurrently running CUDA physical-removal
+suite makes its wall time unsuitable for performance comparison. The suite was
+still live at this checkpoint. No new accepted decode score is claimed.

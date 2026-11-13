@@ -1,0 +1,42 @@
+{
+  "accepted_benchmark": false,
+  "environment": {
+    "NYA_COMPUTE": "cpu",
+    "NYA_TEST_MTP_COMPARE": "1",
+    "NYA_CUDA_BATCH": "8",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_SPECULATIVE_BATCH": "1",
+    "NYA_CUDA_SMALL_BATCH": "1"
+  },
+  "runs": [
+    {
+      "standard": "c17",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-20261114\\architecture-c17.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-20261114\\fixture-cpu-c17.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": false
+    },
+    {
+      "standard": "c23",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-20261114\\architecture-c23.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-20261114\\fixture-cpu-c23.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": false
+    }
+  ],
+  "passed": true,
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-base-20261114\\fixture-build.json": "2d5aa240a4cf7743ebb58767f69674372179944fd7bae73d7f67c580419c76cf",
+    "backend\\benchmarks\\mtp-joint-base-20261114\\run_fixture.py": "58dd1dfca6143d6f09954fbbed4a9b78ccd8d14b24145285b66569ef8b75d10a",
+    "backend\\benchmarks\\mtp-joint-base-20261114\\fixture-cpu\\c17.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\mtp-joint-base-20261114\\fixture-cpu\\c23.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\mtp-joint-base-20261114\\fixture-cpu\\c17.stderr": "322c6d9b1271e57943df155c4d9dd53fa84bb5e3327e4fd3b54cab372b52f09b",
+    "backend\\benchmarks\\mtp-joint-base-20261114\\fixture-cpu\\c23.stderr": "322c6d9b1271e57943df155c4d9dd53fa84bb5e3327e4fd3b54cab372b52f09b"
+  }
+}

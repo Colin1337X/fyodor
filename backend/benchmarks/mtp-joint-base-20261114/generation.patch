@@ -1,0 +1,94 @@
+--- production/llm_cpu.c
++++ diagnostic/llm_cpu.c
+@@ -1160,7 +1160,7 @@
+     generated = 0;
+     output_length = 0;
+ 
+-    if (request->soft_token_spans != 0) {
++    if (1) { /* Diagnostic matched B512 prompt ingestion. */
+         if (nya_llm_prefill(context, &state, prompt_tokens, prompt_count, request, error, error_capacity) != 0) goto cleanup;
+         position = prompt_count - 1; token = prompt_tokens[position];
+         response->target_steps = prompt_count; prefilled = 1;
+@@ -1290,7 +1290,8 @@
+ {
+     nya_llm_run_state target_state = {0}, draft_state = {0};
+     nya_llm_probability *candidates = NULL;
+-    uint32_t *prompt = NULL, proposals[32], previous;
++    uint32_t *prompt = NULL, proposals[32], previous, joint_tokens[33];
++    int joint_base = 0;
+     size_t prompt_count = 0, position, limit, window, vocabulary, count, bytes;
+     float *q_bank = NULL, *p_bank = NULL;
+     uint64_t rng, draft_rng;
+@@ -1376,7 +1377,10 @@
+             if(!stats.prefill_batch) window=1;
+             else if(window>stats.prefill_batch) window=stats.prefill_batch;
+         }
+-        if(nya_llm_cpu_product(window,vocabulary,&count) ||
++        joint_base = draft->is_assistant && r->temperature == 0.0f &&
++            r->speculative_tokens == 4 && window >= 2;
++        if(joint_base) window = window > 4 ? 3 : window - 1;
++        if(nya_llm_cpu_product(window + (joint_base ? 1u : 0u),vocabulary,&count) ||
+            nya_llm_cpu_product(count,sizeof(float),&bytes)) goto cleanup;
+         p_bank=malloc(bytes);if(!p_bank) goto cleanup;
+     }
+@@ -1404,6 +1408,8 @@
+         fprintf(stderr,"MTP target: %s; assistant: host/assisted\n",target_state.device_plan?"resident borrowed KV":"host reference");
+         fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
+     }
++    if(joint_base && trace && !strcmp(trace,"1"))
++        fprintf(stderr,"MTP joint base: enabled; proposal window=%zu\n",window);
+     previous = prompt[prompt_count - 1];
+     /* Greedy first-proposal rejection is already known from these target
+        logits. Keep an explicit opt-out for matched diagnostics. */
+@@ -1433,8 +1439,11 @@
+                 assistant_seconds += nya_runtime_monotonic_seconds() - assistant_start;
+                 ++assistant_calls;
+             }
+-            if (nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
+-            ++out->target_steps;
++            if(joint_base) joint_tokens[0] = base_token;
++            else {
++                if (nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
++                ++out->target_steps;
++            }
+             previous = base_token; ++position;
+         }
+         round_start = position;
+@@ -1447,7 +1456,7 @@
+                 &draft_rng, candidates, &token) != 0) goto invalid;
+             proposals[proposed] = token;
+             ++out->draft_tokens;
+-            if(early_enabled && proposed==0 && r->temperature==0.0f) {
++            if(!joint_base && early_enabled && proposed==0 && r->temperature==0.0f) {
+                 uint32_t best;
+                 /* This sampler validates logits and preserves tie breaking;
+                    greedy sampling neither mutates logits nor consumes RNG. */
+@@ -1478,11 +1487,23 @@
+         }
+         int batched=!known_rejection && p_bank && nya_compute_plan_can_verify(target_state.device_plan);
+         if(batched) {
+-            memcpy(target_state.device_tokens+position,proposals,proposed*sizeof(*proposals));
+-            if(nya_compute_plan_verify(target_state.device_plan,proposals,proposed,position,
+-                p_bank,window*vocabulary)) goto invalid;
+-            /* Count every computed target position, including discarded work. */
+-            out->target_steps+=proposed;
++            size_t verify_count = proposed, verify_position = position;
++            const uint32_t *verify_tokens = proposals;
++            if(joint_base) {
++                memcpy(joint_tokens + 1, proposals, proposed * sizeof(*proposals));
++                ++verify_count;
++                --verify_position;
++                verify_tokens = joint_tokens;
++            }
++            memcpy(target_state.device_tokens+verify_position,verify_tokens,verify_count*sizeof(*verify_tokens));
++            if(nya_compute_plan_verify(target_state.device_plan,verify_tokens,verify_count,verify_position,
++                p_bank,(window + (joint_base ? 1u : 0u))*vocabulary)) goto invalid;
++            /* Include the jointly verified base and discarded suffix positions. */
++            out->target_steps+=verify_count;
++            if(joint_base) {
++                memcpy(target_state.logits, p_bank, vocabulary * sizeof(float));
++                memmove(p_bank, p_bank + vocabulary, proposed * vocabulary * sizeof(float));
++            }
+         }
+         for (size_t j = 0; j < proposed && !stopped; ++j) {
+             uint32_t token = proposals[j];
