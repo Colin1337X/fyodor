@@ -1,6 +1,7 @@
 #include "llm_internal.h"
 #include "runtime.h"
 #include "turboquant.h"
+#include "train_clock.h" /* High-resolution diagnostic clock; not the coarse uptime clock. */
 
 #include <float.h>
 #include <math.h>
@@ -1036,6 +1037,16 @@ static int nya_llm_draw(const float *probabilities, size_t n, uint64_t *rng, uin
     return 0;
 }
 
+/* Opt-in wall time for the complete decode loop, including sampling, host
+   assistant work and transfers. Prefill and teardown are excluded. The first
+   output uses prefill logits, so this is not the fixed-token bench contract. */
+static void nya_llm_decode_profile(const char *mode, double start, size_t prompt, size_t generated)
+{
+    double end = tr_seconds();
+    fprintf(stderr, "Generation profile: mode=%s prompt=%zu generated=%zu decode_loop_ms=%.6f\n",
+        mode, prompt, generated, end >= start ? (end - start) * 1000.0 : 0.0);
+}
+
 /* Run prompt ingestion followed by bounded autoregressive generation. */
 int nya_llm_generate(
     const nya_llm_context *context,
@@ -1059,6 +1070,9 @@ int nya_llm_generate(
     size_t output_length;
     int result;
     int prefilled = 0;
+    const char *profile_setting = getenv("NYA_GENERATION_PROFILE");
+    int profile = profile_setting && !strcmp(profile_setting, "1");
+    double decode_start = 0;
 
     if (response != NULL) memset(response, 0, sizeof(*response));
     if (context == NULL || request == NULL || response == NULL || request->prompt == NULL || context->is_assistant ||
@@ -1146,6 +1160,7 @@ int nya_llm_generate(
         }
         if (!prefilled) response->target_steps += 1;
         prefilled = 0;
+        if (profile && position + 1 == prompt_count) decode_start = tr_seconds();
 
         if (position + 1 < prompt_count) {
             next = prompt_tokens[position + 1];
@@ -1194,6 +1209,7 @@ int nya_llm_generate(
     }
     response->text_length = output_length;
     response->generated_tokens = generated;
+    if (profile) nya_llm_decode_profile("ordinary", decode_start, prompt_count, generated);
     result = 0;
 
 cleanup:
@@ -1264,6 +1280,11 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     float *q_bank = NULL, *p_bank = NULL;
     uint64_t rng, draft_rng;
     int result = -1, stopped = 0;
+    double assistant_seconds = 0, assistant_start = 0;
+    size_t assistant_calls = 0;
+    const char *profile_setting = getenv("NYA_GENERATION_PROFILE");
+    int profile = profile_setting && !strcmp(profile_setting, "1");
+    double decode_start = 0;
     if (draft == NULL) {
         if (r != NULL && r->speculative_tokens != 0) {
             if (out != NULL) memset(out, 0, sizeof(*out));
@@ -1369,6 +1390,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
         fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
     }
     previous = prompt[prompt_count - 1];
+    if (profile) decode_start = tr_seconds();
     while (!stopped && out->generated_tokens < limit) {
         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
         int rejected = 0;
@@ -1386,8 +1408,13 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
             if(target_state.device_plan) {
                 if(nya_compute_plan_hidden(target_state.device_plan,draft_state.mtp_hidden,c->embedding_length))goto invalid;
             } else memcpy(draft_state.mtp_hidden, target_state.normalized, c->embedding_length * sizeof(float));
-            if (nya_llm_forward_impl(draft, &draft_state, base_token, position, 1, c, &target_state, mtp_cache_length) != 0 ||
-                nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
+            if (profile) assistant_start = tr_seconds();
+            if (nya_llm_forward_impl(draft, &draft_state, base_token, position, 1, c, &target_state, mtp_cache_length) != 0) goto invalid;
+            if (profile) {
+                assistant_seconds += tr_seconds() - assistant_start;
+                ++assistant_calls;
+            }
+            if (nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
             ++out->target_steps;
             previous = base_token; ++position;
         }
@@ -1404,8 +1431,18 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
             if (q_bank != NULL) memcpy(q_bank + proposed * vocabulary, draft_state.logits, vocabulary * sizeof(float));
             if (draft->tokenizer.stop_tokens[token]) { ++proposed; break; }
             if (draft->is_assistant) {
-                if (nya_llm_forward_impl(draft, &draft_state, token, round_start + proposed, 1,
-                    c, &target_state, mtp_cache_length) != 0) goto invalid;
+                /* Only another proposal in this round consumes these logits
+                   and recurrent hidden state. The next round replaces both
+                   from its target-derived base, even after a rejection. */
+                if (proposed + 1 < maximum) {
+                    if (profile) assistant_start = tr_seconds();
+                    if (nya_llm_forward_impl(draft, &draft_state, token, round_start + proposed, 1,
+                            c, &target_state, mtp_cache_length) != 0) goto invalid;
+                    if (profile) {
+                        assistant_seconds += tr_seconds() - assistant_start;
+                        ++assistant_calls;
+                    }
+                }
             } else if (nya_llm_forward(draft, &draft_state, token, round_start + proposed, 1) != 0) goto invalid;
         }
         int batched=p_bank && nya_compute_plan_can_verify(target_state.device_plan);
@@ -1470,6 +1507,11 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
         }
     }
     if (!nya_llm_text_is_utf8(out->text, out->text_length)) goto invalid;
+    if (profile) {
+        nya_llm_decode_profile(draft->is_assistant ? "mtp" : "speculative", decode_start, prompt_count, out->generated_tokens);
+        if (draft->is_assistant) fprintf(stderr, "Generation assistant profile: calls=%zu forward_ms=%.6f\n",
+            assistant_calls, assistant_seconds * 1000.0);
+    }
     result = 0;
     goto cleanup;
 invalid:
