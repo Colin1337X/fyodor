@@ -43,6 +43,14 @@ int nya_compute_plan_token(nya_compute_plan *plan, unsigned int token, size_t po
     int logits, float *output);
 int nya_compute_plan_prefill(nya_compute_plan *plan, const unsigned int *tokens,
     size_t count, size_t position, float *output);
+/* Optional verification: output is [count,vocabulary] logits AFTER consuming
+   each input token. elements is the output capacity in floats. Unsupported
+   providers return -1 without execution; check support before dispatch.
+   Failure may partially write output/advance KV: discard output and reset or
+   destroy the caller's session. Input and output buffers must not overlap. */
+int nya_compute_plan_can_verify(const nya_compute_plan *plan);
+int nya_compute_plan_verify(nya_compute_plan *plan, const unsigned int *tokens,
+    size_t count, size_t position, float *output, size_t elements);
 void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *stats);
 /* Explicit synchronous diagnostic snapshot, expanded to F32. The two output
    arrays each hold exactly elements values and must not overlap. Normal

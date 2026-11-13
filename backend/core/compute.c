@@ -122,6 +122,13 @@ int nya_compute_plan_prefill(nya_compute_plan *p, const unsigned int *tokens, si
 {
     return p != NULL && p->api->plan_prefill != NULL ? p->api->plan_prefill(p->state, tokens, count, position, output) : -1;
 }
+int nya_compute_plan_can_verify(const nya_compute_plan *p)
+{ return p && p->api->plan_verify != NULL; }
+int nya_compute_plan_verify(nya_compute_plan *p, const unsigned int *tokens,
+    size_t count, size_t position, float *output, size_t elements)
+{
+    return nya_compute_plan_can_verify(p) ? p->api->plan_verify(p->state,tokens,count,position,output,elements) : -1;
+}
 void nya_compute_plan_stats(const nya_compute_plan *p, nya_compute_stats *stats)
 {
     if (stats == NULL) return;

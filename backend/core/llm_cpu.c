@@ -793,6 +793,31 @@ int nya_llm_session_run(nya_llm_session *s, const uint32_t *tokens, size_t count
     return 0;
 }
 
+int nya_llm_session_verify(nya_llm_session *s,const uint32_t *tokens,
+    size_t count,float *output,size_t elements)
+{
+    if(!s || s->failed || !tokens || !output || !count ||
+       count>s->state.sequence_capacity-s->position) return -1;
+    size_t vocabulary=s->context->tokenizer.vocabulary_size;
+    if(!vocabulary || count>SIZE_MAX/vocabulary || count*vocabulary>SIZE_MAX/sizeof(float) ||
+       elements<count*vocabulary) return -1;
+    for(size_t i=0;i<count;++i) if(tokens[i]>=vocabulary) return -1;
+    if(nya_compute_plan_can_verify(s->state.device_plan)) {
+        memcpy(s->state.device_tokens+s->position,tokens,count*sizeof(*tokens));
+        if(nya_compute_plan_verify(s->state.device_plan,tokens,count,s->position,output,elements)) {
+            nya_compute_plan_free(s->state.device_plan);s->state.device_plan=NULL;
+            s->state.reference_only=1;s->failed=1;s->has_logits=0;return -1;
+        }
+        memcpy(s->state.logits,output+(count-1)*vocabulary,vocabulary*sizeof(float));
+        s->position+=count;s->has_logits=1;return 0;
+    }
+    for(size_t i=0;i<count;++i) {
+        if(nya_llm_session_run(s,tokens+i,1,1)) return -1;
+        memcpy(output+i*vocabulary,s->state.logits,vocabulary*sizeof(float));
+    }
+    return 0;
+}
+
 const float *nya_llm_session_logits(const nya_llm_session *s)
 {
     return s != NULL && s->has_logits && !s->failed ? s->state.logits : NULL;

@@ -186,6 +186,13 @@ void nya_llm_session_free(nya_llm_session *session);
 void nya_llm_session_reset(nya_llm_session *session);
 int nya_llm_session_run(nya_llm_session *session, const uint32_t *tokens, size_t count,
     int logits_each_token);
+/* Logits after each consumed token, stored [count,vocabulary]. The initial
+   next-token distribution is the existing session logits, not row zero here.
+   Serial fallback is used if the provider lacks batch verification. Buffers
+   must not overlap each other or session-owned storage. Invalid arguments do
+   not advance the session; execution failure invalidates it until reset. */
+int nya_llm_session_verify(nya_llm_session *session,const uint32_t *tokens,
+    size_t count,float *output,size_t elements);
 const float *nya_llm_session_logits(const nya_llm_session *session);
 const char *nya_llm_session_kv_type(const nya_llm_session *session);
 const char *nya_llm_session_execution(const nya_llm_session *session);
