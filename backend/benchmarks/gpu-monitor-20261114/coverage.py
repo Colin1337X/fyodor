@@ -42,7 +42,7 @@ def audit(rows, *, luid, start, end, lifetimes, max_gap=1.5):
                 match=re.match(r'^pid_(\d+)_(luid_0x[0-9a-f]{8}_0x[0-9a-f]{8})_',counter.get('instance','').lower())
                 if not match or match[2]!=luid.lower() or int(match[1])!=pid:
                     errors.append('counter identity mismatch')
-                if counter.get('status') not in (0,1) or not finite(value) or value<0:
+                if counter.get('status') not in (0,1) or not finite(value) or not 0<=value<=100:
                     errors.append('invalid target counter');continue
                 if value==0:continue
                 span=lifetimes.get(pid)

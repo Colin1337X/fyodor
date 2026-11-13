@@ -159,3 +159,13 @@ The former documents formatted wildcard arrays and the two-call sizing pattern;
 the latter documents language-neutral counter registration. The collector is
 original Python ctypes tooling, not copied Microsoft sample source. CUDA device
 identity comes from the existing gpu-activity-20261114/cuda_identity.py helper.
+
+## Out-of-range counter rejection
+
+A read-only PowerShell GPU Engine sample during the live integrated sanitizer
+reported 133.31 percent for one engine instance. The coverage audit now
+conservatively rejects target-engine values above 100, alongside negative,
+nonfinite, missing and boolean values. It does not clamp or rewrite raw samples;
+a counter anomaly cannot become clear sampled coverage. Zero and exactly 100
+remain valid. All 33 offline monitor/interval/generation tests pass with this
+change. This does not certify the live sanitizer or update performance scores.

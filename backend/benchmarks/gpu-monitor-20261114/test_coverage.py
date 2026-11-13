@@ -22,9 +22,13 @@ class Coverage(unittest.TestCase):
     def test_missing_bracket(self):self.check_rows(fixture()[:1]+fixture()[2:])
     def test_gap(self):self.check_rows(fixture(),max_gap=.9)
     def test_invalid(self):
-        for value in (None,float('nan'),float('inf'),-1):
+        for value in (None,float('nan'),float('inf'),-1,100.000001,133.31,True):
             rows=fixture();rows[2]['target_counters'][0]['engine_percent']=value
             self.check_rows(rows)
+    def test_percent_boundaries(self):
+        for value in (0,100):
+            rows=fixture();rows[2]['target_counters'][0]['engine_percent']=value
+            self.check_rows(rows,True)
     def test_status(self):
         rows=fixture();rows[2]['target_counters'][0]['status']=0x800007d5;self.check_rows(rows)
     def test_competitor(self):
