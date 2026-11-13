@@ -14,6 +14,29 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* Recall is bounded, UTF-8 safe, does not execute, and restores drafts. */
+    tui_key(&s,':');tui_key(&s,'x');tui_key(&s,TUI_UP);CHECK(!strcmp(s.command,"x"));tui_key(&s,TUI_ESCAPE);
+    CHECK(send(&s,"overview")==TUI_NONE);CHECK(send(&s,"overview")==TUI_NONE && s.commands_count==1);
+    CHECK(send(&s,"training")==TUI_NONE && s.commands_count==2);
+    tui_key(&s,':');tui_key(&s,0xac00);tui_key(&s,TUI_UP);
+    CHECK(!strcmp(s.command,"training") && s.view==2);
+    tui_key(&s,TUI_UP);CHECK(!strcmp(s.command,"overview") && s.view==2);
+    tui_key(&s,TUI_UP);CHECK(!strcmp(s.command,"overview"));
+    tui_key(&s,TUI_DOWN);tui_key(&s,'X');CHECK(!strcmp(s.command,"trainingX"));
+    tui_key(&s,TUI_DOWN);CHECK(s.command_length==3 && !strcmp(s.command,"\xea\xb0\x80"));
+    tui_key(&s,TUI_BACKSPACE);CHECK(!s.command_length);
+    for(int i=0;i<1200;++i) tui_key(&s,'x');
+    CHECK(s.overflow);tui_key(&s,TUI_UP);CHECK(!s.overflow && !strcmp(s.command,"training"));
+    tui_key(&s,TUI_DOWN);CHECK(s.overflow && s.command_length==sizeof(s.command)-1);
+    tui_key(&s,TUI_ENTER);CHECK(s.editing && s.commands_count==2);tui_key(&s,TUI_ESCAPE);
+    for(int i=0;i<TUI_COMMAND_HISTORY+3;++i) {char line[32];snprintf(line,sizeof(line),"unknown %d",i);send(&s,line);}
+    CHECK(s.commands_count==TUI_COMMAND_HISTORY);tui_key(&s,':');
+    for(int i=0;i<TUI_COMMAND_HISTORY+3;++i) tui_key(&s,TUI_UP);
+    CHECK(!strcmp(s.command,"unknown 3"));tui_key(&s,TUI_ESCAPE);
+    send(&s,"overview");send(&s,"training");tui_key(&s,':');tui_key(&s,TUI_UP);tui_key(&s,TUI_UP);
+    CHECK(s.view==2);tui_key(&s,TUI_ENTER);CHECK(s.view==0 && !s.editing);
+    tui_init(&s); /* History does not persist across sessions. */
+    CHECK(!s.commands_count);
     CHECK(s.theme==fyodor_theme_at(0));
     CHECK(!tui_theme(&s,"catppuccin-mocha"));
     const fyodor_theme *chosen=s.theme;

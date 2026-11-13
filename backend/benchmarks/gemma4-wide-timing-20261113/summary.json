@@ -1,0 +1,141 @@
+{
+  "accepted": false,
+  "decision": "Diagnostic only; keep wide value reduction opt-in. Do not replace accepted llama.cpp scores or claim the 125% target.",
+  "contract": "F32 KV; same deterministic tokens; host logits each token; llama FA off; full GPU; 32 decode tokens, 3 repetitions, 1 warmup, serial reversed orders.",
+  "results": [
+    {
+      "context": 0,
+      "engines": {
+        "ring": {
+          "observations": 6,
+          "mean_tokens_per_second": 40.05112080000001,
+          "pooled_sample_stddev": 0.3253133118856082,
+          "order_means": [
+            39.9497185,
+            40.1525231
+          ],
+          "device_weights_bytes": [
+            13194985664,
+            13194985664
+          ],
+          "device_kv_bytes": [
+            22020096,
+            22020096
+          ],
+          "device_scratch_bytes": [
+            80048648,
+            80048648
+          ],
+          "kernel_launches": [
+            84192,
+            84192
+          ]
+        },
+        "wide": {
+          "observations": 6,
+          "mean_tokens_per_second": 39.0910138,
+          "pooled_sample_stddev": 1.44688022429408,
+          "order_means": [
+            39.8995527,
+            38.2824749
+          ],
+          "device_weights_bytes": [
+            13194985664,
+            13194985664
+          ],
+          "device_kv_bytes": [
+            22020096,
+            22020096
+          ],
+          "device_scratch_bytes": [
+            80048648,
+            80048648
+          ],
+          "kernel_launches": [
+            84192,
+            84192
+          ]
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 46.2850608,
+          "pooled_sample_stddev": 0.5751429791086281,
+          "order_means": [
+            46.0633761,
+            46.5067455
+          ]
+        }
+      },
+      "diagnostic_wide_percent_of_llama": 84.45708642128434,
+      "diagnostic_ring_percent_of_llama": 86.53142095472846,
+      "diagnostic_wide_change_percent": -2.3972038255668626
+    },
+    {
+      "context": 8192,
+      "engines": {
+        "ring": {
+          "observations": 6,
+          "mean_tokens_per_second": 24.2795126,
+          "pooled_sample_stddev": 0.39680280372433885,
+          "order_means": [
+            24.1397035,
+            24.4193217
+          ],
+          "device_weights_bytes": [
+            10904502464,
+            10904502464
+          ],
+          "device_kv_bytes": [
+            1275461632,
+            1275461632
+          ],
+          "device_scratch_bytes": [
+            462582280,
+            462582280
+          ],
+          "kernel_launches": [
+            84960,
+            84960
+          ]
+        },
+        "wide": {
+          "observations": 6,
+          "mean_tokens_per_second": 31.6089687,
+          "pooled_sample_stddev": 1.0041311488134461,
+          "order_means": [
+            31.0950943,
+            32.1228431
+          ],
+          "device_weights_bytes": [
+            10904502464,
+            10904502464
+          ],
+          "device_kv_bytes": [
+            1275461632,
+            1275461632
+          ],
+          "device_scratch_bytes": [
+            462582280,
+            462582280
+          ],
+          "kernel_launches": [
+            84960,
+            84960
+          ]
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 22.06690595,
+          "pooled_sample_stddev": 0.216212905173473,
+          "order_means": [
+            21.9668245,
+            22.1669874
+          ]
+        }
+      },
+      "diagnostic_wide_percent_of_llama": 143.24150731244677,
+      "diagnostic_ring_percent_of_llama": 110.02680962620407,
+      "diagnostic_wide_change_percent": 30.18782222176897
+    }
+  ]
+}

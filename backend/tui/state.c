@@ -55,6 +55,29 @@ size_t tui_utf8(uint32_t c,char out[4])
     if (c<=0x10ffff) {out[0]=(char)(0xf0|(c>>18));out[1]=(char)(0x80|((c>>12)&63));out[2]=(char)(0x80|((c>>6)&63));out[3]=(char)(0x80|(c&63));return 4;}
     return 0;
 }
+/* History is session-local; paths are never written to a history file. */
+static void remember_command(tui_state *s)
+{
+    if (!s->command_length || (s->commands_count &&
+        !strcmp(s->command,s->commands[s->commands_count-1]))) return;
+    if (s->commands_count==TUI_COMMAND_HISTORY) {
+        memmove(s->commands,s->commands+1,(TUI_COMMAND_HISTORY-1)*sizeof(s->commands[0]));
+        --s->commands_count;
+    }
+    memcpy(s->commands[s->commands_count++],s->command,s->command_length+1);
+}
+static void recall_command(tui_state *s,int older)
+{
+    if (!s->commands_count || (older ? !s->command_cursor : s->command_cursor==s->commands_count)) return;
+    if (s->command_cursor==s->commands_count) {
+        memcpy(s->command_draft,s->command,s->command_length+1);
+        s->draft_overflow=s->overflow;
+    }
+    if (older) --s->command_cursor; else ++s->command_cursor;
+    const char *text=s->command_cursor==s->commands_count ? s->command_draft : s->commands[s->command_cursor];
+    s->command_length=strlen(text);memcpy(s->command,text,s->command_length+1);
+    s->overflow=s->command_cursor==s->commands_count ? s->draft_overflow : 0;
+}
 int tui_key(tui_state *s,uint32_t key)
 {
     if (key==3) {s->quit=1;return TUI_NONE;}
@@ -62,8 +85,9 @@ int tui_key(tui_state *s,uint32_t key)
         if (key==TUI_ESCAPE) {s->editing=0;s->overflow=0;return TUI_NONE;}
         if (key==TUI_ENTER) {
             if (s->overflow) {snprintf(s->status,sizeof(s->status),"Command too long; edit or press Escape.");return TUI_NONE;}
-            s->editing=0;return command(s);
+            remember_command(s);s->editing=0;return command(s);
         }
+        if (key==TUI_UP || key==TUI_DOWN) {recall_command(s,key==TUI_UP);return TUI_NONE;}
         if (key==TUI_BACKSPACE) {
             if (s->command_length) {
                 do {--s->command_length;} while (s->command_length && ((unsigned char)s->command[s->command_length]&0xc0)==0x80);
@@ -83,7 +107,7 @@ int tui_key(tui_state *s,uint32_t key)
     else if (key=='?') s->help=!s->help;
     else if (key=='q') s->quit=1;
     else if (s->help) return TUI_NONE;
-    else if (key==':' || key=='/') {s->editing=1;s->command_length=0;s->command[0]=0;s->overflow=0;}
+    else if (key==':' || key=='/') {s->editing=1;s->command_length=0;s->command[0]=0;s->overflow=0;s->command_cursor=s->commands_count;s->command_draft[0]=0;s->draft_overflow=0;}
 
     else if (key>='1' && key<='3') s->view=(int)(key-'1');
     else if (key==TUI_TAB || key==TUI_RIGHT || key=='l' || key==TUI_DOWN || key=='j') s->view=(s->view+1)%3;

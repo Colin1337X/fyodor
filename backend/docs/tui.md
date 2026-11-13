@@ -25,7 +25,7 @@ Use 1/2/3, Tab, arrows, or hjkl to switch views; `?` opens help, Escape closes i
 Space freezes metrics, `r` refreshes, and `q` or Ctrl-C exits. The `:` command bar
 accepts `open PATH`, `metrics PATH`, `overview`, `model`, `training`, `pause`,
 `refresh`, `theme ID`, and `quit`. Paths include spaces without extra quoting inside the
-command bar. Commands never invoke a shell. Press `t` to cycle the shared themes, or use
+command bar. Up/Down while editing recalls the last 16 submitted commands, retaining the current draft when you return past the newest entry. Consecutive duplicates are collapsed. Recall does not execute a command; Enter runs it and Escape cancels. History stays in memory for this session only. Commands never invoke a shell. Press `t` to cycle the shared themes, or use
 `--theme ID` / `:theme ID`. `FYODOR_THEME` sets the startup default; an explicit
 `--theme` overrides it. `--themes` lists IDs and `--licenses` shows palette
 attribution. `--color auto|truecolor|256|16|none` selects terminal color support.
