@@ -57,3 +57,20 @@ were collected October 30 and finalized November 13, 2026.
 The updated direct attention oracle also passes all eight split cases after
 compiling the complete optional attention chain, including the FDPP retry caller.
 Its evidence is in `combined-attention-oracle`.
+
+## Retained Windows development surfaces (2026-11-14)
+
+The live native generation diagnostic in `../aligned-prefix-runtime-20261114`
+failed its historical idle gate and remains rejected by that gate. Inspection
+identified the running Codex package's `ChatGPT.exe` UI and computer-use helper,
+plus Windows `CrossDeviceResume.exe`, among the unknown identities. The gate now
+recognizes only their specific installed package/system paths for C+G contexts;
+it does not exempt generic copies of those executable names or compute-only
+contexts. Five offline identity tests cover those paths, case/separator handling,
+lookalikes, compute contexts and applications that must remain unapproved.
+
+This extends the existing OS/development-surface classification; it does not
+change utilization/power thresholds, exempt browsers/downloaders/network clients,
+override interval GPU activity checks, or retroactively clear old results. The
+already-running diagnostic loaded the earlier gate and retains its failed idle
+status. Any future accepted comparison still requires clean current evidence.

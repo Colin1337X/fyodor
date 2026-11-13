@@ -1,5 +1,5 @@
 """Conservative desktop GPU gates for external-reference diagnostic timing."""
-import functools,json,os,subprocess,sys,time
+import functools,json,os,re,subprocess,sys,time
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -53,8 +53,15 @@ DESKTOP_NAMES=frozenset(('dwm.exe','explorer.exe','shellexperiencehost.exe',
     'codex.exe','code.exe','chrome.exe','msedge.exe','msedgewebview2.exe',
     'windowsterminal.exe','openconsole.exe'))
 def desktop_identity_allowed(process):
-    name=process['name'].replace('\\','/').rsplit('/',1)[-1].lower()
-    return process['type']=='C+G' and name in DESKTOP_NAMES
+    path=process['name'].replace('\\','/').lower()
+    name=path.rsplit('/',1)[-1]
+    if process['type']!='C+G':return False
+    if name in DESKTOP_NAMES:return True
+    # The installed Codex package currently names its UI ChatGPT.exe. Match
+    # its package path, not arbitrary similarly named applications/helpers.
+    if re.fullmatch(r'c:/program files/windowsapps/openai\.codex_[0-9.]+_x64__2p2nqsd0c76g0/app/(?:chatgpt\.exe|resources/cua_node/bin/node_modules/@oai/sky/bin/windows/swift/x64/codex-computer-use-swift\.exe)',path):
+        return True
+    return path=='c:/windows/systemapps/microsoftwindows.client.cbs_cw5n1h2txyewy/crossdeviceresume.exe'
 
 def competitors(state):
     allowed={str(os.getpid()),str(active_pid)}
