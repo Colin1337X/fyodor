@@ -37,3 +37,28 @@ should extend the existing interleaved raw sweep over all eight profiled Q4
 shapes and small row tails, with finite coefficient edge cases. Do not enable
 the candidate from compilation or arithmetic reasoning alone. No speedup is
 claimed and accepted llama.cpp scores remain unchanged.
+
+## Prepared raw correctness sweep
+
+check_kernel.py now prepares 207 cases: the eight profiled Q4 shapes plus three
+small row-tail shapes, followed by all 196 pairs from fourteen finite half-bit
+patterns at 256 columns and nine rows. Patterns include both signed zeros,
+minimum/maximum subnormals, minimum normals, units, maximum finite magnitudes,
+and non-binary values. Quantized metadata/nibbles and four activation vectors
+are deterministic pseudorandom inputs.
+
+Both existing interleaved Q4 and the candidate must match native small-batch
+output bytes and guards. The conversion is independently checked against a CPU
+transpose with prefix/suffix guards. All small cases retain the existing float64
+bound of 2e-6 times absolute-product sum plus 1e-6; the bound is not relaxed.
+The harness records partial evidence on test failure and refuses an existing
+result. common.py is derived from the existing interleaved diagnostic helper,
+adding only the candidate source and symbol to its compilation/function list.
+
+Syntax checks passed. A negative launch preflight correctly stopped before the
+GPU-creating import while the integrated sanitizer audit was absent; no oracle
+file was produced. The sweep has NOT run. Once the GPU is free, execute
+check_kernel.py for raw parity; a separate Compute Sanitizer invocation of
+check_kernel.py --memcheck writes memcheck-oracle.json. That flag only selects
+the output name: zero sanitizer errors must be established from the actual
+sanitizer process status and complete log, never inferred from the filename.
