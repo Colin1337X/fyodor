@@ -60,3 +60,6 @@ followed by CPU inference on a training/export fixture. Earlier removal failures
 exposed omitted SQLite/theme test inputs; the copier now preserves those native
 C dependency and theme files. Synthetic smoke timing is not performance acceptance.
 The TUI command-scrolling regression passes in C23 and the final C17 removal run.
+
+See `../gemma4-partial-gate-20261113/README.md` for the separate opt-in partial
+packing experiment. The default fallback policy documented above is unchanged.

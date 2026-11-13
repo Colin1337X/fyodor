@@ -1,0 +1,14 @@
+{
+  "revision": "ac8797fd04b5388b1ce24e45181191fbc41cb56d",
+  "sha256": {
+    "CUDA/resident.inc": "51b1b6d3c0bd62ddff1a20170e131f8988880e88627706d3682124b01f922ff6",
+    "backend/benchmarks/gemma4-partial-gate-20261113/oracle.c": "67155ffc289640d1f06b65de9293e981b1080878d5c8a0c77b03c26c00652b99",
+    "build-cuda/libnya-engine.a": "f3964d0a278304f9e02a269547b80d81bc9dfa766e5d7a2288bc42be1740860d",
+    "build-cuda/gemma-partial-gate-oracle.exe": "9ac9d792ad3269bb0300c00ba0cc782759070473a7be37578ee5f607a04c9a0e",
+    "build-cuda-c23/libnya-engine.a": "1336124caf4b5c7dd45865100ddd126b8802422ea00cd961108c59bb0048fd79"
+  },
+  "model": "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+  "model_sha256": "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134",
+  "build_command": "gcc -std=c17 -O3 -Wall -Wextra -Werror -I backend/include -I backend/core backend/benchmarks/gemma4-partial-gate-20261113/oracle.c build-cuda/libnya-engine.a -lbcrypt C:/Windows/System32/vulkan-1.dll -o build-cuda/gemma-partial-gate-oracle.exe",
+  "contract": "Full-vocabulary scaled error <=0.001; declared suppressed tokens match negative infinity; other logits finite. Extra bytes must represent complete gate/up pairs; saved launches must match selected layer count. Correctness only; desktop competitors remain."
+}
