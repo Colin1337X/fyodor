@@ -1,0 +1,246 @@
+========= COMPUTE-SANITIZER
+{
+  "source_sha256": "26f1ab7e26a5fcd814cbad2a7daddc44c517994f7bb5d40f4c8aff212a9e684d",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "cases": [
+    {
+      "width": 64,
+      "position": 0,
+      "batch": 1,
+      "window": 7,
+      "slots": 1,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 64,
+      "position": 0,
+      "batch": 1,
+      "window": 7,
+      "slots": 1,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 128,
+      "position": 6,
+      "batch": 1,
+      "window": 7,
+      "slots": 7,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 128,
+      "position": 6,
+      "batch": 1,
+      "window": 7,
+      "slots": 7,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1023,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1023,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1023,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1023,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1024,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1024,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1024,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1024,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 8192,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 8192,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 8192,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 8192,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 512,
+      "position": 2048,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 512,
+      "position": 2048,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 1,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 512,
+      "position": 2048,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": false,
+      "bit_exact": true
+    },
+    {
+      "width": 512,
+      "position": 2048,
+      "batch": 1,
+      "window": 1024,
+      "slots": 1024,
+      "partitions": 4,
+      "device_request": true,
+      "bit_exact": true
+    },
+    {
+      "width": 256,
+      "position": 1020,
+      "batch": 8,
+      "window": 1024,
+      "slots": 1028,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true,
+      "undersized_window_only_ring_detected": true
+    },
+    {
+      "width": 256,
+      "position": 2044,
+      "batch": 8,
+      "window": 1024,
+      "slots": 1031,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true,
+      "undersized_window_only_ring_detected": true
+    },
+    {
+      "width": 128,
+      "position": 8190,
+      "batch": 4,
+      "window": 1024,
+      "slots": 1027,
+      "partitions": 1,
+      "device_request": false,
+      "bit_exact": true,
+      "undersized_window_only_ring_detected": true
+    }
+  ]
+}
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)

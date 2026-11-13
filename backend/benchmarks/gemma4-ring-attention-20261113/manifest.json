@@ -1,0 +1,14 @@
+{
+  "revision": "ea0df7468c8feefc87fd9937ab26d94f5ce3389f",
+  "files": {
+    "CUDA/resident.cu": "6619e931adb322665c62d32e9a09004546caee9b230da86ca40648a16b6b823e",
+    "backend/benchmarks/gemma4-ring-attention-20261113/check_kernel.py": "1ca631d8e727c148935dedfd42d14a53899e32e47bb7c3f50a25afe5c3003635",
+    "backend/benchmarks/gemma4-ring-attention-20261113/model_layout.c": "f01e86e0c6a70e31de4c4be0fd66612f14b01db4e6ef17549e8572c872bd3c37",
+    "build-cpu/gemma-ring-layout.exe": "35e0171854c5bf816c1e42b4505e73d729ae29f7f3134a7610079993a2e8e18f"
+  },
+  "model_sha256": "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134",
+  "layout_build": "gcc -std=c17 -O3 -Wall -Wextra -Werror -I backend/include -I backend/core backend/benchmarks/gemma4-ring-attention-20261113/model_layout.c build-cpu/libnya-engine.a -lbcrypt -o build-cpu/gemma-ring-layout.exe",
+  "layout_environment": {
+    "NYA_COMPUTE": "cpu"
+  }
+}
