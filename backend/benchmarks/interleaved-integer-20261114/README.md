@@ -120,22 +120,42 @@ After closing Firefox, Thorium, Free Download Manager and PowerToys, the repeate
 
 | Columns | Rows | Baseline / candidate speed ratio |
 | --- | --- | --- |
-
 | 3840 | 512 | 1.0091x |
-
 | 3840 | 2048 | 1.0621x |
-
 | 3840 | 4096 | 1.0614x |
-
 | 3840 | 8192 | 1.0693x |
-
 | 3840 | 15360 | 1.0620x |
-
 | 4096 | 3840 | 1.0543x |
-
 | 8192 | 3840 | 1.0598x |
-
 | 15360 | 3840 | 1.0584x |
 
 
 The candidate remains unintegrated pending model-level parity and measured benefit.
+
+## Opt-in runtime experiment
+
+NYA_ENABLE_INTERLEAVED_INTEGER compiles the optional kernel only when optcpp,
+interleaved_reuse.cu and interleaved_integer.cu are physically present and batch-four
+reuse is enabled. Its default is OFF. NYA_CUDA_INTERLEAVED_INTEGER=1 selects it
+per resident plan; unset/zero keeps the existing kernel. Missing symbols retain
+the existing path. Training and reference CUDA contexts do not load the candidate.
+Only Q4 batch-four changes; Q6 and single-token decode retain existing dispatch.
+The portable host implementation remains C. No production default is changed.
+
+The initial model check passed numerically but failed admission because selection
+was attempted at CUDA initialization, before the per-session switch. Its failed
+metadata is retained. Selection now belongs to the resident plan. The corrected
+31-token test passed both resets at maximum scaled error 5.24084294e-05. The
+257-token ring test executed 568 Q4 integer kernel calls and passed both resets,
+rewind/replacement and guards at 2.19546455e-05, under the unchanged 0.0005 bound.
+run_model.py toggles the setting between reference and candidate session creation
+and requires an actual nonzero integer kernel call count in new runs.
+
+Both final C17 and C23 CUDA host libraries built with strict warning flags.
+physical-removal-final-c17.log covers the final source without optional non-C
+components: 82 tests completed, four expected ROCm/MLX hardware skips, no failures,
+and the train/export/infer smoke lifecycle passed. Its tiny CPU timing is only a
+smoke check. A separate CUDA-enabled removal suite (started from the initial
+integration snapshot) and the 8K model test were still running at this checkpoint.
+Do not treat their in-progress logs as successful validation. Full-model timing
+and integrated sanitizer validation remain pending; no accepted score changes.

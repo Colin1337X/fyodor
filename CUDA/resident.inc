@@ -22,13 +22,13 @@ typedef struct nya_cuda_plan {
     CUdeviceptr storage, x, norm, residual, gate, up, q, scores, keys, values, logits, frequencies;
     CUdeviceptr blas_storage, attention_parts, interleaved_input;
     size_t interleaved_columns;
-    int interleaved_four_enabled, interleaved_two_enabled;
+    int interleaved_four_enabled, interleaved_two_enabled, interleaved_integer_enabled;
     int aligned_prefix, aligned_batch;
 #ifdef NYA_ALIGNED_PREFIX
     CUfunction fdpp_batch_partial, fdpp_batch_combine;
     unsigned long long fdpp_batch_calls;
 #endif
-    unsigned long long interleaved_two_calls;
+    unsigned long long interleaved_two_calls, interleaved_integer_calls;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors, *byte_tensors;
@@ -144,6 +144,8 @@ static void cuda_plan_free(void *opaque)
         fprintf(stderr,"CUDA batched split attention calls: %llu\n",p->wide_batch_split_calls);
     if(p->interleaved_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA interleaved weight-reuse calls: %llu\n",p->interleaved_calls);
+    if(p->interleaved_integer_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA Q4 integer batch-four calls: %llu\n",p->interleaved_integer_calls);
     if(p->interleaved_two_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA interleaved batch-two Q6 calls: %llu\n",p->interleaved_two_calls);
     if(p->batched_logits_calls && mtp_trace && !strcmp(mtp_trace,"1"))
@@ -626,6 +628,10 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         p->interleaved_input=(p->interleaved_input+15)&~(CUdeviceptr)15;
         p->interleaved_columns=interleaved_columns;
         p->interleaved_four_enabled=interleaved && batch>=4;
+        const char *integer_setting=getenv("NYA_CUDA_INTERLEAVED_INTEGER");
+        p->interleaved_integer_enabled=p->interleaved_four_enabled && c->interleaved_integer_q4 &&
+            integer_setting && !strcmp(integer_setting,"1");
+        if(p->interleaved_integer_enabled)fprintf(stderr,"CUDA Q4 integer batch-four: enabled\n");
         p->interleaved_two_enabled=interleaved_two && batch>=2;
     } else p->interleaved_input=0;
     for (size_t i = 0; i < m->tensor_count; ++i) {
@@ -738,6 +744,7 @@ static CUfunction plan_interleaved_kernel(const nya_cuda_plan *p,unsigned type,s
 {
     if(!p->interleaved_input || columns>p->interleaved_columns)return NULL;
     if(p->batch==2 && p->interleaved_two_enabled && type==14)return p->cuda->interleaved_two_q6;
+    if(p->batch==4 && p->interleaved_integer_enabled && type==12)return p->cuda->interleaved_integer_q4;
     return p->batch==4 && p->interleaved_four_enabled && type<31 ? p->cuda->interleaved_reuse[type]:NULL;
 }
 static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
@@ -789,6 +796,7 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
             if(!result) {
                 if(p->batch==2)++p->interleaved_two_calls;
                 else ++p->interleaved_calls;
+                if(p->batch==4 && type==12 && p->interleaved_integer_enabled)++p->interleaved_integer_calls;
             }
             return result;
         }
