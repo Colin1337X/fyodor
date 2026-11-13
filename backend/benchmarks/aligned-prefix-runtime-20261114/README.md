@@ -115,3 +115,23 @@ zero-error summary, and launch input hashes. It does not rewrite the original
 stderr-only parser result. The 513-token test does not wrap the sliding ring.
 Generation timing remains a separate contract from fixed-forward llama-bench:
 these diagnostics cannot directly replace accepted cross-engine percentages.
+
+## External llama.cpp generation probe
+
+llama_generation.c is an independent C reference executable, outside Fyodor's
+build and runtime. It uses b10809's public API with the same short/long prompt
+text, B512 ingestion, F32 KV, disabled Flash Attention, greedy decoding, and
+32 output tokens including the sample from final prompt logits. It requires
+CUDA0 and refuses CPU fallback. Three rounds retain the initial warmup separately.
+Prompt IDs, generated IDs, output bytes (hex), EOS, and QPC endpoints are emitted
+outside the measured loop. Cache reset and prompt ingestion are outside decode.
+The loop includes greedy selection and token-to-piece conversion; Fyodor also
+performs final UTF-8 validation, so this small accounting difference is explicit.
+
+build_llama_generation.py compiles strict C17/C23 binaries without running them,
+and records the upstream revision plus header, DLL, source, and binary hashes.
+Use the recorded external DLL directory in PATH when executing. This is original
+benchmark glue against the MIT-licensed public API, not an embedded llama runtime.
+Prompt-token equality, greedy-output agreement, live GPU coverage, and controlled
+repeated performance comparison are still unverified. No performance acceptance
+or replacement of existing fixed-forward scores follows from these builds.
