@@ -1,6 +1,7 @@
 /* Diagnostic only: compare batched and fully serial prefixes in one plan. */
 #include "llm_internal.h"
 #include "file.h"
+#include <errno.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -21,14 +22,23 @@ static double difference(const float *a,const float *b,size_t count,double *abso
 }
 int main(int argc,char **argv)
 {
-    if(argc!=2)return 2;
+    if(argc!=2 && argc!=3)return 2;
+    size_t prefix=8192;
+    if(argc==3) {
+        if(!argv[2][0])return 2;
+        for(const char *p=argv[2];*p;++p)if(*p<'0' || *p>'9')return 2;
+        char *end=NULL;errno=0;
+        unsigned long long parsed=strtoull(argv[2],&end,10);
+        if(errno || *end || parsed<3 || parsed>262142)return 2;
+        prefix=(size_t)parsed;
+    }
     int result=1;char error[512]={0};uint64_t bytes=0;
     nya_llm_context *m=NULL;nya_llm_session *s=NULL;
     uint32_t *tokens=NULL;float *snapshot=NULL,*scratch=NULL,*logits=NULL;size_t *offsets=NULL;
     FILE *file=nya_file_open_read(argv[1]);if(!file)return 2;
     int bad=nya_file_regular_size(file,&bytes);fclose(file);if(bad)return 2;
     CHECK(!nya_llm_load(argv[1],bytes,&m,error,sizeof(error)));
-    const size_t prefix=8192,positions[]={0,4096,8191};
+    const size_t positions[]={0,prefix/2,prefix-1};
     CHECK(m->context_length>=prefix+2 && m->block_count<SIZE_MAX/sizeof(size_t)-1);
     size_t vocabulary=m->tokenizer.vocabulary_size,total=0,maximum_width=0;
     CHECK(vocabulary && vocabulary<=UINT32_MAX && vocabulary<=SIZE_MAX/sizeof(float));
