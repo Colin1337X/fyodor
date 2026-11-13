@@ -177,3 +177,30 @@ overwritten. A negative preflight while the 8K test was live rejected launch
 before creating a run folder. Generation has not yet executed with this binary.
 Run both setting orders and retain output parity and coverage before comparing;
 the current kernel timings do not justify an accepted end-to-end speedup.
+
+## Completed 8K lifecycle
+
+The subsequent 8192-token ring-KV test exited zero. Both resets retained maximum
+scaled error 1.63989979e-05 under the unchanged 0.0005 bound, including rewind and
+replacement. The candidate trace records 568 actual Q4 integer kernel calls,
+with aligned prefix, batched attention and output projection also exercised.
+This is correctness evidence only; the concurrently running CUDA physical-removal
+suite makes its wall time unsuitable for performance comparison. The suite was
+still live at this checkpoint. No new accepted decode score is claimed.
+
+## Completed CUDA removal and rejected generation timing
+
+The separately copied CUDA-enabled initial integration snapshot completed 202
+tests with no failures; five expected hardware/BLAS tests skipped. Ring KV,
+attention shapes, native generation, training and Vulkan checks ran, followed by
+the CPU train/export/infer smoke benchmark. physical-removal.log retains the run.
+The final source's separate CPU removal proof remains physical-removal-final-c17.log.
+
+After closing the WARP desktop UI while preserving its running network service,
+both short-context generation runs passed their idle gates and all twelve output
+parity cases. The candidate executed 1,988 Q4 integer calls in each batch-four
+round; the baseline executed none. Both coverage audits nevertheless rejected all
+decode intervals for unattributed System PID 4 GPU activity, with some invalid
+counter values too. The candidate used fewer UI/progress polls, which did not
+eliminate the problem. Neither run updates performance scores. Preserve System;
+do not whitelist its activity or relax counter validity to manufacture a score.
