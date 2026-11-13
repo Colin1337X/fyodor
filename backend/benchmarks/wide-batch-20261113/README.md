@@ -39,6 +39,9 @@ After timing, CUDA memcheck passed with zero errors for width-256 linear KV at
 batch 2 and width-512 wrapped ring KV at batch 4. Both reported actual batched-wide
 dispatch and passed full-logit reset/rewind comparisons. memcheck.py records the
 commands and refuses to run without completed timing evidence.
+The fresh physically stripped non-C build also passes its 82-test suite (four
+expected unavailable ROCm/MLX skips), including train/export/infer workflows;
+physical-removal.log retains the unique verification-copy path and output.
 
 | 8K mode | Baseline mean +/- sample SD (ms) | Candidate mean +/- sample SD (ms) | Speed ratio |
 | --- | ---: | ---: | ---: |
