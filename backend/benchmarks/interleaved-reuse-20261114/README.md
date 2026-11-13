@@ -66,6 +66,40 @@ the harness. Physical removal with the new build option explicitly ON passes
 82 tests (four expected absent-hardware skips) plus the CPU smoke workflow.
 The integrated Gemma ring-KV memory check also passes with zero errors at
 prefix 7, including full-logit comparisons, reset/replay and confirmed
-interleaved projection submissions. Raw-kernel memory checking is complete. End-to-end paired generation timings are still pending. No
+interleaved projection submissions. Raw-kernel memory checking is complete. End-to-end paired generation timings are recorded below. No
 llama.cpp score is promoted: accepted ratios remain 85.61025294% short and
 106.8707255% at 8K, below the requested 125% on both.
+
+## Paired generation result
+
+All 48 calls pass exact output parity. Same revision a5dbe9c, same executable,
+matched settings except NYA_CUDA_INTERLEAVED_REUSE; three rounds per mode and
+context, first excluded, mode order reversed in round one. Only two warmed
+observations per cell; feature-off process precedes feature-on. Both historical
+desktop gates reject acceptance. Complete resource samples are preserved.
+
+Warmed decode-loop means +/- sample standard deviations (milliseconds):
+
+| Context / mode | Disabled | Enabled | Enabled speed % |
+| --- | ---: | ---: | ---: |
+| short / ordinary | 756.339 +/- 0.305 | 758.281 +/- 0.315 | 99.7440 |
+| short / mtp-serial2 | 827.464 +/- 0.851 | 831.156 +/- 0.516 | 99.5558 |
+| short / mtp-batch2 | 788.193 +/- 1.300 | 789.384 +/- 2.499 | 99.8491 |
+| short / mtp-batch4 | 770.812 +/- 1.180 | 672.805 +/- 0.122 | 114.5670 |
+| long / ordinary | 934.924 +/- 1.597 | 935.908 +/- 1.063 | 99.8948 |
+| long / mtp-serial2 | 1043.359 +/- 0.119 | 1042.886 +/- 1.409 | 100.0454 |
+| long / mtp-batch2 | 1110.640 +/- 0.843 | 1111.854 +/- 1.987 | 99.8909 |
+| long / mtp-batch4 | 1042.134 +/- 1.738 | 947.073 +/- 0.178 | 110.0373 |
+
+The feature saves 98.007 ms short and 95.061 ms at 8K per batch-four generation.
+Other modes vary by at most about 0.45%; they do not execute the new path.
+Batch-four MTP is 112.7044% of same-run ordinary Fyodor speed at short context
+and 98.8211% at 8K. Thus it now helps this short generation workload but does
+not yet improve its long-context counterpart.
+
+The contract is 32 output tokens including the initial prefill-logit sample.
+Decode-loop wall time includes assistant, sampling and transfers; prompt
+ingestion, setup and teardown are excluded. Diagnostic B512 ordinary prefill
+is patched only in the harness. This differs from the accepted llama.cpp
+fixed-forward contract. No extrapolated llama.cpp percentage is promoted.
+Accepted Gemma ratios remain 85.61025294% short and 106.8707255% at 8K.
