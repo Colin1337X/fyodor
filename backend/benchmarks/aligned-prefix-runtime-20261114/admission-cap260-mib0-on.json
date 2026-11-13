@@ -1,0 +1,88 @@
+{
+  "accepted_benchmark": false,
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\admission-cap260-mib0-on.exe",
+    "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+    "260"
+  ],
+  "build": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+    "-std=c17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wconversion",
+    "-Wshadow",
+    "-Werror",
+    "-I",
+    "backend/include",
+    "-I",
+    "backend/core",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\aligned-prefix-runtime-20261114\\admission.c",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\libnya-engine.a",
+    "-lbcrypt",
+    "C:/Windows/System32/vulkan-1.dll",
+    "-o",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\admission-cap260-mib0-on.exe"
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "0",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_PROFILE": "0",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_SPLIT_ATTENTION": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "1",
+    "NYA_CUDA_ALIGNED_PREFIX": "1",
+    "NYA_CUDA_DEBUG": "1"
+  },
+  "sha256": {
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\admission.c": "5ee1f80f0dfe7247aa4f98dd9341fe5718ea3a191241e9dfb05878141345fc12",
+    "build-cuda\\libnya-engine.a": "48e54b94fbde42d3bf6100d36446337d48f5d2a12643586c9ef75e1371120030",
+    "build-cuda\\admission-cap260-mib0-on.exe": "f672dd0dc4ecaf17df836586de838c1a79cf82f312953fcd54866252d724f888",
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\run_admission.py": "86aabceeb85097288c979ee7ca565164f5eaffeb814fb8f5145185d1c3faa80a",
+    "CUDA\\resident.inc": "1f70750db3b3f9dc84960335cb7587fa42629e1e473ddd82ed1ea97a73b7aa6b"
+  },
+  "exit_code": 0,
+  "rows": [
+    {
+      "capacity": 260,
+      "resident": true,
+      "batch": 260,
+      "weights": 13194985664,
+      "kv": 178913280,
+      "scratch": 175545364
+    }
+  ],
+  "parse_error": null,
+  "partial_queries": [
+    260
+  ]
+}

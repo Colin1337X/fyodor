@@ -50,6 +50,10 @@ Interleaved two/four verification and batched output projections are enabled.
   pass, maximum scaled error 0.0000524084294. Small-capacity fallback is observed.
 - Prefix257/ring1/count4: admitted, both resets pass, maximum scaled error
   0.0000219546455. Existing interleaved verification calls remain observed.
+- Integrated prefix8192/ring1/count4: admitted at batch512, both resets pass,
+  maximum scaled error 0.0000163989979. Rewind and replacement-token replay
+  retain the original assertions. The candidate records 80 FDPP batch calls,
+  1552 batched split-attention calls and 658 interleaved verification calls.
 - The isolated prior prefix8192/ring0/count2 lifecycle now passes with zero
   logit difference on both resets, including rewind and replacement replay.
   Its evidence remains in ../fdpp-batch-20261114. It is distinct from this
@@ -64,8 +68,27 @@ with all aligned-prefix prerequisites requested ON; CMake reports the feature
 omitted. The removal target now explicitly requests NYA_ENABLE_ALIGNED_PREFIX.
 removal.log and removal-cuda-c23.log retain those build/test outputs.
 
-Integrated 8K ring/four-token replay is running. Additional long/linear and
-boundary shapes, integrated Compute Sanitizer, constrained-memory admission,
+admission.c/run_admission.py also check actual model plans without inference.
+At capacity260, alignment reserves 260 partial-query slots. Its measured scratch
+increase over feature-off is exactly 33,685,504 bytes, matching the additional
+256 queries beyond the ordinary four-query reserve. Disabling weight reuse,
+split attention or warp FDPP prevents aligned admission while retaining a
+resident plan. With capacity8195 and NYA_CUDA_MEMORY_MIB=8500, the planner reduces
+batch512 to batch256 and reserves exactly 256 partial-query slots. These checks
+are asserted by summarize_admission.py; metadata and raw logs are retained.
+The cache budget is not a hard process-wide VRAM limit: vendor storage is
+accounted separately. The admission probe compiles under strict C17 and C23.
+
+run_verify.py now supports --memcheck. A real prefix513/ring1/count4 check is
+running through Compute Sanitizer, exercising batched FDPP and a 257-query
+long split prefix chunk. The launch version is preserved verbatim as
+run_verify_memcheck_v1.py.txt; after observing sanitizer output on stdout,
+the next-run parser was corrected to inspect both output streams. If the live
+launch reports a parser failure, its raw logs and child status must be audited
+separately rather than rerunning or declaring sanitizer success from a banner.
+
+Additional long/linear and boundary shapes, integrated Compute Sanitizer,
+inference under constrained admission,
 and equivalent uncontaminated generation comparisons remain required before
 any performance acceptance or default enablement. Raw batched FDPP and wide
 split memory checks from earlier artifacts do not substitute for these gates.
