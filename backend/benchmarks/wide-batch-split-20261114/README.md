@@ -160,8 +160,39 @@ from the earlier inference processes and is not a retrospective measurement of
 their allocations. Command, settings, source/library/executable hashes and
 results are retained in plan-capacity.json. Strict C17/C23 compilation passes.
 
-The next diagnostic, narrow-prefix at 2048 tokens, changes only the requested
+The narrow-prefix diagnostic at 2048 tokens changes only the requested
 prefill batch to two. This exercises the existing narrow matrix reductions
 instead of large GEMM and may help localize accumulation-path effects. It is
 not a proposed production fallback, does not replace the batch-512 correctness
-requirement, and cannot justify performance acceptance. Its run is in progress.
+requirement, and cannot justify performance acceptance. Its log reports scaled
+logit error 0.00269370516 (absolute 0.00282954425), still above 0.0005.
+The original wrapper exited with a JSON parse error: buffered stdout and CUDA
+trace stderr shared one file, and a trace interrupted a JSON string. The raw
+log is retained unchanged. recover_narrow_log.py removes only the two exact,
+uniquely occurring trace strings and validates all 144 sample identities;
+the recovered artifact explicitly lacks complete run metadata and a recorded
+child exit code. It is not promoted to a successful validated run.
+
+The runner now separates stdout and stderr, checks every output path before
+building, hashes inputs before execution, and preserves child exit status and
+parse-error metadata even when parsing fails. The narrow-unsplit 2K control
+completes with batch two, wide split disabled and short FDPP disabled: zero
+logit error and byte-identical sampled keys and values in every layer. Its
+trace output is retained separately and JSON parsing succeeds. The original
+batch-512 requirement and numerical bound remain unchanged.
+
+ordered_prefix.py builds an isolated library copy with the archived
+ordered-prefix.patch. The patch dispatches Q4_K/Q6_K batches through existing
+four-query weight-reuse kernels while keeping admission and execution batches
+at 512. The diagnostic explicitly checks the admitted size. With unsplit
+attention and short FDPP disabled, the 2K comparison again gives zero logit
+error and all 144 KV samples byte-identical. C17/C23 strict builds pass, and
+the production archive hash is unchanged. Recorded process duration includes
+loading, both prefix paths and readback; it is not an inference performance
+score. Neither patch nor attention settings are integrated into production.
+
+These controls show that aligned reduction paths eliminate the observed 2K
+discrepancy, including with large batches. They do not validate the original
+optimized-attention path at long context. The next implementation step is a
+batched attention path that preserves optimized serial-decode arithmetic,
+with raw evidence under ../fdpp-batch-20261114.

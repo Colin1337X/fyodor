@@ -1,0 +1,16 @@
+--- CUDA/resident.inc
++++ CUDA/resident.inc
+@@ -691,6 +691,13 @@
+     unsigned long long cols = columns, stride = t->data_size / rows;
+     unsigned type = t->type;
+     if (p->batch > 1) {
++        /* Diagnostic only: retain large batches, use the serial reduction order. */
++        if ((type==12 || type==14) && p->cuda->small_reuse[type][1]) {
++            unsigned r=(unsigned)rows,batch=(unsigned)p->batch;
++            void *ordered[]={&matrix,&in,&out,&cols,&stride,&r,&batch};
++            return plan_grid(p,p->cuda->small_reuse[type][1],(rows+7)/8,
++                (p->batch+3)/4,256,1,ordered);
++        }
+         if (p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch)) {
+             /* cuBLAS may dispatch more than one internal kernel. Count logical
+                expansion/GEMM dispatches; the documentation identifies this
