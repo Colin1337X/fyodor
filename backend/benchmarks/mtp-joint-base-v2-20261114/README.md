@@ -61,3 +61,19 @@ Continuous coverage rejected the timings due to unattributed System activity
 and invalid counter values. This is rejected diagnostic evidence, not a speedup
 claim. All 41 monitor tests passed before the run. The accepted short/8K scores
 remain 85.61025294% / 106.8707255% of llama.cpp.
+
+## Full-model memory-safety validation
+
+run_model_memcheck.py runs the unchanged generation binary under actual Compute
+Sanitizer, after verifying recorded build, correctness and fixture evidence.
+It reuses the monitored run's CUDA settings and requires all twelve cases in
+order, 32 generated tokens, matching output, three joint-mode selections, a
+zero exit status and exactly one zero-error sanitizer summary. Five offline
+validator tests pass, including incomplete runs, bad summaries, wrong workload
+and absent dispatch. `python run_model_memcheck.py short` starts the short case
+from the repository root when supplied with the script's full relative path.
+
+The short full-model run was launched after these tests. It is pending at this
+checkpoint; running.json is only a launch record, never completion evidence.
+Only a terminal result.json with validated logs can establish a pass. The
+long full-model sanitizer has not run. Sanitizer timings are not benchmarks.
