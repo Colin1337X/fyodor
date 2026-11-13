@@ -926,6 +926,12 @@ dependencies retain existing execution. This addresses observed prefix drift,
 not a demonstrated decode speedup. See [integration validation and remaining
 gates](benchmarks/aligned-prefix-runtime-20261114/README.md).
 
+`NYA_GENERATION_PROFILE=1` reports generation-loop wall time and separate
+monotonic start/end timestamps for matching external GPU activity evidence.
+Windows records use QPC. Zero-duration or invalid clock readings are marked
+invalid; profiling output does not certify benchmark cleanliness. See the
+[interval validation](benchmarks/gpu-monitor-20261114/README.md).
+
 Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
 reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;
 other shapes and physically absent optional sources preserve fallback behavior.

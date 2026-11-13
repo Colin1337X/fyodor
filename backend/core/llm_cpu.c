@@ -1050,6 +1050,16 @@ static void nya_llm_decode_profile(const char *mode, double start, size_t prompt
     double end = nya_runtime_monotonic_seconds();
     fprintf(stderr, "Generation profile: mode=%s prompt=%zu generated=%zu decode_loop_ms=%.6f\n",
         mode, prompt, generated, end >= start ? (end - start) * 1000.0 : 0.0);
+    /* Preserve the historical duration line. These endpoints use the same
+       clock reads, allowing external activity evidence to bracket decode only. */
+#ifdef _WIN32
+    const char *clock = "qpc";
+#else
+    const char *clock = "monotonic";
+#endif
+    int valid = isfinite(start) && isfinite(end) && start > 0 && end > start;
+    fprintf(stderr, "Generation interval: mode=%s prompt=%zu generated=%zu clock=%s start_seconds=%.9f end_seconds=%.9f valid=%d\n",
+        mode, prompt, generated, clock, start, end, valid);
 }
 
 /* Run prompt ingestion followed by bounded autoregressive generation. */
