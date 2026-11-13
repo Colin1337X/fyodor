@@ -99,6 +99,33 @@ the final observations. Incomplete decode-interval-validation.json is not a pass
 No measured performance ratio changes, and production monitor/benchmark
 orchestration, CPU/thermal checks and equivalent llama.cpp reruns remain open.
 
+## Generation-to-monitor evidence join
+
+audit_generation.py joins a completed mtp-cost timing directory to a PDH capture.
+It requires unique short/long contexts, successful child exits, QPC lifetime
+bounds, all twelve expected cases in forward/reverse/forward order, output
+parity, 32 generated tokens, and exactly one matching native interval per case.
+It rejects timestamps outside their child lifetime, overlapping cases, mismatched
+prompt counts, missing endpoints and ambiguous PID reuse. It then applies
+coverage.py to each exact decode interval. Input files are hashed in the result;
+invalid/incomplete evidence produces a nonzero exit and retained failure JSON.
+Even complete sampled coverage leaves accepted_benchmark false. The historical
+environment gate result is retained separately and is never overridden.
+
+Eleven synthetic contract tests pass, including correct interval pairing,
+competitor activity during decode, missing monitor termination, incorrect case
+order, parity failure and unbounded child lifetimes. A counter interval ending
+before decode is outside this sampled decode-coverage check; possible thermal
+effects remain a separate acceptance concern. The initial test log retains a
+test-fixture error that placed the alleged overlapping competitor before decode.
+The corrected suite also tests that distinction explicitly.
+
+The CLI rejects the existing b512-baseline timing metadata because it lacks
+child lifetime evidence (`historical-generation-rejected.json`). The supplied
+old PDH capture is not contemporaneous with that timing run and must not be
+used to certify it. No historical result is upgraded. Live benchmark collector
+orchestration and a contemporaneous joined run are still outstanding.
+
 Primary API documentation:
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhaddenglishcounterw
