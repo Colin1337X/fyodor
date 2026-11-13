@@ -135,3 +135,18 @@ benchmark glue against the MIT-licensed public API, not an embedded llama runtim
 Prompt-token equality, greedy-output agreement, live GPU coverage, and controlled
 repeated performance comparison are still unverified. No performance acceptance
 or replacement of existing fixed-forward scores follows from these builds.
+
+## Prompt-token equivalence
+
+compare_prompt_tokens.py builds tokenize_prompt.c under strict C17 and C23 for
+each implementation, then executes the C17 variants against the real Gemma model.
+Fyodor links the CPU-only library; the external b10809 CPU library loads vocabulary
+only and explicitly skips tensors. Neither comparison performs GPU inference.
+The script checks the exact fragments in both generation prompt constructors.
+
+The short prompt produces 25 identical token IDs and the long prompt produces
+8,205 identical token IDs. prompt-token-parity/result.json retains commands,
+exit codes, hashes and exact token lists. This establishes input token equality
+for these two generation workloads, not generated-output or logits parity.
+The long generation prompt is 8,205 tokens and must not be mislabeled as the
+older fixed-forward 8,192-token context. No throughput score is changed.
