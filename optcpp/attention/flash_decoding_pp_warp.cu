@@ -86,7 +86,7 @@ extern "C" __global__ void nya_fdpp_combine_warp(const float *q,
     __syncthreads();
     if (retry) {
         nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,
-            window,position,capacity,scale,request,1);
+            window,position,capacity,scale,request,1,0);
     } else if (tid<width) {
         float sum=0.0f;
         for (unsigned i=0;i<partitions;++i) sum+=p[i*(width+2)+tid];

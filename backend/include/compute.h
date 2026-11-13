@@ -46,7 +46,7 @@ int nya_compute_plan_prefill(nya_compute_plan *plan, const unsigned int *tokens,
 void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *stats);
 /* Explicit synchronous diagnostic snapshot, expanded to F32. The two output
    arrays each hold exactly elements values and must not overlap. Normal
-   inference never calls this readback. Only an already valid prefix is readable. */
+   inference never calls this readback. Only already valid, retained rows are readable; bounded caches reject evicted rows. */
 int nya_compute_plan_read_kv(nya_compute_plan *plan, size_t layer, size_t position,
     size_t count, float *keys, float *values, size_t elements);
 

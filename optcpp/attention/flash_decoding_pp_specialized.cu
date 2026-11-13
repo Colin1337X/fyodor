@@ -63,7 +63,7 @@ __device__ __forceinline__ void nya_fdpp_width_body(const float *q,
         __syncthreads();
         if (retry) {
             nya_attention_partition(original_q,keys,values,original_out,scores,width,
-                heads,kvheads,window,position,capacity,scale,request,1);
+                heads,kvheads,window,position,capacity,scale,request,1,0);
         } else if (threadIdx.x<width) {
             float total=0.0f;
             for (unsigned i=0;i<8;++i) total+=sums[i][threadIdx.x];
