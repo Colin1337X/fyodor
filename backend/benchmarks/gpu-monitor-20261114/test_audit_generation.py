@@ -84,5 +84,30 @@ class GenerationAudit(unittest.TestCase):
         with self.assertRaises(ValueError): self.check(items)
 
 
+class JointGenerationAudit(unittest.TestCase):
+    def joint_fixture(self):
+        run, stdout, stderr, samples = fixture()
+        return run, stdout.replace('mtp-batch4', 'mtp-joint3'), stderr.replace('mtp-batch4', 'mtp-joint3'), samples
+
+    def test_explicit_joint_inventory(self):
+        result = audit_run(*self.joint_fixture(), luid=LUID, lifetimes={7: (.1, 14.)}, mode_set='joint-base')
+        self.assertTrue(result['sampled_coverage_clear'])
+        self.assertFalse(result['accepted_benchmark'])
+        self.assertEqual(result['mode_set'], 'joint-base')
+        self.assertEqual(len(result['observations']), 12)
+
+    def test_default_rejects_joint_labels(self):
+        with self.assertRaises(ValueError):
+            audit_run(*self.joint_fixture(), luid=LUID, lifetimes={7: (.1, 14.)})
+
+    def test_joint_rejects_old_labels(self):
+        with self.assertRaises(ValueError):
+            audit_run(*fixture(), luid=LUID, lifetimes={7: (.1, 14.)}, mode_set='joint-base')
+
+    def test_unknown_mode_set(self):
+        with self.assertRaises(ValueError):
+            audit_run(*fixture(), luid=LUID, lifetimes={7: (.1, 14.)}, mode_set='automatic')
+
+
 if __name__ == '__main__':
     unittest.main()

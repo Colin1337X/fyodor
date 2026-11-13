@@ -187,3 +187,16 @@ Context exit also detects collector death and unsuccessful cooperative shutdown.
 37 offline tests passed, including a real CPU child terminated after collector
 exit. health-cpu-control retains live normal-shutdown and injected collector-death
 traces. No coverage acceptance rule was relaxed.
+
+## Explicit joint-base generation inventory
+
+audit_generation.py accepts --mode-set joint-base for the isolated experiment's
+ordinary, mtp-serial2, mtp-batch2 and mtp-joint3 inventory. Baseline mode remains
+the default and still requires mtp-batch4. Both require all twelve cases in the
+established forward/reverse round order; labels are not inferred or aliased.
+Lifetime, parity, interval and GPU coverage requirements are unchanged. Both
+mode sets always report accepted_benchmark=false.
+
+Four added tests verify joint inventory and reject mismatched or unknown mode
+sets. All 41 offline monitor tests pass. Existing unmonitored correctness runs
+do not gain coverage or performance acceptance from this parser extension.
