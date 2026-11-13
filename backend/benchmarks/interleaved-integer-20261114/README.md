@@ -82,3 +82,17 @@ This repeated-weight synthetic measurement is diagnostic only, with
 and cannot establish the llama.cpp target. It has not executed. Raw correctness,
 actual sanitizer validation and full-model generation remain prerequisites to
 production admission. No runtime dispatch or production build changes are made.
+
+## CPU-only PTX inspection
+
+`inspect_ptx.py` recompiles with the recorded options without loading the CUDA
+driver and requires the exact earlier PTX hash. Its instruction census finds
+24 versus 16 `mul.f32` sites, with eight `mul.lo.s32` sites added. Eight
+`cvt.rn.f32.u16` sites become `cvt.u32.u16`; both retain sixteen
+`cvt.rn.f32.u32` sites, 32 FMA sites and twenty shuffle sites. Thus this is an
+arithmetic-pipeline substitution, not an overall instruction-count reduction.
+
+The census is static PTX, not executed instruction counts, final SASS, physical
+register allocation, occupancy, numerical proof or timing. Keep the candidate
+unintegrated until the raw/model checks and paired measurements establish value.
+The JSON retains both opcode inventories and virtual-register declarations.
