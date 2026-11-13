@@ -138,9 +138,20 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_WIDE_VALUE AND
     target_compile_definitions(nya-engine PRIVATE NYA_WIDE_VALUE=1)
 endif()
 
+option(NYA_ENABLE_SMALL_BATCH "Compile optional narrow-batch row-dot scheduling" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_SMALL_BATCH AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/small_batch.cu")
+    set(nya_small_batch "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/small_batch.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_small_batch}")
+    file(READ "${nya_small_batch}" nya_small_batch_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_small_batch_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_SMALL_BATCH=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
+
 string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," nya_cuda_bytes "${nya_cuda_hex}")
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/cuda_source.h" "static const unsigned char nya_cuda_source[] = {${nya_cuda_bytes}0};\n")
 string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," nya_training_bytes "${nya_training_hex}")
