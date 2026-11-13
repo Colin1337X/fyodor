@@ -78,6 +78,23 @@ is gated on all eight cases passing. A feature-disabled control with quantified
 replay error ran through diagnose_replay.py and reproduced the failure with
 maximum scaled error 0.00261755031 (index 157813: actual 0.0598487109 versus
 fully serial 0.0626301989). The new split path was disabled in both sessions.
-An unsplit-attention control is now running through isolate_replay.py; a
-native-matmul control is prepared but has not run. This integration is not
+The unsplit-attention control also fails at 0.00235611498 (same index), with
+wide split and short FDPP disabled while retaining the matrix path. Its
+initial verification matches exactly. Thus changing those attention paths
+does not remove the replay mismatch. A native-matmul control is prepared but
+has not run. This integration is not
 validated for acceptance; neither tolerance nor reference behavior was relaxed.
+The prefix_kv.c diagnostic (compiled cleanly under C17/C23) compares a batched
+prefix with fully serial ingestion inside one resident session, snapshots
+keys/values at positions 0, 4096 and 8191 for every layer, and records final
+prefix logits. It uses the same synthetic token sequence as the replay test.
+The control completes with final-prefix logit max scaled error 0.00420031703
+(max absolute 0.00556683540), before any rewind or replacement. Layer-zero
+maximum sampled value error is 1.90541e-6; the largest sampled value difference
+is 0.00361178 at layer 44, position 4096. All 144 KV rows and binary/source
+hashes are retained in prefix-kv-control.json; the summary retains all layer
+maxima. This localizes a batched-versus-serial prefix difference without proving
+which operation is responsible. summarize_prefix.py reports measured KV
+differences without defining or relaxing an acceptance tolerance.
+The native-matmul prefix probe is now running with cuBLAS disabled; its serial
+path and attention settings otherwise match the control.
