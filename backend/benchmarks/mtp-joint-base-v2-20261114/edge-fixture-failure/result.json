@@ -1,0 +1,43 @@
+{
+  "accepted_benchmark": false,
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_TEST_MTP_COMPARE": "1",
+    "NYA_CUDA_BATCH": "8",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_SPECULATIVE_BATCH": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_FAIL_AFTER": "0"
+  },
+  "runs": [
+    {
+      "standard": "c17",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\architecture-edge-c17.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\edge-fixture-failure-c17.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": false
+    },
+    {
+      "standard": "c23",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\architecture-edge-c23.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\edge-fixture-failure-c23.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": false
+    }
+  ],
+  "passed": true,
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-build.json": "d1b5a436b9ed2baba6fbbde940af472e8e4e98fa19a367375db930d84910c5f7",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\run_edge_fixture.py": "4ef3e6362e1baf8e676d320920fcbfa7a5704e6dbda1931911ac04eb93c37a9f",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-failure\\c17.stdout": "14dbb8fdfc14dadb9f684ade30035b59b853c2b64b869845f8f26ed0ec8269f7",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-failure\\c23.stdout": "14dbb8fdfc14dadb9f684ade30035b59b853c2b64b869845f8f26ed0ec8269f7",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-failure\\c17.stderr": "0c99625aa1eb5869f0140dee9acc8a6ae3b46622fadc0e0d00f8ae927caef4e0",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-failure\\c23.stderr": "0c99625aa1eb5869f0140dee9acc8a6ae3b46622fadc0e0d00f8ae927caef4e0"
+  }
+}

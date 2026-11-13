@@ -1,0 +1,50 @@
+--- production/llm_cpu.c
++++ diagnostic/llm_cpu.c
+@@ -1,3 +1,4 @@
++extern int nya_diag_memory(const char *phase);
+ #include "llm_internal.h"
+ #include "runtime.h"
+ #include "turboquant.h"
+@@ -1160,7 +1161,7 @@
+     generated = 0;
+     output_length = 0;
+ 
+-    if (request->soft_token_spans != 0) {
++    if (1) { /* Diagnostic matched B512 prompt ingestion. */
+         if (nya_llm_prefill(context, &state, prompt_tokens, prompt_count, request, error, error_capacity) != 0) goto cleanup;
+         position = prompt_count - 1; token = prompt_tokens[position];
+         response->target_steps = prompt_count; prefilled = 1;
+@@ -1175,7 +1176,7 @@
+         }
+         if (!prefilled) response->target_steps += 1;
+         prefilled = 0;
+-        if (profile && position + 1 == prompt_count) decode_start = nya_runtime_monotonic_seconds();
++        if (profile && position + 1 == prompt_count) { (void)nya_diag_memory("ordinary-before"); decode_start = nya_runtime_monotonic_seconds(); }
+ 
+         if (position + 1 < prompt_count) {
+             next = prompt_tokens[position + 1];
+@@ -1225,6 +1226,7 @@
+     response->text_length = output_length;
+     response->generated_tokens = generated;
+     if (profile) nya_llm_decode_profile("ordinary", decode_start, prompt_count, generated);
++    if(profile) (void)nya_diag_memory("ordinary-after");
+     result = 0;
+ 
+ cleanup:
+@@ -1409,7 +1411,7 @@
+        logits. Keep an explicit opt-out for matched diagnostics. */
+     const char *early_setting=getenv("NYA_SPECULATIVE_EARLY_REJECT");
+     int early_enabled=!early_setting || strcmp(early_setting,"0")!=0;
+-    if (profile) decode_start = nya_runtime_monotonic_seconds();
++    if (profile) { (void)nya_diag_memory("mtp-before"); decode_start = nya_runtime_monotonic_seconds(); }
+     while (!stopped && out->generated_tokens < limit) {
+         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
+         int rejected = 0, known_rejection = 0;
+@@ -1540,6 +1542,7 @@
+     if (!nya_llm_text_is_utf8(out->text, out->text_length)) goto invalid;
+     if (profile) {
+         nya_llm_decode_profile(draft->is_assistant ? "mtp" : "speculative", decode_start, prompt_count, out->generated_tokens);
++        (void)nya_diag_memory("mtp-after");
+         if (draft->is_assistant) fprintf(stderr, "Generation assistant profile: calls=%zu forward_ms=%.6f\n",
+             assistant_calls, assistant_seconds * 1000.0);
+     }
