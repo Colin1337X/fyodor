@@ -14,6 +14,19 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    CHECK(s.theme==fyodor_theme_at(0));
+    CHECK(!tui_theme(&s,"catppuccin-mocha"));
+    const fyodor_theme *chosen=s.theme;
+    CHECK(tui_theme(&s,"missing-theme")<0 && s.theme==chosen);
+    tui_key(&s,'t');CHECK(s.theme!=chosen);
+    CHECK(send(&s,"theme catppuccin-latte")==TUI_NONE);
+    CHECK(s.theme==fyodor_theme_find("catppuccin-latte"));
+    fyodor_color_mode colors=FYODOR_COLOR_NONE;
+    CHECK(!fyodor_theme_parse_color("truecolor",&colors) && colors==FYODOR_COLOR_TRUE);
+    CHECK(!fyodor_theme_parse_color("256",&colors) && colors==FYODOR_COLOR_256);
+    CHECK(!fyodor_theme_parse_color("16",&colors) && colors==FYODOR_COLOR_16);
+    CHECK(!fyodor_theme_parse_color("none",&colors) && colors==FYODOR_COLOR_NONE);
+    CHECK(fyodor_theme_parse_color("invalid",&colors)<0 && colors==FYODOR_COLOR_NONE);
     CHECK(s.view==0);tui_key(&s,TUI_LEFT);CHECK(s.view==2);tui_key(&s,TUI_TAB);CHECK(s.view==0);
     tui_key(&s,'?');tui_key(&s,'2');CHECK(s.help && s.view==0);tui_key(&s,TUI_ESCAPE);tui_key(&s,'2');CHECK(!s.help && s.view==1);
     CHECK(send(&s,"open model with spaces.gguf")==TUI_INSPECT);CHECK(!strcmp(s.model_path,"model with spaces.gguf"));
@@ -45,6 +58,15 @@ int main(int argc,char **argv)
     }
     s.view=1;strcpy(s.model_path,"bad\033[2J\n\xc2\x9b\xe2\x80\xae\xff name");tui_render(&s,f,80,24);
     FILE *plain=tmpfile();CHECK(plain);tui_write(plain,f,0,0);rewind(plain);int c;while((c=fgetc(plain))!=EOF) CHECK(c==10 || c>=32);fclose(plain);
+    for(size_t theme=0;theme<fyodor_theme_count();++theme) {
+        CHECK(!tui_theme(&s,fyodor_theme_at(theme)->id));tui_render(&s,f,80,24);
+        for(int mode=FYODOR_COLOR_16;mode<=FYODOR_COLOR_TRUE;++mode) {
+            FILE *styled=tmpfile();CHECK(styled);tui_write(styled,f,1,(fyodor_color_mode)mode);rewind(styled);
+            char actual[128]={0},expected[80]={0};CHECK(fread(actual,1,sizeof(actual)-1,styled)>0);
+            CHECK(fyodor_theme_sgr(s.theme,FYODOR_TEXT,FYODOR_BACKGROUND,(fyodor_color_mode)mode,expected,sizeof(expected)));
+            CHECK(!memcmp(actual,"\033[H",3) && !strncmp(actual+3,expected,strlen(expected)));fclose(styled);
+        }
+    }
     s.help=1;tui_key(&s,'q');CHECK(s.quit);
     free(f);CHECK(!remove(argv[1]));puts("TUI navigation, UTF-8 editing, CSV tail/restart/pause, clipping and control sanitization passed");return 0;
 }

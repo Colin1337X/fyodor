@@ -8,7 +8,14 @@
 void tui_init(tui_state *s)
 {
     memset(s,0,sizeof(*s));
+    s->theme=fyodor_theme_at(0);
     snprintf(s->status,sizeof(s->status),"Ready. Press : for commands or ? for help.");
+}
+int tui_theme(tui_state *s,const char *id)
+{
+    const fyodor_theme *theme=fyodor_theme_find(id);
+    if(!theme) {snprintf(s->status,sizeof(s->status),"Unknown theme; use --themes to list available IDs.");return -1;}
+    s->theme=theme;snprintf(s->status,sizeof(s->status),"Theme: %s",theme->name);return 0;
 }
 static int path_copy(char *out,size_t capacity,const char *text,tui_state *s)
 {
@@ -26,6 +33,7 @@ static int command(tui_state *s)
     else if (!strcmp(c,"training")) s->view=2;
     else if (!strcmp(c,"pause")) s->paused=!s->paused;
     else if (!strcmp(c,"refresh")) return TUI_REFRESH;
+    else if (!strncmp(c,"theme ",6)) tui_theme(s,c+6);
     else if (!strncmp(c,"open ",5)) {
         if (!path_copy(s->model_path,sizeof(s->model_path),c+5,s)) {s->view=1;return TUI_INSPECT;}
     } else if (!strncmp(c,"metrics ",8)) {
@@ -77,6 +85,11 @@ int tui_key(tui_state *s,uint32_t key)
     else if (key==TUI_LEFT || key=='h' || key==TUI_UP || key=='k') s->view=(s->view+2)%3;
     else if (key==' ') s->paused=!s->paused;
     else if (key=='r') return TUI_REFRESH;
+    else if (key=='t') {
+        for(size_t i=0;i<fyodor_theme_count();++i) if(s->theme==fyodor_theme_at(i)) {
+            tui_theme(s,fyodor_theme_at((i+1)%fyodor_theme_count())->id);break;
+        }
+    }
     return TUI_NONE;
 }
 int tui_inspect(tui_state *s)

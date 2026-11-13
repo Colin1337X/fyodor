@@ -1,5 +1,6 @@
 #include "fyodor_theme.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include "fyodor_themes.inc"
@@ -53,4 +54,21 @@ size_t fyodor_theme_sgr(const fyodor_theme *theme,fyodor_theme_role fg,fyodor_th
     }
     if(length<0||(size_t)length>=capacity) return 0;
     memcpy(output,text,(size_t)length+1); return (size_t)length;
+}
+
+int fyodor_theme_parse_color(const char *name,fyodor_color_mode *mode)
+{
+    if(!name || !mode) return -1;
+    fyodor_color_mode colors=FYODOR_COLOR_16;
+    if(strcmp(name,"auto")==0) {
+        const char *term=getenv("TERM"),*capability=getenv("COLORTERM");
+        if(getenv("NO_COLOR")) colors=FYODOR_COLOR_NONE;
+        else if(capability && (strcmp(capability,"truecolor")==0||strcmp(capability,"24bit")==0)) colors=FYODOR_COLOR_TRUE;
+        else if(term && strstr(term,"256color")) colors=FYODOR_COLOR_256;
+    } else if(strcmp(name,"truecolor")==0) colors=FYODOR_COLOR_TRUE;
+    else if(strcmp(name,"256")==0) colors=FYODOR_COLOR_256;
+    else if(strcmp(name,"16")==0) colors=FYODOR_COLOR_16;
+    else if(strcmp(name,"none")==0) colors=FYODOR_COLOR_NONE;
+    else return -1;
+    *mode=colors; return 0;
 }

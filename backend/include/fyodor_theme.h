@@ -11,6 +11,8 @@ typedef enum {
 } fyodor_theme_role;
 typedef struct { const char *id,*name; uint32_t colors[FYODOR_THEME_ROLE_COUNT]; } fyodor_theme;
 typedef enum { FYODOR_COLOR_NONE, FYODOR_COLOR_16, FYODOR_COLOR_256, FYODOR_COLOR_TRUE } fyodor_color_mode;
+/* Parse auto/truecolor/256/16/none; auto respects NO_COLOR and terminal hints. */
+int fyodor_theme_parse_color(const char *name,fyodor_color_mode *mode);
 size_t fyodor_theme_count(void);
 const char *fyodor_theme_license(void);
 const fyodor_theme *fyodor_theme_at(size_t index);

@@ -1,4 +1,4 @@
-The existing resource workspace remains the default; use `--monitor` as the first argument for model/training telemetry. Its existing themes and commands remain available in the resource workspace; shared navigation and theme integration are pending.
+The existing resource workspace remains the default; use `--monitor` as the first argument for model/training telemetry. Both views use the same native C theme palettes; shared navigation remains pending.
 
 # Native terminal workbench
 
@@ -8,7 +8,7 @@ Bubble Tea, or other terminal framework is required.
 
 ```
 fyodor-tui --monitor --model E:\models\model.gguf
-fyodor-tui --monitor --metrics training.csv
+fyodor-tui --monitor --metrics training.csv --theme catppuccin-mocha
 fyodor-tui --monitor --model model.gguf --snapshot
 ```
 
@@ -23,9 +23,14 @@ A missing file clears old samples. File replacement/restart is supported.
 Use 1/2/3, Tab, arrows, or hjkl to switch views; `?` opens help, Escape closes it,
 Space freezes metrics, `r` refreshes, and `q` or Ctrl-C exits. The `:` command bar
 accepts `open PATH`, `metrics PATH`, `overview`, `model`, `training`, `pause`,
-`refresh`, and `quit`. Paths include spaces without extra quoting inside the
-command bar. Commands never invoke a shell. `NO_COLOR` disables color; snapshot
-mode emits plain UTF-8 without terminal escape sequences. Interactive mode
+`refresh`, `theme ID`, and `quit`. Paths include spaces without extra quoting inside the
+command bar. Commands never invoke a shell. Press `t` to cycle the shared themes, or use
+`--theme ID` / `:theme ID`. `FYODOR_THEME` sets the startup default; an explicit
+`--theme` overrides it. `--themes` lists IDs and `--licenses` shows palette
+attribution. `--color auto|truecolor|256|16|none` selects terminal color support.
+Auto detects `COLORTERM`/`TERM`, falls back to 16 colors, and respects `NO_COLOR`;
+an explicit color mode overrides detection. Theme changes last for this session.
+Snapshot mode emits plain UTF-8 without terminal escape sequences. Interactive mode
 requires a terminal and restores its modes and alternate screen on normal exit
 and handled interruption. Long command paths scroll to keep the editing end
 visible, with a `<` marker for clipped leading text. Scrolling preserves UTF-8
@@ -54,12 +59,16 @@ inspiration: [lazygit](https://github.com/jesseduffield/lazygit) keyboard panels
 `tui-state-render` checks navigation, Unicode command editing, overflow handling,
 CSV partial writes, malformed/nonfinite rows, pause/restart, bounded large-file
 tailing, terminal control sanitization, and thousands of dimension/view
-combinations including extreme finite graph values. `tui-snapshot` checks the
-plain executable path. These pass in GCC C17 CPU, GCC C23 CUDA/Vulkan-enabled,
-and Clang ASan/UBSan configurations on Windows. ConPTY checks cover initial
+combinations including extreme finite graph values. Theme tests cover palette switching, invalid
+IDs, all shared palettes at 16/256/true color, and plain-output sanitization.
+`tui-monitor-theme-cli` checks shared palette/license listings, snapshots, option
+validation, and environment overrides through the executable. `tui-snapshot` checks the
+plain executable path. The executable/theme tests pass in GCC C17 CPU and GCC C23
+CUDA/Vulkan-enabled builds. The state/render test additionally passes under
+Clang ASan/UBSan on Windows. ConPTY checks cover initial
 render, help, idle rendering, q, and Ctrl-C cleanup. A real Gemma4 12B GGUF
 inspection reports 667 tensors and 43 metadata entries.
 
-The physical-removal build also passes all 78 registered tests (four expected
+The physical-removal build also passes all 79 registered tests (four expected
 ROCm/MLX hardware skips) with optcpp and CUDA template directories absent,
-including both TUI tests and the training/export/inference workflows.
+including the monitor theme CLI test and training/export/inference workflows.
