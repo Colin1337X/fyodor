@@ -92,6 +92,7 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
 }
 void tui_render(const tui_state *s,tui_frame *f,int width,int height)
 {
+    f->theme=s->theme;
     f->width=width<1?1:width>TUI_WIDTH?TUI_WIDTH:width;
     f->height=height<1?1:height>TUI_HEIGHT?TUI_HEIGHT:height;
     for(int i=0;i<f->width*f->height;++i) f->cells[i]=(tui_cell){' ',0};
@@ -102,7 +103,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     for(int i=0;i<3;++i) text(f,2+i*15,2,14,(unsigned char)(s->view==i?2:3),tabs[i]);
     if(s->help) {
         box(f,1,4,w-2,h-8," KEYS & COMMANDS ");
-        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze metrics   r refresh   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","overview / model / training / pause / refresh / quit","Inspection does not load a model or start inference."};
+        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze metrics   r refresh   t theme   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","Inspection does not load a model or start inference."};
         for(int i=0;i<7 && i<h-10;++i) text(f,3,6+i,w-6,0,help[i]);
     } else if(s->view==2) training(s,f,1,4,w-2,h-8);
     else if(s->view==1) {
@@ -122,11 +123,15 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     }
     text(f,2,h-3,w-4,3,s->status);
     if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);}
-    else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  Space pause  r refresh  q quit");
+    else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  t theme  Space pause  r refresh  q quit");
 }
-void tui_write(FILE *file,const tui_frame *f,int ansi,int color)
+void tui_write(FILE *file,const tui_frame *f,int ansi,fyodor_color_mode color)
 {
-    static const char *styles[]={"\033[0m","\033[36m","\033[1;32m","\033[90m"};unsigned current=99;
+    static const fyodor_theme_role roles[]={FYODOR_TEXT,FYODOR_BORDER,FYODOR_ACCENT,FYODOR_TEXT_MUTED};
+    char styles[4][80]={{0}};unsigned current=99;
+    const fyodor_theme *theme=f->theme?f->theme:fyodor_theme_at(0);
+    if(ansi && color) for(unsigned i=0;i<4;++i)
+        fyodor_theme_sgr(theme,roles[i],FYODOR_BACKGROUND,color,styles[i],sizeof(styles[i]));
     if(ansi) fputs("\033[H",file);
     for(int y=0;y<f->height;++y) {
         for(int x=0;x<f->width;++x) {

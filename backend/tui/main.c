@@ -58,14 +58,28 @@ static void stop(int signum) {(void)signum;stopping=1;}
 int fyodor_monitor_run(int argc,char **argv)
 {
     tui_state state;tui_init(&state);int snapshot=0,width=100,height=28;
+    const char *theme_id=getenv("FYODOR_THEME"),*color_id="auto";
+    if(argc==2 && !strcmp(argv[1],"--themes")) {
+        for(size_t i=0;i<fyodor_theme_count();++i) puts(fyodor_theme_at(i)->id);
+        return 0;
+    }
+    if(argc==2 && !strcmp(argv[1],"--licenses")) {fputs(fyodor_theme_license(),stdout);return 0;}
     for(int i=1;i<argc;++i) {
-        if(!strcmp(argv[i],"--help")) {puts("fyodor-tui [--model PATH] [--metrics CSV] [--snapshot]\nKeys: 1-3 views, : commands, ? help, Space pause, q quit");return 0;}
+        if(!strcmp(argv[i],"--help")) {puts("fyodor-tui --monitor [--model PATH] [--metrics CSV] [--snapshot]\n  [--theme ID] [--color auto|truecolor|256|16|none]\n  --themes / --licenses\nKeys: 1-3 views, : commands, ? help, t theme, Space pause, q quit");return 0;}
         if(!strcmp(argv[i],"--snapshot")) {snapshot=1;continue;}
+        if((!strcmp(argv[i],"--theme") || !strcmp(argv[i],"--color")) && i+1<argc) {
+            if(!strcmp(argv[i],"--theme")) theme_id=argv[++i];else color_id=argv[++i];
+            continue;
+        }
         char *target=NULL;size_t capacity=0;
         if(!strcmp(argv[i],"--model")) {target=state.model_path;capacity=sizeof(state.model_path);state.view=1;}
         else if(!strcmp(argv[i],"--metrics")) {target=state.metrics_path;capacity=sizeof(state.metrics_path);state.view=2;}
         if(!target || ++i==argc || strlen(argv[i])>=capacity || !*argv[i]) {fputs("Invalid arguments; use --help\n",stderr);return 2;}
         memcpy(target,argv[i],strlen(argv[i])+1);
+    }
+    fyodor_color_mode color;
+    if((theme_id && tui_theme(&state,theme_id)) || fyodor_theme_parse_color(color_id,&color)) {
+        fputs("Invalid theme or color mode; use --themes or --help.\n",stderr);return 2;
     }
     state.compiled=(nya_compute_cuda_compiled()?1U:0U)|(nya_compute_vulkan_compiled()?2U:0U)|(nya_compute_backend_compiled("rocm")?4U:0U)|(nya_compute_backend_compiled("mlx")?8U:0U);
     if(*state.model_path) tui_inspect(&state);
@@ -74,7 +88,7 @@ int fyodor_monitor_run(int argc,char **argv)
     if(snapshot) {tui_render(&state,frame,width,height);tui_write(stdout,frame,0,0);free(frame);return 0;}
     if(terminal()) {free(frame);fputs("Interactive terminal unavailable; use --snapshot for plain output.\n",stderr);return 2;}
     signal(SIGINT,stop);signal(SIGTERM,stop);fputs("\033[?1049h\033[?25l",stdout);
-    unsigned ticks=0;int color=getenv("NO_COLOR")==NULL; int dirty=1,old_width=0,old_height=0;
+    unsigned ticks=0;int dirty=1,old_width=0,old_height=0;
     while(!state.quit && !stopping) {
         dimensions(&width,&height);
         if(dirty || width!=old_width || height!=old_height) {tui_render(&state,frame,width,height);tui_write(stdout,frame,1,color);old_width=width;old_height=height;dirty=0;}

@@ -183,17 +183,8 @@ int fyodor_tui_run(int argc,char **argv)
     }
     const fyodor_theme *theme=fyodor_theme_find(theme_id?theme_id:"fyodor");
     if(!theme) goto usage;
-    fyodor_color_mode colors=FYODOR_COLOR_16;
-    if(strcmp(color_id,"auto")==0) {
-        const char *term=getenv("TERM"),*capability=getenv("COLORTERM");
-        if(getenv("NO_COLOR")) colors=FYODOR_COLOR_NONE;
-        else if(capability && (strcmp(capability,"truecolor")==0||strcmp(capability,"24bit")==0)) colors=FYODOR_COLOR_TRUE;
-        else if(term && strstr(term,"256color")) colors=FYODOR_COLOR_256;
-    } else if(strcmp(color_id,"truecolor")==0) colors=FYODOR_COLOR_TRUE;
-    else if(strcmp(color_id,"256")==0) colors=FYODOR_COLOR_256;
-    else if(strcmp(color_id,"16")==0) colors=FYODOR_COLOR_16;
-    else if(strcmp(color_id,"none")==0) colors=FYODOR_COLOR_NONE;
-    else goto usage;
+    fyodor_color_mode colors;
+    if(fyodor_theme_parse_color(color_id,&colors)) goto usage;
     tui_state *state=calloc(1,sizeof(*state)); if(!state) return 1;
     state->theme=theme; state->colors=colors;
     state->path=argv[2]; state->name_space=argv[4];

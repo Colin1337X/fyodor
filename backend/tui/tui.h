@@ -1,6 +1,7 @@
 #ifndef NYA_TUI_H
 #define NYA_TUI_H
 #include "format.h"
+#include "fyodor_theme.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -21,18 +22,20 @@ typedef struct tui_state {
     size_t command_length, samples, malformed;
     tui_sample history[TUI_HISTORY];
     unsigned compiled;
+    const fyodor_theme *theme;
 } tui_state;
 typedef struct tui_cell { uint32_t code; unsigned char style; } tui_cell;
-typedef struct tui_frame { int width,height; tui_cell cells[TUI_WIDTH*TUI_HEIGHT]; } tui_frame;
+typedef struct tui_frame { const fyodor_theme *theme; int width,height; tui_cell cells[TUI_WIDTH*TUI_HEIGHT]; } tui_frame;
 enum { TUI_UP=0x110001,TUI_DOWN,TUI_LEFT,TUI_RIGHT,TUI_ESCAPE,TUI_ENTER,TUI_BACKSPACE,TUI_TAB };
 enum { TUI_NONE,TUI_REFRESH,TUI_INSPECT,TUI_METRICS };
 int fyodor_monitor_run(int argc,char **argv);
 void tui_init(tui_state *state);
 int tui_key(tui_state *state,uint32_t key);
+int tui_theme(tui_state *state,const char *id);
 int tui_inspect(tui_state *state);
 int tui_metrics(tui_state *state);
 void tui_render(const tui_state *state,tui_frame *frame,int width,int height);
-void tui_write(FILE *file,const tui_frame *frame,int ansi,int color);
+void tui_write(FILE *file,const tui_frame *frame,int ansi,fyodor_color_mode color);
 /* Returns UTF-8 byte count, or zero for an invalid scalar value. */
 size_t tui_utf8(uint32_t code,char out[4]);
 #endif
