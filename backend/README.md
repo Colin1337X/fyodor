@@ -914,3 +914,11 @@ small-batch kernel described above. Default remains the host path; the assistant
 is not fully resident. [Validation and limits](benchmarks/mtp-resident-target-20261113/README.md)
 include real Gemma/assistant greedy parity across the sliding-window boundary.
 No MTP throughput gain has been accepted yet.
+
+Greedy speculative decoding now rejects a first proposal that disagrees with
+the already-available target choice before drafting more tokens or verifying
+that batch. This applies to standalone drafts and MTP; sampled decoding is
+unchanged. Set `NYA_SPECULATIVE_EARLY_REJECT=0` to restore the previous path for
+matched diagnostics. [Validation and measurements](benchmarks/mtp-early-reject-20261113/README.md)
+show 8.6-11.2% diagnostic improvements in batched Gemma MTP at short/8K contexts,
+while MTP still trails ordinary decode. This changes no accepted llama.cpp score.
