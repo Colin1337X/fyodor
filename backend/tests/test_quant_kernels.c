@@ -195,7 +195,8 @@ int main(void)
             if (nya_compute_matmul_typed(compute, data, rows, columns, types[k], inputs, outputs+1, batch)) return 1;
             if (outputs[0] != 12345 || outputs[batch*rows+1] != 12345) return 1;
             for (size_t token = 0; token < batch; ++token) {
-                if(getenv("NYA_TEST_SMALL_BATCH") && batch<=8) {
+                if((getenv("NYA_TEST_SMALL_BATCH") && batch<=8) ||
+                   (getenv("NYA_TEST_SMALL_REUSE") && (batch==2 || batch==4) && (types[k]==12 || types[k]==14))) {
                     if(nya_compute_matvec_typed(compute,data,rows,columns,types[k],inputs+token*columns,actual) ||
                        memcmp(actual,outputs+1+token*rows,rows*sizeof(float))) {
                         fprintf(stderr,"small batch differs from native scalar: type=%u batch=%zu token=%zu\n",types[k],batch,token);return 1;

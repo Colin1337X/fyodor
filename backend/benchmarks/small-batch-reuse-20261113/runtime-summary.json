@@ -1,0 +1,587 @@
+{
+  "accepted_llama_score": false,
+  "clock_note": "Same binary, QPC, B512, weight reuse off/on. Borrowed wide-value attention disabled in both.",
+  "contract": "32 output tokens including initial prefill-logit sample; decode-loop wall time; first round excluded",
+  "baseline": {
+    "short": {
+      "cells": {
+        "ordinary": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "ordinary",
+              "seconds": 2.8483752,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 755.8243
+            },
+            {
+              "round": 2,
+              "mode": "ordinary",
+              "seconds": 2.3061182,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 759.7691
+            }
+          ],
+          "mean_decode_ms": 757.7967,
+          "stdev_decode_ms": 2.789394830424683,
+          "mean_call_seconds": 2.5772467
+        },
+        "mtp-serial2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-serial2",
+              "seconds": 2.8496354,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 862.2386,
+              "assistant_calls": 22,
+              "assistant_ms": 102.0009
+            },
+            {
+              "round": 2,
+              "mode": "mtp-serial2",
+              "seconds": 2.9774997,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 856.0322,
+              "assistant_calls": 22,
+              "assistant_ms": 98.2751
+            }
+          ],
+          "mean_decode_ms": 859.1354,
+          "stdev_decode_ms": 4.38858752675621,
+          "mean_call_seconds": 2.91356755
+        },
+        "mtp-batch2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch2",
+              "seconds": 3.2174455,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 63,
+              "parity": true,
+              "decode_ms": 1096.9641,
+              "assistant_calls": 22,
+              "assistant_ms": 103.7089
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch2",
+              "seconds": 3.0844535,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 63,
+              "parity": true,
+              "decode_ms": 1092.3532,
+              "assistant_calls": 22,
+              "assistant_ms": 100.0584
+            }
+          ],
+          "mean_decode_ms": 1094.6586499999999,
+          "stdev_decode_ms": 3.260398657372982,
+          "mean_call_seconds": 3.1509495000000003
+        },
+        "mtp-batch4": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch4",
+              "seconds": 2.7939654,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 69,
+              "parity": true,
+              "decode_ms": 1247.3112,
+              "assistant_calls": 32,
+              "assistant_ms": 137.1769
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch4",
+              "seconds": 3.0921412,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 69,
+              "parity": true,
+              "decode_ms": 1250.5389,
+              "assistant_calls": 32,
+              "assistant_ms": 141.733
+            }
+          ],
+          "mean_decode_ms": 1248.92505,
+          "stdev_decode_ms": 2.282328557635758,
+          "mean_call_seconds": 2.9430533
+        }
+      },
+      "reference_text": "1. The Moon is Earth's only natural satellite.\n2. It is the fifth-largest moon in the solar system.\n3. It orbits"
+    },
+    "long": {
+      "cells": {
+        "ordinary": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "ordinary",
+              "seconds": 32.900119,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 932.7567
+            },
+            {
+              "round": 2,
+              "mode": "ordinary",
+              "seconds": 32.9761061,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 933.3396
+            }
+          ],
+          "mean_decode_ms": 933.0481500000001,
+          "stdev_decode_ms": 0.4121725427536351,
+          "mean_call_seconds": 32.93811255
+        },
+        "mtp-serial2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-serial2",
+              "seconds": 33.1168723,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 1112.9104,
+              "assistant_calls": 22,
+              "assistant_ms": 178.8776
+            },
+            {
+              "round": 2,
+              "mode": "mtp-serial2",
+              "seconds": 33.4723881,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 1116.5682,
+              "assistant_calls": 22,
+              "assistant_ms": 181.7031
+            }
+          ],
+          "mean_decode_ms": 1114.7393,
+          "stdev_decode_ms": 2.5864551842241195,
+          "mean_call_seconds": 33.2946302
+        },
+        "mtp-batch2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch2",
+              "seconds": 33.6782961,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8243,
+              "parity": true,
+              "decode_ms": 1690.1874,
+              "assistant_calls": 22,
+              "assistant_ms": 178.4892
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch2",
+              "seconds": 33.6919749,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8243,
+              "parity": true,
+              "decode_ms": 1691.787,
+              "assistant_calls": 22,
+              "assistant_ms": 178.5978
+            }
+          ],
+          "mean_decode_ms": 1690.9872,
+          "stdev_decode_ms": 1.131088007186008,
+          "mean_call_seconds": 33.6851355
+        },
+        "mtp-batch4": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch4",
+              "seconds": 34.0878522,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 8249,
+              "parity": true,
+              "decode_ms": 1759.9399,
+              "assistant_calls": 32,
+              "assistant_ms": 266.0016
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch4",
+              "seconds": 33.7455801,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 8249,
+              "parity": true,
+              "decode_ms": 1751.6034,
+              "assistant_calls": 32,
+              "assistant_ms": 257.6929
+            }
+          ],
+          "mean_decode_ms": 1755.7716500000001,
+          "stdev_decode_ms": 5.894795681361734,
+          "mean_call_seconds": 33.91671615
+        }
+      },
+      "reference_text": "1. The Moon is Earth's only natural satellite.\n2. It is the fifth-largest moon in the solar system.\n3. It orbits"
+    }
+  },
+  "candidate": {
+    "short": {
+      "cells": {
+        "ordinary": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "ordinary",
+              "seconds": 2.2989199,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 756.8297
+            },
+            {
+              "round": 2,
+              "mode": "ordinary",
+              "seconds": 2.3040825,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 760.0854
+            }
+          ],
+          "mean_decode_ms": 758.4575500000001,
+          "stdev_decode_ms": 2.302127547509076,
+          "mean_call_seconds": 2.3015011999999997
+        },
+        "mtp-serial2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-serial2",
+              "seconds": 2.9447093,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 856.4052,
+              "assistant_calls": 22,
+              "assistant_ms": 97.9194
+            },
+            {
+              "round": 2,
+              "mode": "mtp-serial2",
+              "seconds": 2.4212008,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 56,
+              "parity": true,
+              "decode_ms": 856.2789,
+              "assistant_calls": 22,
+              "assistant_ms": 97.8751
+            }
+          ],
+          "mean_decode_ms": 856.34205,
+          "stdev_decode_ms": 0.08930758646387137,
+          "mean_call_seconds": 2.68295505
+        },
+        "mtp-batch2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch2",
+              "seconds": 2.4603235,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 63,
+              "parity": true,
+              "decode_ms": 904.9442,
+              "assistant_calls": 22,
+              "assistant_ms": 97.3536
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch2",
+              "seconds": 2.9921748,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 63,
+              "parity": true,
+              "decode_ms": 908.1204,
+              "assistant_calls": 22,
+              "assistant_ms": 100.6565
+            }
+          ],
+          "mean_decode_ms": 906.5323000000001,
+          "stdev_decode_ms": 2.2459125584047084,
+          "mean_call_seconds": 2.72624915
+        },
+        "mtp-batch4": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch4",
+              "seconds": 2.4487215,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 69,
+              "parity": true,
+              "decode_ms": 901.7219,
+              "assistant_calls": 32,
+              "assistant_ms": 143.8697
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch4",
+              "seconds": 2.4335234,
+              "prompt": 25,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 69,
+              "parity": true,
+              "decode_ms": 905.128,
+              "assistant_calls": 32,
+              "assistant_ms": 145.2495
+            }
+          ],
+          "mean_decode_ms": 903.4249500000001,
+          "stdev_decode_ms": 2.408476407399526,
+          "mean_call_seconds": 2.44112245
+        }
+      },
+      "reference_text": "1. The Moon is Earth's only natural satellite.\n2. It is the fifth-largest moon in the solar system.\n3. It orbits"
+    },
+    "long": {
+      "cells": {
+        "ordinary": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "ordinary",
+              "seconds": 32.9159306,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 933.0552
+            },
+            {
+              "round": 2,
+              "mode": "ordinary",
+              "seconds": 32.9442177,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 0,
+              "accepted": 0,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 933.1026
+            }
+          ],
+          "mean_decode_ms": 933.0789,
+          "stdev_decode_ms": 0.03351686142826975,
+          "mean_call_seconds": 32.93007415
+        },
+        "mtp-serial2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-serial2",
+              "seconds": 33.1452399,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 1111.0628,
+              "assistant_calls": 22,
+              "assistant_ms": 177.1391
+            },
+            {
+              "round": 2,
+              "mode": "mtp-serial2",
+              "seconds": 33.1701936,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8236,
+              "parity": true,
+              "decode_ms": 1110.0076,
+              "assistant_calls": 22,
+              "assistant_ms": 176.1934
+            }
+          ],
+          "mean_decode_ms": 1110.5351999999998,
+          "stdev_decode_ms": 0.7461390755080545,
+          "mean_call_seconds": 33.15771675
+        },
+        "mtp-batch2": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch2",
+              "seconds": 33.5505762,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8243,
+              "parity": true,
+              "decode_ms": 1508.4983,
+              "assistant_calls": 22,
+              "assistant_ms": 176.4247
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch2",
+              "seconds": 33.548101,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 22,
+              "accepted": 15,
+              "target_steps": 8243,
+              "parity": true,
+              "decode_ms": 1514.4965,
+              "assistant_calls": 22,
+              "assistant_ms": 182.4609
+            }
+          ],
+          "mean_decode_ms": 1511.4974,
+          "stdev_decode_ms": 4.2413678949131475,
+          "mean_call_seconds": 33.5493386
+        },
+        "mtp-batch4": {
+          "observations": [
+            {
+              "round": 1,
+              "mode": "mtp-batch4",
+              "seconds": 33.4287522,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 8249,
+              "parity": true,
+              "decode_ms": 1418.7789,
+              "assistant_calls": 32,
+              "assistant_ms": 272.9677
+            },
+            {
+              "round": 2,
+              "mode": "mtp-batch4",
+              "seconds": 33.4164027,
+              "prompt": 8205,
+              "generated": 32,
+              "draft": 32,
+              "accepted": 20,
+              "target_steps": 8249,
+              "parity": true,
+              "decode_ms": 1400.0892,
+              "assistant_calls": 32,
+              "assistant_ms": 258.1989
+            }
+          ],
+          "mean_decode_ms": 1409.4340499999998,
+          "stdev_decode_ms": 13.21561360834231,
+          "mean_call_seconds": 33.42257745
+        }
+      },
+      "reference_text": "1. The Moon is Earth's only natural satellite.\n2. It is the fifth-largest moon in the solar system.\n3. It orbits"
+    }
+  },
+  "candidate_speed_percent_of_baseline": {
+    "short": {
+      "ordinary": 99.91286921726864,
+      "mtp-serial2": 100.32619558971791,
+      "mtp-batch2": 120.75230524053029,
+      "mtp-batch4": 138.2433648749683
+    },
+    "long": {
+      "ordinary": 99.99670445875478,
+      "mtp-serial2": 100.37856521792376,
+      "mtp-batch2": 111.87496584512816,
+      "mtp-batch4": 124.57281346367361
+    }
+  }
+}
