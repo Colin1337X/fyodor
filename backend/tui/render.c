@@ -123,7 +123,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     for(int i=0;i<3;++i) text(f,2+i*15,2,14,(unsigned char)(s->view==i?2:3),tabs[i]);
     if(s->help) {
         box(f,1,4,w-2,h-8," KEYS & COMMANDS ");
-        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze   r refresh   t theme   g graph   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","chart loss / rate / gradient / memory","Command editing: Up / Down recall, Enter run, Esc cancel"};
+        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze   r refresh   t theme   g graph   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","chart loss / rate / gradient / memory","Editing: Tab complete, Up/Down recall, Enter run, Esc cancel"};
         for(int i=0;i<8 && i<h-10;++i) text(f,3,6+i,w-6,0,help[i]);
     } else if(s->view==2) training(s,f,1,4,w-2,h-8);
     else if(s->view==1) {
@@ -142,7 +142,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
         if(h>19) text(f,3,13,w-6,3,"Compiled support does not imply an available device.");
     }
     text(f,2,h-3,w-4,3,s->status);
-    if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);text(f,2,h-1,w-4,1,"Up/Down history  Enter run  Esc cancel");}
+    if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);text(f,2,h-1,w-4,1,"Tab complete  Up/Down history  Enter run  Esc cancel");}
     else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  t theme  g graph  Space pause  q quit");
 }
 void tui_write(FILE *file,const tui_frame *f,int ansi,fyodor_color_mode color)
