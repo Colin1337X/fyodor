@@ -25,12 +25,15 @@ int main(int argc,char **argv)
     size_t prefix=(size_t)parsed;
     size_t count=17,total=prefix+count+1;int result=1;
     char fixture[1200];const char *path=argv[1];
-    if(getenv("NYA_TEST_VERIFY_SHARED")) {
+    const char *wide=getenv("NYA_TEST_VERIFY_WIDE");
+    if(wide && strcmp(wide,"256") && strcmp(wide,"512"))return 2;
+    if(getenv("NYA_TEST_VERIFY_SHARED") || wide) {
         if(strlen(path)>1000) return 2;
-        snprintf(fixture,sizeof(fixture),"%s.verify-shared.gguf",path);path=fixture;
+        snprintf(fixture,sizeof(fixture),"%s.verify-%s.gguf",path,wide?wide:"shared");path=fixture;
         nya_train_decoder_config cfg;nya_train_decoder_defaults(&cfg);
         cfg.embedding_length=16;cfg.feed_forward_length=32;cfg.block_count=2;
         cfg.head_count=2;cfg.kv_head_count=1;cfg.context_length=32;cfg.seed=123;
+        if(wide) {cfg.embedding_length=(uint32_t)strtoul(wide,NULL,10)*2;cfg.context_length=512;}
         char message[512]={0};nya_train_decoder *decoder=nya_train_decoder_create(&cfg,message,sizeof(message));
         if(!decoder) return 2;
         FILE *file=fopen(path,"wb");int failed=file?nya_train_decoder_export(decoder,file,message,sizeof(message)):-1;

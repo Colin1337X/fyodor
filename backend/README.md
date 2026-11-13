@@ -873,6 +873,13 @@ plan already enables wide-value kernels. Real Gemma linear/ring KV tests match
 the native result bitwise and pass float64 checks and CUDA memcheck. Full-generation
 performance remains unproven; see [borrowed-attention evidence](benchmarks/mtp-borrow-wide-20261113/README.md).
 
+`NYA_CUDA_WIDE_BATCH=1` additionally enables unsplit wide-value attention for
+verification batches exactly 2/4 at positions >=256 with widths 256/512. It is
+captured at plan creation, defaults off, and requires the existing wide-value
+build/runtime options. Split partials remain single-query. [Batched-attention
+validation](benchmarks/wide-batch-20261113/README.md) covers native/float64 kernel
+parity, real Gemma logits and C17/C23 reset/rewind tests; timing is still pending.
+
 Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
 reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;
 other shapes and physically absent optional sources preserve fallback behavior.
