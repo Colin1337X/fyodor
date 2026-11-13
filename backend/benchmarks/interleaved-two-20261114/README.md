@@ -8,8 +8,9 @@ runtime or CMake. No production behavior changes in this experiment.
 All 17 raw correctness cases pass exact comparison, finite/output guards and
 independent CPU transpose/guards. All 11 actual Gemma projection shapes and
 six small cases are included, with varied signed/non-binary F16 block scales.
-Small cases also pass the unchanged independent float64 bound. No dedicated
-batch-two CUDA memory checker or real-model integration test has run yet.
+Small cases also pass the unchanged independent float64 bound. The dedicated
+batch-two Compute Sanitizer run passes all 17 cases with zero memory errors.
+Real-model integration has not run yet.
 
 Graph microbenchmarks include the conversion in every candidate invocation.
 Five samples in each variant order, three warmup graphs, 100 projections per
@@ -36,3 +37,19 @@ format-specific candidate. No blanket batch-two dispatch change is warranted.
 The correctness workload was also observed by a failed PowerShell monitoring
 experiment; this was not a timing run. Monitor limitations are documented in
 gpu-monitor-20261114. All measured results, including regressions, are retained.
+
+## Memory validation
+
+On source revision 3eb163f, CUDA Compute Sanitizer 13.1.118 ran
+`check_memcheck.py` using `--tool memcheck --error-exitcode 99
+--target-processes all`. The process exited zero and reported zero errors;
+`memcheck.log` and `memcheck-oracle.json` retain the output and source hash.
+The harness repeats the complete correctness sweep, writing a separate
+oracle artifact to preserve the earlier result. This is correctness evidence,
+not a performance run. No numerical tolerance was changed.
+
+Immediately before validation, five one-second dynamic PDH samples matched
+the RTX 5060 Ti adapter LUID and showed no positive engine activity. The
+device also reported 0% utilization, 32 C and 3 W. No active competitor was
+identified, so no application was terminated. This brief idle check does not
+establish clean coverage for a future timing run or change accepted scores.
