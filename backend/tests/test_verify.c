@@ -17,6 +17,14 @@ static int inject_failure(void)
     return setenv("NYA_CUDA_FAIL_AFTER","15",1);
 #endif
 }
+static int batch_logits_setting(const char *value)
+{
+#ifdef _WIN32
+    return _putenv_s("NYA_CUDA_BATCH_LOGITS",value);
+#else
+    return setenv("NYA_CUDA_BATCH_LOGITS",value,1);
+#endif
+}
 int main(int argc,char **argv)
 {
     if(argc<2 || argc>3) return 2;
@@ -51,7 +59,11 @@ int main(int argc,char **argv)
     reference=malloc((count+2)*v*sizeof(float));actual=malloc((count*v+2)*sizeof(float));last=malloc(v*sizeof(float));tokens=malloc(total*sizeof(*tokens));
     CHECK(reference && actual && last && tokens);
     for(size_t i=0;i<total;++i) tokens[i]=(uint32_t)((20+i%128)%v);
+    int test_logits=getenv("NYA_TEST_VERIFY_LOGITS")!=NULL;
+    nya_compute_stats reference_stats;
+    if(test_logits) CHECK(!batch_logits_setting("0"));
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
+    nya_llm_session_stats(s,&reference_stats);
     if(prefix) CHECK(!nya_llm_session_run(s,tokens,prefix,0));
     for(size_t i=0;i<=count;++i) {CHECK(!nya_llm_session_run(s,tokens+prefix+i,1,1));memcpy(reference+i*v,nya_llm_session_logits(s),v*sizeof(float));}
     uint32_t replacement=(tokens[total-1]+1)%(uint32_t)v;
@@ -60,9 +72,18 @@ int main(int argc,char **argv)
     CHECK(!nya_llm_session_run(s,&replacement,1,1));
     memcpy(reference+(count+1)*v,nya_llm_session_logits(s),v*sizeof(float));
     nya_llm_session_free(s);s=NULL;
+    if(test_logits) CHECK(!batch_logits_setting("1"));
     if(getenv("NYA_TEST_VERIFY_FAILURE")) CHECK(!inject_failure());
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
     if(getenv("NYA_TEST_VERIFY_RESIDENT")) CHECK(!strcmp(nya_llm_session_execution(s),"resident"));
+    if(test_logits) {
+        nya_compute_stats candidate_stats;nya_llm_session_stats(s,&candidate_stats);
+        CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
+        size_t rows=candidate_stats.prefill_batch<4?candidate_stats.prefill_batch:4;
+        CHECK(rows && candidate_stats.scratch_bytes==reference_stats.scratch_bytes+(rows-1)*v*sizeof(float));
+        CHECK(candidate_stats.kv_bytes==reference_stats.kv_bytes);
+        CHECK(candidate_stats.weights_bytes==reference_stats.weights_bytes);
+    }
     if(getenv("NYA_TEST_VERIFY_FAILURE")) {
         CHECK(!nya_llm_session_run(s,tokens,prefix,0));
         CHECK(nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v)<0);

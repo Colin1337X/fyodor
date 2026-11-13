@@ -39,13 +39,13 @@ typedef struct nya_cuda_plan {
 #endif
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
-    size_t capacity, bytes, valid, batch, maximum_batch;
+    size_t capacity, bytes, valid, batch, maximum_batch, logits_batch;
     nya_cuda_kv_layout *kv_layout;
     size_t kv_high_water, hidden_valid, hidden_offset;
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
     int use_wide_value, use_wide_batch;
-    unsigned long long borrowed_wide_calls, batched_wide_calls;
+    unsigned long long borrowed_wide_calls, batched_wide_calls, batched_logits_calls;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -126,6 +126,8 @@ static void cuda_plan_free(void *opaque)
         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
     if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA batched wide-value attention calls: %llu\n",p->batched_wide_calls);
+    if(p->batched_logits_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA batched output projection calls: %llu\n",p->batched_logits_calls);
     free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
@@ -312,6 +314,10 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         batch_limit = (size_t)value;
     }
     size_t batch = capacity < batch_limit ? capacity : batch_limit;
+    const char *logits_setting=getenv("NYA_CUDA_BATCH_LOGITS");
+    int batch_logits=!c->reference && logits_setting && !strcmp(logits_setting,"1");
+    size_t logits_batch=batch_logits?(batch<4?batch:4):1;
+    if(m->tokenizer.vocabulary_size>SIZE_MAX/logits_batch) return NULL;
     if (heads * capacity > SIZE_MAX / batch || h > SIZE_MAX / batch || q > SIZE_MAX / batch || d > SIZE_MAX / batch) return NULL;
     /* Tiled prefill never materializes global scores. Only its fewer-than-eight
        query fallback needs score rows; decode uses the first row of that same
@@ -321,7 +327,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     size_t kv_count=m->cache_width*capacity;
     if(ring_kv && (maximum_kv>SIZE_MAX/batch || nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count))) return NULL;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
-        kv_count, kv_count, m->tokenizer.vocabulary_size, rope_count / sizeof(float),
+        kv_count, kv_count, m->tokenizer.vocabulary_size*logits_batch, rope_count / sizeof(float),
         maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
@@ -335,6 +341,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         for (size_t i = 0; i < 6; ++i) counts[i] = counts[i] / batch * smaller;
         counts[6] = heads * capacity * (all_tiled && smaller > 7 ? 7 : smaller);
         batch = smaller; total = 0;
+        logits_batch=batch_logits?(batch<4?batch:4):1;
+        counts[9]=m->tokenizer.vocabulary_size*logits_batch;
         if(ring_kv) {
             if(nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count)) return NULL;
             counts[7]=counts[8]=kv_count;
@@ -347,6 +355,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if (p == NULL) return NULL;
     p->cuda = c; p->model = m; p->capacity = capacity; p->bytes = total;
     p->batch = 1; p->maximum_batch = batch;
+    p->logits_batch=logits_batch;
     p->split_attention = has_split_attention;
     p->wide_split_attention = wide_split;
 #ifdef NYA_FLASH_DECODING_PP
@@ -793,17 +802,20 @@ static int plan_rope_pair(nya_cuda_plan *p, CUdeviceptr key, CUdeviceptr frequen
     return plan_launch(p, p->rope_pair, ((size_t)hd / 2 * (heads + (size_t)kvheads) + 255) / 256, args);
 }
 
-static int plan_read_logits(nya_cuda_plan *p,float *output)
+static int plan_read_logits_row(nya_cuda_plan *p,float *output,size_t row)
 {
     const nya_llm_context *m=p->model;nya_cuda_context *c=p->cuda;
     ++p->stats.synchronizations;
     if(c->stream_sync(c->stream)!=CUDA_SUCCESS) return -1;
     ++p->stats.downloads;
-    if(c->download(output,p->logits,m->tokenizer.vocabulary_size*sizeof(float))!=CUDA_SUCCESS) return -1;
+    if(row>=p->logits_batch) return -1;
+    if(c->download(output,p->logits+row*m->tokenizer.vocabulary_size*sizeof(float),m->tokenizer.vocabulary_size*sizeof(float))!=CUDA_SUCCESS) return -1;
     for(size_t i=0;i<m->tokenizer.vocabulary_size;++i) if(!isfinite(output[i])) return -1;
     for(size_t i=0;i<m->tokenizer.suppressed_count;++i) output[m->tokenizer.suppressed_tokens[i]]=-INFINITY;
     return 0;
 }
+static int plan_read_logits(nya_cuda_plan *p,float *output)
+{ return plan_read_logits_row(p,output,0); }
 
 static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, size_t position, int logits, float *output)
 {
@@ -1060,11 +1072,20 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         }
         if (w->output_scale) RUN(plan_vector(p, p->x, p->x, 0, d, 0, nya_llm_tensor_value(w->output_scale, 0)));
     }
-    /* Verification batches share transformer work, while output projections
-       reuse the existing single-row logits scratch. No vocabulary-sized batch
-       allocation is imposed on ordinary plans. These calls do not capture a
-       decode graph; count-one verification keeps the ordinary graph path. */
+    /* Opt-in verification projections reserve at most four vocabulary rows.
+       Other counts retain serial projection and ordinary plans reserve one.
+       Preserve per-row readback validation, suppression and transfer statistics.
+       No verification batch captures a single-token decode graph. */
     if(logits==2 && count>1) {
+        if((count==2 || count==4) && count<=p->logits_batch) {
+            RUN(plan_norm(p,p->norm,p->x,m->output_norm,d,1));
+            RUN(plan_matvec(p,p->logits,m->output,p->norm,m->tokenizer.vocabulary_size,d));
+            if(m->final_logit_softcap>0) RUN(plan_vector(p,p->logits,p->logits,0,m->tokenizer.vocabulary_size,5,m->final_logit_softcap));
+            for(size_t i=0;i<count;++i) RUN(plan_read_logits_row(p,output+i*m->tokenizer.vocabulary_size,i));
+            ++p->batched_logits_calls;
+            p->batch=1;
+            goto batch_done;
+        }
         p->batch=1;
         for(size_t i=0;i<count;++i) {
             RUN(plan_norm(p,p->norm,p->x+i*d*sizeof(float),m->output_norm,d,1));
