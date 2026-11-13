@@ -25,12 +25,12 @@ static int batch_logits_setting(const char *value)
     return setenv("NYA_CUDA_BATCH_LOGITS",value,1);
 #endif
 }
-static int interleaved_setting(const char *value)
+static int interleaved_setting(const char *name,const char *value)
 {
 #ifdef _WIN32
-    return _putenv_s("NYA_CUDA_INTERLEAVED_REUSE",value);
+    return _putenv_s(name,value);
 #else
-    return setenv("NYA_CUDA_INTERLEAVED_REUSE",value,1);
+    return setenv(name,value,1);
 #endif
 }
 int main(int argc,char **argv)
@@ -68,8 +68,10 @@ int main(int argc,char **argv)
     CHECK(reference && actual && last && tokens);
     for(size_t i=0;i<total;++i) tokens[i]=(uint32_t)((20+i%128)%v);
     int test_logits=getenv("NYA_TEST_VERIFY_LOGITS")!=NULL;
-    int test_interleaved=getenv("NYA_TEST_VERIFY_INTERLEAVED")!=NULL;
-    if(test_interleaved)CHECK(!interleaved_setting("0"));
+    int test_two=getenv("NYA_TEST_VERIFY_INTERLEAVED_TWO")!=NULL;
+    int test_interleaved=test_two || getenv("NYA_TEST_VERIFY_INTERLEAVED")!=NULL;
+    const char *interleaved_name=test_two?"NYA_CUDA_INTERLEAVED_TWO":"NYA_CUDA_INTERLEAVED_REUSE";
+    if(test_interleaved)CHECK(!interleaved_setting(interleaved_name,"0"));
     nya_compute_stats reference_stats;
     if(test_logits) CHECK(!batch_logits_setting("0"));
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
@@ -83,7 +85,7 @@ int main(int argc,char **argv)
     memcpy(reference+(count+1)*v,nya_llm_session_logits(s),v*sizeof(float));
     nya_llm_session_free(s);s=NULL;
     if(test_logits) CHECK(!batch_logits_setting("1"));
-    if(test_interleaved)CHECK(!interleaved_setting("1"));
+    if(test_interleaved)CHECK(!interleaved_setting(interleaved_name,"1"));
     if(getenv("NYA_TEST_VERIFY_FAILURE")) CHECK(!inject_failure());
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
     if(getenv("NYA_TEST_VERIFY_RESIDENT")) CHECK(!strcmp(nya_llm_session_execution(s),"resident"));
@@ -91,7 +93,10 @@ int main(int argc,char **argv)
         nya_compute_stats candidate_stats;nya_llm_session_stats(s,&candidate_stats);
         size_t columns=m->embedding_length>m->maximum_hidden_length?m->embedding_length:m->maximum_hidden_length;
         if(m->maximum_query_length>columns)columns=m->maximum_query_length;
-        size_t extra=candidate_stats.prefill_batch>=4?(4*columns+3)*sizeof(float):0;
+        size_t width=test_two?2:4;
+        size_t extra=candidate_stats.prefill_batch>=width?(width*columns+3)*sizeof(float):0;
+        const char *four=getenv("NYA_CUDA_INTERLEAVED_REUSE");
+        if(test_two && four && !strcmp(four,"1") && candidate_stats.prefill_batch>=4)extra=0;
         CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
         CHECK(candidate_stats.scratch_bytes==reference_stats.scratch_bytes+extra);
         CHECK(candidate_stats.kv_bytes==reference_stats.kv_bytes);
@@ -132,7 +137,8 @@ int main(int argc,char **argv)
         nya_llm_session_stats(s,&after);
         if(!strcmp(nya_llm_session_execution(s),"resident")) {
             CHECK(after.downloads-before.downloads==count);
-            CHECK(after.prefill_batch>1);
+            if(getenv("NYA_TEST_VERIFY_SERIAL"))CHECK(after.prefill_batch==1);
+            else CHECK(after.prefill_batch>1);
         }
         CHECK(actual[0]==12345 && actual[count*v+1]==12345);
         double maximum=0;

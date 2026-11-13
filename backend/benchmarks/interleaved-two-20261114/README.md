@@ -2,15 +2,28 @@
 
 Original Fyodor prototype in optcpp/matvec/interleaved_two.cu. It converts two
 activation vectors to float2 input while retaining native Q4_K/Q6_K weight
-arithmetic and each output accumulation/reduction order. Not integrated into
-runtime or CMake. No production behavior changes in this experiment.
+arithmetic and each output accumulation/reduction order. Q6_K is integrated
+behind default-off build `NYA_ENABLE_INTERLEAVED_TWO` and runtime
+`NYA_CUDA_INTERLEAVED_TWO` switches. Q4_K remains a raw experiment only.
 
 All 17 raw correctness cases pass exact comparison, finite/output guards and
 independent CPU transpose/guards. All 11 actual Gemma projection shapes and
 six small cases are included, with varied signed/non-binary F16 block scales.
 Small cases also pass the unchanged independent float64 bound. The dedicated
 batch-two Compute Sanitizer run passes all 17 cases with zero memory errors.
-Real-model integration has not run yet.
+Eight real Gemma cases pass at prefix 257: batch two/four, linear/ring KV,
+and batch-four interleaving disabled/enabled. Maximum scaled logit error is
+1.69166745e-5 against the unchanged 0.0005 bound. Batch-two cases each trace
+88 new Q6 dispatches. Reset, rewind, replay and rejected verification checks
+also pass. `validation.json` retains source/binary hashes and case outcomes.
+
+C17 and C23 each pass 37 targeted checks. The first C17 run exposed the
+test harness's existing requirement for a batch limit greater than one; its
+log is retained. An explicit serial test mode now checks the batch-one
+fallback, without weakening other tests. Combined-option tests check that
+scratch is shared instead of allocated twice. Physical-removal validation
+passes 82 tests (four expected ROCm/MLX skips) and CPU training/export/inference
+with the new option requested but optional source physically absent.
 
 Graph microbenchmarks include the conversion in every candidate invocation.
 Five samples in each variant order, three warmup graphs, 100 projections per
@@ -53,3 +66,9 @@ the RTX 5060 Ti adapter LUID and showed no positive engine activity. The
 device also reported 0% utilization, 32 C and 3 W. No active competitor was
 identified, so no application was terminated. This brief idle check does not
 establish clean coverage for a future timing run or change accepted scores.
+
+Integrated Gemma ring-KV Compute Sanitizer validation also passes with zero
+errors, both interleaving options enabled, batched vocabulary projection on,
+prefix 7 and two verification tokens across both reset cycles. The maximum
+scaled error is 1.66424333e-5. See integrated-memcheck.json and its log.
+Whole-generation paired measurements remain pending; no accepted score changes.

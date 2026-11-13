@@ -22,6 +22,8 @@ typedef struct nya_cuda_plan {
     CUdeviceptr storage, x, norm, residual, gate, up, q, scores, keys, values, logits, frequencies;
     CUdeviceptr blas_storage, attention_parts, interleaved_input;
     size_t interleaved_columns;
+    int interleaved_four_enabled, interleaved_two_enabled;
+    unsigned long long interleaved_two_calls;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors, *byte_tensors;
@@ -129,6 +131,8 @@ static void cuda_plan_free(void *opaque)
         fprintf(stderr,"CUDA batched wide-value attention calls: %llu\n",p->batched_wide_calls);
     if(p->interleaved_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA interleaved weight-reuse calls: %llu\n",p->interleaved_calls);
+    if(p->interleaved_two_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA interleaved batch-two Q6 calls: %llu\n",p->interleaved_two_calls);
     if(p->batched_logits_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA batched output projection calls: %llu\n",p->batched_logits_calls);
     free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
@@ -329,16 +333,22 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     const char *interleaved_setting=getenv("NYA_CUDA_INTERLEAVED_REUSE");
     int interleaved=!c->reference && interleaved_setting && !strcmp(interleaved_setting,"1") &&
         c->interleave_four && (c->interleaved_reuse[12] || c->interleaved_reuse[14]);
+    const char *two_setting=getenv("NYA_CUDA_INTERLEAVED_TWO");
+    int interleaved_two=!c->reference && two_setting && !strcmp(two_setting,"1") &&
+        c->interleave_two && c->interleaved_two_q6;
     size_t interleaved_columns=d>h?d:h;
     if(q>interleaved_columns)interleaved_columns=q;
     if(interleaved && interleaved_columns>(SIZE_MAX-3)/4)return NULL;
+    if(interleaved_two && interleaved_columns>(SIZE_MAX-3)/2)return NULL;
     size_t interleaved_count=interleaved?4*interleaved_columns+3:0;
+    size_t two_count=interleaved_two?2*interleaved_columns+3:0;
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
     size_t kv_count=m->cache_width*capacity;
     if(ring_kv && (maximum_kv>SIZE_MAX/batch || nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count))) return NULL;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
         kv_count, kv_count, m->tokenizer.vocabulary_size*logits_batch, rope_count / sizeof(float),
-        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count, batch>=4?interleaved_count:0};
+        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count,
+        batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (weights > SIZE_MAX - m->tensors[i].data_size) return NULL;
@@ -353,7 +363,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         batch = smaller; total = 0;
         logits_batch=batch_logits?(batch<4?batch:4):1;
         counts[9]=m->tokenizer.vocabulary_size*logits_batch;
-        counts[15]=batch>=4?interleaved_count:0;
+        counts[15]=batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0;
         if(ring_kv) {
             if(nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count)) return NULL;
             counts[7]=counts[8]=kv_count;
@@ -537,7 +547,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         /* Three reserved floats cover alignment padding without escaping the
            admitted scratch allocation. Conversion and dot share one stream. */
         p->interleaved_input=(p->interleaved_input+15)&~(CUdeviceptr)15;
-        p->interleaved_columns=(counts[15]-3)/4;
+        p->interleaved_columns=interleaved_columns;
+        p->interleaved_four_enabled=interleaved && batch>=4;
+        p->interleaved_two_enabled=interleaved_two && batch>=2;
     } else p->interleaved_input=0;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (p->tensors[i]) continue;
@@ -643,8 +655,9 @@ static int plan_launch(nya_cuda_plan *p, CUfunction f, size_t blocks, void **arg
 { return plan_grid(p, f, blocks, 1, 256, 1, args); }
 static CUfunction plan_interleaved_kernel(const nya_cuda_plan *p,unsigned type,size_t columns)
 {
-    return p->batch==4 && p->interleaved_input && columns<=p->interleaved_columns && type<31 ?
-        p->cuda->interleaved_reuse[type]:NULL;
+    if(!p->interleaved_input || columns>p->interleaved_columns)return NULL;
+    if(p->batch==2 && p->interleaved_two_enabled && type==14)return p->cuda->interleaved_two_q6;
+    return p->batch==4 && p->interleaved_four_enabled && type<31 ? p->cuda->interleaved_reuse[type]:NULL;
 }
 static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
 {
@@ -681,10 +694,14 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
         CUfunction interleaved=plan_interleaved_kernel(p,type,columns);
         if(interleaved) {
             void *convert_args[]={&in,&p->interleaved_input,&cols};
-            if(plan_launch(p,p->cuda->interleave_four,(columns+255)/256,convert_args))return -1;
+            CUfunction convert=p->batch==2?p->cuda->interleave_two:p->cuda->interleave_four;
+            if(plan_launch(p,convert,(columns+255)/256,convert_args))return -1;
             gemm_args[1]=&p->interleaved_input;
             int result=plan_grid(p,interleaved,(r+7)/8,1,256,1,gemm_args);
-            if(!result)++p->interleaved_calls;
+            if(!result) {
+                if(p->batch==2)++p->interleaved_two_calls;
+                else ++p->interleaved_calls;
+            }
             return result;
         }
         unsigned grid_y;
