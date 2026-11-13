@@ -105,9 +105,22 @@ matmul therefore does not resolve the discrepancy; the smaller final logit
 error alone is not evidence that native matmul is more accurate. All 144
 rows, the full log, hashes and layer summary are retained separately.
 
-The unsplit-attention prefix probe is in progress. Five PDH samples during
+The unsplit-attention prefix probe completed with final-prefix logit max
+scaled error 0.00367897042 (absolute 0.00485706329), also failing the unchanged
+0.0005 limit. Its largest sampled value difference is 0.00383135 at layer 44,
+position 4096. This independently confirms that disabling wide split and
+short FDPP does not remove the prefix discrepancy. Five PDH samples during
 this diagnostic attribute all positive target-adapter engine counters to
 its PID 16572; no competing app was killed. This short observation is not
 full-run contamination clearance or benchmark acceptance. An additional
-unfused-projections mode is prepared to disable Gemma QKV and gate/up fusion
-while preserving the control's matrix and attention settings; it has not run.
+unfused-projections mode disables Gemma QKV and gate/up fusion while preserving
+the control's matrix and attention settings; its 8K run is now in progress.
+
+The native diagnostic and both scripts now accept an optional prefix length
+(3 through 262142, additionally bounded by the loaded model's capacity).
+Samples remain at the first, middle and last positions for every layer. For
+example, `run_prefix_kv.py control 1024` followed by
+`summarize_prefix.py control 1024` writes separate `control-ctx1024` artifacts.
+The default remains 8192 and retains the original filenames; existing output
+is never overwritten. C17 and C23 strict-warning compilation both pass after
+this diagnostic-only extension. It does not change runtime code or tolerances.
