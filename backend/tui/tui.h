@@ -18,7 +18,7 @@ typedef struct tui_state {
     char model_path[1024], metrics_path[1024], status[256], command[1100];
     nya_format_info model;
     uint64_t model_bytes;
-    int model_valid, view, help, editing, paused, quit, overflow;
+    int model_valid, view, help, editing, paused, quit, overflow, chart;
     size_t command_length, samples, malformed;
     tui_sample history[TUI_HISTORY];
     unsigned compiled;

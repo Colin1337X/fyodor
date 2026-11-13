@@ -15,8 +15,9 @@ fyodor-tui --monitor --model model.gguf --snapshot
 The model view performs structural container inspection, not model loading or
 inference. The training view follows the CSV produced by `fyodor-train --metrics`:
 step, loss, tokens/s, compute provider, optional validation loss, gradient norm,
-and device memory. The graph shows the latest loss samples with a labeled dynamic
-vertical scale. Only complete, finite rows are accepted. Refresh reads at most
+and device memory. Press `g` to cycle loss, tokens/s, gradient norm, and device memory graphs, or
+use `:chart loss|rate|gradient|memory`. Each graph uses a labeled dynamic
+vertical scale; missing optional values remain gaps rather than zeroes. Only complete, finite rows are accepted. Refresh reads at most
 the last 64 KiB and retains at most 192 samples; malformed rows are counted.
 A missing file clears old samples. File replacement/restart is supported.
 
