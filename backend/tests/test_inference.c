@@ -167,7 +167,7 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
         cpu.compute=cpu_compute;
         fprintf(stderr,"Exact CUDA projection fusion equivalence against unfused execution\n");
     }
-    size_t capacity = m->context_length < 128 || getenv("NYA_TEST_ATTENTION_TILES") ? m->context_length : 128;
+    size_t capacity = m->context_length < 128 || getenv("NYA_TEST_ATTENTION_TILES") || getenv("NYA_TEST_RING_KV") ? m->context_length : 128;
     if (argc > 3) { char *end; unsigned long n = strtoul(argv[3], &end, 10);
         if (*end || n < 3 || n > m->context_length || n > 4096) goto done;
         capacity = (size_t)n;
@@ -183,6 +183,16 @@ static int validate_model(int argc, char **argv, unsigned window, int shared_kv)
     if (!reference || !candidate) goto done;
     nya_compute_stats resources;
     nya_llm_session_stats(candidate, &resources);
+    if(getenv("NYA_TEST_RING_KV")) {
+        size_t expected=0;
+        /* These synthetic shapes use the same window for all consumers. */
+        for(size_t layer=0;layer<view.block_count;++layer) if(view.layers[layer].kv_source==layer) {
+            size_t slots=capacity,window_size=view.layers[layer].sliding_window;
+            if(window_size && window_size+resources.prefill_batch-1<slots) slots=window_size+resources.prefill_batch-1;
+            expected+=slots*view.layers[layer].head_dimension*view.layers[layer].kv_head_count*2*sizeof(float);
+        }
+        if(resources.kv_bytes!=expected) {fprintf(stderr,"Ring allocation mismatch: %zu vs %zu\n",resources.kv_bytes,expected);goto done;}
+    }
     if (getenv("NYA_TEST_BLAS") && !resources.external_matmul_bytes) { result = 77; goto done; }
     if (getenv("NYA_TEST_CUTLASS") && resources.external_matmul_kind != 2) { result = 77; goto done; }
     if (getenv("NYA_TEST_NO_BLAS") && resources.external_matmul_bytes) goto done;

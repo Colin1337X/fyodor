@@ -4,6 +4,7 @@
 #include "../backend/core/llm_internal.h"
 #include <math.h>
 #include "q4_byte_pack.h"
+#include "kv_layout.h"
 typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; } nya_cuda_timing;
 typedef struct nya_cuda_matrix_profile {
     size_t rows, columns, batch;
@@ -36,6 +37,9 @@ typedef struct nya_cuda_plan {
     CUfunction gather, gather_batch, norm_op, add_norm, rope, rope_pair, vector, attention;
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
+    nya_cuda_kv_layout *kv_layout;
+    size_t kv_high_water;
+    CUfunction rope_ring, attention_ring, attention_ring_split;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -96,7 +100,7 @@ static void cuda_plan_free(void *opaque)
                 paths[m->path], m->type, m->rows, m->columns, m->batch, m->calls, m->milliseconds);
         }
     }
-    free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
+    free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
 static int plan_add(size_t *total, size_t count)
@@ -250,7 +254,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     const char *wide_split_setting=getenv("NYA_CUDA_WIDE_SPLIT");
     int wide_split=wide_split_setting && !strcmp(wide_split_setting,"1");
     int has_split_attention = 0;
-    int all_tiled = !c->reference;
+    const char *ring_setting=getenv("NYA_CUDA_RING_KV");
+    int ring_kv=!c->reference && ring_setting && !strcmp(ring_setting,"1");
+    int all_tiled = !c->reference && !ring_kv;
     for (size_t i = 0; i < m->block_count; ++i) {
         if (m->layers[i].head_dimension != 64 && m->layers[i].head_dimension != 128) all_tiled = 0;
         if (m->layers[i].head_count > heads) heads = m->layers[i].head_count;
@@ -286,9 +292,11 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
        persistent allocation. Mixed/unsupported widths and reference mode still
        reserve a complete batch. Account this before admitting model weights. */
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
+    size_t kv_count=m->cache_width*capacity;
+    if(ring_kv && (maximum_kv>SIZE_MAX/batch || nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count))) return NULL;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
-        m->cache_width * capacity, m->cache_width * capacity, m->tokenizer.vocabulary_size, rope_count / sizeof(float),
-        maximum_kv, maximum_kv, 2, partial_count};
+        kv_count, kv_count, m->tokenizer.vocabulary_size, rope_count / sizeof(float),
+        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (weights > SIZE_MAX - m->tensors[i].data_size) return NULL;
@@ -301,6 +309,11 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         for (size_t i = 0; i < 6; ++i) counts[i] = counts[i] / batch * smaller;
         counts[6] = heads * capacity * (all_tiled && smaller > 7 ? 7 : smaller);
         batch = smaller; total = 0;
+        if(ring_kv) {
+            if(nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count)) return NULL;
+            counts[7]=counts[8]=kv_count;
+            counts[11]=counts[12]=maximum_kv*batch;
+        }
         for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i])) return NULL;
     }
     if (total > c->cache_limit - weights) return plan_decline("weights plus bounded KV/scratch exceed the memory budget");
@@ -360,7 +373,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         if (failure_at[0] >= '0' && failure_at[0] <= '9' && !*end && at <= SIZE_MAX) p->fail_after = (size_t)at;
     }
     p->stats.weights_bytes = weights;
-    p->stats.kv_bytes = m->cache_width * capacity * sizeof(float) * 2;
+    p->stats.kv_bytes = kv_count * sizeof(float) * 2;
     p->stats.scratch_bytes = total - p->stats.kv_bytes;
     p->stats.prefill_batch = batch;
     p->tensors = calloc(m->tensor_count, sizeof(*p->tensors));
@@ -368,6 +381,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p); return NULL; }
     size_t start_weights = c->weight_count, free_bytes, total_bytes;
+    if(ring_kv) {
+        p->kv_layout=calloc(m->block_count,sizeof(*p->kv_layout));
+        if(!p->kv_layout || nya_cuda_kv_layout_build(m,capacity,batch,p->kv_layout,&kv_count)) goto failure;
+        if(c->function_get(&p->rope_ring,c->module,"nya_rope_ring")!=CUDA_SUCCESS ||
+            c->function_get(&p->attention_ring,c->module,"nya_attention_ring")!=CUDA_SUCCESS ||
+            c->function_get(&p->attention_ring_split,c->module,"nya_attention_ring_split")!=CUDA_SUCCESS) goto failure;
+    }
 #ifdef NYA_PORTABLE_ATTENTION
     if (c->function_get(&p->portable_attention,c->module,"nya_attention_portable_f32") != CUDA_SUCCESS) goto failure;
 #ifdef NYA_FLASH_DECODING_PP
@@ -524,7 +544,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         timing->matrix = p->matrix_profile;
         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
-        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope || f == p->rope_pair ? 2U : f == p->vector ? 3U : f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
+        timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope || f == p->rope_ring || f == p->rope_pair ? 2U : f == p->vector ? 3U : f == p->attention_ring || f == p->attention_ring_split || f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
 #ifdef NYA_PORTABLE_ATTENTION
         if (f == p->portable_attention) timing->kind = 4U;
 #ifdef NYA_FLASH_DECODING_PP
@@ -703,12 +723,12 @@ static int plan_vector(nya_cuda_plan *p, CUdeviceptr out, CUdeviceptr x, CUdevic
     return plan_launch(p, p->vector, ((size_t)length + 255) / 256, args);
 }
 static int plan_rope(nya_cuda_plan *p, CUdeviceptr x, CUdeviceptr frequencies, unsigned hd, unsigned heads, unsigned position,
-    CUdeviceptr keys, CUdeviceptr values, CUdeviceptr value)
+    CUdeviceptr keys, CUdeviceptr values, CUdeviceptr value, unsigned ring_slots)
 {
     unsigned gemma = (unsigned)p->model->is_gemma;
     unsigned batch = (unsigned)p->batch;
-    void *args[] = {&x, &frequencies, &hd, &heads, &position, &gemma, &batch, &p->active_request, &keys, &values, &value};
-    return plan_launch(p, p->rope, ((size_t)hd / 2 * heads * batch + 255) / 256, args);
+    void *args[] = {&x, &frequencies, &hd, &heads, &position, &gemma, &batch, &p->active_request, &keys, &values, &value, &ring_slots};
+    return plan_launch(p, ring_slots ? p->rope_ring : p->rope, ((size_t)hd / 2 * heads * batch + 255) / 256, args);
 }
 
 static int plan_rope_pair(nya_cuda_plan *p, CUdeviceptr key, CUdeviceptr frequencies,
@@ -729,6 +749,11 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         (position != 0 && position > p->valid) || (logits && output == NULL)) return -1;
     for (size_t i = 0; i < count; ++i) if (tokens[i] >= m->tokenizer.vocabulary_size) return -1;
     if (position >= p->fail_after || count > p->fail_after - position) { p->failed = 1; return -1; }
+    if(p->kv_layout && position) for(size_t i=0;i<m->block_count;++i) {
+        size_t slots=p->kv_layout[i].slots,window=m->layers[i].sliding_window;
+        size_t first=window && position>=window ? position-window+1 : 0;
+        if(slots<p->capacity && !nya_cuda_kv_retained(p->kv_high_water,slots,first)) return -1;
+    }
     p->batch = count;
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { p->failed = 1; return -1; }
@@ -784,14 +809,16 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         const nya_llm_layer *w = &m->layers[layer];
         size_t hd = w->head_dimension, heads = w->head_count, kvheads = w->kv_head_count;
         size_t qdim = hd * heads, kvdim = hd * kvheads, h = w->hidden_length;
-        CUdeviceptr keys = p->keys + w->cache_offset * p->capacity * sizeof(float);
-        CUdeviceptr values = p->values + w->cache_offset * p->capacity * sizeof(float);
+        size_t cache_offset=p->kv_layout?p->kv_layout[layer].offset:w->cache_offset*p->capacity;
+        unsigned ring_slots=p->kv_layout && p->kv_layout[layer].slots<p->capacity ? (unsigned)p->kv_layout[layer].slots : 0;
+        CUdeviceptr keys = p->keys + cache_offset * sizeof(float);
+        CUdeviceptr values = p->values + cache_offset * sizeof(float);
         CUdeviceptr key = keys + position * kvdim * sizeof(float), value = values + position * kvdim * sizeof(float);
-        if (p->active_request) { key = p->decode_key; value = p->decode_value; }
+        if (p->active_request || ring_slots) { key = p->decode_key; value = p->decode_value; }
         CUdeviceptr frequencies = p->frequencies + freq_offset * sizeof(float);
         freq_offset += hd / 2;
         RUN(plan_norm(p, p->norm, p->x, w->attention_norm, d, 1));
-        int rope_pair = count == 1 && p->fuse_rope_pair && !m->is_gemma &&
+        int rope_pair = !ring_slots && count == 1 && p->fuse_rope_pair && !m->is_gemma &&
             !c->reference && w->kv_source == layer &&
             kvdim <= UINT32_MAX && qdim <= UINT32_MAX - kvdim;
         int qkv = count == 1 && p->fuse_qkv && (!m->is_gemma || p->gemma_qkv) && !c->reference &&
@@ -815,14 +842,28 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
                 (unsigned)kvheads, (unsigned)position,
                 p->active_request ? keys : 0, p->active_request ? values : 0, value));
             else RUN(plan_rope(p, key, frequencies, (unsigned)hd, (unsigned)kvheads, (unsigned)position,
-                p->active_request ? keys : 0, p->active_request ? values : 0, value));
+                p->active_request || ring_slots ? keys : 0, p->active_request || ring_slots ? values : 0, value, ring_slots));
         }
-        if (!rope_pair) RUN(plan_rope(p, p->q, frequencies, (unsigned)hd, (unsigned)heads, (unsigned)position, 0, 0, 0));
+        if (!rope_pair) RUN(plan_rope(p, p->q, frequencies, (unsigned)hd, (unsigned)heads, (unsigned)position, 0, 0, 0, 0));
         unsigned width = (unsigned)hd, nh = (unsigned)heads, nk = (unsigned)kvheads;
         unsigned window = w->sliding_window;
         unsigned end = (unsigned)position, capacity = (unsigned)p->capacity;
         scale = m->is_gemma ? 1 : 1 / sqrtf((float)hd);
         void *attention[] = {&p->q, &keys, &values, &p->norm, &p->scores, &width, &nh, &nk, &window, &end, &capacity, &scale, &p->active_request};
+        /* The short graph only addresses positions 0..255. Those physical
+           rows are still linear when the ring has at least 256 slots, so keep
+           the existing short FDPP/portable math and performance. The separate
+           long topology is mandatory: graph_index==0 alone is not a bound. */
+        int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
+        if(ring_slots && !linear_ring_decode) {
+            void *ring[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
+            if(p->split_attention && graph_index && (width==64 || width==128 || (p->wide_split_attention && (width==256 || width==512))) && window>256) {
+                ring[3]=&p->attention_parts;
+                RUN(plan_grid(p,p->attention_ring_split,heads,4,256,1,ring));
+                void *combine[]={&p->attention_parts,&p->norm,&width};
+                RUN(plan_grid(p,p->attention_combine,heads,1,width>128?width:128,1,combine));
+            } else RUN(plan_grid(p,p->attention_ring,heads,count,256,1,ring));
+        } else
 #ifdef NYA_FLASH_DECODING_PP
         if (p->use_fdpp && (p->use_fdpp != 2 || !graph_index) && count == 1 && width <= 256) {
             /* Partition choice is fixed within each captured graph. Device
@@ -962,6 +1003,7 @@ read_logits:
         for (size_t i = 0; i < m->tokenizer.suppressed_count; ++i) output[m->tokenizer.suppressed_tokens[i]] = -INFINITY;
     }
     p->valid = position + count;
+    if(!position || p->valid>p->kv_high_water) p->kv_high_water=p->valid;
     if (c->pop(&previous) == CUDA_SUCCESS) return 0;
     p->failed = 1; return -1;
 failure:
@@ -1001,21 +1043,26 @@ static int cuda_plan_read_kv(void *opaque, size_t layer, size_t position, size_t
     size_t width = w->head_dimension*w->kv_head_count;
     if (!width || count > SIZE_MAX/width || elements != count*width || elements > SIZE_MAX/sizeof(float)) return -1;
     size_t bytes = sizeof(float);
-    size_t offset = (w->cache_offset*p->capacity+position*width)*bytes;
+    size_t slots=p->kv_layout?p->kv_layout[layer].slots:p->capacity;
+    if(slots<p->capacity && !nya_cuda_kv_retained(p->kv_high_water,slots,position)) return -1;
+    size_t base=p->kv_layout?p->kv_layout[layer].offset:w->cache_offset*p->capacity;
+    size_t slot=position%slots,first=count<slots-slot?count:slots-slot;
+    size_t offset=(base+slot*width)*bytes;
     nya_cuda_context *c = p->cuda;
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) return -1;
     ++p->stats.synchronizations;
     int result = -1;
     CUresult status = c->stream_sync(c->stream);
-    if (status == CUDA_SUCCESS) {
-        status = c->download(keys,p->keys+offset,elements*bytes);
-        if (status == CUDA_SUCCESS) ++p->stats.downloads;
+    for(unsigned part=0;part<2 && status==CUDA_SUCCESS;++part) {
+        size_t rows=part?count-first:first;
+        if(!rows) continue;
+        size_t host=part?first*width:0,source=part?base*bytes:offset;
+        status=c->download(keys+host,p->keys+source,rows*width*bytes);
+        if(status==CUDA_SUCCESS) {++p->stats.downloads;status=c->download(values+host,p->values+source,rows*width*bytes);}
+        if(status==CUDA_SUCCESS) ++p->stats.downloads;
     }
-    if (status == CUDA_SUCCESS) {
-        status = c->download(values,p->values+offset,elements*bytes);
-        if (status == CUDA_SUCCESS) { ++p->stats.downloads; result = 0; }
-    }
+    if(status==CUDA_SUCCESS) result=0;
     if (status != CUDA_SUCCESS) fprintf(stderr,"CUDA KV snapshot failed: driver status %d\n",(int)status);
     status = c->pop(&previous);
     if (status != CUDA_SUCCESS) { fprintf(stderr,"CUDA KV snapshot context restore failed: %d\n",(int)status); result = -1; }
