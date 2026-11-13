@@ -77,3 +77,15 @@ The short full-model run was launched after these tests. It is pending at this
 checkpoint; running.json is only a launch record, never completion evidence.
 Only a terminal result.json with validated logs can establish a pass. The
 long full-model sanitizer has not run. Sanitizer timings are not benchmarks.
+
+## Independent reference preparation
+
+run_reference.py adapts the existing aligned-prefix reference runner to this
+experiment's completed correctness evidence and pending full-model sanitizer.
+It accepts `short|long UNIQUE_LABEL`, validates the unchanged native/reference
+builds and prompt-token evidence, checks exact generated text against the native
+correctness run, and retains continuous GPU coverage. It cannot accept a score.
+The existing 14 reference build inputs and 22 prompt-token proof inputs were
+rechecked with no changes. Six reference interval tests and four comparison
+tests passed. Its GPU exclusivity check refused the active sanitizer before
+creating an output folder. The reference has not executed at this checkpoint.
