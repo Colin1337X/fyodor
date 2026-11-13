@@ -118,6 +118,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_BYTE_DOT AND
     target_compile_definitions(nya-engine PRIVATE NYA_BYTE_DOT=1)
 endif()
 
+option(NYA_ENABLE_GEMMA_GATE "Compile experimental Gemma packed Q4 GELU gate" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_GEMMA_GATE AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/gemma_gate.cu")
+    set(nya_gemma_gate "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/gemma_gate.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_gemma_gate}")
+    file(READ "${nya_gemma_gate}" nya_gemma_gate_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_gemma_gate_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_GEMMA_GATE=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")
