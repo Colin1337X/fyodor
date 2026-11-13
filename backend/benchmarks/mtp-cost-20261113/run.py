@@ -39,6 +39,7 @@ if meta['continuous_gpu_monitor']:
     monitor_context=monitor.capture(out)
 with monitor_context as monitor_state:
     for context in contexts:
+        if monitor_state is not None:monitor_state.check_alive()
         command=[str(exe),context]
         row={'context':context,'command':command,'samples':[],
              'observer_clock':'qpc' if os.name=='nt' else 'perf_counter'};meta['runs'].append(row)
@@ -49,6 +50,7 @@ with monitor_context as monitor_state:
             row['process_id']=process.pid
             try:
                 while process.poll() is None:
+                    if monitor_state is not None:monitor_state.check_alive()
                     row['samples'].append(gate.snapshot())
                     (out/'timing.json').write_text(json.dumps(meta,indent=2)+'\n')
                     time.sleep(1)

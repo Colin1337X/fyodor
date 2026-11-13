@@ -111,3 +111,31 @@ Five offline tests cover both summary streams, failed/invalid exits, missing,
 nonzero or duplicate summaries, incomplete sweeps and failed guards. The pending
 audit preflight was verified to reject launch without creating output files.
 This launcher has not executed a GPU test and does not establish performance.
+
+## Completed GPU validation and diagnostic timing
+
+The later execution supersedes the pending status above. All 207 raw cases passed; the actual Compute Sanitizer repeat also passed all 207 with zero errors. Source and harness hashes matched.
+
+After closing Firefox, Thorium, Free Download Manager and PowerToys, the repeated-weight timing probe completed in both orders. These are diagnostic kernel measurements, not accepted full-model decode scores; continuous interval coverage was not collected.
+
+| Columns | Rows | Baseline / candidate speed ratio |
+| --- | --- | --- |
+
+| 3840 | 512 | 1.0091x |
+
+| 3840 | 2048 | 1.0621x |
+
+| 3840 | 4096 | 1.0614x |
+
+| 3840 | 8192 | 1.0693x |
+
+| 3840 | 15360 | 1.0620x |
+
+| 4096 | 3840 | 1.0543x |
+
+| 8192 | 3840 | 1.0598x |
+
+| 15360 | 3840 | 1.0584x |
+
+
+The candidate remains unintegrated pending model-level parity and measured benefit.

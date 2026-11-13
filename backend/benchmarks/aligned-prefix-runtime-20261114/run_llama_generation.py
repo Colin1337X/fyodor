@@ -55,6 +55,7 @@ def save():
 try:
     with capture(folder) as monitor:
         for context in ('short', 'long'):
+            monitor.check_alive()
             command = [str(root / 'build-cuda/aligned-generation-20261114/llama-generation-c17.exe'), tokens['model'], context]
             row = dict(context=context, command=command, observer_clock='qpc', samples=[])
             metadata['runs'].append(row)
@@ -64,6 +65,7 @@ try:
                 row.update(spawn_after_seconds=time.perf_counter(), process_id=process.pid)
                 try:
                     while process.poll() is None:
+                        monitor.check_alive()
                         row['samples'].append(gate.snapshot()); save(); time.sleep(1)
                 except BaseException as error:
                     row['observer_error'] = str(error) or type(error).__name__

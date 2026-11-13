@@ -16,6 +16,18 @@ def read_complete(path):
     return [json.loads(line) for line in path.read_text().split('\n')[:-1] if line]
 
 
+class MonitorState(dict):
+    """Serializable evidence with a live, non-serialized collector handle."""
+    worker = None
+
+    def check_alive(self):
+        if self.worker is None:
+            raise RuntimeError('Monitor has no collector')
+        status = self.worker.poll()
+        if status is not None:
+            raise RuntimeError(f'Monitor exited during workload (exit {status})')
+
+
 @contextmanager
 def capture(folder):
     if os.name != 'nt':
@@ -39,13 +51,14 @@ def capture(folder):
         raise RuntimeError('Multi-node adapter attribution is not implemented')
     command = [sys.executable, str(directory / 'capture_pdh.py'), '--output', str(paths['trace']),
                '--stop', str(paths['stop']), '--luid', adapter['counter_luid'], '--samples', '3600']
-    metadata = dict(accepted_benchmark=False, identity=devices, adapter=adapter,
+    metadata = MonitorState(accepted_benchmark=False, identity=devices, adapter=adapter,
                     command=command, errors=[], ready=False)
     worker = None
     with paths['log'].open('x') as log:
         try:
             worker = subprocess.Popen(command, stdout=log, stderr=log,
                                       creationflags=subprocess.CREATE_NO_WINDOW)
+            metadata.worker = worker
             metadata['process_id'] = worker.pid
             deadline = time.monotonic() + 20
             while True:
@@ -66,6 +79,7 @@ def capture(folder):
                 time.sleep(.1)
             paths['manifest'].write_text(json.dumps(metadata, indent=2))
             yield metadata
+            metadata.check_alive()
         except BaseException as error:
             metadata['errors'].append(str(error) or type(error).__name__)
             raise
@@ -91,4 +105,9 @@ def capture(folder):
                 except (OSError, ValueError) as error:
                     metadata['successful_stop'] = False
                     metadata['errors'].append(str(error))
+            if not metadata.get('successful_stop'):
+                metadata['errors'].append('Monitor failed cooperative shutdown; timing rejected')
             paths['manifest'].write_text(json.dumps(metadata, indent=2))
+
+    if not metadata.get('successful_stop'):
+        raise RuntimeError('Monitor failed cooperative shutdown; timing rejected')

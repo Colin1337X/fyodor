@@ -169,3 +169,21 @@ nonfinite, missing and boolean values. It does not clamp or rewrite raw samples;
 a counter anomaly cannot become clear sampled coverage. Zero and exactly 100
 remain valid. All 33 offline monitor/interval/generation tests pass with this
 change. This does not certify the live sanitizer or update performance scores.
+
+## Collector death propagation
+
+The first monitored native generation completed all 24 output-parity cases,
+but its collector exited after 168 samples with 0xc0000bba
+(PDH_CSTATUS_INVALID_DATA). Microsoft documents this as invalid returned data:
+https://learn.microsoft.com/en-us/windows/win32/perfctrs/pdh-error-codes
+The original log did not identify which API failed, so the exact cause is not
+proven. PDH exceptions now identify collection versus array sizing/data calls.
+No invalid measurement is retried away, clamped or admitted.
+
+MonitorState checks the actual owned collector handle. Native and independent
+reference launchers check it before every context and on each workload poll;
+their existing exception cleanup terminates and reaps only their own workload.
+Context exit also detects collector death and unsuccessful cooperative shutdown.
+37 offline tests passed, including a real CPU child terminated after collector
+exit. health-cpu-control retains live normal-shutdown and injected collector-death
+traces. No coverage acceptance rule was relaxed.

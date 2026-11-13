@@ -20,25 +20,25 @@ class Counter:
   self.check(self.lib.PdhOpenQueryW(None,0,C.byref(self.query)))
   try:
    self.check(self.lib.PdhAddEnglishCounterW(self.query,r'\GPU Engine(*)\Utilization Percentage',0,C.byref(self.counter)))
-   self.check(self.lib.PdhCollectQueryData(self.query))
+   self.check(self.lib.PdhCollectQueryData(self.query), 'PdhCollectQueryData')
   except BaseException:self.close();raise
  @staticmethod
- def check(status):
-  if status:raise RuntimeError(f'PDH status 0x{status:08x}')
+ def check(status, operation='PDH'):
+  if status:raise RuntimeError(f'{operation}: PDH status 0x{status:08x}')
  def close(self):
   if self.query:
    status=self.lib.PdhCloseQuery(self.query);self.query=C.c_void_p();self.check(status)
  def collect(self):
-  self.check(self.lib.PdhCollectQueryData(self.query))
+  self.check(self.lib.PdhCollectQueryData(self.query), 'PdhCollectQueryData')
   for attempt in range(4):
    size=C.c_uint32();count=C.c_uint32()
    status=self.lib.PdhGetFormattedCounterArrayW(self.counter,0x8200,C.byref(size),C.byref(count),None)
-   if status!=0x800007d2:self.check(status)
+   if status!=0x800007d2:self.check(status, 'PdhGetFormattedCounterArrayW(size)')
    if not size.value:raise RuntimeError('Empty PDH array sizing result')
    data=C.create_string_buffer(size.value)
    status=self.lib.PdhGetFormattedCounterArrayW(self.counter,0x8200,C.byref(size),C.byref(count),data)
    if status==0x800007d2:continue
-   self.check(status)
+   self.check(status, 'PdhGetFormattedCounterArrayW(data)')
    if count.value*C.sizeof(Item)>len(data):raise RuntimeError('PDH array count exceeds allocation')
    items=C.cast(data,C.POINTER(Item))
    return [{'instance':items[i].name.lower(),'status':items[i].formatted.status,
