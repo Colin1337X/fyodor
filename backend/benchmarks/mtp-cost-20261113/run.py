@@ -28,13 +28,18 @@ exe=root/(sys.argv[2] if len(sys.argv)>2 else 'build-cuda/mtp-cost.exe')
 meta={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'environment':settings,'gate_passed':accepted,'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in [root/'backend/core/llm_cpu.c',Path(__file__),Path(__file__).with_name('model.c')]},'runs':[]}
 for context in contexts:
     command=[str(exe),context]
-    row={'context':context,'command':command,'samples':[]};meta['runs'].append(row)
+    row={'context':context,'command':command,'samples':[],
+         'observer_clock':'qpc' if os.name=='nt' else 'perf_counter'};meta['runs'].append(row)
     with (out/(context+'.stdout')).open('w') as stdout,(out/(context+'.stderr')).open('w') as stderr:
+        row['spawn_before_seconds']=time.perf_counter()
         process=subprocess.Popen(command,env=env,stdout=stdout,stderr=stderr)
+        row['spawn_after_seconds']=time.perf_counter()
+        row['process_id']=process.pid
         while process.poll() is None:
             row['samples'].append(gate.snapshot())
             (out/'timing.json').write_text(json.dumps(meta,indent=2)+'\n')
             time.sleep(1)
+        row['exit_observed_seconds']=time.perf_counter()
         row['exit_code']=process.returncode
     (out/'timing.json').write_text(json.dumps(meta,indent=2)+'\n')
     print(context,row['exit_code'],flush=True)

@@ -38,7 +38,7 @@ This demonstrates dynamic discovery on this Windows host; other systems/locales,
 short-lived competitors, all error cases and production monitoring are not yet
 validated. This workload is not a performance benchmark.
 
-An acceptance policy still needs explicit measured intervals, sample coverage,
+An acceptance policy still needs end-to-end matching of measured intervals, sample coverage,
 gap/invalid-data rejection, PID lifetime checks, CPU/thermal conditions and
 controlled cross-engine comparisons. Missing counters and first/new-instance
 samples are not proof of idleness. Do not sum per-engine percentages. System
@@ -60,6 +60,44 @@ The auditor always returns `accepted_benchmark: false`, even for a clear sampled
 interval. It cannot exclude missing short-lived competitors or PID reuse, and
 does not check CPU activity, thermal state or equivalent workloads. No previous
 timing is promoted by this change.
+
+## Native decode intervals
+
+NYA_GENERATION_PROFILE=1 now prints a separate `Generation interval` record
+alongside the unchanged historical duration line. Both use the identical start
+and end clock reads; output occurs after the timed interval. The clock is QPC
+on Windows and CLOCK_MONOTONIC on other supported platforms. Invalid/nonfinite
+or zero-duration measurements are explicitly marked invalid. This remains the
+generation-loop contract (including the first prefill-logit sample), not the
+fixed-forward llama.cpp benchmark contract. No prompt text is logged.
+
+The mtp-cost runner now records the child PID, spawn bounds and observed-exit
+time in the observer's QPC clock on Windows. Those are process lifetime bounds,
+not exact creation/exit instants. Together with the native decode endpoints,
+they supply inputs for the existing sampled-coverage audit. They do not change
+the environment gate or automatically start/validate the PDH collector.
+
+decode_intervals.py checks sequential duration/interval pairs, identity,
+clock, finite positive intervals, ordering and matching elapsed time (allowing
+only decimal-format rounding). Seven offline tests reject missing/duplicate
+records, mismatched calls/clocks/durations, nonfinite or reversed timestamps,
+and overlap. Ordinary native correctness assertions and speculative-generation
+assertions pass with profiling off/on under strict C17 and C23 CPU execution.
+The v2 validation records 4340 positive C17 intervals and 4325 positive C23
+intervals, all bracketed by the Python parent's QPC observations. It explicitly
+rejects 19/34 one-token synthetic calls that completed within a single clock
+tick. Such calls cannot become throughput samples. Profiling-off emits no
+intervals. These CPU runs occurred while GPU sanitizer work was active and are
+correctness tests only.
+
+The initial validation is preserved: the parser rejected zero-duration native
+records even though their first implementation marked them valid. The runtime
+now marks equal endpoints invalid; the validator explicitly checks that those
+synthetic cases are rejected, instead of discarding their evidence silently.
+decode-interval-validation-v2.json and the associated stdout/stderr files retain
+the final observations. Incomplete decode-interval-validation.json is not a pass.
+No measured performance ratio changes, and production monitor/benchmark
+orchestration, CPU/thermal checks and equivalent llama.cpp reruns remain open.
 
 Primary API documentation:
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw
