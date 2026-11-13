@@ -275,3 +275,22 @@ All 12 environment gates passed. Native and packed-weight logit checks are
 exact at total lengths 3/4/257/1026. C17/C23 FDPP regressions pass.
 4K/8K have not been remeasured with QKV; the 125% goal remains unmet.
 [Evidence and limitations](gemma4-qkv-20261029/README.md).
+
+
+### 2026-11-13: ring KV after GPU-process cleanup (diagnostic only)
+
+Stopped verified Steam/EA/Epic launcher and Spotify GPU processes. The unchanged
+acceptance gate still rejected remaining desktop identities; preserve these
+results as diagnostics, not accepted scores. Six observations per cell, reverse
+orders, Gemma 12B Q4_K_M, F32 KV, 32-token decode, llama.cpp b10809 FA off:
+
+| Prefix | Linear KV tok/s | Ring KV tok/s | llama.cpp tok/s | Diagnostic ring / llama |
+| --- | ---: | ---: | ---: | ---: |
+| 0 | 39.93324 +/- 0.26161 | 40.03027 +/- 0.09079 | 46.58917 +/- 0.16478 | 85.9218% |
+| 8192 | 23.35682 +/- 0.24687 | 24.47060 +/- 0.36571 | 21.70119 +/- 0.21816 | 112.7615% |
+
+Ring KV improves this long-context diagnostic by 4.7686%, with no meaningful
+short-context improvement. Keep it opt-in. The freed KV allocation enables packed
+gate/up copies for all 48 layers instead of 11. Accepted Gemma scores remain
+85.6103% short / 106.8707% at 8K; the 125% short-and-long target is unmet.
+[Commands, deviations, process cleanup and environment evidence](gemma4-ring-timing-20261113/README.md).
