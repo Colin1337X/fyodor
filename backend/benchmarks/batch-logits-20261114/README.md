@@ -42,5 +42,40 @@ per optimized context (batch-2/4, three rounds). Ordinary and serial MTP are
 controls. Two warmed observations per mode are retained; round zero is excluded.
 This is diagnostic full-generation timing, not a fixed-forward llama.cpp test.
 
-No speedup is claimed until the full comparison finishes. Accepted Gemma scores
-remain 85.6103% short / 106.8707% at 8K versus llama.cpp; 125% remains unmet.
+## Full-generation results
+
+All 48 generation calls passed exact parity, including cross-process reference
+text agreement. Binary and settings checks passed. Both optimized contexts report
+six projection traces: nine projections per batch-2 call and seven per batch-4
+call. Controls report none; no CUDA event profiler was active.
+
+Warmed decode-loop means and sample standard deviations in milliseconds:
+
+| Context/mode | Off mean +/- SD | On mean +/- SD | On speed / off speed |
+| --- | ---: | ---: | ---: |
+| Short ordinary | 757.207 +/- 0.648 | 757.315 +/- 0.076 | 99.986% |
+| Short serial MTP | 845.700 +/- 0.218 | 846.054 +/- 2.114 | 99.958% |
+| Short batch 2 | 820.046 +/- 0.106 | 805.672 +/- 0.013 | 101.784% |
+| Short batch 4 | 827.112 +/- 2.545 | 794.857 +/- 0.148 | 104.058% |
+| 8K ordinary | 934.876 +/- 0.539 | 933.561 +/- 0.328 | 100.141% |
+| 8K serial MTP | 1060.697 +/- 0.187 | 1060.876 +/- 0.489 | 99.983% |
+| 8K batch 2 | 1143.469 +/- 0.291 | 1129.166 +/- 0.783 | 101.267% |
+| 8K batch 4 | 1104.332 +/- 0.411 | 1073.151 +/- 2.218 | 102.906% |
+
+Batch-2 saves about 14 ms per 32-token generation; batch-4 saves 31-32 ms.
+The ordinary and serial-MTP controls vary by at most 0.15%. This supports keeping
+the opt-in path, but every MTP case still trails ordinary generation. Do not
+enable speculative decoding by default based on this result.
+
+Both conservative desktop gates failed; all raw timing and environment evidence
+is retained. There are only two warmed observations per mode, and off/on process
+order was not reversed. These are internal diagnostics, not clean accepted
+llama.cpp measurements. A correctness commit was created between the off/on
+processes, so their revision labels differ; the executable and compared settings
+are identical and verified by the summarizer. Production source did not change
+during the comparison.
+
+Accepted Gemma scores remain 85.6103% short / 106.8707% at 8K versus llama.cpp;
+125% remains unmet. Remaining assistant host operations/transfers and target
+matrix work require further optimization; output batching alone does not close
+the measured gap.
