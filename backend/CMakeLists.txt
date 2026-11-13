@@ -767,6 +767,9 @@ if(BUILD_TESTING)
         add_test(NAME validate-cuda-gemma COMMAND nya-test-architectures "${nya_fixtures}/tiny-gemma4-cuda.gguf")
         set_tests_properties(validate-cuda-gemma PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_TEST_GRAPH=1" TIMEOUT 120)
         add_test(NAME generate-native-gguf-cuda COMMAND nya-test-generation "${nya_fixtures}/tiny-llama-cuda.gguf")
+        add_test(NAME generate-speculative-batch-cuda COMMAND nya-test-generation "${nya_fixtures}/tiny-speculative-cuda.gguf")
+        set_tests_properties(generate-speculative-batch-cuda PROPERTIES
+            ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_BATCH=8;NYA_CUDA_RING_KV=1;NYA_SPECULATIVE_BATCH=1;NYA_TEST_SPECULATIVE_BATCH=1" TIMEOUT 120)
         set_tests_properties(generate-native-gguf-cuda PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 60)
         set_tests_properties(quant-kernels-cuda quant-kernels-cuda-reference inference-cuda-resident
             inference-cuda-memory-fallback inference-cuda-prefix-replay inference-cuda-without-graphs
