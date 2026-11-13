@@ -142,3 +142,6 @@ The UB sweep retained byte-safe packed weight decoding, checked allocation/strid
 - [Optional wide value reduction](gemma4-wide-value-20261113/README.md): exact Gemma parity and sanitizer validation; isolated kernel timing only.
 
 - [Wide-value full-model timing](gemma4-wide-timing-20261113/README.md): 143.24% of matched llama.cpp at 8K in contaminated diagnostics; accepted scores unchanged.
+
+- [Gate scheduling sweep](gemma4-gate-schedule-20261113/README.md): modest isolated gains; runtime unchanged.
+- [Rejected compact Q4 gate](gemma4-gate-compact-20261113/README.md): exact synthetic parity but slower despite fewer weight bytes.
