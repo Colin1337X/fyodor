@@ -99,3 +99,13 @@ arithmetic. Prefill retains the original weights; see the runtime evidence in
 `backend/benchmarks/decode-byte-dot-runtime-20261028`.
 
 `q6_row_pair.cu` reuses activations across 2/4/8 adjacent output rows per warp. All tested outputs match exactly, but both Gemma down/vocabulary shapes regress substantially. Diagnostic only; not CMake-compiled or selected by runtime dispatch. Evidence: backend/benchmarks/gemma4-q6-rows-20261113.
+
+`small_batch.cu` schedules the existing native row-dot arithmetic over a second
+grid dimension for 2..8 inputs. Compile with `NYA_ENABLE_SMALL_BATCH=ON` and
+select with `NYA_CUDA_SMALL_BATCH=1`. Both default off; missing source or symbols
+retain native GEMM. No new quantization or weight layout. The C host selects
+this only for narrow batches, including speculative verification; single-token
+decode is unchanged. All seven formats pass scalar-bitwise and float64 checks.
+Matched TinyLlama standalone-speculation diagnostics remove the padded-GEMM
+regression, but do not establish a llama.cpp decode win. Evidence:
+`backend/benchmarks/small-batch-dot-20261113`.

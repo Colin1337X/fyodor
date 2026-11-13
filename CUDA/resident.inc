@@ -107,7 +107,7 @@ static void cuda_plan_free(void *opaque)
     if(p->timings) fprintf(stderr,"CUDA profile scope: from_position=%zu batches=%zu tokens=%zu (batches starting below the threshold excluded)\n",
         p->profile_from,p->profiled_batches,p->profiled_tokens);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -639,6 +639,8 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
         }
         unsigned r = (unsigned)rows, batch = (unsigned)p->batch;
         void *gemm_args[] = {&matrix, &in, &out, &cols, &stride, &r, &batch};
+        if(batch<=8 && p->cuda->small_batch[type])
+            return plan_grid(p,p->cuda->small_batch[type],(r+7)/8,batch,256,1,gemm_args);
         unsigned tile = batch >= 32 && r >= 32 ? p->cuda->gemm_tile : 32, bx = tile == 64 ? 16 : 32;
         CUfunction kernel = tile == 64 ? p->cuda->gemm_large[type] : p->cuda->gemm[type];
         return plan_grid(p, kernel, (r + tile-1) / tile, (batch + tile-1) / tile, bx, 256/bx, gemm_args);
@@ -673,7 +675,8 @@ static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *
 {
     if (!p->matrix_profiles) return plan_matvec_impl(p,out,t,in,rows,columns);
     unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
-        p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U : 2U;
+        p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U :
+        p->batch<=8 && p->cuda->small_batch[t->type] ? 8U : 2U;
     p->matrix_profile = plan_matrix_slot(p,rows,columns,t->type,path);
     int result = plan_matvec_impl(p,out,t,in,rows,columns);
     p->matrix_profile = 0;

@@ -37,11 +37,15 @@ static int check_matvec(nya_compute_context *context, size_t rows, size_t column
        fixtures whose widths are necessarily multiples of 32 or 256. */
     if (strcmp(nya_compute_name(context),"vulkan")) {
         for (size_t i = 0; i < columns*33; ++i) input[i] = (float)((int)((i*3+i/columns)%13)-6)/7;
-        if (nya_compute_matmul_typed(context,weights,rows,columns,0,input,output,33)) goto done;
-        for (size_t token = 0; token < 33; ++token) for (size_t row = 0; row < rows; ++row) {
-            double expected = 0;
-            for (size_t col = 0; col < columns; ++col) expected += (double)weights[row*columns+col]*input[token*columns+col];
-            if (!isfinite(output[token*rows+row]) || fabs(output[token*rows+row]-expected) > 0.0001*(1+fabs(expected))) goto done;
+        const size_t batches[]={2,3,4,8,9,33};
+        for(size_t bi=0;bi<sizeof(batches)/sizeof(batches[0]);++bi) {
+            size_t batch=batches[bi];
+            if (nya_compute_matmul_typed(context,weights,rows,columns,0,input,output,batch)) goto done;
+            for (size_t token = 0; token < batch; ++token) for (size_t row = 0; row < rows; ++row) {
+                double expected = 0;
+                for (size_t col = 0; col < columns; ++col) expected += (double)weights[row*columns+col]*input[token*columns+col];
+                if (!isfinite(output[token*rows+row]) || fabs(output[token*rows+row]-expected) > 0.0001*(1+fabs(expected))) goto done;
+            }
         }
     }
     result = 0;

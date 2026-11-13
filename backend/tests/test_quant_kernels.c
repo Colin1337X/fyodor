@@ -185,7 +185,7 @@ int main(void)
            partial final tiles. Reuse one context across differently sized jobs
            to cover persistent scratch growth, shrink/reuse and worker tails. */
         if (nya_compute_capabilities(compute) & NYA_COMPUTE_MATMUL) {
-            const size_t batches[] = {3, 17, 65, 32, 8};
+            const size_t batches[] = {2, 3, 4, 8, 9, 17, 65, 32};
             float *inputs = malloc(65*columns*sizeof(float)), *outputs = malloc((65*rows+2)*sizeof(float));
             if (!inputs || !outputs) { free(inputs); free(outputs); free(data); nya_compute_free(compute); return 1; }
             for (size_t i = 0; i < 65*columns; ++i) inputs[i] = (float)((int)(i%61)-30)/31;
@@ -195,6 +195,12 @@ int main(void)
             if (nya_compute_matmul_typed(compute, data, rows, columns, types[k], inputs, outputs+1, batch)) return 1;
             if (outputs[0] != 12345 || outputs[batch*rows+1] != 12345) return 1;
             for (size_t token = 0; token < batch; ++token) {
+                if(getenv("NYA_TEST_SMALL_BATCH") && batch<=8) {
+                    if(nya_compute_matvec_typed(compute,data,rows,columns,types[k],inputs+token*columns,actual) ||
+                       memcmp(actual,outputs+1+token*rows,rows*sizeof(float))) {
+                        fprintf(stderr,"small batch differs from native scalar: type=%u batch=%zu token=%zu\n",types[k],batch,token);return 1;
+                    }
+                }
                 nya_llm_matvec(NULL, expected, &tensor, inputs+token*columns, columns, rows);
                 for (size_t row = 0; row < rows; ++row) {
                     float value = outputs[1+token*rows+row];

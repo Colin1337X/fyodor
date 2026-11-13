@@ -42,6 +42,7 @@ typedef struct nya_cuda_context {
     CUfunction byte_dot, byte_add, byte_qkv[2];
     CUfunction gemm[31];
     CUfunction gemm_large[31];
+    CUfunction small_batch[31];
     CUfunction expand[31];
     CUfunction expand_transposed[31];
     nya_cuda_blas blas;
@@ -318,6 +319,14 @@ static nya_cuda_context *nya_cuda_create_for(int training)
         if (c->function_get(&c->dot[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
         const char *tile_mode = getenv("NYA_CUDA_GEMM_TILE");
         c->gemm_tile = c->reference || (tile_mode && !strcmp(tile_mode,"32")) ? 32 : 64;
+#ifdef NYA_SMALL_BATCH
+        const char *small=getenv("NYA_CUDA_SMALL_BATCH");
+        if(!c->reference && small && !strcmp(small,"1")) {
+            snprintf(name,sizeof(name),"nya_small_batch_%u",types[i]);
+            CUfunction candidate=NULL;
+            if(c->function_get(&candidate,c->module,name)==CUDA_SUCCESS) c->small_batch[types[i]]=candidate;
+        }
+#endif
         snprintf(name, sizeof(name), "nya_gemm_%u", types[i]);
         if (c->function_get(&c->gemm[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
         snprintf(name, sizeof(name), "nya_gemm64_%u", types[i]);
@@ -496,7 +505,9 @@ static int nya_cuda_matmul_typed(nya_cuda_context *c, const void *weights, size_
         void *matrix_arguments[] = {&matrix, &c->input, &c->output, &cols, &stride, &r, &b};
         unsigned tile = b >= 32 && r >= 32 ? c->gemm_tile : 32, bx = tile == 64 ? 16 : 32;
         CUfunction kernel = tile == 64 ? c->gemm_large[type] : c->gemm[type];
-        if (c->launch(kernel, (r+tile-1)/tile, (b+tile-1)/tile, 1, bx, 256/bx, 1, 0, c->stream, matrix_arguments, NULL) != CUDA_SUCCESS) goto done;
+        if(b<=8 && c->small_batch[type]) {
+            if(c->launch(c->small_batch[type],(r+7)/8,b,1,256,1,1,0,c->stream,matrix_arguments,NULL)!=CUDA_SUCCESS) goto done;
+        } else if (c->launch(kernel, (r+tile-1)/tile, (b+tile-1)/tile, 1, bx, 256/bx, 1, 0, c->stream, matrix_arguments, NULL) != CUDA_SUCCESS) goto done;
         }
     } else if (c->launch(function, blocks, 1, 1, 256, 1, 1, 0, c->stream, arguments, NULL) != CUDA_SUCCESS) goto done;
     if (c->stream_sync(c->stream) != CUDA_SUCCESS ||

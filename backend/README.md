@@ -877,3 +877,9 @@ Other providers and MTP assistants retain serial verification. Default is off:
 current TinyLlama diagnostics regress with small-batch quantized GEMM. See
 [correctness tests and profiling evidence](benchmarks/speculative-batch-20261113/README.md).
 This does not implement resident Gemma MTP or establish a decode speedup.
+
+The optional `NYA_ENABLE_SMALL_BATCH=ON` build and `NYA_CUDA_SMALL_BATCH=1`
+runtime setting replace padded narrow CUDA GEMM with native row-dot grids for
+2..8 inputs. [Current correctness and diagnostic timing](benchmarks/small-batch-dot-20261113/README.md)
+show the standalone verifier regression removed on TinyLlama. Both switches
+remain opt-in; resident Gemma MTP and accepted decode speedup are still pending.
