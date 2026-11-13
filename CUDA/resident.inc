@@ -37,7 +37,7 @@ typedef struct nya_cuda_plan {
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     int failed;
-    int gemma_qkv;
+    int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
     CUgraphExec executable[2];
     unsigned long long graph_kernels[2];
@@ -149,7 +149,8 @@ static void plan_byte_weights(nya_cuda_plan *p)
 {
     nya_cuda_context *c=p->cuda;
     const nya_llm_context *m=p->model;
-    if (!c->byte_dot && (!c->byte_gate || !p->fuse_gate_up || m->is_gemma)) return;
+    int gemma_gate=p->gemma_gate && c->gemma_gate && p->fuse_gate_up && m->is_gemma && m->embedding_length==3840;
+    if (!c->byte_dot && !gemma_gate && (!c->byte_gate || !p->fuse_gate_up || m->is_gemma)) return;
     CUdeviceptr *table=calloc(m->tensor_count,sizeof(*table));
     if (!table) return;
     for (size_t layer=0;layer<m->block_count;++layer) {
@@ -160,6 +161,10 @@ static void plan_byte_weights(nya_cuda_plan *p)
                 w->feed_forward_gate,w->feed_forward_up,w->feed_forward_down};
             for (unsigned j=0;j<sizeof(projections)/sizeof(projections[0]);++j)
                 plan_byte_mark(table,m,projections[j]);
+        }
+        if (gemma_gate && plan_byte_shape(pair[0],w->hidden_length,3840) &&
+            plan_byte_shape(pair[1],w->hidden_length,3840)) {
+            plan_byte_mark(table,m,pair[0]); plan_byte_mark(table,m,pair[1]);
         }
         int eligible=c->byte_gate && p->fuse_gate_up && !m->is_gemma;
         for (unsigned j=0;j<2;++j) {
@@ -304,6 +309,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->fuse_qkv = !qkv || strcmp(qkv,"0");
     const char *gemma_qkv = getenv("NYA_CUDA_GEMMA_QKV");
     p->gemma_qkv = gemma_qkv && !strcmp(gemma_qkv,"1");
+    const char *gemma_gate = getenv("NYA_CUDA_GEMMA_GATE");
+    p->gemma_gate = gemma_gate && !strcmp(gemma_gate,"1");
     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
     p->fuse_gate_up = !gate_up || strcmp(gate_up,"0");
     const char *profile = getenv("NYA_CUDA_PROFILE");
@@ -876,6 +883,19 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
                 RUN(plan_norm(p, p->norm, p->x, w->feed_forward_norm, d, 1));
             }
         }
+        CUdeviceptr gemma_gate=0, gemma_up=0;
+        if (count==1 && p->fuse_gate_up && m->is_gemma && !c->reference &&
+            p->gemma_gate && c->gemma_gate && d==3840) {
+            gemma_gate=plan_byte_tensor(p,w->feed_forward_gate,h,d);
+            gemma_up=plan_byte_tensor(p,w->feed_forward_up,h,d);
+        }
+        if (gemma_gate && gemma_up) {
+            unsigned long long cols=d, stride=2400, rows=h;
+            void *args[]={&gemma_gate,&gemma_up,&p->norm,&p->gate,&cols,&stride,&rows};
+            p->matrix_profile=plan_matrix_slot(p,h,d,12,5);
+            RUN(plan_launch(p,c->gemma_gate,(h+7)/8,args));
+            p->matrix_profile=0;
+        } else
         if (count == 1 && p->fuse_gate_up && !m->is_gemma && !c->reference &&
             w->feed_forward_gate->type == 12 && w->feed_forward_up->type == 12 &&
             w->feed_forward_gate->data_size == w->feed_forward_up->data_size) {

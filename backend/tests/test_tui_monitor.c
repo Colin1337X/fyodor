@@ -31,6 +31,13 @@ int main(int argc,char **argv)
     for(int i=0;i<10000;++i) fprintf(csv,"%d,%.3f,20\n",i,1.0+(double)i/10000.0);
     CHECK(!fclose(csv));CHECK(!tui_metrics(&s) && s.samples==TUI_HISTORY && s.history[TUI_HISTORY-1].step==9999);
     tui_frame *f=malloc(sizeof(*f));CHECK(f);
+    tui_key(&s,':');
+    for(int i=0;i<70;++i) tui_key(&s,0xac00);
+    tui_key(&s,'X');tui_render(&s,f,48,16);
+    CHECK(f->cells[14*48+2].code=='<');
+    int found_end=0;
+    for(int i=3;i<47;++i) if(f->cells[14*48+i].code=='X') found_end=1;
+    CHECK(found_end);tui_key(&s,TUI_ESCAPE);
     for(int view=0;view<3;++view) for(int w=0;w<=250;w+=7) for(int h=0;h<=90;h+=3) {
         s.view=view;s.history[0].loss=-DBL_MAX;s.history[1].loss=DBL_MAX;
         tui_render(&s,f,w,h);CHECK(f->width>=1 && f->width<=TUI_WIDTH && f->height>=1 && f->height<=TUI_HEIGHT);

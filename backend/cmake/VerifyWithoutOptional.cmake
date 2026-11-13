@@ -21,6 +21,16 @@ foreach(directory IN ITEMS backend CUDA rocm mlx optcpp)
             PATTERN benchmarks EXCLUDE)
     endif()
 endforeach()
+# SQLite is a required native C dependency; optional vendor trees stay excluded.
+file(COPY "${NYA_SOURCE_ROOT}/backend/vendor/sqlite"
+    DESTINATION "${root}/source/backend/vendor")
+# Retain inputs and generated adapters checked by the native application's tests.
+file(COPY "${NYA_SOURCE_ROOT}/themes" DESTINATION "${root}/source")
+file(COPY "${NYA_SOURCE_ROOT}/scripts/generate-themes.py" DESTINATION "${root}/source/scripts")
+foreach(adapter IN ITEMS frontend/public/themes.js frontend/public/theme-licenses.txt frontend/src/themes.css)
+    get_filename_component(parent "${adapter}" DIRECTORY)
+    file(COPY "${NYA_SOURCE_ROOT}/${adapter}" DESTINATION "${root}/source/${parent}")
+endforeach()
 # Benchmark evidence is large; retain the source harness required by CMake.
 file(COPY "${NYA_SOURCE_ROOT}/backend/benchmarks/training_device_bench.c"
     DESTINATION "${root}/source/backend/benchmarks")
@@ -37,7 +47,7 @@ endif()
 set(options -G "${NYA_GENERATOR}" "-DCMAKE_C_COMPILER=${NYA_COMPILER}"
     -DCMAKE_BUILD_TYPE=Release "-DNYA_C_STANDARD=${NYA_STANDARD}" -DNYA_WARNINGS_AS_ERRORS=ON
     -DNYA_ENABLE_ONNXRUNTIME=OFF -DBUILD_TESTING=ON
-    -DNYA_ENABLE_OPTCPP=ON -DNYA_ENABLE_PORTABLE_ATTENTION=ON -DNYA_ENABLE_ROCM=ON -DNYA_ENABLE_MLX=ON
+    -DNYA_ENABLE_GEMMA_GATE=ON -DNYA_ENABLE_OPTCPP=ON -DNYA_ENABLE_PORTABLE_ATTENTION=ON -DNYA_ENABLE_ROCM=ON -DNYA_ENABLE_MLX=ON
     "-DNYA_ENABLE_CUDA=${NYA_CUDA}" "-DNYA_ENABLE_VULKAN=${NYA_VULKAN}"
     "-DNYA_CUDA_INCLUDE_DIR=${NYA_CUDA_INCLUDE}" "-DNYA_NVRTC_INCLUDE_DIR=${NYA_NVRTC_INCLUDE}"
     "-DNYA_CUDA_NVRTC_LIBRARY=${NYA_NVRTC_LIBRARY}"

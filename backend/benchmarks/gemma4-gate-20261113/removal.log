@@ -1,0 +1,54 @@
+-- Optional ROCm C loader enabled; HIP/rocBLAS are discovered at runtime
+-- Optional MLX C loader enabled; MLX C/GPU are discovered at runtime
+-- Configuring done (0.3s)
+-- Generating done (1.5s)
+-- Build files have been written to: C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cpu
+[  0%] Building C object CMakeFiles/nya-engine.dir/core/cpu_backend.c.obj
+[  0%] Building C object CMakeFiles/nya-engine.dir/core/llm_quant.c.obj
+[  4%] Building C object CMakeFiles/nya-engine.dir/core/vendor.c.obj
+[  9%] Building C object CMakeFiles/nya-engine.dir/core/generation.c.obj
+[ 14%] Building C object CMakeFiles/nya-engine.dir/core/llm_cpu.c.obj
+[ 19%] Building C object CMakeFiles/nya-engine.dir/core/llm_gguf.c.obj
+[ 19%] Building C object CMakeFiles/nya-engine.dir/core/multimodal.c.obj
+[ 23%] Building C object CMakeFiles/nya-engine.dir/core/model.c.obj
+[ 28%] Building C object CMakeFiles/nya-engine.dir/core/training.c.obj
+[ 33%] Building C object CMakeFiles/nya-engine.dir/core/pretraining.c.obj
+[ 38%] Linking C static library libnya-engine.a
+[ 90%] Built target nya-engine
+[ 95%] Building C object CMakeFiles/fyodor-bench.dir/core/bench_main.c.obj
+[100%] Linking C executable fyodor-bench.exe
+[100%] Built target fyodor-bench
+-- The C compiler identification is GNU 16.2.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Users/Colin/fyodor/.tools/w64devkit/bin/gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Optional ROCm C loader enabled; HIP/rocBLAS are discovered at runtime
+-- Optional MLX C loader enabled; MLX C/GPU are discovered at runtime
+-- Configuring done (2.6s)
+CMake Error at backend/CMakeLists.txt:81 (add_library):
+  Cannot find source file:
+
+    vendor/sqlite/sqlite3.c
+
+
+CMake Error at backend/CMakeLists.txt:81 (add_library):
+  No SOURCES given to target: fyodor-sqlite
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.
+CMake Error at C:/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/cmake/VerifyWithoutOptional.cmake:51 (execute_process):
+  execute_process failed command indexes:
+
+    1: "Child return code: 1"
+
+
+
+make[3]: *** [CMakeFiles\verify-without-non-c.dir\build.make:69: CMakeFiles/verify-without-non-c] Error 1
+make[2]: *** [CMakeFiles\Makefile2:1959: CMakeFiles/verify-without-non-c.dir/all] Error 2
+make[1]: *** [CMakeFiles\Makefile2:1966: CMakeFiles/verify-without-non-c.dir/rule] Error 2
+make: *** [Makefile:601: verify-without-non-c] Error 2

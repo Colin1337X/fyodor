@@ -45,6 +45,17 @@ static void line(tui_frame *f,int x,int y,int limit,unsigned char style,const ch
 {
     char buffer[2048];va_list args;va_start(args,format);vsnprintf(buffer,sizeof(buffer),format,args);va_end(args);text(f,x,y,limit,style,buffer);
 }
+/* Keep the editing end visible for long paths, trimming only whole UTF-8 scalars. */
+static void command_line(const tui_state *s,tui_frame *f,int y,int width)
+{
+    const unsigned char *start=(const unsigned char *)s->command,*p=start;
+    int columns=0;
+    while(*p) columns+=wide(scalar(&p))?2:1;
+    int clipped=columns>width;
+    while(*start && columns>width-clipped) columns-=wide(scalar(&start))?2:1;
+    if(clipped) text(f,2,y,1,3,"<");
+    text(f,2+clipped,y,width-clipped,0,(const char *)start);
+}
 static void box(tui_frame *f,int x,int y,int w,int h,const char *title)
 {
     if(w<2 || h<2) return;
@@ -110,7 +121,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
         if(h>19) text(f,3,13,w-6,3,"Compiled support does not imply an available device.");
     }
     text(f,2,h-3,w-4,3,s->status);
-    if(s->editing) {text(f,1,h-2,1,2,":");text(f,2,h-2,w-3,0,s->command);}
+    if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);}
     else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  Space pause  r refresh  q quit");
 }
 void tui_write(FILE *file,const tui_frame *f,int ansi,int color)

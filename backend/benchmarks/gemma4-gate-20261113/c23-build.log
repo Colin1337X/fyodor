@@ -1,0 +1,76 @@
+-- Optional ROCm C loader enabled; HIP/rocBLAS are discovered at runtime
+-- Optional MLX C loader enabled; MLX C/GPU are discovered at runtime
+-- CUDA driver/NVRTC provider enabled (C host compiler; runtime CUDA compilation)
+-- CUTLASS headers absent: retaining native CUDA; see CUDA/cutlass/README.md
+-- Configuring done (0.5s)
+-- Generating done (2.2s)
+-- Build files have been written to: C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cuda-c23
+[  4%] Building C object CMakeFiles/nya-engine.dir/core/cpu_backend.c.obj
+[  4%] Building C object CMakeFiles/nya-engine.dir/core/turboquant.c.obj
+[  8%] Building C object CMakeFiles/nya-engine.dir/core/cpu_kernels.c.obj
+[ 13%] Building C object CMakeFiles/nya-engine.dir/core/llm_quant.c.obj
+[ 17%] Building C object CMakeFiles/nya-engine.dir/core/thread.c.obj
+[ 17%] Building C object CMakeFiles/nya-engine.dir/core/vendor.c.obj
+[ 21%] Building C object CMakeFiles/nya-engine.dir/core/compute.c.obj
+[ 26%] Building C object CMakeFiles/nya-engine.dir/core/execution.c.obj
+[ 26%] Building C object CMakeFiles/nya-engine.dir/core/generation.c.obj
+[ 30%] Building C object CMakeFiles/nya-engine.dir/core/file.c.obj
+[ 34%] Building C object CMakeFiles/nya-engine.dir/core/format.c.obj
+[ 39%] Building C object CMakeFiles/nya-engine.dir/core/format_onnx.c.obj
+[ 39%] Building C object CMakeFiles/nya-engine.dir/core/format_gguf.c.obj
+[ 43%] Building C object CMakeFiles/nya-engine.dir/core/format_safetensors.c.obj
+[ 43%] Building C object CMakeFiles/nya-engine.dir/core/llm_gguf.c.obj
+[ 47%] Building C object CMakeFiles/nya-engine.dir/core/llm_cpu.c.obj
+[ 52%] Building C object CMakeFiles/nya-engine.dir/core/multimodal.c.obj
+[ 56%] Building C object CMakeFiles/nya-engine.dir/core/model.c.obj
+[ 56%] Building C object CMakeFiles/nya-engine.dir/core/runtime.c.obj
+[ 60%] Building C object CMakeFiles/nya-engine.dir/core/training.c.obj
+[ 65%] Building C object CMakeFiles/nya-engine.dir/core/train_executor.c.obj
+[ 65%] Building C object CMakeFiles/nya-engine.dir/core/training_device.c.obj
+[ 69%] Building C object CMakeFiles/nya-engine.dir/core/training_indices.c.obj
+[ 73%] Building C object CMakeFiles/nya-engine.dir/core/training_session.c.obj
+[ 73%] Building C object CMakeFiles/nya-engine.dir/core/pretraining.c.obj
+[ 78%] Building C object CMakeFiles/nya-engine.dir/vulkan/vulkan.c.obj
+[ 82%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/rocm/rocm.c.obj
+[ 82%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/mlx/mlx.c.obj
+[ 86%] Building C object CMakeFiles/nya-engine.dir/C_/Users/Colin/.codex/worktrees/resident-training/fyodor/CUDA/cuda.c.obj
+[ 91%] Linking C static library libnya-engine.a
+[ 91%] Built target nya-engine
+[ 95%] Building C object CMakeFiles/fyodor-bench.dir/core/bench_main.c.obj
+[100%] Linking C executable fyodor-bench.exe
+[100%] Built target fyodor-bench
+[ 61%] Built target nya-engine
+[ 64%] Building C object CMakeFiles/fyodor-sqlite.dir/vendor/sqlite/sqlite3.c.obj
+[ 67%] Building C object CMakeFiles/fyodor-monitor.dir/tui/main.c.obj
+[ 70%] Building C object CMakeFiles/fyodor-monitor.dir/tui/state.c.obj
+[ 73%] Building C object CMakeFiles/fyodor-monitor.dir/tui/render.c.obj
+[ 73%] Linking C static library libfyodor-monitor.a
+[ 73%] Built target fyodor-monitor
+In function 'sqlite3Strlen30',
+    inlined from 'sqlite3ColumnSetColl' at C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\vendor\sqlite\sqlite3.c:127273:10:
+C:\Users\Colin\.codex\worktrees\resident-training\fyodor\backend\vendor\sqlite\sqlite3.c:36482:28: warning: 'strlen' reading 1 or more bytes from a region of size 0 [-Wstringop-overread]
+36482 |   return 0x3fffffff & (int)strlen(z);
+      |                            ^~~~~~~~~
+In function 'sqlite3ColumnSetColl':
+cc1.exe: note: source object is likely at address zero
+[ 76%] Linking C static library libfyodor-sqlite.a
+[ 76%] Built target fyodor-sqlite
+[ 79%] Building C object CMakeFiles/fyodor-app.dir/core/fyodor_resource.c.obj
+[ 79%] Building C object CMakeFiles/fyodor-app.dir/core/fyodor_store.c.obj
+[ 82%] Linking C static library libfyodor-app.a
+[ 82%] Built target fyodor-app
+[ 85%] Building C object CMakeFiles/fyodor-inference.dir/core/fyodor_generate.c.obj
+[ 85%] Linking C static library libfyodor-inference.a
+[ 85%] Built target fyodor-inference
+[ 85%] Building C object CMakeFiles/fyodor-client.dir/core/fyodor_client.c.obj
+[ 88%] Linking C static library libfyodor-client.a
+[ 88%] Built target fyodor-client
+[ 88%] Building C object CMakeFiles/fyodor-terminal.dir/core/fyodor_terminal.c.obj
+[ 91%] Building C object CMakeFiles/fyodor-terminal.dir/core/fyodor_tui.c.obj
+[ 94%] Building C object CMakeFiles/fyodor-terminal.dir/core/fyodor_theme.c.obj
+[ 94%] Linking C static library libfyodor-terminal.a
+[ 94%] Built target fyodor-terminal
+[ 97%] Building C object CMakeFiles/fyodor-tui.dir/core/fyodor_main.c.obj
+[100%] Linking C executable fyodor-tui.exe
+[100%] Built target fyodor-tui
+make: *** No rule to make target 'nya-test-tui-monitor'.  Stop.

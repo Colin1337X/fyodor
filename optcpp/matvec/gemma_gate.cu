@@ -1,6 +1,6 @@
 /* Original Fyodor experimental packed Q4_K paired projection.
    Gemma tanh GELU uses the same expression as native vector kind 3.
-   Exactly 3840 columns, 2400 bytes/row, 256 threads; not runtime-selected. */
+   Exactly 3840 columns, 2400 bytes/row, 256 threads; opt-in runtime dispatch. */
 extern "C" __global__ __launch_bounds__(256,4) void nya_gate_up_gemma_byte_3840(const unsigned char *gate,
     const unsigned char *up, const float *input, float *output,
     unsigned long long ignored_columns, unsigned long long ignored_stride, unsigned long long rows)

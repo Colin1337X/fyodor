@@ -27,7 +27,9 @@ accepts `open PATH`, `metrics PATH`, `overview`, `model`, `training`, `pause`,
 command bar. Commands never invoke a shell. `NO_COLOR` disables color; snapshot
 mode emits plain UTF-8 without terminal escape sequences. Interactive mode
 requires a terminal and restores its modes and alternate screen on normal exit
-and handled interruption.
+and handled interruption. Long command paths scroll to keep the editing end
+visible, with a `<` marker for clipped leading text. Scrolling preserves UTF-8
+characters and accounts for wide Korean/CJK characters.
 
 This is an initial inspection/monitoring workbench. It does not yet launch,
 cancel, or resume training, or run interactive generation. Those controls require
@@ -58,6 +60,6 @@ and Clang ASan/UBSan configurations on Windows. ConPTY checks cover initial
 render, help, idle rendering, q, and Ctrl-C cleanup. A real Gemma4 12B GGUF
 inspection reports 667 tensors and 43 metadata entries.
 
-The physical-removal build also passes all 65 registered tests (four expected
+The physical-removal build also passes all 78 registered tests (four expected
 ROCm/MLX hardware skips) with optcpp and CUDA template directories absent,
 including both TUI tests and the training/export/inference workflows.
