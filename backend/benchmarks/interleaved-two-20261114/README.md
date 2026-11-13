@@ -71,4 +71,33 @@ Integrated Gemma ring-KV Compute Sanitizer validation also passes with zero
 errors, both interleaving options enabled, batched vocabulary projection on,
 prefix 7 and two verification tokens across both reset cycles. The maximum
 scaled error is 1.66424333e-5. See integrated-memcheck.json and its log.
-Whole-generation paired measurements remain pending; no accepted score changes.
+Whole-generation paired diagnostic measurements are recorded below; no accepted score changes.
+
+## Paired full-generation diagnostic
+
+Same binary and revision 71e5876; only NYA_CUDA_INTERLEAVED_TWO differs.
+Batch-four interleaving and prior assistant/verification optimizations remain
+enabled in both arms. All 48 generation calls pass exact greedy-output parity.
+Three rounds per context/mode; first excluded, middle round reversed; two
+warmed observations per cell. Values are mean +/- sample standard deviation
+of QPC decode-loop milliseconds for 32 outputs (including the first token
+sampled from prefill logits). Setup and prefill are excluded from this clock.
+
+| Context | Mode | Off ms | On ms | Speed % of off |
+| --- | --- | ---: | ---: | ---: |
+| short | ordinary | 756.150 +/- 0.130 | 757.654 +/- 0.005 | 99.802 |
+| short | mtp-serial2 | 827.254 +/- 1.186 | 828.840 +/- 0.805 | 99.809 |
+| short | mtp-batch2 | 787.406 +/- 0.945 | 778.192 +/- 2.222 | 101.184 |
+| short | mtp-batch4 | 672.754 +/- 0.042 | 673.607 +/- 1.116 | 99.873 |
+| long | ordinary | 935.582 +/- 0.741 | 934.866 +/- 0.764 | 100.077 |
+| long | mtp-serial2 | 1046.008 +/- 2.105 | 1045.950 +/- 3.258 | 100.006 |
+| long | mtp-batch2 | 1113.587 +/- 0.210 | 1097.418 +/- 1.112 | 101.473 |
+| long | mtp-batch4 | 949.405 +/- 2.469 | 948.074 +/- 0.674 | 100.140 |
+
+Batch-two mode saves 9.213 ms short and 16.169 ms long in this sweep.
+Batch-four remains the faster speculative mode on this workload. The option
+stays off by default: this is a modest measured diagnostic improvement, not a
+125% llama.cpp result. Both conservative environment gates failed. These
+results also use a diagnostic matched-B512 prefill path and a generation
+contract different from the accepted fixed-forward benchmark. The accepted
+85.6103% short and 106.8707% long llama.cpp ratios remain unchanged.
