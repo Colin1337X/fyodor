@@ -1,3 +1,6 @@
+#ifndef _WIN32
+#define _POSIX_C_SOURCE 200809L
+#endif
 #include "llm_internal.h"
 
 #include <math.h>
@@ -20,6 +23,15 @@ enum fixture_kind {
     FIXTURE_ADD_EOS,
     FIXTURE_INVALID_UTF8_OUTPUT
 };
+
+static int speculative_batch(int enabled)
+{
+#ifdef _WIN32
+    return _putenv_s("NYA_SPECULATIVE_BATCH",enabled?"1":"0");
+#else
+    return setenv("NYA_SPECULATIVE_BATCH",enabled?"1":"0",1);
+#endif
+}
 
 static int write_u32(FILE *file, uint32_t value)
 {
@@ -368,6 +380,46 @@ int main(int argument_count, char **arguments)
                 strcmp(response.text, "aaaa") != 0 || response.accepted_draft_tokens != 4)
                 return fail("identical-model speculation failed", error);
             nya_generation_response_free(&response);
+            if(getenv("NYA_TEST_SPECULATIVE_BATCH")) {
+                /* Full acceptance computes all four proposal positions, including
+                   the final emitted position skipped by the scalar path. */
+                if(nya_llm_generate_draft(context,context,&request,&response,error,sizeof(error)) ||
+                   response.target_steps!=response.prompt_tokens+4)
+                    return fail("batched verification did not execute",error);
+                nya_generation_response_free(&response);
+                size_t total_accepted=0,total_emitted=0;
+                request.temperature=1;request.top_k=2;request.speculative_tokens=8;request.max_tokens=14;
+                context->layers[0].sliding_window=3;
+                for(request.seed=1;request.seed<=32;++request.seed) {
+                    nya_generation_response serial;
+                    if(speculative_batch(0) || nya_llm_generate_draft(context,&draft,&request,&serial,error,sizeof(error)))
+                        return fail("serial sampling oracle failed",error);
+                    if(speculative_batch(1) || nya_llm_generate_draft(context,&draft,&request,&response,error,sizeof(error)))
+                        return fail("batched sampling failed",error);
+                    if(strcmp(serial.text,response.text) || serial.generated_tokens!=response.generated_tokens ||
+                       serial.stop_reason!=response.stop_reason || serial.accepted_draft_tokens!=response.accepted_draft_tokens)
+                        return fail("batched sampling differs from serial",error);
+                    total_accepted+=response.accepted_draft_tokens;total_emitted+=response.generated_tokens;
+                    nya_generation_response_free(&serial);nya_generation_response_free(&response);
+                }
+                if(!total_accepted || total_accepted==total_emitted) return fail("accept/reject coverage missing",error);
+                /* Prefill succeeds at length two; verification then fails.
+                   Never return partially verified output to the caller. */
+#ifdef _WIN32
+                if(_putenv_s("NYA_CUDA_FAIL_AFTER","2")) return 1;
+#else
+                if(setenv("NYA_CUDA_FAIL_AFTER","2",1)) return 1;
+#endif
+                if(nya_llm_generate_draft(context,&draft,&request,&response,error,sizeof(error))==0 || response.text)
+                    return fail("failed verification returned partial output",error);
+#ifdef _WIN32
+                if(_putenv_s("NYA_CUDA_FAIL_AFTER","")) return 1;
+#else
+                if(unsetenv("NYA_CUDA_FAIL_AFTER")) return 1;
+#endif
+                request.temperature=0;request.top_k=0;request.max_tokens=4;
+                context->layers[0].sliding_window=0;
+            }
             draft.tokenizer.add_space_prefix = !draft.tokenizer.add_space_prefix;
             if (nya_llm_generate_draft(context, &draft, &request, &response, error, sizeof(error)) == 0 || response.text != NULL)
                 return fail("incompatible draft tokenizer accepted", error);

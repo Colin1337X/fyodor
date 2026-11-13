@@ -868,3 +868,12 @@ Performance remains below llama.cpp. Final profiles attribute 87% of CUDA pp512 
 Experimental CUDA wide value reduction is compiled with `-DNYA_ENABLE_WIDE_VALUE=ON` and selected with `NYA_CUDA_WIDE_VALUE=1`. It processes sixteen output columns per lane while preserving the native accumulation order. It applies to single-token decode with head widths 256/512 in the existing long-context graph topology; other shapes and prefill retain their existing dispatch. The source lives in `optcpp/attention/wide_value16.cu`; removing `optcpp` gracefully omits this feature even when requested. Both build and runtime options default off. This is an original Fyodor kernel, not an implementation of upstream FlashAttention-4.
 
 The internal native session interface now provides `nya_llm_session_verify` for all-position logits with explicit output capacity. CUDA batches transformer work and reuses its existing single-position output scratch; other providers fall back to serial session execution. Invalid input does not advance the session; execution failure invalidates it until reset and partial output must be discarded. This is an API foundation, not yet an accelerated MTP generation path. See [verification validation](benchmarks/gemma4-batch-verify-20261113/README.md) and the [MTP execution audit](docs/gemma4-mtp-execution-audit.md).
+
+### Experimental standalone speculative batching
+
+`NYA_SPECULATIVE_BATCH=1` enables CUDA all-position verification for compatible
+standalone drafts, with explicit rejection rewind and bounded ring retention.
+Other providers and MTP assistants retain serial verification. Default is off:
+current TinyLlama diagnostics regress with small-batch quantized GEMM. See
+[correctness tests and profiling evidence](benchmarks/speculative-batch-20261113/README.md).
+This does not implement resident Gemma MTP or establish a decode speedup.

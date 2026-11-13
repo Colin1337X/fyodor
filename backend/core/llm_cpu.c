@@ -1235,9 +1235,9 @@ static int nya_llm_emit(const nya_llm_context *c, const nya_generation_request *
    A rejected suffix is rolled back by the logical position; old KV bytes above
    it are never read and get overwritten by the corrected continuation.
 
-   Verification currently uses scalar token steps. This provides correctness and
-   model-pair interoperability; throughput gains require batched verification
-   and are not implied by the number of accepted proposals. */
+   Optional standalone-draft verification batches target transformer work.
+   MTP remains serial until shared device hidden/KV binding is available.
+   Acceptance counts alone do not establish end-to-end throughput gains. */
 int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draft,
     const nya_generation_request *r, nya_generation_response *out, char *error, size_t error_capacity)
 {
@@ -1245,7 +1245,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     nya_llm_probability *candidates = NULL;
     uint32_t *prompt = NULL, proposals[32], previous;
     size_t prompt_count = 0, position, limit, window, vocabulary, count, bytes;
-    float *q_bank = NULL;
+    float *q_bank = NULL, *p_bank = NULL;
     uint64_t rng, draft_rng;
     int result = -1, stopped = 0;
     if (draft == NULL) {
@@ -1304,6 +1304,24 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     }
     window = r->speculative_tokens == 0 ? 4 : r->speculative_tokens;
     vocabulary = c->tokenizer.vocabulary_size;
+    const char *batch_setting=getenv("NYA_SPECULATIVE_BATCH");
+    if(!draft->is_assistant && batch_setting && !strcmp(batch_setting,"1") &&
+       nya_compute_plan_can_verify(target_state.device_plan) &&
+       nya_compute_plan_can_rewind(target_state.device_plan)) {
+        nya_compute_stats stats;nya_compute_plan_stats(target_state.device_plan,&stats);
+        /* One provider batch bounds rejected suffix writes to retained KV.
+           The draft may have a smaller ring, so honor its batch bound too. */
+        if(!stats.prefill_batch) window=1;
+        else if(window>stats.prefill_batch) window=stats.prefill_batch;
+        if(draft_state.device_plan) {
+            nya_compute_plan_stats(draft_state.device_plan,&stats);
+            if(!stats.prefill_batch) window=1;
+            else if(window>stats.prefill_batch) window=stats.prefill_batch;
+        }
+        if(nya_llm_cpu_product(window,vocabulary,&count) ||
+           nya_llm_cpu_product(count,sizeof(float),&bytes)) goto cleanup;
+        p_bank=malloc(bytes);if(!p_bank) goto cleanup;
+    }
     if (r->temperature > 0.0f) {
         count = r->top_k == 0 || r->top_k > vocabulary ? vocabulary : r->top_k;
         if (nya_llm_cpu_product(count, sizeof(*candidates), &bytes) != 0) goto cleanup;
@@ -1361,6 +1379,14 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
                     c, &target_state, mtp_cache_length) != 0) goto invalid;
             } else if (nya_llm_forward(draft, &draft_state, token, round_start + proposed, 1) != 0) goto invalid;
         }
+        int batched=p_bank && nya_compute_plan_can_verify(target_state.device_plan);
+        if(batched) {
+            memcpy(target_state.device_tokens+position,proposals,proposed*sizeof(*proposals));
+            if(nya_compute_plan_verify(target_state.device_plan,proposals,proposed,position,
+                p_bank,window*vocabulary)) goto invalid;
+            /* Count every computed target position, including discarded work. */
+            out->target_steps+=proposed;
+        }
         for (size_t j = 0; j < proposed && !stopped; ++j) {
             uint32_t token = proposals[j];
             int accepted;
@@ -1386,8 +1412,13 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
             stopped = nya_llm_emit(c, r, out, previous, token);
             if (stopped < 0) goto invalid;
             if (!stopped && out->generated_tokens < limit) {
-                if (nya_llm_forward(c, &target_state, token, position, 1) != 0) goto invalid;
-                ++out->target_steps;
+                if(batched && accepted) {
+                    memcpy(target_state.logits,p_bank+j*vocabulary,vocabulary*sizeof(float));
+                } else {
+                    if(batched && nya_compute_plan_rewind(target_state.device_plan,position)) goto invalid;
+                    if (nya_llm_forward(c, &target_state, token, position, 1) != 0) goto invalid;
+                    ++out->target_steps;
+                }
                 if (!accepted && !draft->is_assistant && nya_llm_forward(draft, &draft_state, token, position, 1) != 0) goto invalid;
             }
             previous = token; ++position;
@@ -1415,7 +1446,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
 invalid:
     nya_llm_cpu_error(error, error_capacity, "speculative forward, sampling, or bounded UTF-8 output failed");
 cleanup:
-    free(prompt); free(candidates); free(q_bank);
+    free(prompt); free(candidates); free(q_bank); free(p_bank);
     nya_llm_state_free(&target_state); nya_llm_state_free(&draft_state);
     if (result != 0) {
         free(out->text); memset(out, 0, sizeof(*out));

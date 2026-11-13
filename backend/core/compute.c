@@ -122,6 +122,8 @@ int nya_compute_plan_prefill(nya_compute_plan *p, const unsigned int *tokens, si
 {
     return p != NULL && p->api->plan_prefill != NULL ? p->api->plan_prefill(p->state, tokens, count, position, output) : -1;
 }
+int nya_compute_plan_can_rewind(const nya_compute_plan *p)
+{ return p && p->api->plan_rewind != NULL; }
 int nya_compute_plan_rewind(nya_compute_plan *p, size_t position)
 { return p && p->api->plan_rewind ? p->api->plan_rewind(p->state,position) : -1; }
 int nya_compute_plan_can_verify(const nya_compute_plan *p)
