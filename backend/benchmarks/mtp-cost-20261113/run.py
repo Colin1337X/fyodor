@@ -24,6 +24,7 @@ settings['NYA_CUDA_BATCH_LOGITS']=os.environ.get('NYA_CUDA_BATCH_LOGITS','0')
 settings['NYA_CUDA_ASSISTED_FFN']=os.environ.get('NYA_CUDA_ASSISTED_FFN','0')
 settings['NYA_CUDA_INTERLEAVED_REUSE']=os.environ.get('NYA_CUDA_INTERLEAVED_REUSE','0')
 settings['NYA_CUDA_INTERLEAVED_TWO']=os.environ.get('NYA_CUDA_INTERLEAVED_TWO','0')
+settings['NYA_CUDA_INTERLEAVED_INTEGER']=os.environ.get('NYA_CUDA_INTERLEAVED_INTEGER','0')
 env=os.environ.copy();env.update(settings)
 exe=root/(sys.argv[2] if len(sys.argv)>2 else 'build-cuda/mtp-cost.exe')
 meta={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'environment':settings,'gate_passed':accepted,'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in [root/'backend/core/llm_cpu.c',Path(__file__),Path(__file__).with_name('model.c')]},'runs':[]}
