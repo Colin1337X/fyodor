@@ -45,6 +45,7 @@ typedef struct nya_cuda_context {
     CUfunction gemm[31];
     CUfunction gemm_large[31];
     CUfunction small_batch[31], small_reuse[31][2];
+    CUfunction interleave_four, interleaved_reuse[31];
     CUfunction expand[31];
     CUfunction expand_transposed[31];
     nya_cuda_blas blas;
@@ -355,6 +356,17 @@ static nya_cuda_context *nya_cuda_create_for(int training)
                 CUfunction candidate=NULL;
                 if(c->function_get(&candidate,c->module,name)==CUDA_SUCCESS)c->small_reuse[types[i]][j]=candidate;
             }
+        }
+#endif
+#ifdef NYA_INTERLEAVED_REUSE
+        if(!c->reference && (types[i]==12 || types[i]==14)) {
+            if(!c->interleave_four) {
+                CUfunction candidate=NULL;
+                if(c->function_get(&candidate,c->module,"nya_interleave_four")==CUDA_SUCCESS)c->interleave_four=candidate;
+            }
+            snprintf(name,sizeof(name),"nya_interleaved_reuse_%u_4",types[i]);
+            CUfunction candidate=NULL;
+            if(c->function_get(&candidate,c->module,name)==CUDA_SUCCESS)c->interleaved_reuse[types[i]]=candidate;
         }
 #endif
         snprintf(name, sizeof(name), "nya_gemm_%u", types[i]);

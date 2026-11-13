@@ -20,7 +20,8 @@ typedef struct nya_cuda_plan {
     nya_cuda_context *cuda;
     const nya_llm_context *model;
     CUdeviceptr storage, x, norm, residual, gate, up, q, scores, keys, values, logits, frequencies;
-    CUdeviceptr blas_storage, attention_parts;
+    CUdeviceptr blas_storage, attention_parts, interleaved_input;
+    size_t interleaved_columns;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
     CUdeviceptr *tensors, *byte_tensors;
@@ -45,7 +46,7 @@ typedef struct nya_cuda_plan {
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
     int use_wide_value, use_wide_batch;
-    unsigned long long borrowed_wide_calls, batched_wide_calls, batched_logits_calls;
+    unsigned long long borrowed_wide_calls, batched_wide_calls, batched_logits_calls, interleaved_calls;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -108,7 +109,7 @@ static void cuda_plan_free(void *opaque)
     if(p->timings) fprintf(stderr,"CUDA profile scope: from_position=%zu batches=%zu tokens=%zu (batches starting below the threshold excluded)\n",
         p->profile_from,p->profiled_batches,p->profiled_tokens);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot", "small-batch-weight-reuse"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot", "small-batch-weight-reuse", "interleaved-weight-reuse"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -126,6 +127,8 @@ static void cuda_plan_free(void *opaque)
         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
     if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA batched wide-value attention calls: %llu\n",p->batched_wide_calls);
+    if(p->interleaved_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA interleaved weight-reuse calls: %llu\n",p->interleaved_calls);
     if(p->batched_logits_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA batched output projection calls: %llu\n",p->batched_logits_calls);
     free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
@@ -323,12 +326,19 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
        query fallback needs score rows; decode uses the first row of that same
        persistent allocation. Mixed/unsupported widths and reference mode still
        reserve a complete batch. Account this before admitting model weights. */
+    const char *interleaved_setting=getenv("NYA_CUDA_INTERLEAVED_REUSE");
+    int interleaved=!c->reference && interleaved_setting && !strcmp(interleaved_setting,"1") &&
+        c->interleave_four && (c->interleaved_reuse[12] || c->interleaved_reuse[14]);
+    size_t interleaved_columns=d>h?d:h;
+    if(q>interleaved_columns)interleaved_columns=q;
+    if(interleaved && interleaved_columns>(SIZE_MAX-3)/4)return NULL;
+    size_t interleaved_count=interleaved?4*interleaved_columns+3:0;
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
     size_t kv_count=m->cache_width*capacity;
     if(ring_kv && (maximum_kv>SIZE_MAX/batch || nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count))) return NULL;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
         kv_count, kv_count, m->tokenizer.vocabulary_size*logits_batch, rope_count / sizeof(float),
-        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count};
+        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count, batch>=4?interleaved_count:0};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (weights > SIZE_MAX - m->tensors[i].data_size) return NULL;
@@ -343,6 +353,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         batch = smaller; total = 0;
         logits_batch=batch_logits?(batch<4?batch:4):1;
         counts[9]=m->tokenizer.vocabulary_size*logits_batch;
+        counts[15]=batch>=4?interleaved_count:0;
         if(ring_kv) {
             if(nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count)) return NULL;
             counts[7]=counts[8]=kv_count;
@@ -517,11 +528,17 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     }
     CUdeviceptr *buffers[] = {&p->x, &p->norm, &p->residual, &p->gate, &p->up, &p->q,
         &p->scores, &p->keys, &p->values, &p->logits, &p->frequencies,
-        &p->decode_key, &p->decode_value, &p->request, &p->attention_parts};
+        &p->decode_key, &p->decode_value, &p->request, &p->attention_parts, &p->interleaved_input};
     size_t offset = 0;
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) {
         *buffers[i] = p->storage + offset; offset += counts[i] * sizeof(float);
     }
+    if(counts[15]) {
+        /* Three reserved floats cover alignment padding without escaping the
+           admitted scratch allocation. Conversion and dot share one stream. */
+        p->interleaved_input=(p->interleaved_input+15)&~(CUdeviceptr)15;
+        p->interleaved_columns=(counts[15]-3)/4;
+    } else p->interleaved_input=0;
     for (size_t i = 0; i < m->tensor_count; ++i) {
         if (p->tensors[i]) continue;
         if (c->weight_count == NYA_CUDA_WEIGHT_LIMIT) goto failure;
@@ -624,6 +641,11 @@ static int plan_grid(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy, unsig
 { return plan_grid_shared(p, f, gx, gy, bx, by, 0, args); }
 static int plan_launch(nya_cuda_plan *p, CUfunction f, size_t blocks, void **args)
 { return plan_grid(p, f, blocks, 1, 256, 1, args); }
+static CUfunction plan_interleaved_kernel(const nya_cuda_plan *p,unsigned type,size_t columns)
+{
+    return p->batch==4 && p->interleaved_input && columns<=p->interleaved_columns && type<31 ?
+        p->cuda->interleaved_reuse[type]:NULL;
+}
 static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
 {
     CUdeviceptr matrix = plan_tensor(p, t);
@@ -656,6 +678,15 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
         }
         unsigned r = (unsigned)rows, batch = (unsigned)p->batch;
         void *gemm_args[] = {&matrix, &in, &out, &cols, &stride, &r, &batch};
+        CUfunction interleaved=plan_interleaved_kernel(p,type,columns);
+        if(interleaved) {
+            void *convert_args[]={&in,&p->interleaved_input,&cols};
+            if(plan_launch(p,p->cuda->interleave_four,(columns+255)/256,convert_args))return -1;
+            gemm_args[1]=&p->interleaved_input;
+            int result=plan_grid(p,interleaved,(r+7)/8,1,256,1,gemm_args);
+            if(!result)++p->interleaved_calls;
+            return result;
+        }
         unsigned grid_y;
         CUfunction narrow=nya_cuda_narrow_kernel(p->cuda,type,batch,&grid_y);
         if(narrow) return plan_grid(p,narrow,(r+7)/8,grid_y,256,1,gemm_args);
@@ -696,7 +727,7 @@ static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *
     CUfunction narrow=nya_cuda_narrow_kernel(p->cuda,t->type,(unsigned)p->batch,&grid_y);
     unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
         p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U :
-        narrow ? (grid_y==1 ? 9U : 8U) : 2U;
+        plan_interleaved_kernel(p,t->type,columns) ? 10U : narrow ? (grid_y==1 ? 9U : 8U) : 2U;
     p->matrix_profile = plan_matrix_slot(p,rows,columns,t->type,path);
     int result = plan_matvec_impl(p,out,t,in,rows,columns);
     p->matrix_profile = 0;

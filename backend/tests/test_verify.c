@@ -25,6 +25,14 @@ static int batch_logits_setting(const char *value)
     return setenv("NYA_CUDA_BATCH_LOGITS",value,1);
 #endif
 }
+static int interleaved_setting(const char *value)
+{
+#ifdef _WIN32
+    return _putenv_s("NYA_CUDA_INTERLEAVED_REUSE",value);
+#else
+    return setenv("NYA_CUDA_INTERLEAVED_REUSE",value,1);
+#endif
+}
 int main(int argc,char **argv)
 {
     if(argc<2 || argc>3) return 2;
@@ -60,6 +68,8 @@ int main(int argc,char **argv)
     CHECK(reference && actual && last && tokens);
     for(size_t i=0;i<total;++i) tokens[i]=(uint32_t)((20+i%128)%v);
     int test_logits=getenv("NYA_TEST_VERIFY_LOGITS")!=NULL;
+    int test_interleaved=getenv("NYA_TEST_VERIFY_INTERLEAVED")!=NULL;
+    if(test_interleaved)CHECK(!interleaved_setting("0"));
     nya_compute_stats reference_stats;
     if(test_logits) CHECK(!batch_logits_setting("0"));
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
@@ -73,9 +83,20 @@ int main(int argc,char **argv)
     memcpy(reference+(count+1)*v,nya_llm_session_logits(s),v*sizeof(float));
     nya_llm_session_free(s);s=NULL;
     if(test_logits) CHECK(!batch_logits_setting("1"));
+    if(test_interleaved)CHECK(!interleaved_setting("1"));
     if(getenv("NYA_TEST_VERIFY_FAILURE")) CHECK(!inject_failure());
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
     if(getenv("NYA_TEST_VERIFY_RESIDENT")) CHECK(!strcmp(nya_llm_session_execution(s),"resident"));
+    if(test_interleaved) {
+        nya_compute_stats candidate_stats;nya_llm_session_stats(s,&candidate_stats);
+        size_t columns=m->embedding_length>m->maximum_hidden_length?m->embedding_length:m->maximum_hidden_length;
+        if(m->maximum_query_length>columns)columns=m->maximum_query_length;
+        size_t extra=candidate_stats.prefill_batch>=4?(4*columns+3)*sizeof(float):0;
+        CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
+        CHECK(candidate_stats.scratch_bytes==reference_stats.scratch_bytes+extra);
+        CHECK(candidate_stats.kv_bytes==reference_stats.kv_bytes);
+        CHECK(candidate_stats.weights_bytes==reference_stats.weights_bytes);
+    }
     if(test_logits) {
         nya_compute_stats candidate_stats;nya_llm_session_stats(s,&candidate_stats);
         CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
