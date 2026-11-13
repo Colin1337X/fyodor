@@ -145,3 +145,5 @@ The UB sweep retained byte-safe packed weight decoding, checked allocation/strid
 
 - [Gate scheduling sweep](gemma4-gate-schedule-20261113/README.md): modest isolated gains; runtime unchanged.
 - [Rejected compact Q4 gate](gemma4-gate-compact-20261113/README.md): exact synthetic parity but slower despite fewer weight bytes.
+
+- [Rejected multi-row Q6 decode](gemma4-q6-rows-20261113/README.md): exact synthetic parity, but both Gemma projection shapes regress.
