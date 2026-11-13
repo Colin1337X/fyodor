@@ -13,7 +13,9 @@ fyodor-tui --monitor --model model.gguf --snapshot
 ```
 
 The model view performs structural container inspection, not model loading or
-inference. The training view follows the CSV produced by `fyodor-train --metrics`:
+inference. Inspection errors distinguish malformed/truncated containers,
+unsupported formats or versions, resource limits, and read failures; failed
+inspection clears the previous model details. The training view follows the CSV produced by `fyodor-train --metrics`:
 step, loss, tokens/s, compute provider, optional validation loss, gradient norm,
 and device memory. Press `g` to cycle loss, tokens/s, gradient norm, and device memory graphs, or
 use `:chart loss|rate|gradient|memory`. Each graph uses a labeled dynamic
