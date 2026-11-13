@@ -1,0 +1,41 @@
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 7b81207..e0d4a31 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -184,11 +184,34 @@ static void plan_byte_weights(nya_cuda_plan *p)
+     }
+     size_t free_bytes,total_bytes;
+     if (!bytes || c->cached_bytes>c->cache_limit || p->bytes>c->cache_limit-c->cached_bytes ||
+-        bytes>c->cache_limit-c->cached_bytes-p->bytes ||
+         c->memory_info(&free_bytes,&total_bytes)!=CUDA_SUCCESS) { free(table); return; }
+     size_t reserve=free_bytes/10;
+     if (reserve<256U*1024U*1024U) reserve=256U*1024U*1024U;
+-    if (free_bytes<=reserve || bytes>free_bytes-reserve) { free(table); return; }
++    if (free_bytes<=reserve) { free(table); return; }
++    size_t budget=c->cache_limit-c->cached_bytes-p->bytes;
++    if (budget>free_bytes-reserve) budget=free_bytes-reserve;
++    if (bytes>budget) {
++        const char *partial=getenv("NYA_CUDA_GEMMA_GATE_PARTIAL");
++        if (!gemma_gate || !partial || strcmp(partial,"1")) { free(table); return; }
++        /* Opt-in: retain complete gate/up pairs, never a half-fusable layer.
++           Native matrices remain resident for every unselected layer. */
++        memset(table,0,m->tensor_count*sizeof(*table));
++        bytes=0; largest=0;
++        for (size_t layer=0;layer<m->block_count;++layer) {
++            const nya_llm_layer *w=&m->layers[layer];
++            const nya_llm_tensor *g=w->feed_forward_gate,*u=w->feed_forward_up;
++            if (!plan_byte_shape(g,w->hidden_length,3840) ||
++                !plan_byte_shape(u,w->hidden_length,3840)) continue;
++            size_t gi=(size_t)(g-m->tensors),ui=(size_t)(u-m->tensors);
++            size_t ga=table[gi]?0:nya_q4_byte_size(g->data_size);
++            size_t ua=(table[ui] || gi==ui)?0:nya_q4_byte_size(u->data_size);
++            if (ga>budget-bytes || ua>budget-bytes-ga) continue;
++            table[gi]=1; table[ui]=1; bytes+=ga+ua;
++            if (ga>largest) largest=ga;
++            if (ua>largest) largest=ua;
++        }
++        if (!bytes) { free(table); return; }
++    }
+     void *host=malloc(largest);
+     CUdeviceptr storage=0;
+     if (!host || plan_allocate(p,&storage,bytes)!=CUDA_SUCCESS) { free(host); free(table); return; }
