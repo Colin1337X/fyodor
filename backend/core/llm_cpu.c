@@ -542,6 +542,11 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
            different window anchors from the causal backend descriptor. */
         int attention_ready = !s->turboquant && !s->reference_only && !c->is_assistant && attention_end == position &&
             !nya_compute_attention_f32(c->compute,&attention);
+        if(c->is_assistant && target_state->device_plan) {
+            if(nya_compute_plan_borrow_attention(target_state->device_plan,s->mtp_sources[layer],cache_length,
+                s->query,heads,w->sliding_window,s->normalized,qdim)) return -1;
+            attention_ready=1;
+        }
         if (s->turboquant) {
             if (nya_turboquant_attention(s->turboquant[w->kv_source],s->query,heads,position,
                     w->sliding_window,attention.scale,s->normalized)) return -1;
@@ -824,6 +829,17 @@ int nya_llm_session_verify(nya_llm_session *s,const uint32_t *tokens,
         memcpy(output+i*vocabulary,s->state.logits,vocabulary*sizeof(float));
     }
     return 0;
+}
+
+int nya_llm_session_hidden(nya_llm_session *s,float *out,size_t elements)
+{
+    if(!s || s->failed || !s->has_logits || !out || elements!=s->context->embedding_length)return -1;
+    if(s->state.device_plan) {
+        int result=nya_compute_plan_hidden(s->state.device_plan,out,elements);
+        if(result) {s->failed=1;s->has_logits=0;}
+        return result;
+    }
+    memcpy(out,s->state.normalized,elements*sizeof(float));return 0;
 }
 
 const float *nya_llm_session_logits(const nya_llm_session *s)
@@ -1235,8 +1251,8 @@ static int nya_llm_emit(const nya_llm_context *c, const nya_generation_request *
    A rejected suffix is rolled back by the logical position; old KV bytes above
    it are never read and get overwritten by the corrected continuation.
 
-   Optional standalone-draft verification batches target transformer work.
-   MTP remains serial until shared device hidden/KV binding is available.
+   Optional verification batches target transformer work, including MTP when
+   its resident-target bridge supplies retained KV and normalized hidden state.
    Acceptance counts alone do not establish end-to-end throughput gains. */
 int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draft,
     const nya_generation_request *r, nya_generation_response *out, char *error, size_t error_capacity)
@@ -1279,12 +1295,18 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     limit = r->max_tokens < count - prompt_count ? r->max_tokens : count - prompt_count;
     if (nya_llm_state_create(c, prompt_count + limit, &target_state, error, error_capacity) != 0 ||
         nya_llm_state_create(draft, prompt_count + limit, &draft_state, error, error_capacity) != 0) goto cleanup;
-    /* MTP reads target hidden states and borrowed KV directly. Keep both sides
-       coherent in host storage until the planner can bind a shared device KV. */
+    /* Default MTP reads coherent host storage. The opt-in bridge keeps target
+       KV resident and transfers hidden/query/result vectors for the assistant.
+       At least two slots per window avoid evicting its frozen prefix when the
+       base token advances the target before recurrent assistant proposals. */
     if (draft->is_assistant) {
-        nya_compute_plan_free(target_state.device_plan); target_state.device_plan = NULL;
+        const char *bridge=getenv("NYA_MTP_RESIDENT_TARGET");
+        nya_compute_stats stats;nya_compute_plan_stats(target_state.device_plan,&stats);
+        int resident=bridge && !strcmp(bridge,"1") && stats.prefill_batch>1 &&
+            nya_compute_plan_can_borrow(target_state.device_plan);
+        if(!resident) {nya_compute_plan_free(target_state.device_plan);target_state.device_plan=NULL;target_state.reference_only=1;}
         nya_compute_plan_free(draft_state.device_plan); draft_state.device_plan = NULL;
-        target_state.reference_only = 1; draft_state.reference_only = 1;
+        draft_state.reference_only = 1;
     }
     if (draft->is_assistant) {
         /* Bind the last non-sharing target layer of each attention kind. This
@@ -1305,7 +1327,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     window = r->speculative_tokens == 0 ? 4 : r->speculative_tokens;
     vocabulary = c->tokenizer.vocabulary_size;
     const char *batch_setting=getenv("NYA_SPECULATIVE_BATCH");
-    if(!draft->is_assistant && batch_setting && !strcmp(batch_setting,"1") &&
+    if(batch_setting && !strcmp(batch_setting,"1") &&
        nya_compute_plan_can_verify(target_state.device_plan) &&
        nya_compute_plan_can_rewind(target_state.device_plan)) {
         nya_compute_stats stats;nya_compute_plan_stats(target_state.device_plan,&stats);
@@ -1341,6 +1363,11 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
     if (nya_llm_prefill(c, &target_state, prompt, prompt_count, r, error, error_capacity) != 0 ||
         (!draft->is_assistant && nya_llm_prefill(draft, &draft_state, prompt, prompt_count, r, error, error_capacity) != 0)) goto cleanup;
     position = prompt_count; out->target_steps = prompt_count;
+    const char *trace=getenv("NYA_MTP_TRACE");
+    if(draft->is_assistant && trace && !strcmp(trace,"1")) {
+        fprintf(stderr,"MTP target: %s; assistant: host/assisted\n",target_state.device_plan?"resident borrowed KV":"host reference");
+        fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
+    }
     previous = prompt[prompt_count - 1];
     while (!stopped && out->generated_tokens < limit) {
         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
@@ -1356,7 +1383,9 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
             stopped = nya_llm_emit(c, r, out, previous, base_token);
             if (stopped < 0) goto invalid;
             if (stopped || out->generated_tokens == limit) break;
-            memcpy(draft_state.mtp_hidden, target_state.normalized, c->embedding_length * sizeof(float));
+            if(target_state.device_plan) {
+                if(nya_compute_plan_hidden(target_state.device_plan,draft_state.mtp_hidden,c->embedding_length))goto invalid;
+            } else memcpy(draft_state.mtp_hidden, target_state.normalized, c->embedding_length * sizeof(float));
             if (nya_llm_forward_impl(draft, &draft_state, base_token, position, 1, c, &target_state, mtp_cache_length) != 0 ||
                 nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
             ++out->target_steps;

@@ -872,14 +872,24 @@ The internal native session interface now provides `nya_llm_session_verify` for 
 ### Experimental standalone speculative batching
 
 `NYA_SPECULATIVE_BATCH=1` enables CUDA all-position verification for compatible
-standalone drafts, with explicit rejection rewind and bounded ring retention.
-Other providers and MTP assistants retain serial verification. Default is off:
+standalone drafts and bridged MTP assistants, with explicit rejection rewind and bounded ring retention.
+Other providers retain serial verification; MTP requires the resident-target bridge below. Default is off:
 current TinyLlama diagnostics regress with small-batch quantized GEMM. See
 [correctness tests and profiling evidence](benchmarks/speculative-batch-20261113/README.md).
-This does not implement resident Gemma MTP or establish a decode speedup.
+This does not implement a fully resident Gemma assistant or establish a decode speedup.
 
 The optional `NYA_ENABLE_SMALL_BATCH=ON` build and `NYA_CUDA_SMALL_BATCH=1`
 runtime setting replace padded narrow CUDA GEMM with native row-dot grids for
 2..8 inputs. [Current correctness and diagnostic timing](benchmarks/small-batch-dot-20261113/README.md)
 show the standalone verifier regression removed on TinyLlama. Both switches
-remain opt-in; resident Gemma MTP and accepted decode speedup are still pending.
+remain opt-in; a fully resident Gemma assistant and accepted decode speedup are still pending.
+
+### Experimental Gemma MTP resident target
+
+`NYA_MTP_RESIDENT_TARGET=1` keeps the CUDA target and its KV cache resident while
+the existing assistant transfers hidden/query/result vectors. Combine with
+`NYA_SPECULATIVE_BATCH=1` for batched target verification, and optionally the
+small-batch kernel described above. Default remains the host path; the assistant
+is not fully resident. [Validation and limits](benchmarks/mtp-resident-target-20261113/README.md)
+include real Gemma/assistant greedy parity across the sliding-window boundary.
+No MTP throughput gain has been accepted yet.

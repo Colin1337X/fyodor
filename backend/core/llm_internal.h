@@ -197,6 +197,7 @@ int nya_llm_session_run(nya_llm_session *session, const uint32_t *tokens, size_t
    not advance the session; execution failure invalidates it until reset. */
 int nya_llm_session_verify(nya_llm_session *session,const uint32_t *tokens,
     size_t count,float *output,size_t elements);
+int nya_llm_session_hidden(nya_llm_session *session,float *output,size_t elements);
 const float *nya_llm_session_logits(const nya_llm_session *session);
 const char *nya_llm_session_kv_type(const nya_llm_session *session);
 const char *nya_llm_session_execution(const nya_llm_session *session);

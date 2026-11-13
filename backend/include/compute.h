@@ -54,6 +54,16 @@ int nya_compute_plan_verify(nya_compute_plan *plan, const unsigned int *tokens,
 /* Truncate the valid prefix to position (the next input index). Failure leaves
    the plan unchanged; evicted KV and forward movement are rejected. No logits
    are recovered. Unsupported providers return -1. */
+/* Serialized MTP bridge: read the current normalized final hidden vector,
+   or attend a query against a retained prefix of a selected layer's KV.
+   Query is already head-normalized/RoPE-transformed; attention scale is 1.
+   elements must equal heads * the selected layer's head width. No KV readback.
+   These operations overwrite plan scratch, never its valid KV or raw hidden.
+   Hidden reads reject rewound/discarded hidden state. Failure invalidates output. */
+int nya_compute_plan_can_borrow(const nya_compute_plan *plan);
+int nya_compute_plan_hidden(nya_compute_plan *plan,float *output,size_t elements);
+int nya_compute_plan_borrow_attention(nya_compute_plan *plan,size_t layer,size_t prefix,
+    const float *query,size_t heads,size_t window,float *output,size_t elements);
 int nya_compute_plan_can_rewind(const nya_compute_plan *plan);
 int nya_compute_plan_rewind(nya_compute_plan *plan, size_t position);
 void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *stats);
