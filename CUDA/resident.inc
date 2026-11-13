@@ -779,6 +779,18 @@ static int plan_rope_pair(nya_cuda_plan *p, CUdeviceptr key, CUdeviceptr frequen
     return plan_launch(p, p->rope_pair, ((size_t)hd / 2 * (heads + (size_t)kvheads) + 255) / 256, args);
 }
 
+static int plan_read_logits(nya_cuda_plan *p,float *output)
+{
+    const nya_llm_context *m=p->model;nya_cuda_context *c=p->cuda;
+    ++p->stats.synchronizations;
+    if(c->stream_sync(c->stream)!=CUDA_SUCCESS) return -1;
+    ++p->stats.downloads;
+    if(c->download(output,p->logits,m->tokenizer.vocabulary_size*sizeof(float))!=CUDA_SUCCESS) return -1;
+    for(size_t i=0;i<m->tokenizer.vocabulary_size;++i) if(!isfinite(output[i])) return -1;
+    for(size_t i=0;i<m->tokenizer.suppressed_count;++i) output[m->tokenizer.suppressed_tokens[i]]=-INFINITY;
+    return 0;
+}
+
 static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, size_t position, int logits, float *output)
 {
     nya_cuda_plan *p = opaque;
@@ -1030,6 +1042,20 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         }
         if (w->output_scale) RUN(plan_vector(p, p->x, p->x, 0, d, 0, nya_llm_tensor_value(w->output_scale, 0)));
     }
+    /* Verification batches share transformer work, while output projections
+       reuse the existing single-row logits scratch. No vocabulary-sized batch
+       allocation is imposed on ordinary plans. These calls do not capture a
+       decode graph; count-one verification keeps the ordinary graph path. */
+    if(logits==2 && count>1) {
+        p->batch=1;
+        for(size_t i=0;i<count;++i) {
+            RUN(plan_norm(p,p->norm,p->x+i*d*sizeof(float),m->output_norm,d,1));
+            RUN(plan_matvec(p,p->logits,m->output,p->norm,m->tokenizer.vocabulary_size,d));
+            if(m->final_logit_softcap>0) RUN(plan_vector(p,p->logits,p->logits,0,m->tokenizer.vocabulary_size,5,m->final_logit_softcap));
+            RUN(plan_read_logits(p,output+i*m->tokenizer.vocabulary_size));
+        }
+        goto batch_done;
+    }
     if (logits) {
         p->batch = 1;
         RUN(plan_norm(p, p->norm, p->x + (count - 1) * d * sizeof(float), m->output_norm, d, 1));
@@ -1046,13 +1072,9 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             ++p->stats.graph_replays;
         }
 read_logits:
-        ++p->stats.synchronizations;
-        if (c->stream_sync(c->stream) != CUDA_SUCCESS) goto failure;
-        ++p->stats.downloads;
-        if (c->download(output, p->logits, m->tokenizer.vocabulary_size * sizeof(float)) != CUDA_SUCCESS) goto failure;
-        for (size_t i = 0; i < m->tokenizer.vocabulary_size; ++i) if (!isfinite(output[i])) goto failure;
-        for (size_t i = 0; i < m->tokenizer.suppressed_count; ++i) output[m->tokenizer.suppressed_tokens[i]] = -INFINITY;
+        RUN(plan_read_logits(p,output));
     }
+batch_done:
     if(p->profile_active) {++p->profiled_batches;p->profiled_tokens+=count;}
     p->valid = position + count;
     if(!position || p->valid>p->kv_high_water) p->kv_high_water=p->valid;
@@ -1077,6 +1099,21 @@ static int cuda_plan_prefill(void *opaque, const uint32_t *tokens, size_t count,
         size_t chunk = count - i < p->maximum_batch ? count - i : p->maximum_batch;
         if (cuda_plan_batch(p, tokens + i, chunk, position + i, i + chunk == count, output)) return -1;
         i += chunk;
+    }
+    return 0;
+}
+static int cuda_plan_verify(void *opaque,const uint32_t *tokens,size_t count,
+    size_t position,float *output,size_t elements)
+{
+    nya_cuda_plan *p=opaque;size_t vocabulary=p->model->tokenizer.vocabulary_size;
+    if(!tokens || !output || !count || !vocabulary || count>SIZE_MAX/vocabulary ||
+       count*vocabulary>SIZE_MAX/sizeof(float) || elements<count*vocabulary ||
+       position>p->capacity || count>p->capacity-position) return -1;
+    for(size_t i=0;i<count;++i) if(tokens[i]>=vocabulary) return -1;
+    for(size_t i=0;i<count;) {
+        size_t chunk=count-i<p->maximum_batch?count-i:p->maximum_batch;
+        if(cuda_plan_batch(p,tokens+i,chunk,position+i,2,output+i*vocabulary)) return -1;
+        i+=chunk;
     }
     return 0;
 }

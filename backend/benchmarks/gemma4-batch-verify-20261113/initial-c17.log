@@ -1,0 +1,39 @@
+Test project C:/Users/Colin/.codex/worktrees/resident-training/fyodor/build-cuda
+      Start 141: train-export-decoder
+ 1/14 Test #141: train-export-decoder ................   Passed    0.19 sec
+      Start  43: inference-verify-cpu
+ 2/14 Test  #43: inference-verify-cpu ................   Passed    0.05 sec
+      Start  44: inference-verify-cpu-empty-prefix
+ 3/14 Test  #44: inference-verify-cpu-empty-prefix ...   Passed    0.01 sec
+      Start  45: inference-verify-vulkan
+ 4/14 Test  #45: inference-verify-vulkan .............   Passed    0.83 sec
+      Start  46: inference-verify-cuda-batch
+ 5/14 Test  #46: inference-verify-cuda-batch .........   Passed    0.19 sec
+      Start  47: inference-verify-cuda-ring
+ 6/14 Test  #47: inference-verify-cuda-ring ..........   Passed    0.20 sec
+      Start  48: inference-verify-cuda-shared
+ 7/14 Test  #48: inference-verify-cuda-shared ........***Failed    0.24 sec
+line 32: m->block_count>=2
+
+
+      Start  49: inference-verify-cuda-no-graphs
+ 8/14 Test  #49: inference-verify-cuda-no-graphs .....   Passed    0.18 sec
+      Start  50: inference-verify-cuda-failure
+ 9/14 Test  #50: inference-verify-cuda-failure .......   Passed    0.18 sec
+      Start 169: inference-cuda-graph-reuse
+10/14 Test #169: inference-cuda-graph-reuse ..........   Passed    0.38 sec
+      Start 170: inference-cuda-graph-reference
+11/14 Test #170: inference-cuda-graph-reference ......   Passed   11.85 sec
+      Start 184: inference-cuda-resident
+12/14 Test #184: inference-cuda-resident .............   Passed    0.18 sec
+      Start 187: inference-cuda-prefix-replay
+13/14 Test #187: inference-cuda-prefix-replay ........   Passed    0.18 sec
+      Start 188: inference-cuda-without-graphs
+14/14 Test #188: inference-cuda-without-graphs .......   Passed    0.20 sec
+
+93% tests passed, 1 tests failed out of 14
+
+Total Test time (real) =  14.89 sec
+
+The following tests FAILED:
+	 48 - inference-verify-cuda-shared (Failed)
