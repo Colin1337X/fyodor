@@ -159,3 +159,21 @@ smoke check. A separate CUDA-enabled removal suite (started from the initial
 integration snapshot) and the 8K model test were still running at this checkpoint.
 Do not treat their in-progress logs as successful validation. Full-model timing
 and integrated sanitizer validation remain pending; no accepted score changes.
+
+## Prepared generation comparison
+
+build_generation.py produces a separate integer-generation-20261114 executable
+and C17/C23 diagnostic core objects, preserving the earlier generation binary.
+Only the existing diagnostic B512 prompt-ingestion override is applied; the
+production library remains unchanged. The manifest hashes the CUDA host/source,
+optional kernel, library, executable and harness inputs.
+
+run_generation.py accepts an explicit integer switch, short/long context and
+unique label. It requires completed 257/8192 lifecycle proofs with actual integer
+dispatch, matching source hashes, the raw sanitizer proof, an intact build and
+a conservative idle gate. The shared runner records the integer setting and uses
+the continuous monitor with collector-death handling. Existing evidence is never
+overwritten. A negative preflight while the 8K test was live rejected launch
+before creating a run folder. Generation has not yet executed with this binary.
+Run both setting orders and retain output parity and coverage before comparing;
+the current kernel timings do not justify an accepted end-to-end speedup.
