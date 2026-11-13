@@ -126,6 +126,31 @@ old PDH capture is not contemporaneous with that timing run and must not be
 used to certify it. No historical result is upgraded. Live benchmark collector
 orchestration and a contemporaneous joined run are still outstanding.
 
+## Opt-in launcher integration
+
+Set NYA_BENCH_GPU_MONITOR=1 when invoking mtp-cost-20261113/run.py to wrap its
+requested contexts with continuous PDH capture and run audit_generation.py
+after cooperative shutdown. The launcher requires a binary containing native
+decode endpoints, reads the current CUDA ordinal-zero LUID without creating a
+context, and refuses unsupported multi-node attribution. It waits for two
+monitor samples before starting the workload, retains a post-workload interval,
+and preserves collector logs, adapter identity, completion status and coverage
+JSON beside timing.json. All artifacts remain diagnostic: neither a successful
+join nor this option overrides the historical environment gate or establishes
+llama.cpp equivalence. Interrupted/failed observation terminates only the owned
+benchmark child and records that failure; it cannot become a successful sample.
+
+validate_monitor_capture.py tests the real collector lifecycle using a CPU-only
+sleep control and an injected workload exception. Both collectors stopped
+cooperatively with exit zero; the injected error propagated and was recorded.
+The CPU interval's coverage correctly rejects unrelated GPU activity from PID
+39004, the separately running aligned-prefix sanitizer test (parent PID29720).
+No GPU workload was launched by this control and no app was terminated.
+capture-cpu-control retains both traces, manifests and the validation result.
+This verifies helper ownership and failure cleanup, not a complete monitored
+Gemma benchmark. The first such run still awaits sanitizer completion and a
+fresh endpoint-enabled benchmark binary.
+
 Primary API documentation:
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhaddenglishcounterw

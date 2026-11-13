@@ -1,0 +1,41 @@
+{
+  "accepted_benchmark": false,
+  "control": "CPU-only sleep while unrelated GPU sanitizer is active",
+  "process_id": 544,
+  "start": 120610.7081528,
+  "end": 120612.7300014,
+  "exit_code": 0,
+  "coverage": {
+    "accepted_benchmark": false,
+    "sampled_coverage_clear": false,
+    "errors": [
+      "unattributed GPU activity"
+    ],
+    "positive_engines": [
+      {
+        "process_id": 39004,
+        "interval": [
+          120612.6225428,
+          120613.6250397
+        ],
+        "engine_percent": 370.7227151956375,
+        "known_workload": false
+      },
+      {
+        "process_id": 39004,
+        "interval": [
+          120612.6225428,
+          120613.6250397
+        ],
+        "engine_percent": 0.015449643984946918,
+        "known_workload": false
+      }
+    ],
+    "limitations": [
+      "Sampling cannot exclude missing short-lived processes or PID reuse.",
+      "CPU activity, thermal state, workload equivalence and performance variance are not checked."
+    ]
+  },
+  "normal_lifecycle_passed": true,
+  "exception_cleanup_passed": true
+}
