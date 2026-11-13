@@ -11,6 +11,7 @@ reference = Path(__file__).resolve().parent.parent / 'aligned-prefix-runtime-202
 sys.path.insert(0, str(reference))
 from llama_intervals import parse
 from compare_generation import native_text
+from model_identity import verify_gemma
 
 root = Path.cwd()
 out = Path(__file__).resolve().parent
@@ -45,6 +46,7 @@ tokens = json.loads(proof_paths[1].read_text())
 if tokens[context]['identical'] is not True:
     raise SystemExit('Prompt token IDs differ')
 expected_text = native_text((out / f'{context}-correctness/{context}.stdout').read_text())
+model_identity = verify_gemma()
 folder.mkdir()
 
 env = {key: value for key, value in os.environ.items() if not key.startswith(('NYA_', 'GGML_', 'LLAMA_'))}
@@ -55,12 +57,13 @@ gate = importlib.util.module_from_spec(spec); spec.loader.exec_module(gate)
 gate.configure(folder)
 gate.idle()  # A failed idle gate stops this launch; it is not an accepted measurement.
 metadata = dict(accepted_benchmark=False, gate_passed=True, runs=[], errors=[],
+                model_identity=model_identity,
                 source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 build_manifest_sha256=hashlib.sha256((reference / 'llama-generation-build.json').read_bytes()).hexdigest())
 result = dict(accepted_benchmark=False, runs=[], errors=[], sampled_coverage_clear=False,
               prerequisite_sha256={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in proof_paths},
               validator_sha256={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
-                  for p in [reference / 'llama_intervals.py', reference / 'compare_generation.py',
+                  for p in [out / 'model_identity.py', reference / 'llama_intervals.py', reference / 'compare_generation.py',
                             monitor_directory / 'coverage.py', monitor_directory / 'audit_generation.py',
                             monitor_directory / 'monitor_capture.py']},
               expected_output_sha256=hashlib.sha256(expected_text).hexdigest())

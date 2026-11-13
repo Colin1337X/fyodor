@@ -89,3 +89,12 @@ The existing 14 reference build inputs and 22 prompt-token proof inputs were
 rechecked with no changes. Six reference interval tests and four comparison
 tests passed. Its GPU exclusivity check refused the active sanitizer before
 creating an output folder. The reference has not executed at this checkpoint.
+
+The reference runner also re-hashes both external GGUF files with bounded
+memory before launch. model_identity.py compares them with the previously
+recorded target/assistant SHA-256 values and rejects missing, replaced or
+changing files. Tests cover missing files and replacement with equal-length
+content. model-identity-observation.json confirms both files still match during
+the active sanitizer run; it is not retroactive pre-launch evidence for that run.
+The native launchers should adopt this check after the live run completes, so
+its hash-bound source inputs remain unchanged while it is executing.
