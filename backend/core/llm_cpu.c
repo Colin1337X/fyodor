@@ -1389,10 +1389,14 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
         fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
     }
     previous = prompt[prompt_count - 1];
+    /* Greedy first-proposal rejection is already known from these target
+       logits. Keep an explicit opt-out for matched diagnostics. */
+    const char *early_setting=getenv("NYA_SPECULATIVE_EARLY_REJECT");
+    int early_enabled=!early_setting || strcmp(early_setting,"0")!=0;
     if (profile) decode_start = nya_runtime_monotonic_seconds();
     while (!stopped && out->generated_tokens < limit) {
         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
-        int rejected = 0;
+        int rejected = 0, known_rejection = 0;
         if (draft->is_assistant) {
             uint32_t base_token;
             /* MTP predicts after a token already sampled by the target. Freeze
@@ -1427,6 +1431,18 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
                 &draft_rng, candidates, &token) != 0) goto invalid;
             proposals[proposed] = token;
             ++out->draft_tokens;
+            if(early_enabled && proposed==0 && r->temperature==0.0f) {
+                uint32_t best;
+                /* This sampler validates logits and preserves tie breaking;
+                   greedy sampling neither mutates logits nor consumes RNG. */
+                if(nya_llm_sample(target_state.logits,vocabulary,0.0f,r->top_p,
+                    r->top_k,&rng,NULL,&best)!=0)goto invalid;
+                if(token!=best) {
+                    known_rejection=1;
+                    ++proposed;
+                    break;
+                }
+            }
             if (q_bank != NULL) memcpy(q_bank + proposed * vocabulary, draft_state.logits, vocabulary * sizeof(float));
             if (draft->tokenizer.stop_tokens[token]) { ++proposed; break; }
             if (draft->is_assistant) {
@@ -1444,7 +1460,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
                 }
             } else if (nya_llm_forward(draft, &draft_state, token, round_start + proposed, 1) != 0) goto invalid;
         }
-        int batched=p_bank && nya_compute_plan_can_verify(target_state.device_plan);
+        int batched=!known_rejection && p_bank && nya_compute_plan_can_verify(target_state.device_plan);
         if(batched) {
             memcpy(target_state.device_tokens+position,proposals,proposed*sizeof(*proposals));
             if(nya_compute_plan_verify(target_state.device_plan,proposals,proposed,position,

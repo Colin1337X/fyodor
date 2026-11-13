@@ -310,6 +310,48 @@ static int test_tokenizer(void)
     return 0;
 }
 
+/* Compare boundary behavior with ordinary decoding, for both a wrong draft
+   and an identical draft. Stop flags are shared by these shallow fixtures. */
+static int test_speculative_boundaries(nya_llm_context *target, const nya_llm_context *draft,
+    const nya_generation_request *original)
+{
+    static const size_t limits[]={1,3,64},windows[]={1,8};
+    unsigned char saved_a=target->tokenizer.stop_tokens[4],saved_b=target->tokenizer.stop_tokens[5];
+    const char *batch_setting=getenv("NYA_SPECULATIVE_BATCH");
+    int previous_batch=batch_setting && !strcmp(batch_setting,"1"),result=1;
+    nya_generation_request request=*original;
+    nya_generation_response expected={0},actual={0};
+    char error[512]={0};unsigned cases=0;
+    request.temperature=0;request.top_k=0;request.top_p=1;request.max_output_bytes=64;
+    for(unsigned stop=0;stop<4;++stop) {
+        target->tokenizer.stop_tokens[4]=(unsigned char)(stop&1U);
+        target->tokenizer.stop_tokens[5]=(unsigned char)((stop>>1)&1U);
+        for(size_t limit=0;limit<sizeof(limits)/sizeof(limits[0]);++limit) {
+            request.max_tokens=limits[limit];
+            if(nya_llm_generate(target,&request,&expected,error,sizeof(error)))goto done;
+            for(int batch=0;batch<2;++batch)for(size_t w=0;w<sizeof(windows)/sizeof(windows[0]);++w) {
+                request.speculative_tokens=windows[w];
+                if(speculative_batch(batch) || nya_llm_generate_draft(target,draft,&request,&actual,error,sizeof(error)))goto done;
+                if(actual.generated_tokens!=expected.generated_tokens || actual.stop_reason!=expected.stop_reason ||
+                   actual.text_length!=expected.text_length || strcmp(actual.text,expected.text))goto done;
+                ++cases;nya_generation_response_free(&actual);
+            }
+            nya_generation_response_free(&expected);
+        }
+    }
+    /* A rejected draft EOS must not bypass the target's output-size failure. */
+    target->tokenizer.stop_tokens[4]=0;target->tokenizer.stop_tokens[5]=1;
+    request.max_tokens=4;request.max_output_bytes=1;
+    if(nya_llm_generate_draft(target,draft,&request,&actual,error,sizeof(error))==0 || actual.text)goto done;
+    printf("speculative boundary cases=%u plus output-limit failure passed\n",cases);
+    result=0;
+done:
+    target->tokenizer.stop_tokens[4]=saved_a;target->tokenizer.stop_tokens[5]=saved_b;
+    if(speculative_batch(previous_batch))result=1;
+    nya_generation_response_free(&expected);nya_generation_response_free(&actual);
+    return result?fail("speculative stop/context boundary mismatch",error):0;
+}
+
 int main(int argument_count, char **arguments)
 {
     static const uint32_t types[] = {NYA_LLM_TENSOR_F32, NYA_LLM_TENSOR_F16, NYA_LLM_TENSOR_Q4_0, NYA_LLM_TENSOR_Q8_0};
@@ -353,8 +395,15 @@ int main(int argument_count, char **arguments)
                 if (nya_llm_generate_draft(context, &draft, &request, &response, error, sizeof(error)) != 0 ||
                     strcmp(response.text, "aaaa") != 0 || response.accepted_draft_tokens != 0 ||
                     response.draft_tokens < 4) return fail("greedy draft rollback failed", error);
+                const char *early_setting=getenv("NYA_SPECULATIVE_EARLY_REJECT");
+                if((!early_setting || strcmp(early_setting,"0")) &&
+                   (response.draft_tokens!=response.generated_tokens ||
+                    response.target_steps!=response.prompt_tokens+response.generated_tokens-1))
+                    return fail("early rejection did not eliminate known-wrong work",error);
                 nya_generation_response_free(&response);
             }
+            if(test_speculative_boundaries(context,&draft,&request) ||
+               test_speculative_boundaries(context,context,&request))return 1;
             /* The corrected distribution must follow p(a)=exp(1)/(exp(1)+
                exp(.5)) ~= .62246, although this draft favors b. Independent
                seeds exercise both acceptance and residual sampling. */

@@ -1,0 +1,137 @@
+{
+  "test_source_sha256": "66c508bcdc309c0c89f0520a57e281ae07d439477a27cb346300551fd5cc8154",
+  "builds": [
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+        "-std=c17",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Wconversion",
+        "-Wshadow",
+        "-Werror",
+        "-I",
+        "backend/include",
+        "-I",
+        "backend/core",
+        "backend/tests/test_generation.c",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-reject-core.o",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\libnya-engine.a",
+        "-lbcrypt",
+        "C:/Windows/System32/vulkan-1.dll",
+        "-o",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-boundaries.exe"
+      ],
+      "binary_sha256": "84eebbc6bc5ddb4b3feed4534102632d51dd412812ff9bc209a83b3b3f58490e"
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+        "-std=c23",
+        "-O3",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Wconversion",
+        "-Wshadow",
+        "-Werror",
+        "-I",
+        "backend/include",
+        "-I",
+        "backend/core",
+        "backend/tests/test_generation.c",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-reject-core.o",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\libnya-engine.a",
+        "-lbcrypt",
+        "C:/Windows/System32/vulkan-1.dll",
+        "-o",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-boundaries.exe"
+      ],
+      "binary_sha256": "001397d8fedc66d129ba4a0a19a2abd0d7999dde1bc8ef7cbb0a7af27d6bdc88"
+    }
+  ],
+  "runs": [
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\test_models\\boundaries-c17-cpu-0.gguf"
+      ],
+      "standard": "c17",
+      "provider": "cpu",
+      "enabled": "0",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\test_models\\boundaries-c17-cpu-1.gguf"
+      ],
+      "standard": "c17",
+      "provider": "cpu",
+      "enabled": "1",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\test_models\\boundaries-c17-cuda-0.gguf"
+      ],
+      "standard": "c17",
+      "provider": "cuda",
+      "enabled": "0",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\test_models\\boundaries-c17-cuda-1.gguf"
+      ],
+      "standard": "c17",
+      "provider": "cuda",
+      "enabled": "1",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\test_models\\boundaries-c23-cpu-0.gguf"
+      ],
+      "standard": "c23",
+      "provider": "cpu",
+      "enabled": "0",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\test_models\\boundaries-c23-cpu-1.gguf"
+      ],
+      "standard": "c23",
+      "provider": "cpu",
+      "enabled": "1",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\test_models\\boundaries-c23-cuda-0.gguf"
+      ],
+      "standard": "c23",
+      "provider": "cuda",
+      "enabled": "0",
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\mtp-early-boundaries.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda-c23\\test_models\\boundaries-c23-cuda-1.gguf"
+      ],
+      "standard": "c23",
+      "provider": "cuda",
+      "enabled": "1",
+      "exit_code": 0
+    }
+  ]
+}

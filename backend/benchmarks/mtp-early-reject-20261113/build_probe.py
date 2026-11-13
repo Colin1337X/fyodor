@@ -8,7 +8,8 @@ build=root/build_name;suffix='-c23' if build_name.endswith('c23') else ''
 if (out/f'probe-build{suffix}.json').exists():raise SystemExit('Refusing to overwrite build evidence')
 compiler=root/'.tools/w64devkit/bin/gcc.exe'
 env=os.environ.copy();env['PATH']=str(compiler.parent)+os.pathsep+env['PATH']
-production=(root/'backend/core/llm_cpu.c').read_text()
+base_revision='d77bb85'
+production=subprocess.check_output(['git','show',base_revision+':backend/core/llm_cpu.c'],text=True)
 source=production
 def replace_once(before,after):
  global source
@@ -40,11 +41,11 @@ defines=re.search(r'^C_DEFINES = (.*)$',flags,re.M)[1].split()
 cflags=re.search(r'^C_FLAGS = (.*)$',flags,re.M)[1].split()
 commands=[[str(compiler),*defines,*cflags,'-I',str(root/'backend/core'),'@'+str(build/'CMakeFiles/nya-engine.dir/includes_C.rsp'),'-c',str(path),'-o',str(obj)],
  [str(compiler),'-std=c23' if suffix else '-std=c17','-O3','-Wall','-Wextra','-Werror','-I','backend/include','-I','backend/core',str(out.parent/'mtp-cost-20261113/model.c'),str(obj),str(build/'libnya-engine.a'),'-lbcrypt','C:/Windows/System32/vulkan-1.dll','-o',str(exe)]]
-architecture=(root/'backend/tests/test_architectures.c').read_text()
+architecture=subprocess.check_output(['git','show',base_revision+':backend/tests/test_architectures.c'],text=True)
 architecture=architecture.replace('"../core/llm_cpu.c"','"mtp-early-reject-core.c"').replace('"../core/multimodal.h"','"multimodal.h"')
 architecture_path=build/'mtp-early-reject-architectures.c'
 architecture_path.write_text(architecture)
-generation=(root/'backend/tests/test_generation.c').read_text()
+generation=subprocess.check_output(['git','show',base_revision+':backend/tests/test_generation.c'],text=True)
 needle='response.draft_tokens < 4) return fail("greedy draft rollback failed", error);'
 assert generation.count(needle)==1
 generation=generation.replace(needle,needle+'''
@@ -59,5 +60,6 @@ for test,inputs in [('generation',[str(generation_path),str(obj)]),('architectur
 for command in commands:subprocess.run(command,env=env,check=True)
 (out/f'candidate{suffix}.patch').write_text(''.join(difflib.unified_diff(production.splitlines(True),source.splitlines(True),fromfile='production/llm_cpu.c',tofile='probe/llm_cpu.c')))
 manifest={'production_source_sha256':hashlib.sha256(production.encode()).hexdigest(),'source_sha256':hashlib.sha256(source.encode()).hexdigest(),'library_sha256':hashlib.sha256((build/'libnya-engine.a').read_bytes()).hexdigest(),'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'commands':commands}
+manifest['base_revision']=base_revision
 manifest['test_source_sha256']={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in (generation_path,architecture_path)}
 (out/f'probe-build{suffix}.json').write_text(json.dumps(manifest,indent=2)+'\n')
