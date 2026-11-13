@@ -97,3 +97,5 @@ The byte row-dot source also exports add and QKV entry points for the optional
 allocation and shape checks. Q6 V in mixed QKV retains its native layout and
 arithmetic. Prefill retains the original weights; see the runtime evidence in
 `backend/benchmarks/decode-byte-dot-runtime-20261028`.
+
+`q6_row_pair.cu` reuses activations across 2/4/8 adjacent output rows per warp. All tested outputs match exactly, but both Gemma down/vocabulary shapes regress substantially. Diagnostic only; not CMake-compiled or selected by runtime dispatch. Evidence: backend/benchmarks/gemma4-q6-rows-20261113.
