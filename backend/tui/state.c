@@ -78,6 +78,44 @@ static void recall_command(tui_state *s,int older)
     s->command_length=strlen(text);memcpy(s->command,text,s->command_length+1);
     s->overflow=s->command_cursor==s->commands_count ? s->draft_overflow : 0;
 }
+/* Complete only built-in vocabulary; never inspect paths or run a shell. */
+static void complete_command(tui_state *s)
+{
+    static const char *const names[]={
+        "quit","help","overview","model","training","pause","refresh",
+        "open ","metrics ","theme ","chart loss","chart rate",
+        "chart gradient","chart memory"
+    };
+    const char *first=NULL;
+    size_t common=0,matches=0,used=0;
+    if(s->overflow) return;
+    s->status[0]=0;
+    for(size_t i=0;i<sizeof(names)/sizeof(names[0]);++i) {
+        const char *name=names[i];
+        if(strncmp(name,s->command,s->command_length)) continue;
+        if(!first) {first=name;common=strlen(name);}
+        else {
+            size_t j=0;while(j<common && name[j] && first[j]==name[j]) ++j;
+            common=j;
+        }
+        ++matches;
+        if(used<sizeof(s->status)-1) {
+            int n=snprintf(s->status+used,sizeof(s->status)-used,"%s%s",used?"  ":"Matches: ",name);
+            if(n>0) {
+                size_t written=(size_t)n;
+                used+=written<sizeof(s->status)-used?written:sizeof(s->status)-used-1;
+            }
+        }
+    }
+    if(!matches) {
+        snprintf(s->status,sizeof(s->status),"No built-in completion. Paths and theme IDs are entered literally.");
+        return;
+    }
+    if(common>s->command_length) {
+        memcpy(s->command,first,common);s->command[common]=0;s->command_length=common;
+    }
+    if(matches==1) snprintf(s->status,sizeof(s->status),"Completed command. Enter runs it; Escape cancels.");
+}
 int tui_key(tui_state *s,uint32_t key)
 {
     if (key==3) {s->quit=1;return TUI_NONE;}
@@ -87,6 +125,7 @@ int tui_key(tui_state *s,uint32_t key)
             if (s->overflow) {snprintf(s->status,sizeof(s->status),"Command too long; edit or press Escape.");return TUI_NONE;}
             remember_command(s);s->editing=0;return command(s);
         }
+        if (key==TUI_TAB) {complete_command(s);return TUI_NONE;}
         if (key==TUI_UP || key==TUI_DOWN) {recall_command(s,key==TUI_UP);return TUI_NONE;}
         if (key==TUI_BACKSPACE) {
             if (s->command_length) {

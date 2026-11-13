@@ -14,6 +14,27 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* Completion is discoverable, literal, and never executes a command. */
+    tui_key(&s,':');tui_key(&s,TUI_TAB);
+    CHECK(!s.command_length && strstr(s.status,"Matches:") && !s.quit);
+    tui_key(&s,'q');tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"quit") && s.editing && !s.quit);
+    tui_key(&s,TUI_ESCAPE);
+    tui_key(&s,':');tui_key(&s,'m');tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"m") && strstr(s.status,"model") && strstr(s.status,"metrics"));
+    tui_key(&s,'e');tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"metrics ") && !s.metrics_path[0]);
+    tui_key(&s,0xac00);tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"metrics \xea\xb0\x80") && strstr(s.status,"No built-in"));
+    tui_key(&s,TUI_ESCAPE);
+    tui_key(&s,':');tui_key(&s,'c');tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"chart ") && strstr(s.status,"chart gradient"));
+    tui_key(&s,'r');tui_key(&s,TUI_TAB);
+    CHECK(!strcmp(s.command,"chart rate") && s.chart==0);
+    tui_key(&s,TUI_ENTER);CHECK(s.chart==1 && s.view==2);
+    tui_key(&s,':');for(int i=0;i<1200;++i) tui_key(&s,'x');
+    tui_key(&s,TUI_TAB);CHECK(s.overflow && s.command_length==sizeof(s.command)-1);
+    tui_key(&s,TUI_ESCAPE);tui_init(&s);
     /* Recall is bounded, UTF-8 safe, does not execute, and restores drafts. */
     tui_key(&s,':');tui_key(&s,'x');tui_key(&s,TUI_UP);CHECK(!strcmp(s.command,"x"));tui_key(&s,TUI_ESCAPE);
     CHECK(send(&s,"overview")==TUI_NONE);CHECK(send(&s,"overview")==TUI_NONE && s.commands_count==1);
