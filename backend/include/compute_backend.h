@@ -27,5 +27,6 @@ typedef struct nya_backend_interface {
     int (*plan_read_kv)(void *, size_t, size_t, size_t, float *, float *, size_t);
     void (*context_stats)(const void *, nya_compute_stats *);
     int (*plan_verify)(void *, const uint32_t *, size_t, size_t, float *, size_t);
+    int (*plan_rewind)(void *, size_t);
 } nya_backend_interface;
 #endif

@@ -44,13 +44,18 @@ int main(int argc,char **argv)
     CHECK(!nya_llm_load(path,bytes,&m,error,sizeof(error)));
     if(getenv("NYA_TEST_VERIFY_RING")) for(size_t i=0;i<m->block_count;++i) m->layers[i].sliding_window=3;
     if(getenv("NYA_TEST_VERIFY_SHARED")) {CHECK(m->block_count>=2);m->layers[1].kv_source=0;m->layers[1].cache_offset=m->layers[0].cache_offset;}
-    size_t v=m->tokenizer.vocabulary_size;CHECK(total<=m->context_length && v && v<=UINT32_MAX && v<=(SIZE_MAX/sizeof(float)-2)/(count+1));
-    reference=malloc((count+1)*v*sizeof(float));actual=malloc((count*v+2)*sizeof(float));last=malloc(v*sizeof(float));tokens=malloc(total*sizeof(*tokens));
+    size_t v=m->tokenizer.vocabulary_size;CHECK(total<=m->context_length && v && v<=UINT32_MAX && v<=(SIZE_MAX/sizeof(float)-2)/(count+2));
+    reference=malloc((count+2)*v*sizeof(float));actual=malloc((count*v+2)*sizeof(float));last=malloc(v*sizeof(float));tokens=malloc(total*sizeof(*tokens));
     CHECK(reference && actual && last && tokens);
     for(size_t i=0;i<total;++i) tokens[i]=(uint32_t)((20+i%128)%v);
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
     if(prefix) CHECK(!nya_llm_session_run(s,tokens,prefix,0));
     for(size_t i=0;i<=count;++i) {CHECK(!nya_llm_session_run(s,tokens+prefix+i,1,1));memcpy(reference+i*v,nya_llm_session_logits(s),v*sizeof(float));}
+    uint32_t replacement=(tokens[total-1]+1)%(uint32_t)v;
+    nya_llm_session_reset(s);
+    CHECK(!nya_llm_session_run(s,tokens,total-1,1));
+    CHECK(!nya_llm_session_run(s,&replacement,1,1));
+    memcpy(reference+(count+1)*v,nya_llm_session_logits(s),v*sizeof(float));
     nya_llm_session_free(s);s=NULL;
     if(getenv("NYA_TEST_VERIFY_FAILURE")) CHECK(!inject_failure());
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
@@ -59,6 +64,7 @@ int main(int argc,char **argv)
         CHECK(!nya_llm_session_run(s,tokens,prefix,0));
         CHECK(nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v)<0);
         CHECK(!nya_llm_session_logits(s));
+        CHECK(nya_llm_session_rewind(s,0)<0);
         CHECK(nya_llm_session_verify(s,tokens+prefix,1,actual+1,v)<0);
         nya_llm_session_reset(s);
         CHECK(!strcmp(nya_llm_session_execution(s),"cpu-reference"));
@@ -94,11 +100,39 @@ int main(int argc,char **argv)
         printf("reset=%u prefix=%zu tokens=%zu max_scaled=%.9g execution=%s\n",reset,prefix,count,maximum,nya_llm_session_execution(s));fflush(stdout);
         CHECK(maximum<=0.0005);
         CHECK(!memcmp(nya_llm_session_logits(s),actual+1+(count-1)*v,v*sizeof(float)));
+        /* Rejected last proposal: truncate, forbid stale suffix reads/logits,
+           then regenerate it and compare against the independent serial run. */
+        CHECK(nya_llm_session_rewind(s,SIZE_MAX)<0);
+        CHECK(!memcmp(nya_llm_session_logits(s),actual+1+(count-1)*v,v*sizeof(float)));
+        CHECK(!nya_llm_session_rewind(s,prefix+count));
+        CHECK(nya_llm_session_logits(s)); /* no-op retains the current logits */
+        CHECK(!nya_llm_session_rewind(s,prefix+count-1));
+        CHECK(!nya_llm_session_logits(s));
+        CHECK(nya_llm_session_rewind(s,prefix+count)<0); /* cannot resurrect suffix */
+        size_t width=m->layers[0].head_dimension*m->layers[0].kv_head_count;
+        CHECK(nya_llm_session_read_kv(s,0,prefix+count-1,1,actual+1,last,width)<0);
+        if(getenv("NYA_TEST_VERIFY_RING") && !strcmp(nya_llm_session_execution(s),"resident")) {
+            CHECK(nya_llm_session_rewind(s,1)<0); /* evicted prefix */
+        }
+        CHECK(!nya_llm_session_verify(s,tokens+prefix+count-1,1,actual+1,v));
+        for(size_t i=0;i<v;++i) {
+            float a=actual[i+1],b=reference[(count-1)*v+i];
+            CHECK((a==-INFINITY && b==-INFINITY) || (isfinite(a) && isfinite(b) && fabs((double)a-b)<=0.0005*(1+fabs(b))));
+        }
         CHECK(!nya_llm_session_verify(s,tokens+prefix+count,1,actual+1,v));
         for(size_t i=0;i<v;++i) {
             float a=actual[i+1],b=reference[count*v+i];
             CHECK((a==-INFINITY && b==-INFINITY) || (isfinite(a) && isfinite(b) && fabs((double)a-b)<=0.0005*(1+fabs(b))));
         }
+        CHECK(!nya_llm_session_rewind(s,total-1));
+        CHECK(!nya_llm_session_verify(s,&replacement,1,actual+1,v));
+        for(size_t i=0;i<v;++i) {
+            float a=actual[i+1],b=reference[(count+1)*v+i];
+            CHECK((a==-INFINITY && b==-INFINITY) || (isfinite(a) && isfinite(b) && fabs((double)a-b)<=0.0005*(1+fabs(b))));
+        }
+        CHECK(!nya_llm_session_rewind(s,0));
+        CHECK(!nya_llm_session_logits(s));
+        CHECK(nya_llm_session_rewind(s,1)<0);
     }
     result=0;
 done:

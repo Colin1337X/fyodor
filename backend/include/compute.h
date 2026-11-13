@@ -51,6 +51,10 @@ int nya_compute_plan_prefill(nya_compute_plan *plan, const unsigned int *tokens,
 int nya_compute_plan_can_verify(const nya_compute_plan *plan);
 int nya_compute_plan_verify(nya_compute_plan *plan, const unsigned int *tokens,
     size_t count, size_t position, float *output, size_t elements);
+/* Truncate the valid prefix to position (the next input index). Failure leaves
+   the plan unchanged; evicted KV and forward movement are rejected. No logits
+   are recovered. Unsupported providers return -1. */
+int nya_compute_plan_rewind(nya_compute_plan *plan, size_t position);
 void nya_compute_plan_stats(const nya_compute_plan *plan, nya_compute_stats *stats);
 /* Explicit synchronous diagnostic snapshot, expanded to F32. The two output
    arrays each hold exactly elements values and must not overlap. Normal
