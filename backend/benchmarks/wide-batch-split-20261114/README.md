@@ -196,3 +196,11 @@ discrepancy, including with large batches. They do not validate the original
 optimized-attention path at long context. The next implementation step is a
 batched attention path that preserves optimized serial-decode arithmetic,
 with raw evidence under ../fdpp-batch-20261114.
+
+check_large.py extends raw split-attention coverage to batches 8/32/512,
+positions 256/8192, widths 256/512, and linear/ring caches. All 24 cases match
+separate serial split calls byte-for-byte, preserve output/partial/score
+guards, and meet the existing sampled float64 bound (maximum scaled error
+6.09800181328e-8). CUDA Compute Sanitizer memcheck repeats all 24 cases with
+zero errors and exit code zero. These results validate large-query indexing;
+they do not accept whole-model performance or change production dispatch.

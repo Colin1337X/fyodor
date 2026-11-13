@@ -1,0 +1,92 @@
+--- CUDA/resident.inc
++++ CUDA/resident.inc
+@@ -34,7 +34,8 @@
+     int use_portable_attention;
+ #endif
+ #ifdef NYA_FLASH_DECODING_PP
+-    CUfunction fdpp_partial, fdpp_combine;
++    CUfunction fdpp_partial, fdpp_combine, fdpp_batch_partial, fdpp_batch_combine;
++    unsigned long long fdpp_batch_calls;
+     int use_fdpp, trace_fdpp, fdpp_short_split;
+ #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+     CUfunction fdpp_partial_64, fdpp_partial_128, fdpp_direct_64, fdpp_direct_128;
+@@ -127,6 +128,7 @@
+             i,w->head_dimension,w->head_count,w->kv_head_count,w->sliding_window,a->kernels,a->milliseconds);
+     }
+     const char *mtp_trace=getenv("NYA_MTP_TRACE");
++    fprintf(stderr,"CUDA aligned FDPP batch calls: %llu\n",p->fdpp_batch_calls);
+     if(p->borrowed_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
+     if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+@@ -360,7 +362,7 @@
+     if(interleaved_two && interleaved_columns>(SIZE_MAX-3)/2)return NULL;
+     size_t interleaved_count=interleaved?4*interleaved_columns+3:0;
+     size_t two_count=interleaved_two?2*interleaved_columns+3:0;
+-    size_t partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
++    size_t partial_queries=batch_partial_count?batch:0;
+     size_t partial_total=batch_partial_count*partial_queries;
+     if(partial_total<partial_count)partial_total=partial_count;
+     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
+@@ -384,7 +386,7 @@
+         batch = smaller; total = 0;
+         logits_batch=batch_logits?(batch<4?batch:4):1;
+         counts[9]=m->tokenizer.vocabulary_size*logits_batch;
+-        partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
++        partial_queries=batch_partial_count?batch:0;
+         counts[14]=batch_partial_count*partial_queries;
+         if(counts[14]<partial_count)counts[14]=partial_count;
+         counts[15]=batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0;
+@@ -501,6 +503,8 @@
+         fdpp_combine_name = "nya_fdpp_combine_warp";
+     }
+ #endif
++    if (c->function_get(&p->fdpp_batch_partial,c->module,"nya_fdpp_partial_batch") != CUDA_SUCCESS ||
++        c->function_get(&p->fdpp_batch_combine,c->module,"nya_fdpp_combine_batch") != CUDA_SUCCESS) goto failure;
+     if (c->function_get(&p->fdpp_partial,c->module,fdpp_partial_name) != CUDA_SUCCESS ||
+         c->function_get(&p->fdpp_combine,c->module,fdpp_combine_name) != CUDA_SUCCESS) goto failure;
+ #ifdef NYA_FLASH_DECODING_PP_SPECIALIZED
+@@ -691,6 +695,13 @@
+     unsigned long long cols = columns, stride = t->data_size / rows;
+     unsigned type = t->type;
+     if (p->batch > 1) {
++        /* Diagnostic only: retain large batches, use the serial reduction order. */
++        if ((type==12 || type==14) && p->cuda->small_reuse[type][1]) {
++            unsigned r=(unsigned)rows,batch=(unsigned)p->batch;
++            void *ordered[]={&matrix,&in,&out,&cols,&stride,&r,&batch};
++            return plan_grid(p,p->cuda->small_reuse[type][1],(rows+7)/8,
++                (p->batch+3)/4,256,1,ordered);
++        }
+         if (p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch)) {
+             /* cuBLAS may dispatch more than one internal kernel. Count logical
+                expansion/GEMM dispatches; the documentation identifies this
+@@ -1010,10 +1021,19 @@
+         int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
+         /* Each admitted split query owns four partial rows. Batch-four full
+            attention only won at the measured 8K shape; retain unsplit below it. */
+-        int wide_batch=p->use_wide_batch && (count==2 || count==4) && position>=256;
++        int wide_batch=p->use_wide_batch && count>1 && position>=256;
++        if(count>1 && position<256 && count<=256-position && width==256 && p->use_fdpp==2) {
++            unsigned partitions=4;
++            void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
++                &window,&end,&scale,&p->active_request,&partitions};
++            RUN(plan_grid(p,p->fdpp_batch_partial,heads,count*partitions,256,1,partial));
++            void *combine[]={&p->q,&keys,&values,&p->norm,&p->attention_parts,&width,&nh,&nk,
++                &window,&end,&scale,&p->active_request,&partitions,&p->scores,&capacity};
++            RUN(plan_grid(p,p->fdpp_batch_combine,heads,count,256,1,combine));
++            ++p->fdpp_batch_calls;
++        } else
+         if(p->use_wide_value && ((count==1 && graph_index) || wide_batch) && (width==256 || width==512)) {
+-            int batch_split=wide_batch && count<=p->wide_partial_queries && (!window || window>256) &&
+-                (count==2 || (count==4 && width==512 && !window && position>=8192));
++            int batch_split=wide_batch && count<=p->wide_partial_queries && (!window || window>256);
+             int split=batch_split || (count==1 && p->split_attention && p->wide_split_attention && (!window || window>256));
+             void *wide[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
+             if(split) wide[3]=&p->attention_parts;
+@@ -1215,6 +1235,7 @@
+     if (tokens == NULL || count == 0 || position > p->capacity || count > p->capacity - position) return -1;
+     for (size_t i = 0; i < count; ) {
+         size_t chunk = count - i < p->maximum_batch ? count - i : p->maximum_batch;
++        if(position+i<256 && chunk>256-position-i)chunk=256-position-i;
+         if (cuda_plan_batch(p, tokens + i, chunk, position + i, i + chunk == count, output)) return -1;
+         i += chunk;
+     }
