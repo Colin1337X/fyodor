@@ -1,13 +1,14 @@
-# Batched split attention prototype
+# Selective batched split attention
 
-The resident verification path currently uses unsplit wide-value attention
-because its partial-result allocation holds only one query. This original
+The previous resident verification path used unsplit wide-value attention
+because its partial-result allocation held only one query. This original
 Fyodor experiment gives each query independent four-part storage, then uses
 the existing native combiner with a flattened query/head grid. It preserves
 the arithmetic of independently launched single-query split attention.
 
-The source is isolated in optcpp/attention/wide_batch_split16.cu and is not
-part of any runtime build or dispatch. Raw correctness and diagnostic timings are recorded below; no runtime integration yet.
+The source is isolated in optcpp/attention/wide_batch_split16.cu. It is now
+integrated behind default-off NYA_ENABLE_WIDE_BATCH_SPLIT and
+NYA_CUDA_WIDE_BATCH_SPLIT switches, with native C planning and dispatch.
 The prepared harness checks batch two/four, width 256/512, several contexts,
 linear/ring storage, exact serial-split parity, output/partial/score guards,
 agreement with unsplit attention and an independent float64 oracle. The
@@ -52,13 +53,31 @@ Intermediate-length measurements (same diagnostic contract):
 
 Batch two benefits across this sweep. Batch four full attention still regresses
 at 2K and 4K; its 8K improvement does not justify enabling it for all lengths.
-Batch-four sliding gains are small. A later integration should retain unsplit
-fallback for these marginal/regressing cells and validate whole-model effects.
+Batch-four sliding gains are small. The experimental integration retains unsplit
+fallback for these marginal/regressing cells; whole-model effects are unproven.
 No cache/occupancy explanation is claimed without hardware-counter evidence.
 
 CUDA Compute Sanitizer 13.1.118 memcheck repeats all 32 cases with zero errors
 and exit code zero. Command: compute-sanitizer --tool memcheck
 --error-exitcode 99 --target-processes all <python> check_memcheck.py.
 Separate memcheck-oracle.json retains the source hash and case results.
-Real-model integration, C17/C23 runtime tests and integrated memory checking
-remain pending; this source is still excluded from runtime builds.
+C17/C23 runtime validation each passes 31 targeted cases, including batch
+limits 1/2/3/4/8, ring and linear KV, and 8K batch-four verification. Scratch
+accounting is checked against a disabled reference. Physical removal passes
+the 82-test suite (four expected hardware skips) and CPU train/export/infer.
+Real-model and integrated memory validation are in progress.
+
+## Integration validation status
+
+The four prefix-257 Gemma cases pass. The first prefix-8192 case (linear KV,
+two verification tokens) matches the serial-after-prefill logits exactly,
+but fails the unchanged 0.0005 bound when comparing replacement-token replay
+against a fully serial 8K prefix. validation.json and the complete failure log
+are retained. The remaining 8K cases have not run, and full-generation timing
+is gated on all eight cases passing. A feature-disabled control with quantified
+replay error ran through diagnose_replay.py and reproduced the failure with
+maximum scaled error 0.00261755031 (index 157813: actual 0.0598487109 versus
+fully serial 0.0626301989). The new split path was disabled in both sessions.
+An unsplit-attention control is now running through isolate_replay.py; a
+native-matmul control is prepared but has not run. This integration is not
+validated for acceptance; neither tolerance nor reference behavior was relaxed.

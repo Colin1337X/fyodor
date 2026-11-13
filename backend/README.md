@@ -898,11 +898,21 @@ performance remains unproven; see [borrowed-attention evidence](benchmarks/mtp-b
 `NYA_CUDA_WIDE_BATCH=1` additionally enables unsplit wide-value attention for
 verification batches exactly 2/4 at positions >=256 with widths 256/512. It is
 captured at plan creation, defaults off, and requires the existing wide-value
-build/runtime options. Split partials remain single-query. [Batched-attention
+build/runtime options. [Batched-attention
 validation](benchmarks/wide-batch-20261113/README.md) covers native/float64 kernel
 parity, real Gemma logits and C17/C23 reset/rewind tests. Diagnostic 8K generation
 improves 15.1%/11.4% for MTP windows 2/4, respectively, but still trails ordinary
 decode and does not establish a new accepted llama.cpp score.
+
+`NYA_ENABLE_WIDE_BATCH_SPLIT=ON` builds optional per-query split attention;
+`NYA_CUDA_WIDE_BATCH_SPLIT=1` enables it alongside the wide-value/batch options.
+Both default off, and `NYA_CUDA_SPLIT_ATTENTION=0` disables it. Batch two uses
+four partitions for eligible wide attention at positions >=256. Batch four
+uses them only for full attention of width 512 at positions >=8192; smaller
+or sliding batch-four workloads retain unsplit dispatch because measurements
+did not show a consistent benefit. Partial storage is budgeted before admission
+and reduced with the admitted batch limit. Missing optional sources preserve
+the existing path. See [split-attention evidence](benchmarks/wide-batch-split-20261114/README.md).
 
 Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
 reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;

@@ -129,6 +129,17 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_GEMMA_GATE AND
 endif()
 
 option(NYA_ENABLE_WIDE_VALUE "Compile optional wide attention value reduction" OFF)
+option(NYA_ENABLE_WIDE_BATCH_SPLIT "Compile optional batched split wide attention" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_WIDE_VALUE AND NYA_ENABLE_WIDE_BATCH_SPLIT AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_batch_split16.cu")
+    set(nya_wide_batch_split "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_batch_split16.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_wide_batch_split}")
+    file(READ "${nya_wide_batch_split}" nya_wide_batch_split_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_wide_batch_split_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_WIDE_BATCH_SPLIT=1)
+endif()
+
 if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_WIDE_VALUE AND
    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu")
     set(nya_wide_value "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu")

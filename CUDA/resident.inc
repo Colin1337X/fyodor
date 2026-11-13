@@ -48,6 +48,8 @@ typedef struct nya_cuda_plan {
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
     int use_wide_value, use_wide_batch;
+    size_t wide_partial_queries;
+    unsigned long long wide_batch_split_calls;
     unsigned long long borrowed_wide_calls, batched_wide_calls, batched_logits_calls, interleaved_calls;
     int failed;
     int gemma_qkv, gemma_gate;
@@ -129,6 +131,8 @@ static void cuda_plan_free(void *opaque)
         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
     if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA batched wide-value attention calls: %llu\n",p->batched_wide_calls);
+    if(p->wide_batch_split_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA batched split attention calls: %llu\n",p->wide_batch_split_calls);
     if(p->interleaved_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA interleaved weight-reuse calls: %llu\n",p->interleaved_calls);
     if(p->interleaved_two_calls && mtp_trace && !strcmp(mtp_trace,"1"))
@@ -288,6 +292,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
 #endif
     const char *wide_split_setting=getenv("NYA_CUDA_WIDE_SPLIT");
     int wide_split=wide_split_setting && !strcmp(wide_split_setting,"1");
+    const char *batch_split_setting=getenv("NYA_CUDA_WIDE_BATCH_SPLIT");
+    const char *wide_value_setting=getenv("NYA_CUDA_WIDE_VALUE");
+    const char *wide_batch_setting=getenv("NYA_CUDA_WIDE_BATCH");
+    int wide_batch_split=split_attention && batch_split_setting && !strcmp(batch_split_setting,"1") &&
+        wide_value_setting && !strcmp(wide_value_setting,"1") && wide_batch_setting && !strcmp(wide_batch_setting,"1") &&
+        c->wide_batch_split[0] && c->wide_batch_split[1];
+    size_t batch_partial_count=0;
     int has_split_attention = 0;
     const char *ring_setting=getenv("NYA_CUDA_RING_KV");
     int ring_kv=!c->reference && ring_setting && !strcmp(ring_setting,"1");
@@ -311,6 +322,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
             if (partials > partial_count) partial_count = partials;
         }
         if (plan_add(&rope_count, m->layers[i].head_dimension / 2) != 0) return NULL;
+        if(wide_batch_split && (m->layers[i].head_dimension==256 || m->layers[i].head_dimension==512) &&
+            (!m->layers[i].sliding_window || m->layers[i].sliding_window>256)) {
+            size_t width=m->layers[i].head_dimension+2;
+            if(m->layers[i].head_count>SIZE_MAX/width/16)return NULL;
+            size_t partials=m->layers[i].head_count*width*4;
+            if(partials>batch_partial_count)batch_partial_count=partials;
+        }
     }
     if (heads > SIZE_MAX / capacity) return NULL;
     size_t batch_limit = 512;
@@ -342,12 +360,15 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if(interleaved_two && interleaved_columns>(SIZE_MAX-3)/2)return NULL;
     size_t interleaved_count=interleaved?4*interleaved_columns+3:0;
     size_t two_count=interleaved_two?2*interleaved_columns+3:0;
+    size_t partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
+    size_t partial_total=batch_partial_count*partial_queries;
+    if(partial_total<partial_count)partial_total=partial_count;
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
     size_t kv_count=m->cache_width*capacity;
     if(ring_kv && (maximum_kv>SIZE_MAX/batch || nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count))) return NULL;
     size_t counts[] = {d * batch, (d > q ? d : q) * batch, d * batch, h * batch, h * batch, q * batch, heads * capacity * score_batch,
         kv_count, kv_count, m->tokenizer.vocabulary_size*logits_batch, rope_count / sizeof(float),
-        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_count,
+        maximum_kv*(ring_kv?batch:1), maximum_kv*(ring_kv?batch:1), 2, partial_total,
         batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0};
     for (size_t i = 0; i < sizeof(counts)/sizeof(counts[0]); ++i) if (plan_add(&total, counts[i]) != 0) return NULL;
     for (size_t i = 0; i < m->tensor_count; ++i) {
@@ -363,6 +384,9 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         batch = smaller; total = 0;
         logits_batch=batch_logits?(batch<4?batch:4):1;
         counts[9]=m->tokenizer.vocabulary_size*logits_batch;
+        partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
+        counts[14]=batch_partial_count*partial_queries;
+        if(counts[14]<partial_count)counts[14]=partial_count;
         counts[15]=batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0;
         if(ring_kv) {
             if(nya_cuda_kv_layout_build(m,capacity,batch,NULL,&kv_count)) return NULL;
@@ -379,6 +403,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->logits_batch=logits_batch;
     p->split_attention = has_split_attention;
     p->wide_split_attention = wide_split;
+    p->wide_partial_queries=partial_queries;
 #ifdef NYA_FLASH_DECODING_PP
     p->use_fdpp = use_fdpp;
     const char *fdpp_trace = getenv("NYA_CUDA_FDPP_TRACE");
@@ -639,6 +664,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
 #endif
 #endif
         for(unsigned i=0;i<4;++i) if(f==p->wide_value[i]) timing->kind=4U;
+        for(unsigned i=0;i<2;++i) if(f==p->cuda->wide_batch_split[i]) timing->kind=4U;
         if(timing->kind==4 && p->attention_profiles) timing->attention=p->profile_layer;
         ++p->timing_count;
         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
@@ -982,18 +1008,22 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
            the existing short FDPP/portable math and performance. The separate
            long topology is mandatory: graph_index==0 alone is not a bound. */
         int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
-        /* Narrow verification owns independent score/output rows. Split partials
-           are single-query storage, so batching must use the unsplit kernel. */
+        /* Each admitted split query owns four partial rows. Batch-four full
+           attention only won at the measured 8K shape; retain unsplit below it. */
         int wide_batch=p->use_wide_batch && (count==2 || count==4) && position>=256;
         if(p->use_wide_value && ((count==1 && graph_index) || wide_batch) && (width==256 || width==512)) {
-            int split=count==1 && p->split_attention && p->wide_split_attention && (!window || window>256);
+            int batch_split=wide_batch && count<=p->wide_partial_queries && (!window || window>256) &&
+                (count==2 || (count==4 && width==512 && !window && position>=8192));
+            int split=batch_split || (count==1 && p->split_attention && p->wide_split_attention && (!window || window>256));
             void *wide[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
             if(split) wide[3]=&p->attention_parts;
-            RUN(plan_grid(p,p->wide_value[(ring_slots?2:0)+(split?1:0)],heads,split?4:count,256,1,wide));
+            CUfunction kernel=batch_split?p->cuda->wide_batch_split[ring_slots?1:0]:p->wide_value[(ring_slots?2:0)+(split?1:0)];
+            RUN(plan_grid(p,kernel,heads,split?4*count:count,256,1,wide));
             if(wide_batch) ++p->batched_wide_calls;
+            if(batch_split) ++p->wide_batch_split_calls;
             if(split) {
                 void *combine[]={&p->attention_parts,&p->norm,&width};
-                RUN(plan_grid(p,p->attention_combine,heads,1,width,1,combine));
+                RUN(plan_grid(p,p->attention_combine,heads*count,1,width,1,combine));
             }
         } else if(ring_slots && !linear_ring_decode) {
             void *ring[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
