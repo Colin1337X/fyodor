@@ -44,6 +44,23 @@ controlled cross-engine comparisons. Missing counters and first/new-instance
 samples are not proof of idleness. Do not sum per-engine percentages. System
 process activity must be interpreted conservatively, not silently allowlisted.
 
+`coverage.py` now audits a measured QPC interval against recorded child PID
+lifetimes. It requires matching PDH adapter identity, samples bracketing the
+interval, monotonic timestamps, bounded sampling gaps, valid target counters,
+and successful cooperative termination. Positive engines must overlap a known
+workload lifetime; engine percentages are never summed. Fourteen offline tests
+cover complete evidence and rejection cases (`coverage-tests.log`).
+
+The earlier live attribution trace does **not** pass this stronger audit:
+`pdh-coverage.json` retains invalid target counters and unattributed activity.
+The latter comes from PID 4 (System); this is not a reason to terminate it.
+The invalid counters are retained for PID 6368 with status 0xc0000bba. Dynamic
+discovery worked, but that alone did not prove uncontaminated execution.
+The auditor always returns `accepted_benchmark: false`, even for a clear sampled
+interval. It cannot exclude missing short-lived competitors or PID reuse, and
+does not check CPU activity, thermal state or equivalent workloads. No previous
+timing is promoted by this change.
+
 Primary API documentation:
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw
 - https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhaddenglishcounterw
