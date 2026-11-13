@@ -1,0 +1,65 @@
+scope=off exact=1
+scope=0 exact=1
+scope=10 exact=1
+scope=16 exact=1
+scope=17 exact=1
+scope=33 exact=1
+scope=bad exact=1
+scope=184467440737095516160 exact=1
+scope= exact=1
+CASE off
+CASE 0
+CUDA kernel GPU milliseconds: matmul=0.423 norm=0.137 rope=0.068 vector=0.095 attention=0.050 gather=0.040 (profiling disables graphs)
+CUDA profile scope: from_position=0 batches=10 tokens=38 (batches starting below the threshold excluded)
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=8 calls=8 milliseconds=0.058496
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=8 calls=8 milliseconds=0.037824
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=8 calls=8 milliseconds=0.038880
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=8 calls=4 milliseconds=0.019200
+CUDA matrix profile: path=dot type=0 rows=259 columns=16 batch=1 calls=8 milliseconds=0.038912
+CUDA matrix profile: path=dot type=0 rows=16 columns=16 batch=1 calls=12 milliseconds=0.057696
+CUDA matrix profile: path=dot type=0 rows=8 columns=16 batch=1 calls=12 milliseconds=0.058080
+CUDA matrix profile: path=dot type=0 rows=32 columns=16 batch=1 calls=12 milliseconds=0.084896
+CUDA matrix profile: path=dot type=0 rows=16 columns=32 batch=1 calls=6 milliseconds=0.029312
+CASE 10
+CUDA kernel GPU milliseconds: matmul=0.257 norm=0.087 rope=0.030 vector=0.049 attention=0.029 gather=0.025 (profiling disables graphs)
+CUDA profile scope: from_position=10 batches=6 tokens=6 (batches starting below the threshold excluded)
+CUDA matrix profile: path=dot type=0 rows=16 columns=16 batch=1 calls=12 milliseconds=0.057536
+CUDA matrix profile: path=dot type=0 rows=8 columns=16 batch=1 calls=12 milliseconds=0.058688
+CUDA matrix profile: path=dot type=0 rows=32 columns=16 batch=1 calls=12 milliseconds=0.083072
+CUDA matrix profile: path=dot type=0 rows=16 columns=32 batch=1 calls=6 milliseconds=0.028960
+CUDA matrix profile: path=dot type=0 rows=259 columns=16 batch=1 calls=6 milliseconds=0.029024
+CASE 16
+CUDA kernel GPU milliseconds: matmul=0.428 norm=0.087 rope=0.029 vector=0.048 attention=0.031 gather=0.027 (profiling disables graphs)
+CUDA profile scope: from_position=16 batches=6 tokens=6 (batches starting below the threshold excluded)
+CUDA matrix profile: path=dot type=0 rows=16 columns=16 batch=1 calls=12 milliseconds=0.055552
+CUDA matrix profile: path=dot type=0 rows=8 columns=16 batch=1 calls=12 milliseconds=0.058272
+CUDA matrix profile: path=dot type=0 rows=32 columns=16 batch=1 calls=12 milliseconds=0.254944
+CUDA matrix profile: path=dot type=0 rows=16 columns=32 batch=1 calls=6 milliseconds=0.029472
+CUDA matrix profile: path=dot type=0 rows=259 columns=16 batch=1 calls=6 milliseconds=0.029472
+CASE 17
+CUDA kernel GPU milliseconds: matmul=0.200 norm=0.058 rope=0.019 vector=0.032 attention=0.019 gather=0.018 (profiling disables graphs)
+CUDA profile scope: from_position=17 batches=4 tokens=4 (batches starting below the threshold excluded)
+CUDA matrix profile: path=dot type=0 rows=16 columns=16 batch=1 calls=8 milliseconds=0.039168
+CUDA matrix profile: path=dot type=0 rows=8 columns=16 batch=1 calls=8 milliseconds=0.037824
+CUDA matrix profile: path=dot type=0 rows=32 columns=16 batch=1 calls=8 milliseconds=0.084448
+CUDA matrix profile: path=dot type=0 rows=16 columns=32 batch=1 calls=4 milliseconds=0.019136
+CUDA matrix profile: path=dot type=0 rows=259 columns=16 batch=1 calls=4 milliseconds=0.019360
+CASE 33
+CUDA kernel GPU milliseconds: matmul=0.000 norm=0.000 rope=0.000 vector=0.000 attention=0.000 gather=0.000 (profiling disables graphs)
+CUDA profile scope: from_position=33 batches=0 tokens=0 (batches starting below the threshold excluded)
+CASE bad
+CUDA profiling disabled: invalid NYA_CUDA_PROFILE_FROM
+CASE 184467440737095516160
+CUDA profiling disabled: invalid NYA_CUDA_PROFILE_FROM
+CASE 
+CUDA kernel GPU milliseconds: matmul=0.407 norm=0.136 rope=0.067 vector=0.093 attention=0.049 gather=0.038 (profiling disables graphs)
+CUDA profile scope: from_position=0 batches=10 tokens=38 (batches starting below the threshold excluded)
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=16 batch=8 calls=8 milliseconds=0.059040
+CUDA matrix profile: path=native-gemm type=0 rows=8 columns=16 batch=8 calls=8 milliseconds=0.038688
+CUDA matrix profile: path=native-gemm type=0 rows=32 columns=16 batch=8 calls=8 milliseconds=0.038880
+CUDA matrix profile: path=native-gemm type=0 rows=16 columns=32 batch=8 calls=4 milliseconds=0.019712
+CUDA matrix profile: path=dot type=0 rows=259 columns=16 batch=1 calls=8 milliseconds=0.039008
+CUDA matrix profile: path=dot type=0 rows=16 columns=16 batch=1 calls=12 milliseconds=0.056800
+CUDA matrix profile: path=dot type=0 rows=8 columns=16 batch=1 calls=12 milliseconds=0.053888
+CUDA matrix profile: path=dot type=0 rows=32 columns=16 batch=1 calls=12 milliseconds=0.079840
+CUDA matrix profile: path=dot type=0 rows=16 columns=32 batch=1 calls=6 milliseconds=0.021568

@@ -1,0 +1,13 @@
+CUDA kernel GPU milliseconds: matmul=403.770 norm=49.628 rope=8.310 vector=16.235 attention=262.532 gather=0.070 (profiling disables graphs)
+CUDA profile scope: from_position=8192 batches=16 tokens=16 (batches starting below the threshold excluded)
+CUDA matrix profile: path=qkv type=14 rows=8192 columns=3840 batch=1 calls=320 milliseconds=20.982944
+CUDA matrix profile: path=dot type=12 rows=3840 columns=4096 batch=1 calls=640 milliseconds=24.121280
+CUDA matrix profile: path=gate-up-q4 type=12 rows=15360 columns=3840 batch=1 calls=176 milliseconds=36.269376
+CUDA matrix profile: path=dot type=14 rows=3840 columns=15360 batch=1 calls=384 milliseconds=58.502784
+CUDA matrix profile: path=dot type=12 rows=8192 columns=3840 batch=1 calls=128 milliseconds=8.372448
+CUDA matrix profile: path=dot type=12 rows=512 columns=3840 batch=1 calls=128 milliseconds=1.689120
+CUDA matrix profile: path=dot type=12 rows=3840 columns=8192 batch=1 calls=128 milliseconds=11.183072
+CUDA matrix profile: path=qkv type=12 rows=8192 columns=3840 batch=1 calls=320 milliseconds=20.534240
+CUDA matrix profile: path=dot type=12 rows=3840 columns=15360 batch=1 calls=384 milliseconds=47.115072
+CUDA matrix profile: path=dot type=12 rows=15360 columns=3840 batch=1 calls=1184 milliseconds=138.242975
+CUDA matrix profile: path=dot type=14 rows=262144 columns=3840 batch=1 calls=16 milliseconds=36.756896
