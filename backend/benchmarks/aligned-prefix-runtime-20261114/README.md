@@ -166,3 +166,16 @@ Six offline tests pass, including malformed/partial evidence and nondeterminism.
 The live runner's negative preflight test rejects the still-pending sanitizer
 without creating its output directory or starting GPU work. Actual reference
 execution and cross-engine generated-output comparison remain pending.
+
+compare_generation.py joins the two completed audits after rechecking their raw
+input hashes. It requires both contexts, complete round/mode inventories, equal
+prompt/output counts, and identical generated text bytes. It reports warmed
+mean/sample deviation and diagnostic Fyodor speed as 100*llama_ms/Fyodor_ms for
+each mode. Round zero is excluded. Coverage and legacy idle results remain
+explicit, and accepted_benchmark is always false: this initial engine ordering
+and two warmed observations cannot establish the requested accepted score.
+
+Four offline comparison tests pass (warmup/ratio direction, text boundaries,
+workload mismatch, invalid times). A negative CLI check rejects missing complete
+audits without writing a comparison artifact. Real comparison remains pending;
+no synthetic test value is a measured runtime performance result.
