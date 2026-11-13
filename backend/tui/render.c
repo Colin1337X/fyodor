@@ -142,7 +142,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
         if(h>19) text(f,3,13,w-6,3,"Compiled support does not imply an available device.");
     }
     text(f,2,h-3,w-4,3,s->status);
-    if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);text(f,2,h-1,w-4,1,"Tab complete  Up/Down history  Enter run  Esc cancel");}
+    if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);text(f,2,h-1,w-4,1,"^W word  ^U clear  Tab complete  Up/Down history  Enter run  Esc cancel");}
     else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  t theme  g graph  Space pause  q quit");
 }
 void tui_write(FILE *file,const tui_frame *f,int ansi,fyodor_color_mode color)
