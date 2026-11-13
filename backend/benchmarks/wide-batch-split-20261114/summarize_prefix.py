@@ -2,8 +2,8 @@
 import hashlib,json,math,sys
 from pathlib import Path
 out=Path(__file__).resolve().parent
-if len(sys.argv) not in (2,3) or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections','narrow-prefix'):
- raise SystemExit('Choose control, native-matmul, unsplit-attention, unfused-projections or narrow-prefix [prefix >= 3]')
+if len(sys.argv) not in (2,3) or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections','narrow-prefix','narrow-unsplit'):
+ raise SystemExit('Choose control, native-matmul, unsplit-attention, unfused-projections, narrow-prefix or narrow-unsplit [prefix >= 3]')
 prefix=8192
 if len(sys.argv)==3:
  if not sys.argv[2].isascii() or not sys.argv[2].isdecimal():raise SystemExit('Invalid prefix')
