@@ -576,10 +576,16 @@ static int nya_llm_forward_impl(const nya_llm_context *c, nya_llm_run_state *s,
         if (c->is_gemma) nya_llm_rms_norm(s->residual, s->residual, w->attention_post_norm, d, c->norm_epsilon);
         for (size_t j = 0; j < d; ++j) s->activation[j] += s->residual[j];
         nya_llm_rms_norm(s->normalized, s->activation, w->feed_forward_norm, d, c->norm_epsilon);
-        nya_llm_matvec(c->compute, s->feed_forward_gate, w->feed_forward_gate, s->normalized, d, h);
-        nya_llm_matvec(c->compute, s->feed_forward_up, w->feed_forward_up, s->normalized, d, h);
-        nya_llm_gated_activation(s->feed_forward_gate, s->feed_forward_up, h, c->is_gemma);
-        nya_llm_matvec(c->compute, s->residual, w->feed_forward_down, s->feed_forward_gate, h, d);
+        nya_compute_ffn ffn={w->feed_forward_gate->data,w->feed_forward_up->data,w->feed_forward_down->data,
+            w->feed_forward_gate->data_size,w->feed_forward_up->data_size,w->feed_forward_down->data_size,
+            d,h,w->feed_forward_gate->type,w->feed_forward_up->type,w->feed_forward_down->type,
+            (unsigned)(c->is_gemma!=0),s->normalized,s->residual};
+        if(!c->is_assistant || nya_compute_ffn_f32(c->compute,&ffn)) {
+            nya_llm_matvec(c->compute, s->feed_forward_gate, w->feed_forward_gate, s->normalized, d, h);
+            nya_llm_matvec(c->compute, s->feed_forward_up, w->feed_forward_up, s->normalized, d, h);
+            nya_llm_gated_activation(s->feed_forward_gate, s->feed_forward_up, h, c->is_gemma);
+            nya_llm_matvec(c->compute, s->residual, w->feed_forward_down, s->feed_forward_gate, h, d);
+        }
         if (c->expert_count != 0) {
             nya_llm_rms_norm(s->residual, s->residual, w->shared_post_norm, d, c->norm_epsilon);
             if (nya_llm_experts(c, w, s) != 0) return -1;

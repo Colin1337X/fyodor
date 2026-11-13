@@ -21,6 +21,18 @@ typedef struct nya_compute_stats {
     unsigned long long tiled_attention_calls; /* native query-tiled prefill */
 } nya_compute_stats;
 typedef struct nya_compute_plan nya_compute_plan;
+/* Optional synchronous gated feed-forward chain. Matrices are row-major
+   [hidden,width], [hidden,width], [width,hidden], with checked storage bytes.
+   Zero means output is ready; -1 requires complete caller recomputation.
+   No backend handles or ownership escape this plain C descriptor. */
+typedef struct nya_compute_ffn {
+    const void *gate, *up, *down;
+    size_t gate_bytes, up_bytes, down_bytes, width, hidden;
+    unsigned gate_type, up_type, down_type, gelu;
+    const float *input;
+    float *output;
+} nya_compute_ffn;
+int nya_compute_ffn_f32(nya_compute_context *context, const nya_compute_ffn *ffn);
 /* Host F32 attention view: query/output are [batch,heads,width], KV is
    [capacity,kv_heads,width]. Only the causal prefix through position+batch is
    read. A nonzero window bounds that prefix per query. Inputs/output must not

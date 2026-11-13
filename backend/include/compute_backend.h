@@ -30,5 +30,6 @@ typedef struct nya_backend_interface {
     int (*plan_rewind)(void *, size_t);
     int (*plan_hidden)(void *, float *, size_t);
     int (*plan_borrow_attention)(void *, size_t, size_t, const float *, size_t, size_t, float *, size_t);
+    int (*ffn_f32)(void *, const nya_compute_ffn *);
 } nya_backend_interface;
 #endif

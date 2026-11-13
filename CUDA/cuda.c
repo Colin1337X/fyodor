@@ -37,6 +37,8 @@ typedef struct nya_cuda_context {
     CUcontext context;
     CUmodule module;
     CUfunction function;
+    CUfunction assisted_vector;
+    unsigned long long assisted_ffn_calls;
     CUfunction dot[31], gate_up_q4, gate_up_2048;
     CUfunction integer_add, integer_qkv[2], integer_q6_add, byte_gate, gemma_gate;
     CUfunction byte_dot, byte_add, byte_qkv[2];
@@ -197,6 +199,9 @@ static void *nya_cuda_compiler(void)
 void nya_cuda_free(nya_cuda_context *c)
 {
     if (c == NULL) return;
+    const char *mtp_trace=getenv("NYA_MTP_TRACE");
+    if(c->assisted_ffn_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA assisted feed-forward calls: %llu\n",c->assisted_ffn_calls);
     if (c->context != NULL) {
         /* Restore the caller's current context after cleanup. A retained
            primary context is released, never reset or destroyed globally. */
@@ -560,6 +565,7 @@ int nya_cuda_matvec(nya_cuda_context *c, const void *weights, size_t rows, size_
 
 #include "compute_backend.h"
 #include "resident.inc"
+#include "assisted_ffn.inc"
 static void *cuda_backend_create(void) { return nya_cuda_create(); }
 static void cuda_backend_free(void *p) { nya_cuda_free(p); }
 static int cuda_backend_active(const void *p) { return nya_cuda_active(p); }
@@ -572,7 +578,7 @@ static int cuda_backend_matmul(void *p, const void *w, size_t r, size_t c,
 const nya_backend_interface *nya_cuda_backend(void)
 {
     static const nya_backend_interface api = {NYA_BACKEND_CUDA, "cuda", NYA_COMPUTE_MATVEC | NYA_COMPUTE_QUANTIZED | NYA_COMPUTE_RESIDENT | NYA_COMPUTE_MATMUL,
-        cuda_backend_create, cuda_backend_free, cuda_backend_active, cuda_backend_matvec, cuda_plan_create, cuda_plan_free, cuda_plan_token, cuda_plan_prefill, cuda_plan_stats, cuda_backend_matmul, NULL, cuda_plan_read_kv, NULL, cuda_plan_verify, cuda_plan_rewind, cuda_plan_hidden, cuda_plan_borrow_attention};
+        cuda_backend_create, cuda_backend_free, cuda_backend_active, cuda_backend_matvec, cuda_plan_create, cuda_plan_free, cuda_plan_token, cuda_plan_prefill, cuda_plan_stats, cuda_backend_matmul, NULL, cuda_plan_read_kv, NULL, cuda_plan_verify, cuda_plan_rewind, cuda_plan_hidden, cuda_plan_borrow_attention, cuda_assisted_ffn};
     return &api;
 }
 #include "training.inc"
