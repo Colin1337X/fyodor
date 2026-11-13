@@ -92,3 +92,26 @@ inference under constrained admission,
 and equivalent uncontaminated generation comparisons remain required before
 any performance acceptance or default enablement. Raw batched FDPP and wide
 split memory checks from earlier artifacts do not substitute for these gates.
+
+## Gated generation diagnostic
+
+build_generation.py compiled an isolated B512 prompt-ingestion diagnostic with
+strict C17 and C23 flags; generation-build.json records commands and hashes.
+The production library is unchanged. The executable includes native QPC decode
+intervals for joining continuous GPU activity to the measured generation loops.
+No generation timing has yet been collected from this build.
+
+run_generation.py requires the completed integrated sanitizer audit and verifies
+both build and sanitizer input hashes before launching short/long diagnostics.
+It enables continuous PDH monitoring through the existing MTP-cost runner.
+A negative launch check while sanitizer metadata was absent rejected execution
+without creating an output directory. Six offline audit tests pass, covering
+missing completion, malformed error summaries, lifecycle/dispatch omissions,
+and nonfinite or excessive numerical errors.
+
+audit_memcheck.py supplements the original launch metadata only after completion;
+it checks both untouched log streams, both lifecycle resets, the sanitizer's
+zero-error summary, and launch input hashes. It does not rewrite the original
+stderr-only parser result. The 513-token test does not wrap the sliding ring.
+Generation timing remains a separate contract from fixed-forward llama-bench:
+these diagnostics cannot directly replace accepted cross-engine percentages.
