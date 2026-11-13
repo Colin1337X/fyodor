@@ -78,8 +78,36 @@ static int run(unsigned type,size_t d,size_t h)
 done:
     nya_compute_free(c);free(g);free(u);free(w);free(input);free(output);return result;
 }
-int main(void)
+/* A rejected large request must neither write output nor poison the context.
+   The subsequent small chain uses that same context and immutable weights. */
+static int budget(void)
 {
+    int result=1;nya_compute_context *c=NULL;unsigned char *g=NULL,*u=NULL,*w=NULL;
+    float input[256]={0},output[258];size_t gb=0,ub=0,wb=0;
+    g=matrix(0,512,256,1,&gb);u=matrix(0,512,256,2,&ub);w=matrix(0,256,512,3,&wb);
+    CHECK(g && u && w);CHECK(!setting("1"));
+    c=nya_compute_create_for("cuda");if(!c){result=77;goto done;}
+    nya_compute_ffn f={g,u,w,gb,ub,wb,256,512,0,0,0,1,input,output+1};
+    for(size_t i=0;i<258;++i)output[i]=12345;
+    CHECK(nya_compute_ffn_f32(c,&f)<0);
+    for(size_t i=0;i<258;++i)CHECK(output[i]==12345);
+    /* Reinterpret a small prefix of each F32 allocation; zero input has an
+       exact zero oracle for both activation functions and all finite weights. */
+    f.width=33;f.hidden=65;f.gate_bytes=f.up_bytes=f.down_bytes=33*65*sizeof(float);
+    for(unsigned gelu=0;gelu<2;++gelu) {
+        f.gelu=gelu;CHECK(!nya_compute_ffn_f32(c,&f));
+        for(size_t i=1;i<=33;++i)CHECK(output[i]==0);
+        CHECK(output[0]==12345);
+        for(size_t i=34;i<258;++i)CHECK(output[i]==12345);
+    }
+    puts("1 MiB budget: rejection, unchanged output and same-context recovery passed");result=0;
+done:
+    nya_compute_free(c);free(g);free(u);free(w);return result;
+}
+int main(int argc,char **argv)
+{
+    if(argc==2 && !strcmp(argv[1],"--budget"))return budget();
+    if(argc!=1)return 1;
     const unsigned types[]={0,1,30,2,8,12,14};
     for(size_t i=0;i<sizeof(types)/sizeof(types[0]);++i) {int rc=run(types[i],256,512);if(rc)return rc;}
     return run(0,33,65);

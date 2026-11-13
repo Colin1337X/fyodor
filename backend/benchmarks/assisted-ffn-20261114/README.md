@@ -52,3 +52,41 @@ retained, and any timing results here remain diagnostics, not accepted scores.
 
 Accepted Gemma/llama.cpp decode remains 85.61025294% short and 106.8707255% at 8K.
 The requested 125% on both contexts remains unmet.
+
+## Paired results
+
+All 48 generation calls passed exact output parity. Both off/on processes used
+one identical binary and matched recorded settings except ASSISTED_FFN. The off
+metadata names revision 2f7f1d9 and on names 280c522 because the validated source
+was committed while the control process was live; the binary did not change.
+Both historical desktop gates rejected acceptance. Raw one-second resource
+snapshots, environments and hashes are retained in runtime-off/runtime-on.
+
+Warmed decode-loop means and sample standard deviations (milliseconds):
+
+| Context / mode | Disabled | Enabled | Enabled speed / disabled |
+| --- | ---: | ---: | ---: |
+| Short ordinary | 755.945 +/- 0.181 | 758.368 +/- 0.118 | 99.6804% |
+| Short serial MTP | 844.267 +/- 0.725 | 828.295 +/- 1.098 | 101.9284% |
+| Short batch 2 | 804.826 +/- 0.760 | 788.602 +/- 1.502 | 102.0573% |
+| Short batch 4 | 790.948 +/- 1.853 | 772.436 +/- 3.247 | 102.3965% |
+| 8K ordinary | 934.589 +/- 1.491 | 934.252 +/- 1.635 | 100.0361% |
+| 8K serial MTP | 1059.985 +/- 0.186 | 1042.186 +/- 0.190 | 101.7078% |
+| 8K batch 2 | 1128.889 +/- 3.383 | 1110.890 +/- 3.032 | 101.6202% |
+| 8K batch 4 | 1069.829 +/- 0.531 | 1041.498 +/- 1.668 | 102.7202% |
+
+The feature saves about 16-19 ms short and 18-28 ms at 8K per generation.
+Ordinary decode does not execute this path; its small variation is a control,
+not a feature gain. Every MTP mode remains slower than ordinary generation.
+With only two warmed observations and fixed off/on process order, these are
+limited internal diagnostic results. The default remains off. No llama.cpp or
+PyTorch score is promoted.
+
+## Admission recovery
+
+The additional 1 MiB-budget test submits a 1.5 MiB F32 weight set, verifies
+refusal leaves every output element unchanged, then executes small GELU and
+SiLU chains successfully on the same context with exact-zero outputs and intact
+guards. This tests preflight admission recovery, not a driver allocation or
+kernel failure. C17/C23 results and the separate CUDA memory-check log are
+retained alongside the original correctness evidence.
