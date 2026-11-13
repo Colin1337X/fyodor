@@ -128,6 +128,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_GEMMA_GATE AND
     target_compile_definitions(nya-engine PRIVATE NYA_GEMMA_GATE=1)
 endif()
 
+option(NYA_ENABLE_WIDE_VALUE "Compile optional wide attention value reduction" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_WIDE_VALUE AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu")
+    set(nya_wide_value "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_wide_value}")
+    file(READ "${nya_wide_value}" nya_wide_value_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_wide_value_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_WIDE_VALUE=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")

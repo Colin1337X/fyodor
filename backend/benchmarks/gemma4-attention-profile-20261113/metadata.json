@@ -1,0 +1,797 @@
+{
+  "accepted_performance": false,
+  "reason": "CUDA event profiling disables graphs; desktop GPU activity retained. Diagnostic attribution only.",
+  "base_revision": "00b69c99038c73e97fbca9df38821d97ad960d41",
+  "binary_sha256": "615810f928510991c80807586bee99a958e47015c44eabe749a99e44d62069a8",
+  "source_sha256": "ee1a9a5c305a695cec00fb6a9358c8de3ba84968d99e412ad415a6232b7091d3",
+  "runs": [
+    {
+      "name": "8192-linear",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "16",
+        "--context",
+        "8192",
+        "-r",
+        "1",
+        "--warmup",
+        "0",
+        "--json"
+      ],
+      "environment": {
+        "NYA_COMPUTE": "cuda",
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_WIDE_SPLIT": "1",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_FLASH_DECODING_PP": "short",
+        "NYA_CUDA_GEMMA_QKV": "1",
+        "NYA_CUDA_FIXED_GATE": "1",
+        "NYA_CUDA_INTEGER_GATE": "1",
+        "NYA_CUDA_INTEGER_DOT": "1",
+        "NYA_CUDA_INTEGER_Q6": "1",
+        "NYA_CUDA_BYTE_GATE": "1",
+        "NYA_CUDA_BYTE_DOT": "1",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_GEMMA_GATE": "1",
+        "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+        "NYA_CUDA_PROFILE": "1",
+        "NYA_CUDA_RING_KV": "0",
+        "NYA_CUDA_PROFILE_FROM": "8192"
+      },
+      "before": {
+        "time": 1794568039.8860884,
+        "utilization": 17,
+        "memory": "1193 MiB",
+        "temperature": "34 C",
+        "power": "6.38 W",
+        "processes": [
+          {
+            "pid": "1636",
+            "type": "C+G",
+            "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+          },
+          {
+            "pid": "2584",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "3692",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+          },
+          {
+            "pid": "3844",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+          },
+          {
+            "pid": "4164",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+          },
+          {
+            "pid": "7240",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+          },
+          {
+            "pid": "7728",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\PowerToys.exe"
+          },
+          {
+            "pid": "8168",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+          },
+          {
+            "pid": "8672",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+          },
+          {
+            "pid": "9604",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+          },
+          {
+            "pid": "10956",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+          },
+          {
+            "pid": "10972",
+            "type": "C+G",
+            "name": "C:\\Windows\\explorer.exe"
+          },
+          {
+            "pid": "12596",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+          },
+          {
+            "pid": "12872",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22608.1401.6.0_x64__8wekyb3d8bbwe\\WinStore.App.exe"
+          },
+          {
+            "pid": "14136",
+            "type": "C+G",
+            "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+          },
+          {
+            "pid": "14416",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\Microsoft.LockApp_cw5n1h2txyewy\\LockApp.exe"
+          },
+          {
+            "pid": "19048",
+            "type": "C+G",
+            "name": "D:\\thorium\\BIN\\thorium.exe"
+          },
+          {
+            "pid": "21464",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+          },
+          {
+            "pid": "23800",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+          },
+          {
+            "pid": "25956",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ShellHost.exe"
+          },
+          {
+            "pid": "27004",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ColorPickerUI.exe"
+          },
+          {
+            "pid": "27036",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WSL\\wslsettings\\wslsettings.exe"
+          },
+          {
+            "pid": "28280",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "28452",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.QuickAccess.exe"
+          },
+          {
+            "pid": "28936",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.CommandPalette_0.13.13096.0_x64__8wekyb3d8bbwe\\Microsoft.CmdPal.UI.exe"
+          },
+          {
+            "pid": "30828",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Peek.UI.exe"
+          },
+          {
+            "pid": "31416",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ShortcutGuide.exe"
+          },
+          {
+            "pid": "31444",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Settings.exe"
+          },
+          {
+            "pid": "33276",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\Desktop\\Powder.exe"
+          }
+        ],
+        "cpu": {
+          "busy_percent": null,
+          "idle_ticks": 3102053281250,
+          "total_ticks": 4927683906250
+        },
+        "pstate": "P5",
+        "sm_clock": "502 MHz",
+        "memory_clock": "810 MHz",
+        "clock_event_reasons": {
+          "clocks_event_reason_gpu_idle": "Not Active",
+          "clocks_event_reason_applications_clocks_setting": "Not Active",
+          "clocks_event_reason_sw_power_cap": "Not Active",
+          "clocks_event_reason_hw_slowdown": "Not Active",
+          "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+          "clocks_event_reason_sync_boost": "Not Active",
+          "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_display_clocks_setting": "Not Active",
+          "clocks_event_reason_board_limit": "Not Active",
+          "clocks_event_reason_reliability": "Active"
+        }
+      },
+      "after": {
+        "time": 1794568076.8241801,
+        "utilization": 3,
+        "memory": "1192 MiB",
+        "temperature": "44 C",
+        "power": "26.52 W",
+        "processes": [
+          {
+            "pid": "1636",
+            "type": "C+G",
+            "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+          },
+          {
+            "pid": "2584",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "3692",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+          },
+          {
+            "pid": "3844",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+          },
+          {
+            "pid": "4164",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+          },
+          {
+            "pid": "7240",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+          },
+          {
+            "pid": "7728",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\PowerToys.exe"
+          },
+          {
+            "pid": "8168",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+          },
+          {
+            "pid": "8672",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+          },
+          {
+            "pid": "9604",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+          },
+          {
+            "pid": "10956",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+          },
+          {
+            "pid": "10972",
+            "type": "C+G",
+            "name": "C:\\Windows\\explorer.exe"
+          },
+          {
+            "pid": "12596",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+          },
+          {
+            "pid": "12872",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22608.1401.6.0_x64__8wekyb3d8bbwe\\WinStore.App.exe"
+          },
+          {
+            "pid": "14136",
+            "type": "C+G",
+            "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+          },
+          {
+            "pid": "14416",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\Microsoft.LockApp_cw5n1h2txyewy\\LockApp.exe"
+          },
+          {
+            "pid": "19048",
+            "type": "C+G",
+            "name": "D:\\thorium\\BIN\\thorium.exe"
+          },
+          {
+            "pid": "21464",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+          },
+          {
+            "pid": "23800",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+          },
+          {
+            "pid": "25956",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ShellHost.exe"
+          },
+          {
+            "pid": "27004",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ColorPickerUI.exe"
+          },
+          {
+            "pid": "27036",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WSL\\wslsettings\\wslsettings.exe"
+          },
+          {
+            "pid": "28280",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "28452",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.QuickAccess.exe"
+          },
+          {
+            "pid": "28936",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.CommandPalette_0.13.13096.0_x64__8wekyb3d8bbwe\\Microsoft.CmdPal.UI.exe"
+          },
+          {
+            "pid": "30828",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Peek.UI.exe"
+          },
+          {
+            "pid": "31416",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ShortcutGuide.exe"
+          },
+          {
+            "pid": "31444",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Settings.exe"
+          },
+          {
+            "pid": "33276",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\Desktop\\Powder.exe"
+          }
+        ],
+        "cpu": {
+          "busy_percent": 25.260857304004514,
+          "idle_ticks": 3103709687500,
+          "total_ticks": 4929900156250
+        },
+        "pstate": "P0",
+        "sm_clock": "2827 MHz",
+        "memory_clock": "14001 MHz",
+        "clock_event_reasons": {
+          "clocks_event_reason_gpu_idle": "Not Active",
+          "clocks_event_reason_applications_clocks_setting": "Not Active",
+          "clocks_event_reason_sw_power_cap": "Not Active",
+          "clocks_event_reason_hw_slowdown": "Not Active",
+          "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+          "clocks_event_reason_sync_boost": "Not Active",
+          "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_display_clocks_setting": "Not Active",
+          "clocks_event_reason_board_limit": "Not Active",
+          "clocks_event_reason_reliability": "Active"
+        }
+      },
+      "exit_code": 0
+    },
+    {
+      "name": "8192-ring",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\fyodor-bench.exe",
+        "-m",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "-b",
+        "cuda",
+        "-p",
+        "0",
+        "-n",
+        "16",
+        "--context",
+        "8192",
+        "-r",
+        "1",
+        "--warmup",
+        "0",
+        "--json"
+      ],
+      "environment": {
+        "NYA_COMPUTE": "cuda",
+        "NYA_CPU_THREADS": "6",
+        "NYA_CUDA_WIDE_SPLIT": "1",
+        "NYA_CUDA_BATCH": "512",
+        "NYA_CUDA_CUTLASS": "0",
+        "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+        "NYA_CUDA_FLASH_DECODING_PP": "short",
+        "NYA_CUDA_GEMMA_QKV": "1",
+        "NYA_CUDA_FIXED_GATE": "1",
+        "NYA_CUDA_INTEGER_GATE": "1",
+        "NYA_CUDA_INTEGER_DOT": "1",
+        "NYA_CUDA_INTEGER_Q6": "1",
+        "NYA_CUDA_BYTE_GATE": "1",
+        "NYA_CUDA_BYTE_DOT": "1",
+        "NYA_CUDA_BLAS": "1",
+        "NYA_CUDA_GEMMA_GATE": "1",
+        "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+        "NYA_CUDA_PROFILE": "1",
+        "NYA_CUDA_RING_KV": "1",
+        "NYA_CUDA_PROFILE_FROM": "8192"
+      },
+      "before": {
+        "time": 1794568076.9775007,
+        "utilization": 3,
+        "memory": "1192 MiB",
+        "temperature": "44 C",
+        "power": "26.52 W",
+        "processes": [
+          {
+            "pid": "1636",
+            "type": "C+G",
+            "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+          },
+          {
+            "pid": "2584",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "3692",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+          },
+          {
+            "pid": "3844",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+          },
+          {
+            "pid": "4164",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+          },
+          {
+            "pid": "7240",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+          },
+          {
+            "pid": "7728",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\PowerToys.exe"
+          },
+          {
+            "pid": "8168",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+          },
+          {
+            "pid": "8672",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+          },
+          {
+            "pid": "9604",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+          },
+          {
+            "pid": "10956",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+          },
+          {
+            "pid": "10972",
+            "type": "C+G",
+            "name": "C:\\Windows\\explorer.exe"
+          },
+          {
+            "pid": "12596",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+          },
+          {
+            "pid": "12872",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22608.1401.6.0_x64__8wekyb3d8bbwe\\WinStore.App.exe"
+          },
+          {
+            "pid": "14136",
+            "type": "C+G",
+            "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+          },
+          {
+            "pid": "14416",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\Microsoft.LockApp_cw5n1h2txyewy\\LockApp.exe"
+          },
+          {
+            "pid": "19048",
+            "type": "C+G",
+            "name": "D:\\thorium\\BIN\\thorium.exe"
+          },
+          {
+            "pid": "21464",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+          },
+          {
+            "pid": "23800",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+          },
+          {
+            "pid": "25956",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ShellHost.exe"
+          },
+          {
+            "pid": "27004",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ColorPickerUI.exe"
+          },
+          {
+            "pid": "27036",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WSL\\wslsettings\\wslsettings.exe"
+          },
+          {
+            "pid": "28280",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "28452",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.QuickAccess.exe"
+          },
+          {
+            "pid": "28936",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.CommandPalette_0.13.13096.0_x64__8wekyb3d8bbwe\\Microsoft.CmdPal.UI.exe"
+          },
+          {
+            "pid": "30828",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Peek.UI.exe"
+          },
+          {
+            "pid": "31416",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ShortcutGuide.exe"
+          },
+          {
+            "pid": "31444",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Settings.exe"
+          },
+          {
+            "pid": "33276",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\Desktop\\Powder.exe"
+          }
+        ],
+        "cpu": {
+          "busy_percent": 28.333333333333332,
+          "idle_ticks": 3103716406250,
+          "total_ticks": 4929909531250
+        },
+        "pstate": "P0",
+        "sm_clock": "2827 MHz",
+        "memory_clock": "14001 MHz",
+        "clock_event_reasons": {
+          "clocks_event_reason_gpu_idle": "Not Active",
+          "clocks_event_reason_applications_clocks_setting": "Not Active",
+          "clocks_event_reason_sw_power_cap": "Not Active",
+          "clocks_event_reason_hw_slowdown": "Not Active",
+          "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+          "clocks_event_reason_sync_boost": "Not Active",
+          "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_display_clocks_setting": "Not Active",
+          "clocks_event_reason_board_limit": "Not Active",
+          "clocks_event_reason_reliability": "Active"
+        }
+      },
+      "after": {
+        "time": 1794568114.6951103,
+        "utilization": 3,
+        "memory": "1192 MiB",
+        "temperature": "46 C",
+        "power": "27.52 W",
+        "processes": [
+          {
+            "pid": "1636",
+            "type": "C+G",
+            "name": "C:\\Windows\\ImmersiveControlPanel\\SystemSettings.exe"
+          },
+          {
+            "pid": "2584",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "3692",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+          },
+          {
+            "pid": "3844",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Softdeluxe\\Free Download Manager\\fdm.exe"
+          },
+          {
+            "pid": "4164",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+          },
+          {
+            "pid": "7240",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+          },
+          {
+            "pid": "7728",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\PowerToys.exe"
+          },
+          {
+            "pid": "8168",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+          },
+          {
+            "pid": "8672",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+          },
+          {
+            "pid": "9604",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\ShellExperienceHost_cw5n1h2txyewy\\ShellExperienceHost.exe"
+          },
+          {
+            "pid": "10956",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Cloudflare\\Cloudflare WARP\\Cloudflare WARP.exe"
+          },
+          {
+            "pid": "10972",
+            "type": "C+G",
+            "name": "C:\\Windows\\explorer.exe"
+          },
+          {
+            "pid": "12596",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\MicrosoftWindows.Client.WebExperience_526.21100.40.0_x64__cw5n1h2txyewy\\WidgetBoard.exe"
+          },
+          {
+            "pid": "12872",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsStore_22608.1401.6.0_x64__8wekyb3d8bbwe\\WinStore.App.exe"
+          },
+          {
+            "pid": "14136",
+            "type": "C+G",
+            "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+          },
+          {
+            "pid": "14416",
+            "type": "C+G",
+            "name": "C:\\Windows\\SystemApps\\Microsoft.LockApp_cw5n1h2txyewy\\LockApp.exe"
+          },
+          {
+            "pid": "19048",
+            "type": "C+G",
+            "name": "D:\\thorium\\BIN\\thorium.exe"
+          },
+          {
+            "pid": "21464",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+          },
+          {
+            "pid": "23800",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+          },
+          {
+            "pid": "25956",
+            "type": "C+G",
+            "name": "C:\\Windows\\System32\\ShellHost.exe"
+          },
+          {
+            "pid": "27004",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ColorPickerUI.exe"
+          },
+          {
+            "pid": "27036",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WSL\\wslsettings\\wslsettings.exe"
+          },
+          {
+            "pid": "28280",
+            "type": "C+G",
+            "name": "C:\\Program Files\\Mozilla Firefox\\firefox.exe"
+          },
+          {
+            "pid": "28452",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.QuickAccess.exe"
+          },
+          {
+            "pid": "28936",
+            "type": "C+G",
+            "name": "C:\\Program Files\\WindowsApps\\Microsoft.CommandPalette_0.13.13096.0_x64__8wekyb3d8bbwe\\Microsoft.CmdPal.UI.exe"
+          },
+          {
+            "pid": "30828",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Peek.UI.exe"
+          },
+          {
+            "pid": "31416",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.ShortcutGuide.exe"
+          },
+          {
+            "pid": "31444",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\AppData\\Local\\PowerToys\\WinUI3Apps\\PowerToys.Settings.exe"
+          },
+          {
+            "pid": "33276",
+            "type": "C+G",
+            "name": "C:\\Users\\Colin\\Desktop\\Powder.exe"
+          }
+        ],
+        "cpu": {
+          "busy_percent": 26.10646965407719,
+          "idle_ticks": 3105388593750,
+          "total_ticks": 4932172500000
+        },
+        "pstate": "P0",
+        "sm_clock": "2842 MHz",
+        "memory_clock": "14001 MHz",
+        "clock_event_reasons": {
+          "clocks_event_reason_gpu_idle": "Not Active",
+          "clocks_event_reason_applications_clocks_setting": "Not Active",
+          "clocks_event_reason_sw_power_cap": "Not Active",
+          "clocks_event_reason_hw_slowdown": "Not Active",
+          "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+          "clocks_event_reason_sync_boost": "Not Active",
+          "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+          "clocks_event_reason_display_clocks_setting": "Not Active",
+          "clocks_event_reason_board_limit": "Not Active",
+          "clocks_event_reason_reliability": "Active"
+        }
+      },
+      "exit_code": 0
+    }
+  ]
+}
