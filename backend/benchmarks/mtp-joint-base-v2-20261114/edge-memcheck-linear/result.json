@@ -1,0 +1,53 @@
+{
+  "accepted_benchmark": false,
+  "passed": true,
+  "runs": [
+    {
+      "standard": "c17",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\architecture-edge-c17.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\edge-memcheck-linear-c17.gguf"
+      ],
+      "exit_code": 0
+    },
+    {
+      "standard": "c23",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\architecture-edge-c23.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\edge-memcheck-linear-c23.gguf"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "errors": [],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_TEST_MTP_COMPARE": "1",
+    "NYA_CUDA_BATCH": "8",
+    "NYA_CUDA_RING_KV": "0",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_SPECULATIVE_BATCH": "1",
+    "NYA_CUDA_SMALL_BATCH": "1"
+  },
+  "sanitizer_sha256": "06f8a1452e9f263737dcd935f916eb369d2002cb1562042ca557b61fd3fbedd3",
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-build.json": "d1b5a436b9ed2baba6fbbde940af472e8e4e98fa19a367375db930d84910c5f7",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-fixture-linear\\result.json": "2bda38d2564f4381d5458e6024717eda2928e3f6290ef22f010b38109599064b",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\run_edge_memcheck.py": "04cbc8e41e12f5599be8d017ac5c68de20e8bf489e6762322c9bec437c25245d",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-memcheck-linear\\c17.stdout": "9849b6fa3ca06e5ac5b9d72955708bebf857039b0e89193d321f9ab6d70982ca",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-memcheck-linear\\c23.stdout": "9849b6fa3ca06e5ac5b9d72955708bebf857039b0e89193d321f9ab6d70982ca",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-memcheck-linear\\c17.stderr": "9e06b8d1eb2bc7a9553e656309c086c2cf374dc2ca6735362ad411d0149c274d",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\edge-memcheck-linear\\c23.stderr": "9e06b8d1eb2bc7a9553e656309c086c2cf374dc2ca6735362ad411d0149c274d"
+  }
+}

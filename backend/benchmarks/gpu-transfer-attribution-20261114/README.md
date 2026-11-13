@@ -16,7 +16,12 @@ It uses 8 MiB buffers and explicit synchronization. This is an attribution
 diagnostic, not a bandwidth benchmark. The runner requires no competing GPU
 contexts, retains continuous PDH evidence, and checks collector liveness.
 Its preflight rejected the live long-context Gemma run before creating output.
-The GPU controls have not executed.
+The subsequent controls run completed all seven phases with a healthy collector.
+Each phase contained four complete sample intervals and no invalid counters.
+No positive System or other-process engine activity appeared within those
+intervals. Uploads used the worker's Copy engine 3, downloads Copy engine 4,
+and device copies CUDA engine 10. These small-buffer controls do not reproduce
+the Gemma System Copy-engine activity or establish its cause.
 
 The summarizer includes only complete sample intervals within a phase. It
 reports invalid counters, missing coverage, and System activity separately;

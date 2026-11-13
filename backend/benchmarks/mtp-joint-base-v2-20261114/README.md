@@ -18,8 +18,9 @@ The real Gemma short-context correctness diagnostic completed all twelve cases:
 ordinary, serial2, batch2 and joint3 over three rounds, with identical 32-token
 outputs. Joint verification was selected in all three joint rounds. No continuous
 GPU coverage was collected for this correctness diagnostic; recorded times are
-not accepted performance. The long-context correctness run is pending at this
-checkpoint. Integrated sanitizer and validated timing coverage remain required.
+not accepted performance. The long-context correctness run also completed all
+twelve cases with identical 32-token outputs and joint selection in three rounds.
+Neither correctness run supplies validated performance coverage.
 
 The v1 failed evidence remains intact. run_model.py refuses existing outputs,
 checks build and prerequisite hashes, and rejects competing GPU contexts before
@@ -35,11 +36,13 @@ also requires actual error, EOS and context-limit coverage.
 
 Both strict C17/C23 CPU fixtures passed all 22 cases: five matched errors,
 three EOS outcomes and two context stops. CPU runs do not select joint GPU
-verification. GPU edge runs await the ongoing long real-model validation.
+verification. GPU ring, linear and forced-failure fixtures also passed all 22
+cases in both standards, including the same error, EOS and context outcomes.
 
-run_edge_memcheck.py is prepared to run the real Compute Sanitizer on ring and
+run_edge_memcheck.py ran the real Compute Sanitizer on ring and
 linear fixtures in both standards. It requires ordinary edge success, matching
 inputs, zero child exit, exactly one zero-error summary, all 22 edge cases, and
-joint-mode selection. Five offline validator tests passed. Its GPU preflight
-rejected the ongoing long run before creating evidence. The sanitizer has not
-executed; this is not a memory-safety claim.
+joint-mode selection. Five offline validator tests passed. Both ring and linear
+runs completed in C17 and C23 with zero reported memory errors. These checks
+cover the architecture and stopping-boundary fixtures; the full Gemma model has
+not been run under this sanitizer. Production integration remains pending.
