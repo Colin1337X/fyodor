@@ -45,6 +45,7 @@ typedef struct nya_cuda_plan {
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
     int use_wide_value;
+    unsigned long long borrowed_wide_calls;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -107,7 +108,7 @@ static void cuda_plan_free(void *opaque)
     if(p->timings) fprintf(stderr,"CUDA profile scope: from_position=%zu batches=%zu tokens=%zu (batches starting below the threshold excluded)\n",
         p->profile_from,p->profiled_batches,p->profiled_tokens);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot", "small-batch-weight-reuse"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -120,6 +121,9 @@ static void cuda_plan_free(void *opaque)
         if(a->kernels) fprintf(stderr,"CUDA attention profile: layer=%zu width=%u heads=%u kvheads=%u window=%u batch_scope=all_selected kernels=%llu milliseconds=%.6f\n",
             i,w->head_dimension,w->head_count,w->kv_head_count,w->sliding_window,a->kernels,a->milliseconds);
     }
+    const char *mtp_trace=getenv("NYA_MTP_TRACE");
+    if(p->borrowed_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
     free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
@@ -639,8 +643,9 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
         }
         unsigned r = (unsigned)rows, batch = (unsigned)p->batch;
         void *gemm_args[] = {&matrix, &in, &out, &cols, &stride, &r, &batch};
-        if(batch<=8 && p->cuda->small_batch[type])
-            return plan_grid(p,p->cuda->small_batch[type],(r+7)/8,batch,256,1,gemm_args);
+        unsigned grid_y;
+        CUfunction narrow=nya_cuda_narrow_kernel(p->cuda,type,batch,&grid_y);
+        if(narrow) return plan_grid(p,narrow,(r+7)/8,grid_y,256,1,gemm_args);
         unsigned tile = batch >= 32 && r >= 32 ? p->cuda->gemm_tile : 32, bx = tile == 64 ? 16 : 32;
         CUfunction kernel = tile == 64 ? p->cuda->gemm_large[type] : p->cuda->gemm[type];
         return plan_grid(p, kernel, (r + tile-1) / tile, (batch + tile-1) / tile, bx, 256/bx, gemm_args);
@@ -674,9 +679,11 @@ static unsigned plan_matrix_slot(nya_cuda_plan *p, size_t rows, size_t columns,
 static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *t, CUdeviceptr in, size_t rows, size_t columns)
 {
     if (!p->matrix_profiles) return plan_matvec_impl(p,out,t,in,rows,columns);
+    unsigned grid_y;
+    CUfunction narrow=nya_cuda_narrow_kernel(p->cuda,t->type,(unsigned)p->batch,&grid_y);
     unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
         p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U :
-        p->batch<=8 && p->cuda->small_batch[t->type] ? 8U : 2U;
+        narrow ? (grid_y==1 ? 9U : 8U) : 2U;
     p->matrix_profile = plan_matrix_slot(p,rows,columns,t->type,path);
     int result = plan_matvec_impl(p,out,t,in,rows,columns);
     p->matrix_profile = 0;
@@ -1175,7 +1182,18 @@ static int cuda_plan_borrow_attention(void *opaque,size_t layer,size_t prefix,
     if(c->upload(p->q,query,elements*sizeof(float))!=CUDA_SUCCESS || c->stream_sync(NULL)!=CUDA_SUCCESS)bad=1;
     ++p->stats.synchronizations;
     void *args[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&request,&ring_slots};
-    if(!bad && plan_grid(p,p->kv_layout?p->attention_ring:p->attention,heads,1,256,1,args))bad=1;
+    CUfunction attention=p->kv_layout?p->attention_ring:p->attention;
+    /* Borrowing uses its explicit frozen prefix, never the live decode request.
+       Keep the unsplit reduction contract and existing buffers. This independent
+       opt-in allows measuring assistant attention without changing target math. */
+    if(p->use_wide_value && prefix>256 && (width==256 || width==512)) {
+        const char *wide_borrow=getenv("NYA_CUDA_MTP_WIDE_VALUE");
+        if(wide_borrow && !strcmp(wide_borrow,"1")) attention=p->wide_value[p->kv_layout?2:0];
+    }
+    if(!bad) {
+        if(plan_grid(p,attention,heads,1,256,1,args))bad=1;
+        else if(attention==p->wide_value[0] || attention==p->wide_value[2]) ++p->borrowed_wide_calls;
+    }
     ++p->stats.synchronizations;
     if(!bad && c->stream_sync(c->stream)!=CUDA_SUCCESS)bad=1;
     if(!bad) {++p->stats.downloads;if(c->download(out,p->norm,elements*sizeof(float))!=CUDA_SUCCESS)bad=1;}

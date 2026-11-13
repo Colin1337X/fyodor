@@ -759,6 +759,11 @@ if(BUILD_TESTING)
             set_tests_properties(quant-kernels-cuda-small-batch PROPERTIES ENVIRONMENT
                 "NYA_COMPUTE=cuda;NYA_CUDA_SMALL_BATCH=1;NYA_TEST_SMALL_BATCH=1;NYA_CUDA_INTEGER_DOT=0;NYA_CUDA_INTEGER_Q6=0;NYA_CUDA_BYTE_DOT=0" TIMEOUT 120)
         endif()
+        if(NYA_ENABLE_SMALL_BATCH_REUSE AND NYA_ENABLE_OPTCPP AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/small_batch_reuse.cu")
+            add_test(NAME quant-kernels-cuda-small-reuse COMMAND nya-test-quant-kernels)
+            set_tests_properties(quant-kernels-cuda-small-reuse PROPERTIES ENVIRONMENT
+                "NYA_COMPUTE=cuda;NYA_CUDA_SMALL_BATCH=1;NYA_CUDA_SMALL_BATCH_REUSE=1;NYA_TEST_SMALL_REUSE=1;NYA_CUDA_INTEGER_DOT=0;NYA_CUDA_INTEGER_Q6=0;NYA_CUDA_BYTE_DOT=0" TIMEOUT 120)
+        endif()
         set_tests_properties(quant-kernels-cuda PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda" TIMEOUT 60)
         add_test(NAME quant-kernels-cuda-reference COMMAND nya-test-quant-kernels)
         set_tests_properties(quant-kernels-cuda-reference PROPERTIES ENVIRONMENT "NYA_COMPUTE=cuda;NYA_CUDA_REFERENCE=1" TIMEOUT 60)

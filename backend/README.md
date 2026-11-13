@@ -867,6 +867,18 @@ Performance remains below llama.cpp. Final profiles attribute 87% of CUDA pp512 
 
 Experimental CUDA wide value reduction is compiled with `-DNYA_ENABLE_WIDE_VALUE=ON` and selected with `NYA_CUDA_WIDE_VALUE=1`. It processes sixteen output columns per lane while preserving the native accumulation order. It applies to single-token decode with head widths 256/512 in the existing long-context graph topology; other shapes and prefill retain their existing dispatch. The source lives in `optcpp/attention/wide_value16.cu`; removing `optcpp` gracefully omits this feature even when requested. Both build and runtime options default off. This is an original Fyodor kernel, not an implementation of upstream FlashAttention-4.
 
+The independent `NYA_CUDA_MTP_WIDE_VALUE=1` opt-in also selects unsplit wide-value
+attention for borrowed MTP prefixes above 256 with widths 256/512 when the target
+plan already enables wide-value kernels. Real Gemma linear/ring KV tests match
+the native result bitwise and pass float64 checks and CUDA memcheck. Full-generation
+performance remains unproven; see [borrowed-attention evidence](benchmarks/mtp-borrow-wide-20261113/README.md).
+
+Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
+reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;
+other shapes and physically absent optional sources preserve fallback behavior.
+[Correctness and generation evidence](benchmarks/small-batch-reuse-20261113/README.md)
+shows diagnostic batched-MTP improvements, still below ordinary generation.
+
 The internal native session interface now provides `nya_llm_session_verify` for all-position logits with explicit output capacity. CUDA batches transformer work and reuses its existing single-position output scratch; other providers fall back to serial session execution. Invalid input does not advance the session; execution failure invalidates it until reset and partial output must be discarded. This is an API foundation, not yet an accelerated MTP generation path. See [verification validation](benchmarks/gemma4-batch-verify-20261113/README.md) and the [MTP execution audit](docs/gemma4-mtp-execution-audit.md).
 
 ### Experimental standalone speculative batching

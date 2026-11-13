@@ -100,6 +100,15 @@ arithmetic. Prefill retains the original weights; see the runtime evidence in
 
 `q6_row_pair.cu` reuses activations across 2/4/8 adjacent output rows per warp. All tested outputs match exactly, but both Gemma down/vocabulary shapes regress substantially. Diagnostic only; not CMake-compiled or selected by runtime dispatch. Evidence: backend/benchmarks/gemma4-q6-rows-20261113.
 
+`small_batch_reuse.cu` optionally reuses decoded Q4_K/Q6_K weights across exactly
+2 or 4 input vectors. Enable `NYA_ENABLE_SMALL_BATCH_REUSE=ON` at build time and
+`NYA_CUDA_SMALL_BATCH_REUSE=1` before creating the CUDA context; both default off.
+Other formats/counts and absent optional sources retain existing dispatch.
+It preserves each output's native accumulation order and uses no extra device
+storage. See `backend/benchmarks/small-batch-reuse-20261113` for bitwise/float64
+checks, removal builds, and diagnostic generation results. Batched MTP improves
+but remains slower than ordinary generation on the recorded Gemma workload.
+
 `small_batch.cu` schedules the existing native row-dot arithmetic over a second
 grid dimension for 2..8 inputs. Compile with `NYA_ENABLE_SMALL_BATCH=ON` and
 select with `NYA_CUDA_SMALL_BATCH=1`. Both default off; missing source or symbols

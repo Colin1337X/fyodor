@@ -42,7 +42,7 @@ typedef struct nya_cuda_context {
     CUfunction byte_dot, byte_add, byte_qkv[2];
     CUfunction gemm[31];
     CUfunction gemm_large[31];
-    CUfunction small_batch[31];
+    CUfunction small_batch[31], small_reuse[31][2];
     CUfunction expand[31];
     CUfunction expand_transposed[31];
     nya_cuda_blas blas;
@@ -99,6 +99,21 @@ typedef struct nya_cuda_context {
     nvrtcResult (*arch_get)(int *);
     nvrtcResult (*version)(int *, int *);
 } nya_cuda_context;
+
+/* Only measured batch 2/4 Q4/Q6 cases use weight reuse. Missing symbols,
+   other formats/counts and reference mode retain existing dispatch. */
+static CUfunction nya_cuda_narrow_kernel(const nya_cuda_context *c,unsigned type,
+    unsigned batch,unsigned *grid_y)
+{
+    *grid_y=batch;
+    if(c->reference || type>=31 || batch<2 || batch>8)return NULL;
+    if(batch==2 || batch==4) {
+        CUfunction reuse=c->small_reuse[type][batch==4];
+        if(reuse) {*grid_y=1;return reuse;}
+    }
+    return c->small_batch[type];
+}
+
 
 static void *nya_cuda_open(const char *path, int driver)
 {
@@ -327,6 +342,16 @@ static nya_cuda_context *nya_cuda_create_for(int training)
             if(c->function_get(&candidate,c->module,name)==CUDA_SUCCESS) c->small_batch[types[i]]=candidate;
         }
 #endif
+#ifdef NYA_SMALL_BATCH_REUSE
+        const char *reuse=getenv("NYA_CUDA_SMALL_BATCH_REUSE");
+        if(!c->reference && reuse && !strcmp(reuse,"1") && (types[i]==12 || types[i]==14)) {
+            for(unsigned j=0;j<2;++j) {
+                snprintf(name,sizeof(name),"nya_small_reuse_%u_%u",types[i],j?4U:2U);
+                CUfunction candidate=NULL;
+                if(c->function_get(&candidate,c->module,name)==CUDA_SUCCESS)c->small_reuse[types[i]][j]=candidate;
+            }
+        }
+#endif
         snprintf(name, sizeof(name), "nya_gemm_%u", types[i]);
         if (c->function_get(&c->gemm[types[i]], c->module, name) != CUDA_SUCCESS) goto failure;
         snprintf(name, sizeof(name), "nya_gemm64_%u", types[i]);
@@ -505,8 +530,10 @@ static int nya_cuda_matmul_typed(nya_cuda_context *c, const void *weights, size_
         void *matrix_arguments[] = {&matrix, &c->input, &c->output, &cols, &stride, &r, &b};
         unsigned tile = b >= 32 && r >= 32 ? c->gemm_tile : 32, bx = tile == 64 ? 16 : 32;
         CUfunction kernel = tile == 64 ? c->gemm_large[type] : c->gemm[type];
-        if(b<=8 && c->small_batch[type]) {
-            if(c->launch(c->small_batch[type],(r+7)/8,b,1,256,1,1,0,c->stream,matrix_arguments,NULL)!=CUDA_SUCCESS) goto done;
+        unsigned grid_y;
+        CUfunction narrow=nya_cuda_narrow_kernel(c,type,b,&grid_y);
+        if(narrow) {
+            if(c->launch(narrow,(r+7)/8,grid_y,1,256,1,1,0,c->stream,matrix_arguments,NULL)!=CUDA_SUCCESS) goto done;
         } else if (c->launch(kernel, (r+tile-1)/tile, (b+tile-1)/tile, 1, bx, 256/bx, 1, 0, c->stream, matrix_arguments, NULL) != CUDA_SUCCESS) goto done;
         }
     } else if (c->launch(function, blocks, 1, 1, 256, 1, 1, 0, c->stream, arguments, NULL) != CUDA_SUCCESS) goto done;

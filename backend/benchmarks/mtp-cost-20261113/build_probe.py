@@ -1,7 +1,9 @@
 """Build benchmark-only variants without changing production prefill dispatch."""
-import difflib,hashlib,json,re,subprocess,os
+import difflib,hashlib,json,re,subprocess,os,sys
 from pathlib import Path
-root=Path.cwd();out=Path(__file__).resolve().parent;build=root/'build-cuda'
+root=Path.cwd();base=Path(__file__).resolve().parent;out=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else base;build=root/'build-cuda'
+out.mkdir(parents=True,exist_ok=True)
+if (out/'probe-build.json').exists():raise SystemExit('Refusing to overwrite prior build evidence')
 compiler=root/'.tools/w64devkit/bin/gcc.exe'
 os.environ['PATH']=str(compiler.parent)+os.pathsep+os.environ['PATH']
 flags=(build/'CMakeFiles/nya-engine.dir/flags.make').read_text()
@@ -23,7 +25,7 @@ for variant in ('baseline','candidate'):
     patch=''.join(difflib.unified_diff(production.splitlines(True),source.splitlines(True),fromfile='production/llm_cpu.c',tofile=f'probe/{variant}/llm_cpu.c'))
     (out/f'{variant}-probe.patch').write_text(patch)
     commands=[[str(compiler),*defines,*cflags,'-I',str(root/'backend/core'),'@'+str(build/'CMakeFiles/nya-engine.dir/includes_C.rsp'),'-c',str(path),'-o',str(obj)],
-        [str(compiler),'-std=c17','-O3','-Wall','-Wextra','-Werror','-I','backend/include','-I','backend/core',str(out/'model.c'),str(obj),str(build/'libnya-engine.a'),'-lbcrypt','C:/Windows/System32/vulkan-1.dll','-o',str(exe)]]
+        [str(compiler),'-std=c17','-O3','-Wall','-Wextra','-Werror','-I','backend/include','-I','backend/core',str(base/'model.c'),str(obj),str(build/'libnya-engine.a'),'-lbcrypt','C:/Windows/System32/vulkan-1.dll','-o',str(exe)]]
     for command in commands:subprocess.run(command,check=True)
     manifest['variants'].append({'variant':variant,'commands':commands,'source_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest()})
 (out/'probe-build.json').write_text(json.dumps(manifest,indent=2)+'\n')
