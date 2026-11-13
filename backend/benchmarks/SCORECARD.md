@@ -263,3 +263,15 @@ it beats the native split kernel only at the tested 512-wide 8K shape, by
 Split and unsplit double oracles pass unchanged tolerance; CUDA memcheck,
 racecheck, synccheck and initcheck pass for both. Runtime dispatch and accepted
 performance remain unchanged. [Evidence](portable-split-20261029/README.md).
+
+
+### 2026-11-13: Gemma QKV decode fusion (October 30 measurements)
+
+Retain `NYA_CUDA_GEMMA_QKV=1` as opt-in. Matched six-observation results:
+short 41.62019 +/- 0.08406 tok/s versus llama.cpp 48.61589 +/- 0.03010
+(**85.6103%**); 1K 34.21665 +/- 0.02281 versus 42.06414 +/- 0.05827
+(**81.3440%**). Gains over separate projections: 1.4388% and 1.1121%.
+All 12 environment gates passed. Native and packed-weight logit checks are
+exact at total lengths 3/4/257/1026. C17/C23 FDPP regressions pass.
+4K/8K have not been remeasured with QKV; the 125% goal remains unmet.
+[Evidence and limitations](gemma4-qkv-20261029/README.md).

@@ -1,0 +1,30 @@
+diff --git a/CUDA/resident.inc b/CUDA/resident.inc
+index 69b9fb5..0de2502 100644
+--- a/CUDA/resident.inc
++++ b/CUDA/resident.inc
+@@ -37,6 +37,7 @@ typedef struct nya_cuda_plan {
+     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
+     size_t capacity, bytes, valid, batch, maximum_batch;
+     int failed;
++    int gemma_qkv;
+     nya_compute_stats stats;
+     CUgraphExec executable[2];
+     unsigned long long graph_kernels[2];
+@@ -301,6 +302,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
+     p->fuse_rope_pair = !rope_pair || strcmp(rope_pair,"0");
+     const char *qkv = getenv("NYA_CUDA_QKV");
+     p->fuse_qkv = !qkv || strcmp(qkv,"0");
++    const char *gemma_qkv = getenv("NYA_CUDA_GEMMA_QKV");
++    p->gemma_qkv = gemma_qkv && !strcmp(gemma_qkv,"1");
+     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
+     p->fuse_gate_up = !gate_up || strcmp(gate_up,"0");
+     const char *profile = getenv("NYA_CUDA_PROFILE");
+@@ -761,7 +764,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
+         int rope_pair = count == 1 && p->fuse_rope_pair && !m->is_gemma &&
+             !c->reference && w->kv_source == layer &&
+             kvdim <= UINT32_MAX && qdim <= UINT32_MAX - kvdim;
+-        int qkv = count == 1 && p->fuse_qkv && !m->is_gemma && !c->reference &&
++        int qkv = count == 1 && p->fuse_qkv && (!m->is_gemma || p->gemma_qkv) && !c->reference &&
+             w->kv_source == layer && w->key && w->value && w->query->type == 12 &&
+             w->key->type == 12 && (w->value->type == 12 || w->value->type == 14) &&
+             w->query->data_size/qdim == w->key->data_size/kvdim;

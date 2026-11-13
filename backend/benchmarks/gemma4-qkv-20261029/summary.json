@@ -1,0 +1,53 @@
+{
+  "decision": "Retain opt-in Gemma QKV; short and 1K gains validated, longer contexts unmeasured",
+  "environment_gates_passed": 12,
+  "contract": "F32 KV; full GPU; llama FA off; identical deterministic tokens; host logits each token; serial reverse orders; interactive desktop gates",
+  "results": [
+    {
+      "context": 0,
+      "engines": {
+        "baseline": {
+          "observations": 6,
+          "mean_tokens_per_second": 41.0298436,
+          "pooled_sample_stddev": 0.06997670031411322
+        },
+        "fixed": {
+          "observations": 6,
+          "mean_tokens_per_second": 41.62019055,
+          "pooled_sample_stddev": 0.08405793489763677
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 48.61589485,
+          "pooled_sample_stddev": 0.030099986430162994
+        }
+      },
+      "fused_percent_of_llama": 85.61025293973377,
+      "native_percent_of_llama": 84.39594442639373,
+      "fused_change_percent": 1.4388233008034046
+    },
+    {
+      "context": 1024,
+      "engines": {
+        "baseline": {
+          "observations": 6,
+          "mean_tokens_per_second": 33.84029605,
+          "pooled_sample_stddev": 0.02397450155990355
+        },
+        "fixed": {
+          "observations": 6,
+          "mean_tokens_per_second": 34.21664845,
+          "pooled_sample_stddev": 0.022814493048196757
+        },
+        "llama": {
+          "observations": 6,
+          "mean_tokens_per_second": 42.06414085,
+          "pooled_sample_stddev": 0.05826946829716858
+        }
+      },
+      "fused_percent_of_llama": 81.34398506322994,
+      "native_percent_of_llama": 80.44927428964711,
+      "fused_change_percent": 1.1121427526636696
+    }
+  ]
+}
