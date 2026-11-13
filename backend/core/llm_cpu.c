@@ -1,7 +1,6 @@
 #include "llm_internal.h"
 #include "runtime.h"
 #include "turboquant.h"
-#include "train_clock.h" /* High-resolution diagnostic clock; not the coarse uptime clock. */
 
 #include <float.h>
 #include <math.h>
@@ -1042,7 +1041,7 @@ static int nya_llm_draw(const float *probabilities, size_t n, uint64_t *rng, uin
    output uses prefill logits, so this is not the fixed-token bench contract. */
 static void nya_llm_decode_profile(const char *mode, double start, size_t prompt, size_t generated)
 {
-    double end = tr_seconds();
+    double end = nya_runtime_monotonic_seconds();
     fprintf(stderr, "Generation profile: mode=%s prompt=%zu generated=%zu decode_loop_ms=%.6f\n",
         mode, prompt, generated, end >= start ? (end - start) * 1000.0 : 0.0);
 }
@@ -1160,7 +1159,7 @@ int nya_llm_generate(
         }
         if (!prefilled) response->target_steps += 1;
         prefilled = 0;
-        if (profile && position + 1 == prompt_count) decode_start = tr_seconds();
+        if (profile && position + 1 == prompt_count) decode_start = nya_runtime_monotonic_seconds();
 
         if (position + 1 < prompt_count) {
             next = prompt_tokens[position + 1];
@@ -1390,7 +1389,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
         fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
     }
     previous = prompt[prompt_count - 1];
-    if (profile) decode_start = tr_seconds();
+    if (profile) decode_start = nya_runtime_monotonic_seconds();
     while (!stopped && out->generated_tokens < limit) {
         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
         int rejected = 0;
@@ -1408,10 +1407,10 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
             if(target_state.device_plan) {
                 if(nya_compute_plan_hidden(target_state.device_plan,draft_state.mtp_hidden,c->embedding_length))goto invalid;
             } else memcpy(draft_state.mtp_hidden, target_state.normalized, c->embedding_length * sizeof(float));
-            if (profile) assistant_start = tr_seconds();
+            if (profile) assistant_start = nya_runtime_monotonic_seconds();
             if (nya_llm_forward_impl(draft, &draft_state, base_token, position, 1, c, &target_state, mtp_cache_length) != 0) goto invalid;
             if (profile) {
-                assistant_seconds += tr_seconds() - assistant_start;
+                assistant_seconds += nya_runtime_monotonic_seconds() - assistant_start;
                 ++assistant_calls;
             }
             if (nya_llm_forward(c, &target_state, base_token, position, 1) != 0) goto invalid;
@@ -1435,11 +1434,11 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
                    and recurrent hidden state. The next round replaces both
                    from its target-derived base, even after a rejection. */
                 if (proposed + 1 < maximum) {
-                    if (profile) assistant_start = tr_seconds();
+                    if (profile) assistant_start = nya_runtime_monotonic_seconds();
                     if (nya_llm_forward_impl(draft, &draft_state, token, round_start + proposed, 1,
                             c, &target_state, mtp_cache_length) != 0) goto invalid;
                     if (profile) {
-                        assistant_seconds += tr_seconds() - assistant_start;
+                        assistant_seconds += nya_runtime_monotonic_seconds() - assistant_start;
                         ++assistant_calls;
                     }
                 }
