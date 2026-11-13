@@ -64,6 +64,15 @@ static void box(tui_frame *f,int x,int y,int w,int h,const char *title)
     cell(f,x,y,'+',1);cell(f,x+w-1,y,'+',1);cell(f,x,y+h-1,'+',1);cell(f,x+w-1,y+h-1,'+',1);
     text(f,x+2,y,w-4,2,title);
 }
+/* Missing optional samples remain gaps; they are never fabricated as zero. */
+static int chart_value(const tui_sample *sample,int chart,double *value)
+{
+    if(chart==1) *value=sample->rate;
+    else if(chart==2) {if(!(sample->optional&2U)) return 0;*value=sample->gradient;}
+    else if(chart==3) {if(!(sample->optional&4U)) return 0;*value=sample->used/1048576.0;}
+    else *value=sample->loss;
+    return isfinite(*value);
+}
 static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
 {
     box(f,x,y,w,h,s->paused?" TRAINING / PAUSED ":" TRAINING / CSV ");
@@ -78,14 +87,25 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
     if(h<14) return;
     int gx=x+3,gy=y+10,gw=w-6,gh=h-12;
     size_t start=s->samples>(size_t)gw?s->samples-(size_t)gw:0;
-    double low=s->history[start].loss,high=low;
-    for(size_t i=start;i<s->samples;++i) {double v=s->history[i].loss;if(v<low) low=v;if(v>high) high=v;}
-    line(f,x+2,y+9,w-4,3,"Loss / latest steps   %.5g .. %.5g",low,high);
+    const char *labels[]={"Loss","Tokens/s","Gradient norm","Device used (MiB)"};
+    int chart=s->chart>=0 && s->chart<4?s->chart:0,available=0;
+    double low=0,high=0;
+    for(size_t i=start;i<s->samples;++i) {
+        double v;if(!chart_value(&s->history[i],chart,&v)) continue;
+        if(!available) low=high=v;
+        else {if(v<low) low=v;if(v>high) high=v;}
+        ++available;
+    }
+    if(!available) {
+        line(f,x+2,y+9,w-4,3,"%s / no samples available   [g] graph",labels[chart]);return;
+    }
+    line(f,x+2,y+9,w-4,3,"%s / %.5g .. %.5g   [g] graph",labels[chart],low,high);
     /* Scale before subtraction to avoid overflow for finite extreme input. */
     double scale=fmax(fabs(low),fabs(high));if(scale<1) scale=1;
     double range=high/scale-low/scale;
     for(size_t i=start;i<s->samples;++i) {
-        double fraction=range>0?(s->history[i].loss/scale-low/scale)/range:0.5;
+        double value;if(!chart_value(&s->history[i],chart,&value)) continue;
+        double fraction=range>0?(value/scale-low/scale)/range:0.5;
         int row=(int)(fraction*(double)(gh-1)+0.5);
         cell(f,gx+(int)(i-start),gy+gh-1-row,'*',2);
     }
@@ -103,7 +123,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     for(int i=0;i<3;++i) text(f,2+i*15,2,14,(unsigned char)(s->view==i?2:3),tabs[i]);
     if(s->help) {
         box(f,1,4,w-2,h-8," KEYS & COMMANDS ");
-        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze metrics   r refresh   t theme   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","Inspection does not load a model or start inference."};
+        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze   r refresh   t theme   g graph   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","chart loss / rate / gradient / memory"};
         for(int i=0;i<7 && i<h-10;++i) text(f,3,6+i,w-6,0,help[i]);
     } else if(s->view==2) training(s,f,1,4,w-2,h-8);
     else if(s->view==1) {
@@ -123,7 +143,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     }
     text(f,2,h-3,w-4,3,s->status);
     if(s->editing) {text(f,1,h-2,1,2,":");command_line(s,f,h-2,w-3);}
-    else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  t theme  Space pause  r refresh  q quit");
+    else text(f,2,h-1,w-4,1,"1-3 views  : command  ? help  t theme  g graph  Space pause  q quit");
 }
 void tui_write(FILE *file,const tui_frame *f,int ansi,fyodor_color_mode color)
 {

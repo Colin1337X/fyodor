@@ -44,6 +44,20 @@ int main(int argc,char **argv)
     for(int i=0;i<10000;++i) fprintf(csv,"%d,%.3f,20\n",i,1.0+(double)i/10000.0);
     CHECK(!fclose(csv));CHECK(!tui_metrics(&s) && s.samples==TUI_HISTORY && s.history[TUI_HISTORY-1].step==9999);
     tui_frame *f=malloc(sizeof(*f));CHECK(f);
+    CHECK(send(&s,"chart gradient")==TUI_NONE && s.chart==2 && s.view==2);
+    CHECK(send(&s,"chart invalid")==TUI_NONE && s.chart==2);
+    tui_key(&s,'g');CHECK(s.chart==3);tui_key(&s,'g');CHECK(s.chart==0);
+    s.samples=3;memset(s.history,0,3*sizeof(*s.history));
+    s.history[0].optional=2;s.history[0].gradient=1;
+    s.history[2].optional=2;s.history[2].gradient=3;
+    s.chart=2;tui_render(&s,f,80,30);
+    int points=0;for(int y=14;y<24;++y) for(int x=4;x<76;++x)
+        if(f->cells[y*80+x].code=='*') {++points;CHECK(x==4 || x==6);}
+    CHECK(points==2);
+    s.chart=3;tui_render(&s,f,80,30);
+    points=0;for(int y=14;y<24;++y) for(int x=4;x<76;++x) points+=f->cells[y*80+x].code=='*';
+    CHECK(!points);
+    s.chart=0;
     tui_key(&s,':');
     for(int i=0;i<70;++i) tui_key(&s,0xac00);
     tui_key(&s,'X');tui_render(&s,f,48,16);

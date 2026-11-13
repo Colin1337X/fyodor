@@ -33,6 +33,11 @@ static int command(tui_state *s)
     else if (!strcmp(c,"training")) s->view=2;
     else if (!strcmp(c,"pause")) s->paused=!s->paused;
     else if (!strcmp(c,"refresh")) return TUI_REFRESH;
+    else if (!strncmp(c,"chart ",6)) {
+        const char *names[]={"loss","rate","gradient","memory"};int found=0;
+        for(int i=0;i<4;++i) if(!strcmp(c+6,names[i])) {s->chart=i;s->view=2;found=1;break;}
+        if(!found) snprintf(s->status,sizeof(s->status),"Chart: loss, rate, gradient, or memory.");
+    }
     else if (!strncmp(c,"theme ",6)) tui_theme(s,c+6);
     else if (!strncmp(c,"open ",5)) {
         if (!path_copy(s->model_path,sizeof(s->model_path),c+5,s)) {s->view=1;return TUI_INSPECT;}
@@ -85,6 +90,7 @@ int tui_key(tui_state *s,uint32_t key)
     else if (key==TUI_LEFT || key=='h' || key==TUI_UP || key=='k') s->view=(s->view+2)%3;
     else if (key==' ') s->paused=!s->paused;
     else if (key=='r') return TUI_REFRESH;
+    else if (key=='g') {s->chart=(s->chart+1)%4;s->view=2;}
     else if (key=='t') {
         for(size_t i=0;i<fyodor_theme_count();++i) if(s->theme==fyodor_theme_at(i)) {
             tui_theme(s,fyodor_theme_at((i+1)%fyodor_theme_count())->id);break;
