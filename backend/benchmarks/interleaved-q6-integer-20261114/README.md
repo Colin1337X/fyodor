@@ -59,3 +59,32 @@ invocation and terminal zero-error log are required separately.
 ## Completed raw GPU sweep
 
 The subsequent 712-case sweep passed both batch widths, byte parity, guards and the small-case float64 bound. `oracle.json` retains the results and hashes. This supersedes the earlier pending raw-test status; sanitizer, timing and model-level checks remain pending. No Q6 speedup is claimed.
+
+## Completed sanitizer and diagnostic timing
+
+The actual Compute Sanitizer invocation passed all 712 cases with zero errors and unchanged source/harness hashes. Five offline validator tests passed. `memcheck-run.json` records the tool invocation, terminal exit and evidence hashes.
+
+The repeated-weight probe requires raw correctness and sanitizer evidence before creating a GPU context. It runs both batch widths, both kernel orders and the three real Q6 shapes with interleaving included. Ten event samples per kernel/shape use 100 operations each after warmup. Outputs must remain byte-identical.
+
+| Columns | Rows | Batch | Baseline / candidate speed ratio |
+| --- | --- | --- | --- |
+
+| 3840 | 2048 | 2 | 1.0409x |
+
+| 3840 | 2048 | 4 | 1.1434x |
+
+| 3840 | 262144 | 2 | 0.9876x |
+
+| 3840 | 262144 | 4 | 1.0007x |
+
+| 15360 | 3840 | 2 | 0.8529x |
+
+| 15360 | 3840 | 4 | 1.0102x |
+
+
+The batch-two 15360x3840 path regresses materially, and the large vocabulary
+projection offers no consistent benefit. Do not replace general Q6 dispatch.
+The batch-four 3840x2048 result merits a future shape-specific model experiment,
+not automatic adoption. These synthetic repeated-weight measurements have no
+continuous contamination audit and remain accepted_benchmark=false. They do not
+change accepted llama.cpp scores or establish end-to-end decode improvement.
