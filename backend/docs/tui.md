@@ -43,6 +43,11 @@ splitting UTF-8 characters; Ctrl-U clears the active command. Both shortcuts
 recover from command overflow and preserve submitted history. Neither executes
 the command.
 
+Windows UTF-16 input discards incomplete surrogate pairs when a command is
+cancelled or a navigation/editing key intervenes. A later orphaned low surrogate
+cannot insert an unintended character into a new command; valid emoji pairs
+still decode as one Unicode character.
+
 This is an initial inspection/monitoring workbench. It does not yet launch,
 cancel, or resume training, or run interactive generation. Those controls require
 engine lifecycle integration. Model inspection is synchronous. Unicode input is

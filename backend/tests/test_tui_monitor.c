@@ -14,6 +14,24 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* UTF-16 pairs cannot cross cancellation or navigation boundaries. */
+    uint32_t high=0;
+    CHECK(!tui_utf16(&high,0xd83d));
+    CHECK(tui_utf16(&high,0xde00)==0x1f600 && !high);
+    CHECK(!tui_utf16(&high,0xde00));
+    const uint32_t boundaries[]={TUI_ESCAPE,TUI_ENTER,TUI_BACKSPACE,TUI_TAB,
+        TUI_UP,TUI_DOWN,TUI_LEFT,TUI_RIGHT,'a',0};
+    for(size_t i=0;i<sizeof(boundaries)/sizeof(boundaries[0]);++i) {
+        CHECK(!tui_utf16(&high,0xd83d));
+        CHECK(tui_utf16(&high,boundaries[i])==boundaries[i] && !high);
+        CHECK(!tui_utf16(&high,0xde00) && !high);
+    }
+    CHECK(!tui_utf16(&high,0xd800));CHECK(!tui_utf16(&high,0xdbff));
+    CHECK(tui_utf16(&high,0xdfff)==0x10ffff && !high);
+    tui_key(&s,':');CHECK(!tui_utf16(&high,0xd83d));
+    tui_key(&s,tui_utf16(&high,TUI_ESCAPE));tui_key(&s,':');
+    tui_key(&s,tui_utf16(&high,0xde00));CHECK(!s.command_length && s.editing);
+    tui_init(&s);
     /* Surface parser failures without retaining earlier model information. */
     CHECK(strlen(argv[1])<sizeof(s.model_path));strcpy(s.model_path,argv[1]);
     CHECK(!write_csv(argv[1],"unrecognized container"));

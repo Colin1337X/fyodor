@@ -19,14 +19,12 @@ static uint32_t event(void) {
     static uint32_t high=0;INPUT_RECORD r;DWORD n;
     if(WaitForSingleObject(input,100)!=WAIT_OBJECT_0 || !ReadConsoleInputW(input,&r,1,&n) || !n || r.EventType!=KEY_EVENT || !r.Event.KeyEvent.bKeyDown) return 0;
     KEY_EVENT_RECORD k=r.Event.KeyEvent;
-    switch(k.wVirtualKeyCode) {
-        case VK_UP:return TUI_UP;case VK_DOWN:return TUI_DOWN;case VK_LEFT:return TUI_LEFT;case VK_RIGHT:return TUI_RIGHT;
-        case VK_ESCAPE:return TUI_ESCAPE;case VK_RETURN:return TUI_ENTER;case VK_BACK:return TUI_BACKSPACE;case VK_TAB:return TUI_TAB;default:break;
-    }
     uint32_t c=k.uChar.UnicodeChar;
-    if(c>=0xd800 && c<=0xdbff) {high=c;return 0;}
-    if(c>=0xdc00 && c<=0xdfff) {uint32_t result=high?0x10000+((high-0xd800)<<10)+(c-0xdc00):0;high=0;return result;}
-    high=0;return c;
+    switch(k.wVirtualKeyCode) {
+        case VK_UP:c=TUI_UP;break;case VK_DOWN:c=TUI_DOWN;break;case VK_LEFT:c=TUI_LEFT;break;case VK_RIGHT:c=TUI_RIGHT;break;
+        case VK_ESCAPE:c=TUI_ESCAPE;break;case VK_RETURN:c=TUI_ENTER;break;case VK_BACK:c=TUI_BACKSPACE;break;case VK_TAB:c=TUI_TAB;break;default:break;
+    }
+    return tui_utf16(&high,c);
 }
 #else
 #include <termios.h>

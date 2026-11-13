@@ -42,4 +42,7 @@ void tui_render(const tui_state *state,tui_frame *frame,int width,int height);
 void tui_write(FILE *file,const tui_frame *frame,int ansi,fyodor_color_mode color);
 /* Returns UTF-8 byte count, or zero for an invalid scalar value. */
 size_t tui_utf8(uint32_t code,char out[4]);
+/* Decode a console UTF-16 unit or navigation key. Non-pair input cancels a
+ * pending high surrogate; zero means no complete scalar is available. */
+uint32_t tui_utf16(uint32_t *high,uint32_t code);
 #endif

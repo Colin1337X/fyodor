@@ -46,6 +46,15 @@ static int command(tui_state *s)
     } else snprintf(s->status,sizeof(s->status),"Unknown command. Press ? for available commands.");
     return TUI_NONE;
 }
+uint32_t tui_utf16(uint32_t *high,uint32_t c)
+{
+    uint32_t previous=*high;*high=0;
+    if(c>=0xd800 && c<=0xdbff) {*high=c;return 0;}
+    if(c>=0xdc00 && c<=0xdfff)
+        return previous>=0xd800 && previous<=0xdbff ?
+            0x10000+((previous-0xd800)<<10)+(c-0xdc00) : 0;
+    return c;
+}
 size_t tui_utf8(uint32_t c,char out[4])
 {
     if (c>=0xd800 && c<=0xdfff) return 0;
