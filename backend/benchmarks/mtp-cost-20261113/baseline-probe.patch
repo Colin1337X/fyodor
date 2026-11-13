@@ -1,0 +1,20 @@
+--- production/llm_cpu.c
++++ probe/baseline/llm_cpu.c
+@@ -1145,7 +1145,7 @@
+     generated = 0;
+     output_length = 0;
+ 
+-    if (request->soft_token_spans != 0) {
++    if (1) { /* Standalone probe: use existing batched prefill for all prompts. */
+         if (nya_llm_prefill(context, &state, prompt_tokens, prompt_count, request, error, error_capacity) != 0) goto cleanup;
+         position = prompt_count - 1; token = prompt_tokens[position];
+         response->target_steps = prompt_count; prefilled = 1;
+@@ -1434,7 +1434,7 @@
+                 /* Only another proposal in this round consumes these logits
+                    and recurrent hidden state. The next round replaces both
+                    from its target-derived base, even after a rejection. */
+-                if (proposed + 1 < maximum) {
++                if (1) { /* Restore the discarded final assistant forward for baseline. */
+                     if (profile) assistant_start = tr_seconds();
+                     if (nya_llm_forward_impl(draft, &draft_state, token, round_start + proposed, 1,
+                             c, &target_state, mtp_cache_length) != 0) goto invalid;

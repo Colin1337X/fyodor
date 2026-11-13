@@ -1,0 +1,73 @@
+diff --git a/backend/core/llm_cpu.c b/backend/core/llm_cpu.c
+index dad2229..9cd43e6 100644
+--- a/backend/core/llm_cpu.c
++++ b/backend/core/llm_cpu.c
+@@ -1037,6 +1037,16 @@ static int nya_llm_draw(const float *probabilities, size_t n, uint64_t *rng, uin
+ }
+ 
+ /* Run prompt ingestion followed by bounded autoregressive generation. */
++/* Opt-in wall time for the complete decode loop, including sampling, host
++   assistant work and transfers. Prefill and teardown are excluded. The first
++   output uses prefill logits, so this is not the fixed-token bench contract. */
++static void nya_llm_decode_profile(const char *mode, uint64_t start, size_t prompt, size_t generated)
++{
++    uint64_t end = nya_runtime_monotonic_milliseconds();
++    fprintf(stderr, "Generation profile: mode=%s prompt=%zu generated=%zu decode_loop_ms=%llu\n",
++        mode, prompt, generated, (unsigned long long)(end >= start ? end - start : 0));
++}
++
+ int nya_llm_generate(
+     const nya_llm_context *context,
+     const nya_generation_request *request,
+@@ -1059,6 +1069,9 @@ int nya_llm_generate(
+     size_t output_length;
+     int result;
+     int prefilled = 0;
++    const char *profile_setting = getenv("NYA_GENERATION_PROFILE");
++    int profile = profile_setting && !strcmp(profile_setting, "1");
++    uint64_t decode_start = 0;
+ 
+     if (response != NULL) memset(response, 0, sizeof(*response));
+     if (context == NULL || request == NULL || response == NULL || request->prompt == NULL || context->is_assistant ||
+@@ -1146,6 +1159,7 @@ int nya_llm_generate(
+         }
+         if (!prefilled) response->target_steps += 1;
+         prefilled = 0;
++        if (profile && position + 1 == prompt_count) decode_start = nya_runtime_monotonic_milliseconds();
+ 
+         if (position + 1 < prompt_count) {
+             next = prompt_tokens[position + 1];
+@@ -1194,6 +1208,7 @@ int nya_llm_generate(
+     }
+     response->text_length = output_length;
+     response->generated_tokens = generated;
++    if (profile) nya_llm_decode_profile("ordinary", decode_start, prompt_count, generated);
+     result = 0;
+ 
+ cleanup:
+@@ -1264,6 +1279,9 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
+     float *q_bank = NULL, *p_bank = NULL;
+     uint64_t rng, draft_rng;
+     int result = -1, stopped = 0;
++    const char *profile_setting = getenv("NYA_GENERATION_PROFILE");
++    int profile = profile_setting && !strcmp(profile_setting, "1");
++    uint64_t decode_start = 0;
+     if (draft == NULL) {
+         if (r != NULL && r->speculative_tokens != 0) {
+             if (out != NULL) memset(out, 0, sizeof(*out));
+@@ -1369,6 +1387,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
+         fprintf(stderr,"MTP verification: %s; proposal window=%zu\n",p_bank && nya_compute_plan_can_verify(target_state.device_plan)?"batched":"serial",window);
+     }
+     previous = prompt[prompt_count - 1];
++    if (profile) decode_start = nya_runtime_monotonic_milliseconds();
+     while (!stopped && out->generated_tokens < limit) {
+         size_t proposed = 0, round_start, maximum, mtp_cache_length = position;
+         int rejected = 0;
+@@ -1470,6 +1489,7 @@ int nya_llm_generate_draft(const nya_llm_context *c, const nya_llm_context *draf
+         }
+     }
+     if (!nya_llm_text_is_utf8(out->text, out->text_length)) goto invalid;
++    if (profile) nya_llm_decode_profile(draft->is_assistant ? "mtp" : "speculative", decode_start, prompt_count, out->generated_tokens);
+     result = 0;
+     goto cleanup;
+ invalid:
