@@ -46,5 +46,7 @@ for context in baseline:
     comparisons[context]={mode:100*baseline[context]['cells'][mode]['mean_decode_ms']/candidate[context]['cells'][mode]['mean_decode_ms'] for mode in modes}
 summary={'accepted_llama_score':False,'clock_note':'Same binary, QPC, B512, narrow-batch wide attention off/on. Weight reuse enabled; borrowed wide attention disabled in both.','contract':'32 output tokens including initial prefill-logit sample; decode-loop wall time; first round excluded',
          'baseline':baseline,'candidate':candidate,'candidate_speed_percent_of_baseline':comparisons}
+summary['candidate_dispatch_contexts']=['long']
+summary['short_control_note']='The candidate requires position >=256; the 25-token prompt plus 32 generated tokens never reaches it. Short-context differences measure control variability, not this optimization. Retain every observation, including the slow baseline batch-4 observation.'
 (root/'runtime-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
 print(json.dumps(comparisons,indent=2))

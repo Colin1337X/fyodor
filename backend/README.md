@@ -878,7 +878,9 @@ verification batches exactly 2/4 at positions >=256 with widths 256/512. It is
 captured at plan creation, defaults off, and requires the existing wide-value
 build/runtime options. Split partials remain single-query. [Batched-attention
 validation](benchmarks/wide-batch-20261113/README.md) covers native/float64 kernel
-parity, real Gemma logits and C17/C23 reset/rewind tests; timing is still pending.
+parity, real Gemma logits and C17/C23 reset/rewind tests. Diagnostic 8K generation
+improves 15.1%/11.4% for MTP windows 2/4, respectively, but still trails ordinary
+decode and does not establish a new accepted llama.cpp score.
 
 Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
 reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;

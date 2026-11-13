@@ -1,0 +1,11 @@
+--- production/llm_cpu.c
++++ probe/candidate/llm_cpu.c
+@@ -1144,7 +1144,7 @@
+     generated = 0;
+     output_length = 0;
+ 
+-    if (request->soft_token_spans != 0) {
++    if (1) { /* Standalone probe: use existing batched prefill for all prompts. */
+         if (nya_llm_prefill(context, &state, prompt_tokens, prompt_count, request, error, error_capacity) != 0) goto cleanup;
+         position = prompt_count - 1; token = prompt_tokens[position];
+         response->target_steps = prompt_count; prefilled = 1;
