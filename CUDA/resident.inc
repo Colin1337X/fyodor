@@ -1117,6 +1117,22 @@ static int cuda_plan_verify(void *opaque,const uint32_t *tokens,size_t count,
     }
     return 0;
 }
+static int cuda_plan_rewind(void *opaque,size_t position)
+{
+    nya_cuda_plan *p=opaque;
+    if(!p || p->failed || position>p->valid) return -1;
+    if(position==p->valid) return 0;
+    if(position && p->kv_layout) for(size_t i=0;i<p->model->block_count;++i) {
+        size_t window=p->model->layers[i].sliding_window;
+        size_t first=window && position>=window ? position-window+1 : 0;
+        size_t slots=p->kv_layout[i].slots;
+        if(slots<p->capacity && !nya_cuda_kv_retained(p->kv_high_water,slots,first)) return -1;
+    }
+    p->valid=position;
+    /* Physical writes survive a rewind; never make overwritten rows readable. */
+    if(!position) p->kv_high_water=0;
+    return 0;
+}
 static void cuda_plan_stats(const void *opaque, nya_compute_stats *stats)
 { const nya_cuda_plan *p = opaque; *stats = p->stats; }
 

@@ -183,6 +183,10 @@ typedef struct nya_llm_session nya_llm_session;
 nya_llm_session *nya_llm_session_create(const nya_llm_context *context, size_t capacity,
     char *error, size_t error_capacity);
 void nya_llm_session_free(nya_llm_session *session);
+/* Truncate to a previously consumed prefix. Forward movement and evicted
+   resident KV are rejected without mutation. A successful truncation invalidates
+   logits; run/verify the replacement token to obtain a new distribution. */
+int nya_llm_session_rewind(nya_llm_session *session,size_t position);
 void nya_llm_session_reset(nya_llm_session *session);
 int nya_llm_session_run(nya_llm_session *session, const uint32_t *tokens, size_t count,
     int logits_each_token);

@@ -758,6 +758,14 @@ void nya_llm_session_free(nya_llm_session *s)
     if (s != NULL) { nya_llm_state_free(&s->state); free(s); }
 }
 
+int nya_llm_session_rewind(nya_llm_session *s,size_t position)
+{
+    if(!s || s->failed || position>s->position) return -1;
+    if(position==s->position) return 0;
+    if(s->state.device_plan && nya_compute_plan_rewind(s->state.device_plan,position)) return -1;
+    s->position=position;s->has_logits=0;return 0;
+}
+
 void nya_llm_session_reset(nya_llm_session *s)
 {
     if (s != NULL) { s->position = 0; s->failed = 0; s->has_logits = 0; }
