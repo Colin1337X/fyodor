@@ -35,7 +35,11 @@ Snapshot mode emits plain UTF-8 without terminal escape sequences. Interactive m
 requires a terminal and restores its modes and alternate screen on normal exit
 and handled interruption. Long command paths scroll to keep the editing end
 visible, with a `<` marker for clipped leading text. Scrolling preserves UTF-8
-characters and accounts for wide Korean/CJK characters.
+characters and accounts for wide Korean/CJK characters. While editing, Ctrl-W
+deletes trailing ASCII spaces and the preceding space-delimited word without
+splitting UTF-8 characters; Ctrl-U clears the active command. Both shortcuts
+recover from command overflow and preserve submitted history. Neither executes
+the command.
 
 This is an initial inspection/monitoring workbench. It does not yet launch,
 cancel, or resume training, or run interactive generation. Those controls require

@@ -116,6 +116,13 @@ static void complete_command(tui_state *s)
     }
     if(matches==1) snprintf(s->status,sizeof(s->status),"Completed command. Enter runs it; Escape cancels.");
 }
+static void erase_character(tui_state *s)
+{
+    if (s->command_length) {
+        do {--s->command_length;} while (s->command_length && ((unsigned char)s->command[s->command_length]&0xc0)==0x80);
+        s->command[s->command_length]=0;
+    }
+}
 int tui_key(tui_state *s,uint32_t key)
 {
     if (key==3) {s->quit=1;return TUI_NONE;}
@@ -127,11 +134,16 @@ int tui_key(tui_state *s,uint32_t key)
         }
         if (key==TUI_TAB) {complete_command(s);return TUI_NONE;}
         if (key==TUI_UP || key==TUI_DOWN) {recall_command(s,key==TUI_UP);return TUI_NONE;}
+        if (key==21) { /* Ctrl-U clears only the active edit, not history. */
+            s->command_length=0;s->command[0]=0;s->overflow=0;return TUI_NONE;
+        }
+        if (key==23) { /* Ctrl-W: trailing ASCII spaces, then one space-delimited word. */
+            while (s->command_length && s->command[s->command_length-1]==' ') erase_character(s);
+            while (s->command_length && s->command[s->command_length-1]!=' ') erase_character(s);
+            s->overflow=0;return TUI_NONE;
+        }
         if (key==TUI_BACKSPACE) {
-            if (s->command_length) {
-                do {--s->command_length;} while (s->command_length && ((unsigned char)s->command[s->command_length]&0xc0)==0x80);
-                s->command[s->command_length]=0;
-            }
+            erase_character(s);
             s->overflow=0;return TUI_NONE;
         }
         if (key>=32 && key<0x110000 && key!=127) {

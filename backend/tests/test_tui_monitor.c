@@ -14,6 +14,24 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* Editing shortcuts preserve UTF-8 boundaries, recall, and execution state. */
+    CHECK(send(&s,"training")==TUI_NONE);tui_key(&s,':');
+    tui_key(&s,'x');tui_key(&s,' ');tui_key(&s,0xac00);tui_key(&s,0x1f600);
+    tui_key(&s,' ');tui_key(&s,' ');
+    CHECK(tui_key(&s,23)==TUI_NONE && !strcmp(s.command,"x ") && s.command_length==2);
+    CHECK(s.editing && s.view==2 && s.commands_count==1);
+    tui_key(&s,23);CHECK(!s.command_length && !s.command[0]);
+    tui_key(&s,23);CHECK(!s.command_length);
+    tui_key(&s,0xac00);tui_key(&s,TUI_UP);CHECK(!strcmp(s.command,"training"));
+    tui_key(&s,21);CHECK(!s.command_length && s.editing && s.commands_count==1);
+    tui_key(&s,TUI_DOWN);CHECK(!strcmp(s.command,"\xea\xb0\x80"));
+    tui_key(&s,21);CHECK(!s.command_length);
+    for(int i=0;i<1200;++i) tui_key(&s,'x');
+    CHECK(s.overflow);tui_key(&s,23);CHECK(!s.overflow && !s.command_length && s.editing);
+    for(int i=0;i<1200;++i) tui_key(&s,'x');
+    CHECK(s.overflow);tui_key(&s,21);CHECK(!s.overflow && !s.command_length && s.editing);
+    tui_key(&s,TUI_ESCAPE);tui_key(&s,21);tui_key(&s,23);CHECK(!s.editing && s.view==2 && !s.quit);
+    tui_init(&s);
     /* Completion is discoverable, literal, and never executes a command. */
     tui_key(&s,':');tui_key(&s,TUI_TAB);
     CHECK(!s.command_length && strstr(s.status,"Matches:") && !s.quit);
