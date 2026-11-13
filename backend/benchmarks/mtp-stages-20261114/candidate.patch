@@ -1,0 +1,77 @@
+--- production/llm_cpu.c
++++ diagnostic/llm_cpu.c
+@@ -452,6 +452,8 @@
+     uint32_t token, size_t position, int compute_logits,
+     const nya_llm_context *target, const nya_llm_run_state *target_state, size_t cache_length)
+ {
++    double stage_ms[9]={0}, stage_time=c->is_assistant?nya_runtime_monotonic_seconds():0;
++#define MTP_STAGE(k) do {if(c->is_assistant) {double now=nya_runtime_monotonic_seconds();stage_ms[k]+=(now-stage_time)*1000;stage_time=now;}} while(0)
+     size_t d = c->embedding_length, ple = c->per_layer_embedding_length;
+     if (token >= c->tokenizer.vocabulary_size || position >= s->sequence_capacity) return -1;
+     for (size_t j = 0; j < s->rope_stride * 2; ++j) {
+@@ -490,6 +492,7 @@
+     }
+     if (s->layer_input != NULL) memcpy(s->activation, s->layer_input, d * sizeof(float));
+     size_t layer_end = s->layer_end == 0 ? c->block_count : s->layer_end;
++    MTP_STAGE(0);
+     for (size_t layer = s->layer_begin; layer < layer_end; ++layer) {
+         const nya_llm_layer *w = &c->layers[layer];
+         size_t hd = w->head_dimension, heads = w->head_count, kv_heads = w->kv_head_count;
+@@ -536,6 +539,7 @@
+         if (s->prepare_kv_only) continue;
+         if (c->is_gemma) nya_llm_gemma_rope(s->query, heads, hd, co, si);
+         else nya_llm_rope(s->query, heads, hd, co, si);
++        MTP_STAGE(1);
+         nya_compute_attention attention = {s->query,read_keys+offset,read_values+offset,s->normalized,1,heads,kv_heads,hd,
+             s->sequence_capacity,attention_end,w->sliding_window,c->is_gemma ? 1 : 1/sqrtf((float)hd)};
+         /* Multimodal bidirectional spans and borrowed MTP prefixes have
+@@ -572,9 +576,11 @@
+                 for (size_t j = 0; j < hd; ++j) out[j] += score * v[j];
+             }
+         }
++        MTP_STAGE(2);
+         nya_llm_matvec(c->compute, s->residual, w->attention_output, s->normalized, qdim, d);
+         if (c->is_gemma) nya_llm_rms_norm(s->residual, s->residual, w->attention_post_norm, d, c->norm_epsilon);
+         for (size_t j = 0; j < d; ++j) s->activation[j] += s->residual[j];
++        MTP_STAGE(3);
+         nya_llm_rms_norm(s->normalized, s->activation, w->feed_forward_norm, d, c->norm_epsilon);
+         nya_llm_matvec(c->compute, s->feed_forward_gate, w->feed_forward_gate, s->normalized, d, h);
+         nya_llm_matvec(c->compute, s->feed_forward_up, w->feed_forward_up, s->normalized, d, h);
+@@ -598,21 +604,28 @@
+             float scale = nya_llm_tensor_value(w->output_scale, 0);
+             for (size_t j = 0; j < d; ++j) s->activation[j] *= scale;
+         }
++        MTP_STAGE(4);
+     }
+     /* Prompt positions only need caches. Keep the full vocabulary projection
+        out of prefill until a sampling/verification position requests it. */
+     if (!compute_logits) return 0;
+     nya_llm_rms_norm(s->normalized, s->activation, c->output_norm, d, c->norm_epsilon);
+     nya_llm_matvec(c->compute, s->logits, c->output, s->normalized, d, c->tokenizer.vocabulary_size);
++    MTP_STAGE(5);
+     if (c->is_assistant) nya_llm_matvec(c->compute, s->mtp_hidden, c->nextn_post, s->normalized, d, c->backbone_length);
++    MTP_STAGE(6);
+     if (c->final_logit_softcap > 0.0f) {
+         float cap = c->final_logit_softcap;
+         for (size_t j = 0; j < c->tokenizer.vocabulary_size; ++j) s->logits[j] = cap * tanhf(s->logits[j] / cap);
+     }
++    MTP_STAGE(7);
+     /* Reject non-finite model results before the checked suppression list is
+        allowed to introduce negative infinity for intentionally masked tokens. */
+     for (size_t j = 0; j < c->tokenizer.vocabulary_size; ++j) if (!isfinite(s->logits[j])) return -1;
+     for (size_t j = 0; j < c->tokenizer.suppressed_count; ++j) s->logits[c->tokenizer.suppressed_tokens[j]] = -INFINITY;
++    MTP_STAGE(8);
++    if(c->is_assistant) fprintf(stderr,"MTP stages: setup=%.6f query=%.6f attention=%.6f attn_output=%.6f ffn=%.6f head=%.6f recurrence=%.6f softcap=%.6f validation=%.6f\n",stage_ms[0],stage_ms[1],stage_ms[2],stage_ms[3],stage_ms[4],stage_ms[5],stage_ms[6],stage_ms[7],stage_ms[8]);
++#undef MTP_STAGE
+     return 0;
+ }
+ 
+@@ -1144,7 +1157,7 @@
+     generated = 0;
+     output_length = 0;
+ 
+-    if (request->soft_token_spans != 0) {
++    if (1) { /* Diagnostic matched B512 prompt ingestion. */
+         if (nya_llm_prefill(context, &state, prompt_tokens, prompt_count, request, error, error_capacity) != 0) goto cleanup;
+         position = prompt_count - 1; token = prompt_tokens[position];
+         response->target_steps = prompt_count; prefilled = 1;
