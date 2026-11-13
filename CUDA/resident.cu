@@ -175,7 +175,7 @@ extern "C" __global__ void nya_attention_reference(const float *q, const float *
 __device__ __forceinline__ void nya_attention_partition(const float *q, const float *keys,
     const float *values, float *out, float *scores, unsigned width, unsigned heads,
     unsigned kvheads, unsigned window, unsigned end, unsigned capacity, float scale,
-    const unsigned *request, unsigned partitions)
+    const unsigned *request, unsigned partitions, unsigned ring_capacity)
 {
     if (request) end = request[1];
     unsigned query = blockIdx.y/partitions, partition = blockIdx.y%partitions;
@@ -198,7 +198,7 @@ __device__ __forceinline__ void nya_attention_partition(const float *q, const fl
     for (unsigned t = first+warp; t <= end; t += 8) {
         float value = 0;
         for (unsigned j = lane; j < width; j += 32)
-            value += q[j]*keys[(unsigned long long)t*stride+kh*width+j];
+            value += q[j]*keys[(unsigned long long)(ring_capacity ? t%ring_capacity : t)*stride+kh*width+j];
         for (int step = 16; step; step >>= 1) value += __shfl_down_sync(0xffffffffU,value,step);
         if (!lane) { row[t] = value*scale; local_max = fmaxf(local_max,row[t]); }
     }
@@ -223,7 +223,7 @@ __device__ __forceinline__ void nya_attention_partition(const float *q, const fl
         unsigned j = base+lane;
         float value = 0;
         if (j < width) for (unsigned t = first+warp; t <= end; t += 8)
-            value += row[t]*values[(unsigned long long)t*stride+kh*width+j];
+            value += row[t]*values[(unsigned long long)(ring_capacity ? t%ring_capacity : t)*stride+kh*width+j];
         partial[warp][lane] = value;
         __syncthreads();
         if (!warp && j < width) {
@@ -239,10 +239,24 @@ __device__ __forceinline__ void nya_attention_partition(const float *q, const fl
 extern "C" __global__ void NAME(const float *q, const float *keys, const float *values, \
     float *out, float *scores, unsigned width, unsigned heads, unsigned kvheads, \
     unsigned window, unsigned end, unsigned capacity, float scale, const unsigned *request) \
-{ nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,window,end,capacity,scale,request,PARTITIONS); }
+{ nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,window,end,capacity,scale,request,PARTITIONS,0); }
 NYA_ATTENTION_ENTRY(nya_attention, 1)
 NYA_ATTENTION_ENTRY(nya_attention_split, 4)
 #undef NYA_ATTENTION_ENTRY
+
+/* Ring addressing changes storage only: positions, masks and reduction order
+   remain absolute. The caller must retain window+batch-1 slots for batched
+   prefill (or the entire prefix for unbounded attention). Runtime planning does
+   not select these entries until eviction, rewind and snapshots are integrated. */
+#define NYA_ATTENTION_RING_ENTRY(NAME, PARTITIONS) \
+extern "C" __global__ void NAME(const float *q, const float *keys, const float *values, \
+    float *out, float *scores, unsigned width, unsigned heads, unsigned kvheads, \
+    unsigned window, unsigned end, unsigned capacity, float scale, const unsigned *request, \
+    unsigned ring_capacity) \
+{ nya_attention_partition(q,keys,values,out,scores,width,heads,kvheads,window,end,capacity,scale,request,PARTITIONS,ring_capacity); }
+NYA_ATTENTION_RING_ENTRY(nya_attention_ring, 1)
+NYA_ATTENTION_RING_ENTRY(nya_attention_ring_split, 4)
+#undef NYA_ATTENTION_RING_ENTRY
 
 /* Four independent context ranges expose more blocks for long decode. Combine
    unnormalized value sums using a common softmax maximum. This is an original
