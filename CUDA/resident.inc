@@ -23,6 +23,11 @@ typedef struct nya_cuda_plan {
     CUdeviceptr blas_storage, attention_parts, interleaved_input;
     size_t interleaved_columns;
     int interleaved_four_enabled, interleaved_two_enabled;
+    int aligned_prefix, aligned_batch;
+#ifdef NYA_ALIGNED_PREFIX
+    CUfunction fdpp_batch_partial, fdpp_batch_combine;
+    unsigned long long fdpp_batch_calls;
+#endif
     unsigned long long interleaved_two_calls;
     CUdeviceptr request, decode_key, decode_value, active_request;
     size_t blas_expansion;
@@ -113,7 +118,7 @@ static void cuda_plan_free(void *opaque)
     if(p->timings) fprintf(stderr,"CUDA profile scope: from_position=%zu batches=%zu tokens=%zu (batches starting below the threshold excluded)\n",
         p->profile_from,p->profiled_batches,p->profiled_tokens);
     if (p->matrix_profiles) {
-        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot", "small-batch-weight-reuse", "interleaved-weight-reuse"};
+        static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add", "small-batch-dot", "small-batch-weight-reuse", "interleaved-weight-reuse", "ordered-weight-reuse"};
         for (unsigned i = 0; i < 64; ++i) {
             const nya_cuda_matrix_profile *m = &p->matrix_profiles[i];
             if (m->calls) fprintf(stderr, "CUDA matrix profile: path=%s type=%u rows=%zu columns=%zu batch=%zu calls=%llu milliseconds=%.6f\n",
@@ -127,6 +132,10 @@ static void cuda_plan_free(void *opaque)
             i,w->head_dimension,w->head_count,w->kv_head_count,w->sliding_window,a->kernels,a->milliseconds);
     }
     const char *mtp_trace=getenv("NYA_MTP_TRACE");
+#ifdef NYA_ALIGNED_PREFIX
+    if(p->aligned_prefix && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA aligned prefix: partial_queries=%zu FDPP_batch_calls=%llu\n",p->wide_partial_queries,p->fdpp_batch_calls);
+#endif
     if(p->borrowed_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
     if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
@@ -153,6 +162,31 @@ static void *plan_decline(const char *reason)
     if (getenv("NYA_CUDA_DEBUG")) fprintf(stderr, "CUDA resident plan declined: %s; selecting CPU reference execution\n", reason);
     return NULL;
 }
+
+#ifdef NYA_ALIGNED_PREFIX
+/* Admission follows the measured dense Gemma geometry. Other models retain
+   their existing execution; this is not a precision-mode or accuracy claim. */
+static int plan_aligned_model(const nya_llm_context *m)
+{
+    if(!m->is_gemma || m->embedding_length!=3840 || m->block_count!=48)return 0;
+    if(!m->output || (m->output->type!=12 && m->output->type!=14))return 0;
+    for(size_t i=0;i<m->block_count;++i) {
+        const nya_llm_layer *w=&m->layers[i];
+        if(w->head_count!=16 || w->hidden_length!=15360 || w->kv_source!=i ||
+           !((w->head_dimension==256 && w->kv_head_count==8 && w->sliding_window==1024) ||
+             (w->head_dimension==512 && w->kv_head_count==1 && !w->sliding_window)))return 0;
+        /* Full-attention Gemma layers copy projected keys as values. */
+        if(!w->value && w->head_dimension!=512)return 0;
+        const nya_llm_tensor *matrices[]={w->query,w->key,w->value?w->value:w->key,w->attention_output,
+            w->feed_forward_gate,w->feed_forward_up,w->feed_forward_down};
+        for(size_t j=0;j<sizeof(matrices)/sizeof(matrices[0]);++j) {
+            const nya_llm_tensor *t=matrices[j];
+            if(!t || (t->type!=12 && t->type!=14) || t->dimensions[0]%256)return 0;
+        }
+    }
+    return 1;
+}
+#endif
 
 /* Fault injection follows the real partial-allocation cleanup path without
    consuming unrelated VRAM. The limit counts successful request allocations. */
@@ -298,6 +332,15 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     int wide_batch_split=split_attention && batch_split_setting && !strcmp(batch_split_setting,"1") &&
         wide_value_setting && !strcmp(wide_value_setting,"1") && wide_batch_setting && !strcmp(wide_batch_setting,"1") &&
         c->wide_batch_split[0] && c->wide_batch_split[1];
+    int aligned_prefix=0;
+#ifdef NYA_ALIGNED_PREFIX
+    const char *aligned_setting=getenv("NYA_CUDA_ALIGNED_PREFIX");
+    const char *portable_fdpp_setting=getenv("NYA_CUDA_FDPP_PORTABLE");
+    aligned_prefix=aligned_setting && !strcmp(aligned_setting,"1") && wide_batch_split &&
+        wide_split && use_fdpp==2 && (!portable_fdpp_setting || strcmp(portable_fdpp_setting,"1")) &&
+        c->small_batch[12] && c->small_batch[14] && c->small_reuse[12][0] && c->small_reuse[12][1] &&
+        c->small_reuse[14][0] && c->small_reuse[14][1] && plan_aligned_model(m);
+#endif
     size_t batch_partial_count=0;
     int has_split_attention = 0;
     const char *ring_setting=getenv("NYA_CUDA_RING_KV");
@@ -360,7 +403,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     if(interleaved_two && interleaved_columns>(SIZE_MAX-3)/2)return NULL;
     size_t interleaved_count=interleaved?4*interleaved_columns+3:0;
     size_t two_count=interleaved_two?2*interleaved_columns+3:0;
-    size_t partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
+    size_t partial_queries=batch_partial_count?(aligned_prefix?batch:batch>=4?4:batch>=2?2:0):0;
+    if(partial_queries && batch_partial_count>SIZE_MAX/partial_queries)return NULL;
     size_t partial_total=batch_partial_count*partial_queries;
     if(partial_total<partial_count)partial_total=partial_count;
     size_t score_batch = all_tiled && batch > 7 ? 7 : batch;
@@ -384,7 +428,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         batch = smaller; total = 0;
         logits_batch=batch_logits?(batch<4?batch:4):1;
         counts[9]=m->tokenizer.vocabulary_size*logits_batch;
-        partial_queries=batch_partial_count?(batch>=4?4:batch>=2?2:0):0;
+        partial_queries=batch_partial_count?(aligned_prefix?batch:batch>=4?4:batch>=2?2:0):0;
         counts[14]=batch_partial_count*partial_queries;
         if(counts[14]<partial_count)counts[14]=partial_count;
         counts[15]=batch>=4 && interleaved?interleaved_count:batch>=2?two_count:0;
@@ -404,6 +448,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->split_attention = has_split_attention;
     p->wide_split_attention = wide_split;
     p->wide_partial_queries=partial_queries;
+    p->aligned_prefix=aligned_prefix;
 #ifdef NYA_FLASH_DECODING_PP
     p->use_fdpp = use_fdpp;
     const char *fdpp_trace = getenv("NYA_CUDA_FDPP_TRACE");
@@ -480,6 +525,13 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         const char *wide_batch=getenv("NYA_CUDA_WIDE_BATCH");
         p->use_wide_batch=p->use_wide_value && wide_batch && !strcmp(wide_batch,"1");
     }
+#endif
+    /* Missing optional symbols disable only this experiment. The reserved
+       scratch remains bounded and valid for ordinary execution. */
+#ifdef NYA_ALIGNED_PREFIX
+    if(p->aligned_prefix && (!p->use_wide_value || !p->use_wide_batch ||
+       c->function_get(&p->fdpp_batch_partial,c->module,"nya_fdpp_partial_batch")!=CUDA_SUCCESS ||
+       c->function_get(&p->fdpp_batch_combine,c->module,"nya_fdpp_combine_batch")!=CUDA_SUCCESS))p->aligned_prefix=0;
 #endif
     if(ring_kv) {
         p->kv_layout=calloc(m->block_count,sizeof(*p->kv_layout));
@@ -663,6 +715,9 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
 #endif
 #endif
 #endif
+#ifdef NYA_ALIGNED_PREFIX
+        if(f==p->fdpp_batch_partial || f==p->fdpp_batch_combine)timing->kind=4U;
+#endif
         for(unsigned i=0;i<4;++i) if(f==p->wide_value[i]) timing->kind=4U;
         for(unsigned i=0;i<2;++i) if(f==p->cuda->wide_batch_split[i]) timing->kind=4U;
         if(timing->kind==4 && p->attention_profiles) timing->attention=p->profile_layer;
@@ -691,6 +746,13 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
     unsigned long long cols = columns, stride = t->data_size / rows;
     unsigned type = t->type;
     if (p->batch > 1) {
+        /* Large prefix batches reuse weights with the serial dot reduction
+           order. Keep the measured narrow/interleaved verification paths. */
+        if(p->aligned_batch && p->batch>8 && (type==12 || type==14)) {
+            unsigned r=(unsigned)rows,batch=(unsigned)p->batch;
+            void *args[]={&matrix,&in,&out,&cols,&stride,&r,&batch};
+            return plan_grid(p,p->cuda->small_reuse[type][1],(r+7)/8,(batch+3)/4,256,1,args);
+        }
         if (p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch)) {
             /* cuBLAS may dispatch more than one internal kernel. Count logical
                expansion/GEMM dispatches; the documentation identifies this
@@ -769,6 +831,7 @@ static int plan_matvec(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_tensor *
     unsigned grid_y;
     CUfunction narrow=nya_cuda_narrow_kernel(p->cuda,t->type,(unsigned)p->batch,&grid_y);
     unsigned path = p->batch == 1 ? (unsigned)(p->cuda->reference != 0) :
+        p->aligned_batch && p->batch>8 && (t->type==12 || t->type==14) ? 11U :
         p->blas_storage && nya_blas_bytes(p->cuda, rows, columns, p->batch) ? 3U :
         plan_interleaved_kernel(p,t->type,columns) ? 10U : narrow ? (grid_y==1 ? 9U : 8U) : 2U;
     p->matrix_profile = plan_matrix_slot(p,rows,columns,t->type,path);
@@ -906,6 +969,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         if(slots<p->capacity && !nya_cuda_kv_retained(p->kv_high_water,slots,first)) return -1;
     }
     p->batch = count;
+    p->aligned_batch=p->aligned_prefix && logits!=2;
     p->profile_active=p->timings && position>=p->profile_from;
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { p->failed = 1; return -1; }
@@ -1010,10 +1074,23 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
         /* Each admitted split query owns four partial rows. Batch-four full
            attention only won at the measured 8K shape; retain unsplit below it. */
-        int wide_batch=p->use_wide_batch && (count==2 || count==4) && position>=256;
+        int wide_batch=p->use_wide_batch && (count==2 || count==4 || (p->aligned_batch && count>1)) && position>=256;
+#ifdef NYA_ALIGNED_PREFIX
+        if(p->aligned_prefix && count>1 && position<256 && count<=256-position &&
+           count<=p->wide_partial_queries && width==256) {
+            unsigned partitions=4;
+            void *partial[]={&p->q,&keys,&values,&p->attention_parts,&width,&nh,&nk,
+                &window,&end,&scale,&p->active_request,&partitions};
+            RUN(plan_grid(p,p->fdpp_batch_partial,heads,count*partitions,256,1,partial));
+            void *combine[]={&p->q,&keys,&values,&p->norm,&p->attention_parts,&width,&nh,&nk,
+                &window,&end,&scale,&p->active_request,&partitions,&p->scores,&capacity};
+            RUN(plan_grid(p,p->fdpp_batch_combine,heads,count,256,1,combine));
+            ++p->fdpp_batch_calls;
+        } else
+#endif
         if(p->use_wide_value && ((count==1 && graph_index) || wide_batch) && (width==256 || width==512)) {
             int batch_split=wide_batch && count<=p->wide_partial_queries && (!window || window>256) &&
-                (count==2 || (count==4 && width==512 && !window && position>=8192));
+                (p->aligned_batch || count==2 || (count==4 && width==512 && !window && position>=8192));
             int split=batch_split || (count==1 && p->split_attention && p->wide_split_attention && (!window || window>256));
             void *wide[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
             if(split) wide[3]=&p->attention_parts;
@@ -1215,6 +1292,7 @@ static int cuda_plan_prefill(void *opaque, const uint32_t *tokens, size_t count,
     if (tokens == NULL || count == 0 || position > p->capacity || count > p->capacity - position) return -1;
     for (size_t i = 0; i < count; ) {
         size_t chunk = count - i < p->maximum_batch ? count - i : p->maximum_batch;
+        if(p->aligned_prefix && position+i<256 && chunk>256-position-i)chunk=256-position-i;
         if (cuda_plan_batch(p, tokens + i, chunk, position + i, i + chunk == count, output)) return -1;
         i += chunk;
     }
@@ -1230,6 +1308,7 @@ static int cuda_plan_verify(void *opaque,const uint32_t *tokens,size_t count,
     for(size_t i=0;i<count;++i) if(tokens[i]>=vocabulary) return -1;
     for(size_t i=0;i<count;) {
         size_t chunk=count-i<p->maximum_batch?count-i:p->maximum_batch;
+        if(p->aligned_prefix && position+i<256 && chunk>256-position-i)chunk=256-position-i;
         if(cuda_plan_batch(p,tokens+i,chunk,position+i,2,output+i*vocabulary)) return -1;
         i+=chunk;
     }

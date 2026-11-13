@@ -914,6 +914,18 @@ did not show a consistent benefit. Partial storage is budgeted before admission
 and reduced with the admitted batch limit. Missing optional sources preserve
 the existing path. See [split-attention evidence](benchmarks/wide-batch-split-20261114/README.md).
 
+`NYA_ENABLE_ALIGNED_PREFIX=ON` and `NYA_CUDA_ALIGNED_PREFIX=1` add an experimental
+serial-aligned prefix path for the tested dense Gemma 12B geometry. Both default
+off. It requires portable-attention/FDPP, wide-value/batched-split, and small-batch
+weight-reuse components, with their runtime switches enabled and FDPP set to
+`short`. Prefix projections use serial-order reductions and attention chunks
+stop at position 256. Single-token decoding and existing narrow verification
+matrix kernels remain selected as before. Per-query partials are checked and
+budgeted before admission; plans of capacity <=256, other geometries and missing
+dependencies retain existing execution. This addresses observed prefix drift,
+not a demonstrated decode speedup. See [integration validation and remaining
+gates](benchmarks/aligned-prefix-runtime-20261114/README.md).
+
 Optional `NYA_ENABLE_SMALL_BATCH_REUSE=ON` plus `NYA_CUDA_SMALL_BATCH_REUSE=1`
 reuses quantized weights across Q4_K/Q6_K batches exactly 2/4. Both default off;
 other shapes and physically absent optional sources preserve fallback behavior.

@@ -169,6 +169,27 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_SMALL_BATCH_REUSE AND
     target_compile_definitions(nya-engine PRIVATE NYA_SMALL_BATCH_REUSE=1)
 endif()
 
+option(NYA_ENABLE_ALIGNED_PREFIX "Compile experimental serial-aligned Gemma prefix execution" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_ALIGNED_PREFIX AND NYA_ENABLE_PORTABLE_ATTENTION AND
+   NYA_ENABLE_WIDE_VALUE AND NYA_ENABLE_WIDE_BATCH_SPLIT AND
+   NYA_ENABLE_SMALL_BATCH AND NYA_ENABLE_SMALL_BATCH_REUSE AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/portable_f32.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp_warp.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp_batch.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_value16.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/wide_batch_split16.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/small_batch.cu" AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/small_batch_reuse.cu")
+    set(nya_fdpp_batch "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/attention/flash_decoding_pp_batch.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_fdpp_batch}")
+    file(READ "${nya_fdpp_batch}" nya_fdpp_batch_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_fdpp_batch_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_ALIGNED_PREFIX=1)
+elseif(NYA_ENABLE_ALIGNED_PREFIX)
+    message(STATUS "Aligned prefix dependencies disabled or absent: retaining existing prefix execution")
+endif()
+
 option(NYA_ENABLE_INTERLEAVED_TWO "Compile optional interleaved batch-two Q6 weight reuse" OFF)
 if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTERLEAVED_TWO AND
    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_two.cu")

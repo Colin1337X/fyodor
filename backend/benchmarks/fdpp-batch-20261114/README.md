@@ -7,7 +7,8 @@ bounds, retry decision and stable fallback remain the serial algorithm.
 The combine kernel uses its query grid coordinate in both the normal output
 and the existing stable attention fallback. No external source was copied.
 
-This is not runtime-integrated, enabled by CMake, or a performance claim.
+The raw experiment below predates the default-off runtime integration documented
+in ../aligned-prefix-runtime-20261114/README.md. It is not a performance claim.
 It is the attention half of the reduction-order investigation recorded in
 ../wide-batch-split-20261114. Production decode settings remain unchanged.
 
@@ -28,7 +29,7 @@ CUDA Compute Sanitizer 13.1.118 memcheck also passes all 50 cases with zero
 reported errors and exit code zero. The source hash and numerical results
 match the unsanitized run. Invocation: compute-sanitizer --tool memcheck
 --error-exitcode 99 --target-processes all <python> check.py oracle-memcheck.json.
-Integration and real-model validation remain outstanding.
+The isolated real-model validation and subsequent integration are described below.
 
 ## Isolated model pipeline
 
@@ -59,8 +60,9 @@ verify_aligned.py retains the existing test_verify.c assertions and 0.0005
 bound, specializing only the verification token count. The prefix-257,
 linear-KV, two-token case passes both resets with zero scaled error, including
 rewind, invalid-input rejection and replacement-token replay. The original
-prefix-8192, linear-KV, two-token failure case is now running against this
-candidate. Other lifecycle cases and integrated memory checking remain open.
+prefix-8192, linear-KV, two-token failure case now passes both resets with zero
+scaled logit error, including the original replacement-token replay assertion.
+Other lifecycle cases and integrated memory checking remain open.
 
 Before production integration, admission must cover optional dependencies,
 model/precision eligibility, checked partial-buffer sizing, and fallback.
@@ -70,4 +72,6 @@ long enough plan to reserve batched split partials; small-capacity plans must
 be explicitly gated or budgeted. Existing interleaved verification projections
 and selective verification-attention dispatch should be preserved when adding
 the prefix path, rather than inheriting the experiment's blanket dispatch.
-No production integration or performance acceptance is claimed here.
+These requirements informed the subsequent guarded runtime integration linked
+above. The isolated patches remain historical evidence, not reusable transforms
+against the changed runtime. No performance acceptance is claimed here.
