@@ -62,3 +62,23 @@ check_kernel.py for raw parity; a separate Compute Sanitizer invocation of
 check_kernel.py --memcheck writes memcheck-oracle.json. That flag only selects
 the output name: zero sanitizer errors must be established from the actual
 sanitizer process status and complete log, never inferred from the filename.
+
+## Prepared kernel timing
+
+`probe.py` compares existing interleaved Q4 against the integer-product candidate
+on all eight profiled Q4 shapes. It checks the successful 207-case oracle and
+its source/harness hashes before importing the GPU helper. A missing oracle
+was verified to reject launch without producing a timing artifact.
+
+Both paths include input conversion. Each CUDA graph contains ten conversion
+and projection pairs; after thirty warmup pairs, each event sample measures
+one hundred pairs. Five samples per path in each forward/reverse order retain
+ten observations, means and sample standard deviations. Output bytes must
+agree across timed paths, and event durations must be finite and positive.
+Results record compilation options, hashes and environment snapshots.
+
+This repeated-weight synthetic measurement is diagnostic only, with
+`accepted_benchmark=false`; it has no continuous interval contamination audit
+and cannot establish the llama.cpp target. It has not executed. Raw correctness,
+actual sanitizer validation and full-model generation remain prerequisites to
+production admission. No runtime dispatch or production build changes are made.
