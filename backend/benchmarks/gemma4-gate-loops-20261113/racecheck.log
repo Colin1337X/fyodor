@@ -1,0 +1,53 @@
+========= COMPUTE-SANITIZER
+{
+  "source_sha256": "a3318b70088cc12a5ebb7169cc35d770901cc98fd7023e048131724316d3ae13",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "cases": [
+    {
+      "columns": 3840,
+      "rows": 1,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 7,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 8,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 9,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 63,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 64,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 65,
+      "exact_match_including_canaries": true
+    },
+    {
+      "columns": 3840,
+      "rows": 15360,
+      "exact_match_including_canaries": true
+    }
+  ]
+}
+========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)
