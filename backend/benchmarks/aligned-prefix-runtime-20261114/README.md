@@ -179,3 +179,24 @@ Four offline comparison tests pass (warmup/ratio direction, text boundaries,
 workload mismatch, invalid times). A negative CLI check rejects missing complete
 audits without writing a comparison artifact. Real comparison remains pending;
 no synthetic test value is a measured runtime performance result.
+
+## Completed integrated sanitizer result
+
+The prefix-513, ring-enabled, four-token integrated run completed with child
+exit zero and Compute Sanitizer `ERROR SUMMARY: 0 errors`. Both resets report
+maximum scaled error 2.10020091e-05 against the unchanged 0.0005 bound, with
+resident execution. The original test also completed its invalid-call guards,
+rewind, replacement-token and lifecycle assertions. Both sessions exercised
+aligned prefix and batched split attention; the candidate session reports
+80 FDPP batch calls, 96 split calls and 658 interleaved weight-reuse calls.
+Capacity 518 does not wrap the model's 1024-token sliding window, so this is
+not evidence of ring wraparound coverage.
+
+The launched wrapper exited one because its original parser looked only in
+stderr for the sanitizer summary; the summary is in stdout. The separate
+`verify-prefix513-ring1-count4-memcheck-audit.json` verifies both untouched raw
+streams, completed child exit, both numerical results, dispatch traces and
+launch-input hashes. It supplements the original metadata without rewriting
+or rerunning it. This is a correctness/memory-safety result, not throughput.
+Monitored native generation has now started; cross-engine comparison and new
+accepted decode scores remain pending.
