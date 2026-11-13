@@ -47,6 +47,7 @@ typedef struct nya_cuda_context {
     CUfunction small_batch[31], small_reuse[31][2];
     CUfunction interleave_four, interleaved_reuse[31];
     CUfunction interleave_two, interleaved_two_q6;
+    CUfunction wide_batch_split[2];
     CUfunction expand[31];
     CUfunction expand_transposed[31];
     nya_cuda_blas blas;
@@ -333,6 +334,15 @@ static nya_cuda_context *nya_cuda_create_for(int training)
         CUfunction candidate = NULL;
         if (c->function_get(&candidate,c->module,"nya_gate_up_integer_2048") == CUDA_SUCCESS)
             c->gate_up_2048 = candidate;
+    }
+#endif
+#ifdef NYA_WIDE_BATCH_SPLIT
+    if(!c->reference) {
+        static const char *names[]={"nya_attention_batch_split16_split","nya_attention_batch_split16_ring_split"};
+        for(unsigned i=0;i<2;++i) {
+            CUfunction candidate=NULL;
+            if(c->function_get(&candidate,c->module,names[i])==CUDA_SUCCESS)c->wide_batch_split[i]=candidate;
+        }
     }
 #endif
     const unsigned types[] = {0, 1, 2, 8, 12, 14, 30};

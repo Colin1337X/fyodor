@@ -39,6 +39,7 @@ int main(int argc,char **argv)
     char *end=NULL;unsigned long parsed=argc==3?strtoul(argv[2],&end,10):7;
     if(parsed>8192 || (argc==3 && (!*argv[2] || *end))) return 2;
     size_t prefix=(size_t)parsed;
+    int test_split=getenv("NYA_TEST_VERIFY_BATCH_SPLIT")!=NULL;
     size_t count=17,total=prefix+count+1;int result=1;
     char fixture[1200];const char *path=argv[1];
     const char *wide=getenv("NYA_TEST_VERIFY_WIDE");
@@ -49,7 +50,7 @@ int main(int argc,char **argv)
         nya_train_decoder_config cfg;nya_train_decoder_defaults(&cfg);
         cfg.embedding_length=16;cfg.feed_forward_length=32;cfg.block_count=2;
         cfg.head_count=2;cfg.kv_head_count=1;cfg.context_length=32;cfg.seed=123;
-        if(wide) {cfg.embedding_length=(uint32_t)strtoul(wide,NULL,10)*2;cfg.context_length=512;}
+        if(wide) {cfg.embedding_length=(uint32_t)strtoul(wide,NULL,10)*2;cfg.context_length=total>512?(uint32_t)total:512;}
         char message[512]={0};nya_train_decoder *decoder=nya_train_decoder_create(&cfg,message,sizeof(message));
         if(!decoder) return 2;
         FILE *file=fopen(path,"wb");int failed=file?nya_train_decoder_export(decoder,file,message,sizeof(message)):-1;
@@ -61,7 +62,7 @@ int main(int argc,char **argv)
     nya_llm_context *m=NULL;nya_llm_session *s=NULL;char error[512]={0};
     float *reference=NULL,*actual=NULL,*last=NULL;uint32_t *tokens=NULL;
     CHECK(!nya_llm_load(path,bytes,&m,error,sizeof(error)));
-    if(getenv("NYA_TEST_VERIFY_RING")) for(size_t i=0;i<m->block_count;++i) m->layers[i].sliding_window=3;
+    if(getenv("NYA_TEST_VERIFY_RING")) for(size_t i=0;i<m->block_count;++i) m->layers[i].sliding_window=test_split?257:3;
     if(getenv("NYA_TEST_VERIFY_SHARED")) {CHECK(m->block_count>=2);m->layers[1].kv_source=0;m->layers[1].cache_offset=m->layers[0].cache_offset;}
     size_t v=m->tokenizer.vocabulary_size;CHECK(total<=m->context_length && v && v<=UINT32_MAX && v<=(SIZE_MAX/sizeof(float)-2)/(count+2));
     reference=malloc((count+2)*v*sizeof(float));actual=malloc((count*v+2)*sizeof(float));last=malloc(v*sizeof(float));tokens=malloc(total*sizeof(*tokens));
@@ -72,6 +73,7 @@ int main(int argc,char **argv)
     int test_interleaved=test_two || getenv("NYA_TEST_VERIFY_INTERLEAVED")!=NULL;
     const char *interleaved_name=test_two?"NYA_CUDA_INTERLEAVED_TWO":"NYA_CUDA_INTERLEAVED_REUSE";
     if(test_interleaved)CHECK(!interleaved_setting(interleaved_name,"0"));
+    if(test_split)CHECK(!interleaved_setting("NYA_CUDA_WIDE_BATCH_SPLIT","0"));
     nya_compute_stats reference_stats;
     if(test_logits) CHECK(!batch_logits_setting("0"));
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
@@ -86,6 +88,7 @@ int main(int argc,char **argv)
     nya_llm_session_free(s);s=NULL;
     if(test_logits) CHECK(!batch_logits_setting("1"));
     if(test_interleaved)CHECK(!interleaved_setting(interleaved_name,"1"));
+    if(test_split)CHECK(!interleaved_setting("NYA_CUDA_WIDE_BATCH_SPLIT","1"));
     if(getenv("NYA_TEST_VERIFY_FAILURE")) CHECK(!inject_failure());
     s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);
     if(getenv("NYA_TEST_VERIFY_RESIDENT")) CHECK(!strcmp(nya_llm_session_execution(s),"resident"));
@@ -99,6 +102,23 @@ int main(int argc,char **argv)
         if(test_two && four && !strcmp(four,"1") && candidate_stats.prefill_batch>=4)extra=0;
         CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
         CHECK(candidate_stats.scratch_bytes==reference_stats.scratch_bytes+extra);
+        CHECK(candidate_stats.kv_bytes==reference_stats.kv_bytes);
+        CHECK(candidate_stats.weights_bytes==reference_stats.weights_bytes);
+    }
+    if(test_split) {
+        nya_compute_stats candidate_stats;nya_llm_session_stats(s,&candidate_stats);
+        size_t partials=0;
+        for(size_t i=0;i<m->block_count;++i) {
+            const nya_llm_layer *layer=&m->layers[i];
+            if((layer->head_dimension==256 || layer->head_dimension==512) &&
+                (!layer->sliding_window || layer->sliding_window>256)) {
+                size_t rows=layer->head_count*(layer->head_dimension+2)*4;
+                if(rows>partials)partials=rows;
+            }
+        }
+        size_t factor=candidate_stats.prefill_batch>=4?4:candidate_stats.prefill_batch>=2?2:1;
+        CHECK(candidate_stats.prefill_batch==reference_stats.prefill_batch);
+        CHECK(candidate_stats.scratch_bytes==reference_stats.scratch_bytes+(factor-1)*partials*sizeof(float));
         CHECK(candidate_stats.kv_bytes==reference_stats.kv_bytes);
         CHECK(candidate_stats.weights_bytes==reference_stats.weights_bytes);
     }
