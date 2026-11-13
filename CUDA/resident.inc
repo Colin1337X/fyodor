@@ -44,8 +44,8 @@ typedef struct nya_cuda_plan {
     size_t kv_high_water, hidden_valid, hidden_offset;
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
-    int use_wide_value;
-    unsigned long long borrowed_wide_calls;
+    int use_wide_value, use_wide_batch;
+    unsigned long long borrowed_wide_calls, batched_wide_calls;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -124,6 +124,8 @@ static void cuda_plan_free(void *opaque)
     const char *mtp_trace=getenv("NYA_MTP_TRACE");
     if(p->borrowed_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
         fprintf(stderr,"CUDA borrowed wide-value attention calls: %llu\n",p->borrowed_wide_calls);
+    if(p->batched_wide_calls && mtp_trace && !strcmp(mtp_trace,"1"))
+        fprintf(stderr,"CUDA batched wide-value attention calls: %llu\n",p->batched_wide_calls);
     free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
@@ -420,6 +422,8 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         static const char *names[]={"nya_attention_vec16","nya_attention_vec16_split","nya_attention_vec16_ring","nya_attention_vec16_ring_split"};
         p->use_wide_value=1;
         for(unsigned i=0;i<4;++i) if(c->function_get(&p->wide_value[i],c->module,names[i])!=CUDA_SUCCESS) p->use_wide_value=0;
+        const char *wide_batch=getenv("NYA_CUDA_WIDE_BATCH");
+        p->use_wide_batch=p->use_wide_value && wide_batch && !strcmp(wide_batch,"1");
     }
 #endif
     if(ring_kv) {
@@ -918,11 +922,15 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
            the existing short FDPP/portable math and performance. The separate
            long topology is mandatory: graph_index==0 alone is not a bound. */
         int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
-        if(p->use_wide_value && count==1 && graph_index && (width==256 || width==512)) {
-            int split=p->split_attention && p->wide_split_attention && (!window || window>256);
+        /* Narrow verification owns independent score/output rows. Split partials
+           are single-query storage, so batching must use the unsplit kernel. */
+        int wide_batch=p->use_wide_batch && (count==2 || count==4) && position>=256;
+        if(p->use_wide_value && ((count==1 && graph_index) || wide_batch) && (width==256 || width==512)) {
+            int split=count==1 && p->split_attention && p->wide_split_attention && (!window || window>256);
             void *wide[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
             if(split) wide[3]=&p->attention_parts;
-            RUN(plan_grid(p,p->wide_value[(ring_slots?2:0)+(split?1:0)],heads,split?4:1,256,1,wide));
+            RUN(plan_grid(p,p->wide_value[(ring_slots?2:0)+(split?1:0)],heads,split?4:count,256,1,wide));
+            if(wide_batch) ++p->batched_wide_calls;
             if(split) {
                 void *combine[]={&p->attention_parts,&p->norm,&width};
                 RUN(plan_grid(p,p->attention_combine,heads,1,width,1,combine));
