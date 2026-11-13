@@ -6,13 +6,15 @@
 #include <errno.h>
 #include "q4_byte_pack.h"
 #include "kv_layout.h"
-typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; } nya_cuda_timing;
+typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; size_t attention; } nya_cuda_timing;
 typedef struct nya_cuda_matrix_profile {
     size_t rows, columns, batch;
     unsigned type, path;
     unsigned long long calls;
     double milliseconds;
 } nya_cuda_matrix_profile;
+
+typedef struct nya_cuda_attention_profile { unsigned long long kernels; double milliseconds; } nya_cuda_attention_profile;
 
 typedef struct nya_cuda_plan {
     nya_cuda_context *cuda;
@@ -41,6 +43,8 @@ typedef struct nya_cuda_plan {
     nya_cuda_kv_layout *kv_layout;
     size_t kv_high_water;
     CUfunction rope_ring, attention_ring, attention_ring_split;
+    CUfunction wide_value[4];
+    int use_wide_value;
     int failed;
     int gemma_qkv, gemma_gate;
     nya_compute_stats stats;
@@ -55,6 +59,8 @@ typedef struct nya_cuda_plan {
     double milliseconds[6];
     nya_cuda_matrix_profile *matrix_profiles;
     unsigned matrix_profile, matrix_profile_count;
+    nya_cuda_attention_profile *attention_profiles;
+    size_t profile_layer;
 } nya_cuda_plan;
 
 static void plan_profile_flush(nya_cuda_plan *p)
@@ -65,6 +71,10 @@ static void plan_profile_flush(nya_cuda_plan *p)
         nya_cuda_timing *t = &p->timings[i]; float elapsed;
         if (p->cuda->event_elapsed(&elapsed, t->start, t->end) == CUDA_SUCCESS) {
             p->milliseconds[t->kind] += elapsed;
+            if(t->attention) {
+                nya_cuda_attention_profile *a=&p->attention_profiles[t->attention-1];
+                ++a->kernels;a->milliseconds+=elapsed;
+            }
             if (t->matrix) {
                 nya_cuda_matrix_profile *m = &p->matrix_profiles[t->matrix - 1];
                 ++m->calls; m->milliseconds += elapsed;
@@ -104,7 +114,13 @@ static void cuda_plan_free(void *opaque)
                 paths[m->path], m->type, m->rows, m->columns, m->batch, m->calls, m->milliseconds);
         }
     }
-    free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
+    if(p->attention_profiles) for(size_t i=0;i<p->model->block_count;++i) {
+        const nya_cuda_attention_profile *a=&p->attention_profiles[i];
+        const nya_llm_layer *w=&p->model->layers[i];
+        if(a->kernels) fprintf(stderr,"CUDA attention profile: layer=%zu width=%u heads=%u kvheads=%u window=%u batch_scope=all_selected kernels=%llu milliseconds=%.6f\n",
+            i,w->head_dimension,w->head_count,w->kv_head_count,w->sliding_window,a->kernels,a->milliseconds);
+    }
+    free(p->attention_profiles);free(p->kv_layout); free(p->matrix_profiles); free(p->timings); free(p->byte_tensors); free(p->tensors); free(p);
 }
 
 static int plan_add(size_t *total, size_t count)
@@ -367,6 +383,7 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
         if (p->timings) {
             p->use_graphs = 0;
             p->matrix_profiles = calloc(64, sizeof(*p->matrix_profiles));
+            p->attention_profiles = calloc(m->block_count,sizeof(*p->attention_profiles));
         }
     }
     p->fail_after = SIZE_MAX;
@@ -389,10 +406,18 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     p->stats.scratch_bytes = total - p->stats.kv_bytes;
     p->stats.prefill_batch = batch;
     p->tensors = calloc(m->tensor_count, sizeof(*p->tensors));
-    if (p->tensors == NULL) { free(p->matrix_profiles); free(p->timings); free(p); return NULL; }
+    if (p->tensors == NULL) { free(p->attention_profiles);free(p->matrix_profiles); free(p->timings); free(p); return NULL; }
     CUcontext previous;
-    if (c->push(c->context) != CUDA_SUCCESS) { free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p); return NULL; }
+    if (c->push(c->context) != CUDA_SUCCESS) { free(p->attention_profiles);free(p->matrix_profiles); free(p->timings); free(p->tensors); free(p); return NULL; }
     size_t start_weights = c->weight_count, free_bytes, total_bytes;
+#ifdef NYA_WIDE_VALUE
+    const char *wide_value=getenv("NYA_CUDA_WIDE_VALUE");
+    if(!c->reference && wide_value && !strcmp(wide_value,"1")) {
+        static const char *names[]={"nya_attention_vec16","nya_attention_vec16_split","nya_attention_vec16_ring","nya_attention_vec16_ring_split"};
+        p->use_wide_value=1;
+        for(unsigned i=0;i<4;++i) if(c->function_get(&p->wide_value[i],c->module,names[i])!=CUDA_SUCCESS) p->use_wide_value=0;
+    }
+#endif
     if(ring_kv) {
         p->kv_layout=calloc(m->block_count,sizeof(*p->kv_layout));
         if(!p->kv_layout || nya_cuda_kv_layout_build(m,capacity,batch,p->kv_layout,&kv_count)) goto failure;
@@ -553,7 +578,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
         if (p->timing_count == 4096) plan_profile_flush(p);
         timing = &p->timings[p->timing_count];
         timing->start = NULL; timing->end = NULL;
-        timing->matrix = p->matrix_profile;
+        timing->matrix = p->matrix_profile;timing->attention=0;
         if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
         if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
         timing->kind = f == p->norm_op || f == p->add_norm ? 1U : f == p->rope || f == p->rope_ring || f == p->rope_pair ? 2U : f == p->vector ? 3U : f == p->attention_ring || f == p->attention_ring_split || f == p->attention || f == p->attention_prefill || f == p->attention_split || f == p->attention_combine ? 4U : f == p->gather || f == p->gather_batch ? 5U : 0U;
@@ -567,6 +592,8 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
 #endif
 #endif
 #endif
+        for(unsigned i=0;i<4;++i) if(f==p->wide_value[i]) timing->kind=4U;
+        if(timing->kind==4 && p->attention_profiles) timing->attention=p->profile_layer;
         ++p->timing_count;
         if (p->cuda->event_record(timing->start, p->cuda->stream) != CUDA_SUCCESS) return -1;
     }
@@ -598,7 +625,7 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
                 if (p->timing_count == 4096) plan_profile_flush(p);
                 timing = &p->timings[p->timing_count];
                 timing->start = NULL; timing->end = NULL; timing->kind = 0;
-                timing->matrix = p->matrix_profile;
+                timing->matrix = p->matrix_profile;timing->attention=0;
                 if (p->cuda->event_create(&timing->start, 0) != CUDA_SUCCESS) return -1;
                 if (p->cuda->event_create(&timing->end, 0) != CUDA_SUCCESS) { p->cuda->event_free(timing->start); return -1; }
                 ++p->timing_count;
@@ -862,13 +889,23 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         unsigned window = w->sliding_window;
         unsigned end = (unsigned)position, capacity = (unsigned)p->capacity;
         scale = m->is_gemma ? 1 : 1 / sqrtf((float)hd);
+        p->profile_layer=layer+1;
         void *attention[] = {&p->q, &keys, &values, &p->norm, &p->scores, &width, &nh, &nk, &window, &end, &capacity, &scale, &p->active_request};
         /* The short graph only addresses positions 0..255. Those physical
            rows are still linear when the ring has at least 256 slots, so keep
            the existing short FDPP/portable math and performance. The separate
            long topology is mandatory: graph_index==0 alone is not a bound. */
         int linear_ring_decode=count==1 && separate_long_graph && !graph_index && ring_slots>=256;
-        if(ring_slots && !linear_ring_decode) {
+        if(p->use_wide_value && count==1 && graph_index && (width==256 || width==512)) {
+            int split=p->split_attention && p->wide_split_attention && (!window || window>256);
+            void *wide[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
+            if(split) wide[3]=&p->attention_parts;
+            RUN(plan_grid(p,p->wide_value[(ring_slots?2:0)+(split?1:0)],heads,split?4:1,256,1,wide));
+            if(split) {
+                void *combine[]={&p->attention_parts,&p->norm,&width};
+                RUN(plan_grid(p,p->attention_combine,heads,1,width,1,combine));
+            }
+        } else if(ring_slots && !linear_ring_decode) {
             void *ring[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&p->active_request,&ring_slots};
             if(p->split_attention && graph_index && (width==64 || width==128 || (p->wide_split_attention && (width==256 || width==512))) && window>256) {
                 ring[3]=&p->attention_parts;
@@ -943,6 +980,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
             void *combine[] = {&p->attention_parts, &p->norm, &width};
             RUN(plan_grid(p, p->attention_combine, heads, 1, width > 128 ? width : 128, 1, combine));
         } else RUN(plan_grid(p, p->attention, heads, count, 256, 1, attention));
+        p->profile_layer=0;
         int add_attention = count == 1 && d > 256 && p->fuse_residual && !m->is_gemma &&
             !c->reference && (w->attention_output->type == 12 || w->attention_output->type == 14);
         if (add_attention) {
