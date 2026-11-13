@@ -150,3 +150,19 @@ exit codes, hashes and exact token lists. This establishes input token equality
 for these two generation workloads, not generated-output or logits parity.
 The long generation prompt is 8,205 tokens and must not be mislabeled as the
 older fixed-forward 8,192-token context. No throughput score is changed.
+
+run_llama_generation.py now prepares continuous PDH observation for the external
+reference. It requires completed integrated sanitizer proof and both completed
+native context runs, verifies recorded build/tokenizer inputs, and refuses an
+existing output directory. The existing strict idle gate runs before launch.
+Native child lifetime bounds, GPU/CPU/thermal snapshots, exact output, and sampled
+coverage are retained even when later validation rejects the diagnostic.
+No benchmark acceptance follows automatically from clear sampled coverage.
+
+llama_intervals.py verifies the exact prompt IDs, three ordered complete rounds,
+32 non-EOS outputs, finite positive QPC intervals inside the child lifetime,
+duration/endpoint consistency, valid output bytes, and stable greedy output.
+Six offline tests pass, including malformed/partial evidence and nondeterminism.
+The live runner's negative preflight test rejects the still-pending sanitizer
+without creating its output directory or starting GPU work. Actual reference
+execution and cross-engine generated-output comparison remain pending.
