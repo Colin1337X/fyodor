@@ -22,6 +22,9 @@ use `:chart loss|rate|gradient|memory`. Each graph uses a labeled dynamic
 vertical scale; missing optional values remain gaps rather than zeroes. Only complete, finite rows are accepted. Refresh reads at most
 the last 64 KiB and retains at most 192 samples; malformed rows are counted.
 A missing file clears old samples. File replacement/restart is supported.
+Periodic polling uses a one-second monotonic interval, independent of typing
+speed. Explicit refresh and metrics-path commands still refresh immediately;
+pause suppresses reads without accumulating a backlog of refreshes.
 
 Use 1/2/3, Tab, arrows, or hjkl to switch views; `?` opens help, Escape closes it,
 Space freezes metrics, `r` refreshes, and `q` or Ctrl-C exits. The `:` command bar

@@ -1,5 +1,6 @@
 #include "tui.h"
 #include "compute.h"
+#include "runtime.h"
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -86,13 +87,15 @@ int fyodor_monitor_run(int argc,char **argv)
     if(snapshot) {tui_render(&state,frame,width,height);tui_write(stdout,frame,0,0);free(frame);return 0;}
     if(terminal()) {free(frame);fputs("Interactive terminal unavailable; use --snapshot for plain output.\n",stderr);return 2;}
     signal(SIGINT,stop);signal(SIGTERM,stop);fputs("\033[?1049h\033[?25l",stdout);
-    unsigned ticks=0;int dirty=1,old_width=0,old_height=0;
+    double refreshed=nya_runtime_monotonic_seconds();int dirty=1,old_width=0,old_height=0;
     while(!state.quit && !stopping) {
         dimensions(&width,&height);
         if(dirty || width!=old_width || height!=old_height) {tui_render(&state,frame,width,height);tui_write(stdout,frame,1,color);old_width=width;old_height=height;dirty=0;}
         uint32_t key=event();int action=key?tui_key(&state,key):TUI_NONE;if(key) dirty=1;
         if(action==TUI_INSPECT || (action==TUI_REFRESH && *state.model_path)) tui_inspect(&state);
-        if(action==TUI_METRICS || action==TUI_REFRESH || ++ticks>=10) {if(*state.metrics_path && !state.paused) {tui_metrics(&state);dirty=1;} ticks=0;}
+        if(tui_refresh_due(&refreshed,nya_runtime_monotonic_seconds(),action==TUI_METRICS || action==TUI_REFRESH)) {
+            if(*state.metrics_path && !state.paused) {tui_metrics(&state);dirty=1;}
+        }
     }
     restore();free(frame);return 0;
 }

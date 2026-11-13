@@ -1,5 +1,6 @@
 #include "../tui/tui.h"
 #include <float.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #define CHECK(x) do {if(!(x)) {fprintf(stderr,"line %d: %s\n",__LINE__,#x);return 1;}} while(0)
@@ -14,6 +15,19 @@ static int write_csv(const char *path,const char *contents)
 int main(int argc,char **argv)
 {
     CHECK(argc==2);tui_state s;tui_init(&s);
+    /* Input bursts cannot accelerate file polling; explicit refresh is immediate. */
+    double refreshed=10.0;
+    for(int i=0;i<1000;++i) CHECK(!tui_refresh_due(&refreshed,10.0+(double)i/10000.0,0));
+    CHECK(tui_refresh_due(&refreshed,11.0,0) && refreshed==11.0);
+    CHECK(!tui_refresh_due(&refreshed,11.0,0));
+    CHECK(tui_refresh_due(&refreshed,11.2,1) && refreshed==11.2);
+    CHECK(!tui_refresh_due(&refreshed,12.0,0));
+    CHECK(tui_refresh_due(&refreshed,100.0,0));
+    CHECK(!tui_refresh_due(&refreshed,100.0,0));
+    CHECK(!tui_refresh_due(&refreshed,5.0,0) && refreshed==5.0);
+    CHECK(!tui_refresh_due(&refreshed,NAN,0) && refreshed==5.0);
+    CHECK(tui_refresh_due(&refreshed,NAN,1) && refreshed==5.0);
+    CHECK(!tui_refresh_due(&refreshed,INFINITY,0));
     /* UTF-16 pairs cannot cross cancellation or navigation boundaries. */
     uint32_t high=0;
     CHECK(!tui_utf16(&high,0xd83d));
