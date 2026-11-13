@@ -187,3 +187,20 @@ with aligned prefix, batched attention and output projection also exercised.
 This is correctness evidence only; the concurrently running CUDA physical-removal
 suite makes its wall time unsuitable for performance comparison. The suite was
 still live at this checkpoint. No new accepted decode score is claimed.
+
+## Completed CUDA removal and rejected generation timing
+
+The separately copied CUDA-enabled initial integration snapshot completed 202
+tests with no failures; five expected hardware/BLAS tests skipped. Ring KV,
+attention shapes, native generation, training and Vulkan checks ran, followed by
+the CPU train/export/infer smoke benchmark. physical-removal.log retains the run.
+The final source's separate CPU removal proof remains physical-removal-final-c17.log.
+
+After closing the WARP desktop UI while preserving its running network service,
+both short-context generation runs passed their idle gates and all twelve output
+parity cases. The candidate executed 1,988 Q4 integer calls in each batch-four
+round; the baseline executed none. Both coverage audits nevertheless rejected all
+decode intervals for unattributed System PID 4 GPU activity, with some invalid
+counter values too. The candidate used fewer UI/progress polls, which did not
+eliminate the problem. Neither run updates performance scores. Preserve System;
+do not whitelist its activity or relax counter validity to manufacture a score.

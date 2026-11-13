@@ -39,3 +39,13 @@ creating a fixture-ring directory.
 Pending: GPU ring/linear/failure controls, full-model greedy parity across contexts
 and stop boundaries, integrated sanitizer, correct interval coverage/parser, and
 paired short/long decode timing. Do not integrate or count this as performance.
+
+## GPU findings: superseded by v2
+
+Ring and linear GPU architecture fixtures passed in C17/C23, selecting joint
+verification. The forced CUDA failure control failed: prefill fell back to host
+execution after joint eligibility had been computed. The candidate then skipped
+the base forward despite losing resident verification. fixture-failure retains
+the actual failure; do not run this original prototype as a valid implementation.
+The isolated v2 experiment rechecks capability after prefill and restores the
+original proposal window when falling back. Production code was never changed.
