@@ -81,9 +81,9 @@ extern "C" __global__ void nya_add_norm(float *x, float *out, const float *resid
         out[base+i] = x[base+i]*scale*(w ? nya_weight(w,i,type) : 1.0f);
 }
 
-extern "C" __global__ void nya_rope(float *x, const float *frequencies,
+__device__ __forceinline__ void nya_rope_body(float *x, const float *frequencies,
     unsigned width, unsigned heads, unsigned position, unsigned gemma, unsigned batch,
-    const unsigned *request, float *cache_keys, float *cache_values, const float *value)
+    const unsigned *request, float *cache_keys, float *cache_values, const float *value, unsigned ring_capacity)
 {
     if (request) position = request[1];
     unsigned i = blockIdx.x * 256 + threadIdx.x, half = width / 2;
@@ -103,11 +103,27 @@ extern "C" __global__ void nya_rope(float *x, const float *frequencies,
        Query RoPE and ordinary prefill pass null cache pointers. Shared-KV
        consumers omit key RoPE and use their producer's existing cache. */
     if (cache_keys) {
-        unsigned long long offset = (unsigned long long)position * heads * width;
-        cache_keys[offset+a] = x[a]; cache_keys[offset+b] = x[b];
-        cache_values[offset+a] = value[a]; cache_values[offset+b] = value[b];
+        unsigned long long offset = (unsigned long long)(ring_capacity ? position % ring_capacity : position) * heads * width;
+        unsigned local_a = a-token*heads*width, local_b = b-token*heads*width;
+        cache_keys[offset+local_a] = x[a]; cache_keys[offset+local_b] = x[b];
+        cache_values[offset+local_a] = value[a]; cache_values[offset+local_b] = value[b];
     }
 }
+
+/* Linear entry preserves the existing ABI and compile-time linear addressing. */
+extern "C" __global__ void nya_rope(float *x, const float *frequencies,
+    unsigned width, unsigned heads, unsigned position, unsigned gemma, unsigned batch,
+    const unsigned *request, float *cache_keys, float *cache_values, const float *value)
+{ nya_rope_body(x,frequencies,width,heads,position,gemma,batch,request,cache_keys,cache_values,value,0); }
+
+/* Batched scratch is contiguous; cache writes wrap by logical token position.
+   RoPE still uses absolute positions. Caller admits batch <= ring_capacity and
+   nonaliasing scratch/cache buffers. This entry is not yet runtime-selected. */
+extern "C" __global__ void nya_rope_ring(float *x, const float *frequencies,
+    unsigned width, unsigned heads, unsigned position, unsigned gemma, unsigned batch,
+    const unsigned *request, float *cache_keys, float *cache_values, const float *value,
+    unsigned ring_capacity)
+{ nya_rope_body(x,frequencies,width,heads,position,gemma,batch,request,cache_keys,cache_values,value,ring_capacity); }
 
 /* kind: copy/scale, add, SiLU gate, GELU gate, multiply, logit softcap. */
 extern "C" __global__ void nya_vector(float *out, const float *x, const float *y,
