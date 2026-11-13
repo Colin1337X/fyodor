@@ -1,0 +1,376 @@
+{
+  "accepted_llama_score": false,
+  "contract": "Assistant QPC stage wall times, including synchronous transfers and assisted GPU calls. Three generation rounds; round zero excluded. Logging and outer overhead are not charged to stages. No CUDA event profiling. Not isolated kernel time or throughput.",
+  "contexts": {
+    "short": {
+      "mtp-serial2": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.1374,
+              "query": 9.2002,
+              "attention": 7.3245000000000005,
+              "attn_output": 8.5837,
+              "ffn": 33.5899,
+              "head": 20.9512,
+              "recurrence": 1.8647,
+              "softcap": 0.00030000000000000003,
+              "validation": 1.008
+            },
+            "forward_ms": 90.5943,
+            "outside_stage_ms": 4.934399999999997
+          },
+          {
+            "round": 2,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.0516,
+              "query": 9.0006,
+              "attention": 7.3411,
+              "attn_output": 8.656,
+              "ffn": 33.3727,
+              "head": 20.941200000000002,
+              "recurrence": 1.8342,
+              "softcap": 0.0007,
+              "validation": 1.0254
+            },
+            "forward_ms": 90.1592,
+            "outside_stage_ms": 4.935699999999997
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 3.0945,
+          "query": 9.1004,
+          "attention": 7.332800000000001,
+          "attn_output": 8.61985,
+          "ffn": 33.481300000000005,
+          "head": 20.9462,
+          "recurrence": 1.84945,
+          "softcap": 0.0005,
+          "validation": 1.0167000000000002
+        },
+        "mean_forward_ms": 90.37675,
+        "stdev_stage_ms": {
+          "setup": 0.06066976182580569,
+          "query": 0.14113851352483503,
+          "attention": 0.011737972567696339,
+          "attn_output": 0.05112382027978756,
+          "ffn": 0.1535835928737169,
+          "head": 0.0070710678118640685,
+          "recurrence": 0.02156675682618968,
+          "softcap": 0.00028284271247461896,
+          "validation": 0.012303657992645985
+        }
+      },
+      "mtp-batch2": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.1491000000000002,
+              "query": 9.0516,
+              "attention": 7.4029,
+              "attn_output": 8.9359,
+              "ffn": 33.4218,
+              "head": 20.9294,
+              "recurrence": 1.8282,
+              "softcap": 0.0008,
+              "validation": 1.0102
+            },
+            "forward_ms": 90.6105,
+            "outside_stage_ms": 4.880600000000001
+          },
+          {
+            "round": 2,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.0648,
+              "query": 9.3513,
+              "attention": 7.6019,
+              "attn_output": 8.8217,
+              "ffn": 33.4914,
+              "head": 21.0357,
+              "recurrence": 1.8781,
+              "softcap": 0.0002,
+              "validation": 1.0369
+            },
+            "forward_ms": 91.2568,
+            "outside_stage_ms": 4.974800000000002
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 3.1069500000000003,
+          "query": 9.201450000000001,
+          "attention": 7.5024,
+          "attn_output": 8.8788,
+          "ffn": 33.456599999999995,
+          "head": 20.98255,
+          "recurrence": 1.85315,
+          "softcap": 0.0005,
+          "validation": 1.02355
+        },
+        "mean_forward_ms": 90.93365,
+        "stdev_stage_ms": {
+          "setup": 0.05960910165402614,
+          "query": 0.21191990232160804,
+          "attention": 0.14071424945612285,
+          "attn_output": 0.08075159441150394,
+          "ffn": 0.049214631970584566,
+          "head": 0.07516545084012816,
+          "recurrence": 0.03528462838120876,
+          "softcap": 0.00042426406871192855,
+          "validation": 0.01887975105768078
+        }
+      },
+      "mtp-batch4": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 29,
+            "stage_ms": {
+              "setup": 4.3889,
+              "query": 13.3156,
+              "attention": 10.8008,
+              "attn_output": 12.7335,
+              "ffn": 50.026,
+              "head": 30.6259,
+              "recurrence": 2.7421,
+              "softcap": 0.0007,
+              "validation": 1.5164
+            },
+            "forward_ms": 133.1311,
+            "outside_stage_ms": 6.981200000000001
+          },
+          {
+            "round": 2,
+            "calls": 29,
+            "stage_ms": {
+              "setup": 4.3026,
+              "query": 13.0707,
+              "attention": 10.4644,
+              "attn_output": 12.2806,
+              "ffn": 47.8286,
+              "head": 30.2537,
+              "recurrence": 2.5913,
+              "softcap": 0.0012000000000000001,
+              "validation": 1.4647
+            },
+            "forward_ms": 129.0584,
+            "outside_stage_ms": 6.800600000000003
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 4.34575,
+          "query": 13.19315,
+          "attention": 10.6326,
+          "attn_output": 12.50705,
+          "ffn": 48.9273,
+          "head": 30.439799999999998,
+          "recurrence": 2.6667,
+          "softcap": 0.0009500000000000001,
+          "validation": 1.4905499999999998
+        },
+        "mean_forward_ms": 131.09475,
+        "stdev_stage_ms": {
+          "setup": 0.06102331521639877,
+          "query": 0.1731704507125851,
+          "attention": 0.2378707211911554,
+          "attn_output": 0.3202486611993871,
+          "ffn": 1.5537964409793208,
+          "head": 0.2631851439576351,
+          "recurrence": 0.10663170260293156,
+          "softcap": 0.00035355339059327386,
+          "validation": 0.03655742058734456
+        }
+      }
+    },
+    "long": {
+      "mtp-serial2": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.1612,
+              "query": 8.9717,
+              "attention": 43.2609,
+              "attn_output": 8.5953,
+              "ffn": 33.1227,
+              "head": 21.0064,
+              "recurrence": 1.8674,
+              "softcap": 0.0004,
+              "validation": 1.0062
+            },
+            "forward_ms": 125.9223,
+            "outside_stage_ms": 4.93010000000001
+          },
+          {
+            "round": 2,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 2.9103,
+              "query": 8.8132,
+              "attention": 43.1012,
+              "attn_output": 8.9995,
+              "ffn": 33.6954,
+              "head": 20.975,
+              "recurrence": 1.9494,
+              "softcap": 0.0002,
+              "validation": 1.0528
+            },
+            "forward_ms": 126.4779,
+            "outside_stage_ms": 4.980900000000005
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 3.03575,
+          "query": 8.89245,
+          "attention": 43.18105,
+          "attn_output": 8.7974,
+          "ffn": 33.40905,
+          "head": 20.9907,
+          "recurrence": 1.9083999999999999,
+          "softcap": 0.00030000000000000003,
+          "validation": 1.0295
+        },
+        "mean_forward_ms": 126.2001,
+        "stdev_stage_ms": {
+          "setup": 0.17741309139970485,
+          "query": 0.11207642481806784,
+          "attention": 0.11292495295549224,
+          "attn_output": 0.28581256095560215,
+          "ffn": 0.40496005358553405,
+          "head": 0.02220315292925609,
+          "recurrence": 0.05798275605729695,
+          "softcap": 0.0001414213562373095,
+          "validation": 0.032951176003293094
+        }
+      },
+      "mtp-batch2": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.0725,
+              "query": 9.1568,
+              "attention": 43.5327,
+              "attn_output": 8.844,
+              "ffn": 33.2806,
+              "head": 20.963,
+              "recurrence": 1.8566,
+              "softcap": 0.0004,
+              "validation": 0.9992
+            },
+            "forward_ms": 126.5384,
+            "outside_stage_ms": 4.832599999999999
+          },
+          {
+            "round": 2,
+            "calls": 20,
+            "stage_ms": {
+              "setup": 3.1192,
+              "query": 9.2302,
+              "attention": 43.5036,
+              "attn_output": 8.91,
+              "ffn": 34.3031,
+              "head": 21.0642,
+              "recurrence": 1.9324000000000001,
+              "softcap": 0.0005,
+              "validation": 0.9961
+            },
+            "forward_ms": 127.8601,
+            "outside_stage_ms": 4.8008000000000095
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 3.09585,
+          "query": 9.1935,
+          "attention": 43.51815,
+          "attn_output": 8.876999999999999,
+          "ffn": 33.79185,
+          "head": 21.0136,
+          "recurrence": 1.8945,
+          "softcap": 0.00045,
+          "validation": 0.9976499999999999
+        },
+        "mean_forward_ms": 127.19925,
+        "stdev_stage_ms": {
+          "setup": 0.03302188668141206,
+          "query": 0.05190163773909221,
+          "attention": 0.02057680733252831,
+          "attn_output": 0.04666904755831265,
+          "ffn": 0.7230166837632455,
+          "head": 0.07155920625607763,
+          "recurrence": 0.053598694013940365,
+          "softcap": 7.071067811865474e-05,
+          "validation": 0.002192031021678291
+        }
+      },
+      "mtp-batch4": {
+        "observations": [
+          {
+            "round": 1,
+            "calls": 29,
+            "stage_ms": {
+              "setup": 4.2922,
+              "query": 13.1118,
+              "attention": 62.7549,
+              "attn_output": 12.7897,
+              "ffn": 48.089999999999996,
+              "head": 30.4964,
+              "recurrence": 2.7380999999999998,
+              "softcap": 0.0009000000000000001,
+              "validation": 1.4991
+            },
+            "forward_ms": 182.9737,
+            "outside_stage_ms": 7.2006000000000085
+          },
+          {
+            "round": 2,
+            "calls": 29,
+            "stage_ms": {
+              "setup": 4.4823,
+              "query": 13.2763,
+              "attention": 63.3452,
+              "attn_output": 12.6136,
+              "ffn": 48.5814,
+              "head": 30.565,
+              "recurrence": 2.7163,
+              "softcap": 0.0009000000000000001,
+              "validation": 1.5083
+            },
+            "forward_ms": 184.3208,
+            "outside_stage_ms": 7.231499999999983
+          }
+        ],
+        "mean_stage_ms": {
+          "setup": 4.38725,
+          "query": 13.19405,
+          "attention": 63.05005,
+          "attn_output": 12.70165,
+          "ffn": 48.3357,
+          "head": 30.530700000000003,
+          "recurrence": 2.7272,
+          "softcap": 0.0009000000000000001,
+          "validation": 1.5037
+        },
+        "mean_forward_ms": 183.64724999999999,
+        "stdev_stage_ms": {
+          "setup": 0.13442099910356278,
+          "query": 0.1163190655051873,
+          "attention": 0.4174051329344184,
+          "attn_output": 0.12452150416695096,
+          "ffn": 0.3474722722750736,
+          "head": 0.04850752518939715,
+          "recurrence": 0.015414927829866608,
+          "softcap": 0.0,
+          "validation": 0.006505382386916149
+        }
+      }
+    }
+  }
+}
