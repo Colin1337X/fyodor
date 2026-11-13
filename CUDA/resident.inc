@@ -3,6 +3,7 @@
    is read-only; every live request owns one scratch allocation and KV prefix. */
 #include "../backend/core/llm_internal.h"
 #include <math.h>
+#include <errno.h>
 #include "q4_byte_pack.h"
 #include "kv_layout.h"
 typedef struct nya_cuda_timing { CUevent start, end; unsigned kind, matrix; } nya_cuda_timing;
@@ -49,7 +50,8 @@ typedef struct nya_cuda_plan {
     size_t fail_after;
     size_t allocations, fail_allocation_after;
     nya_cuda_timing *timings;
-    size_t timing_count;
+    size_t timing_count, profile_from, profiled_batches, profiled_tokens;
+    int profile_active;
     double milliseconds[6];
     nya_cuda_matrix_profile *matrix_profiles;
     unsigned matrix_profile, matrix_profile_count;
@@ -92,6 +94,8 @@ static void cuda_plan_free(void *opaque)
     }
     if (p->timings) fprintf(stderr, "CUDA kernel GPU milliseconds: matmul=%.3f norm=%.3f rope=%.3f vector=%.3f attention=%.3f gather=%.3f (profiling disables graphs)\n",
         p->milliseconds[0], p->milliseconds[1], p->milliseconds[2], p->milliseconds[3], p->milliseconds[4], p->milliseconds[5]);
+    if(p->timings) fprintf(stderr,"CUDA profile scope: from_position=%zu batches=%zu tokens=%zu (batches starting below the threshold excluded)\n",
+        p->profile_from,p->profiled_batches,p->profiled_tokens);
     if (p->matrix_profiles) {
         static const char *paths[] = {"dot", "reference", "native-gemm", "vendor-gemm", "overflow", "gate-up-q4", "qkv", "dot-add"};
         for (unsigned i = 0; i < 64; ++i) {
@@ -350,7 +354,15 @@ static void *cuda_plan_create(void *opaque, const nya_llm_context *m, size_t cap
     const char *gate_up = getenv("NYA_CUDA_GATE_UP");
     p->fuse_gate_up = !gate_up || strcmp(gate_up,"0");
     const char *profile = getenv("NYA_CUDA_PROFILE");
-    if (profile && !strcmp(profile, "1")) {
+    const char *profile_from=getenv("NYA_CUDA_PROFILE_FROM");
+    int profile_valid=1;
+    if(profile_from && profile && !strcmp(profile,"1")) {
+        char *end;errno=0;unsigned long long first=strtoull(profile_from,&end,10);
+        if(profile_from[0]<'0' || profile_from[0]>'9' || *end || errno || first>SIZE_MAX) {
+            profile_valid=0;fprintf(stderr,"CUDA profiling disabled: invalid NYA_CUDA_PROFILE_FROM\n");
+        } else p->profile_from=(size_t)first;
+    }
+    if (profile && !strcmp(profile, "1") && profile_valid) {
         p->timings = calloc(4096, sizeof(*p->timings));
         if (p->timings) {
             p->use_graphs = 0;
@@ -537,7 +549,7 @@ static int plan_grid_shared(nya_cuda_plan *p, CUfunction f, size_t gx, size_t gy
     ++p->stats.kernel_launches;
     if (gx > (size_t)p->cuda->grid_limit || gy > 65535) return -1;
     nya_cuda_timing *timing = NULL;
-    if (p->timings) {
+    if (p->timings && p->profile_active) {
         if (p->timing_count == 4096) plan_profile_flush(p);
         timing = &p->timings[p->timing_count];
         timing->start = NULL; timing->end = NULL;
@@ -582,7 +594,7 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
             if (type != 0) p->stats.kernel_launches += (rows + chunk - 1)/chunk;
             p->stats.external_matmul_calls += (rows + chunk - 1)/chunk;
             nya_cuda_timing *timing = NULL;
-            if (p->timings) {
+            if (p->timings && p->profile_active) {
                 if (p->timing_count == 4096) plan_profile_flush(p);
                 timing = &p->timings[p->timing_count];
                 timing->start = NULL; timing->end = NULL; timing->kind = 0;
@@ -618,7 +630,7 @@ static int plan_matvec_impl(nya_cuda_plan *p, CUdeviceptr out, const nya_llm_ten
 static unsigned plan_matrix_slot(nya_cuda_plan *p, size_t rows, size_t columns,
     unsigned type, unsigned path)
 {
-    if (!p->matrix_profiles) return 0;
+    if (!p->matrix_profiles || !p->profile_active) return 0;
     unsigned slot = 0;
     for (; slot < p->matrix_profile_count; ++slot) {
         const nya_cuda_matrix_profile *m = &p->matrix_profiles[slot];
@@ -755,6 +767,7 @@ static int cuda_plan_batch(void *opaque, const uint32_t *tokens, size_t count, s
         if(slots<p->capacity && !nya_cuda_kv_retained(p->kv_high_water,slots,first)) return -1;
     }
     p->batch = count;
+    p->profile_active=p->timings && position>=p->profile_from;
     CUcontext previous;
     if (c->push(c->context) != CUDA_SUCCESS) { p->failed = 1; return -1; }
     /* Single-token/logits execution retains at most two fixed topologies:
@@ -1002,6 +1015,7 @@ read_logits:
         for (size_t i = 0; i < m->tokenizer.vocabulary_size; ++i) if (!isfinite(output[i])) goto failure;
         for (size_t i = 0; i < m->tokenizer.suppressed_count; ++i) output[m->tokenizer.suppressed_tokens[i]] = -INFINITY;
     }
+    if(p->profile_active) {++p->profiled_batches;p->profiled_tokens+=count;}
     p->valid = position + count;
     if(!position || p->valid>p->kv_high_water) p->kv_high_water=p->valid;
     if (c->pop(&previous) == CUDA_SUCCESS) return 0;

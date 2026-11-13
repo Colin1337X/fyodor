@@ -1,0 +1,422 @@
+{
+  "accepted_performance": false,
+  "limitations": "Single diagnostic profile per shape, graphs disabled; event brackets may include submission gaps and other scheduling effects. Not kernel hardware-counter measurements, benchmark throughput, or accepted score changes.",
+  "results": [
+    {
+      "name": "0-linear",
+      "decode_tokens": 16,
+      "event_milliseconds_per_token": {
+        "matmul": 23.3594375,
+        "norm": 3.1413125,
+        "rope": 0.5856875,
+        "vector": 0.91275,
+        "attention": 0.7695,
+        "gather": 0.0045
+      },
+      "event_attributed_percent": {
+        "matmul": 81.18474013350102,
+        "norm": 10.917499147426751,
+        "rope": 2.0355322120637487,
+        "vector": 3.1722241409645697,
+        "attention": 2.6743648057762113,
+        "gather": 0.01563956026769714
+      },
+      "matrix_operations": [
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "calls": 768,
+          "milliseconds": 157.224576
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 59.892224
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 45.104352
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "calls": 16,
+          "milliseconds": 34.827808
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "calls": 640,
+          "milliseconds": 20.922208
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 20.255936
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 17.97952
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "calls": 128,
+          "milliseconds": 7.911168
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 7.880608
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 1.752704
+        }
+      ]
+    },
+    {
+      "name": "0-ring",
+      "decode_tokens": 16,
+      "event_milliseconds_per_token": {
+        "matmul": 23.0730625,
+        "norm": 3.0885625,
+        "rope": 0.573,
+        "vector": 0.7455,
+        "attention": 0.7215625,
+        "gather": 0.0045
+      },
+      "event_attributed_percent": {
+        "matmul": 81.80142211704437,
+        "norm": 10.94994670938779,
+        "rope": 2.031469159027607,
+        "vector": 2.6430370995725676,
+        "attention": 2.5581709686925964,
+        "gather": 0.01595394627508592
+      },
+      "matrix_operations": [
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "calls": 768,
+          "milliseconds": 153.54016
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 58.761088
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 43.920928
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "calls": 16,
+          "milliseconds": 37.87936
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "calls": 640,
+          "milliseconds": 20.687552
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 19.509248
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 17.649952
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "calls": 128,
+          "milliseconds": 8.634528
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 7.071008
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 1.51536
+        }
+      ]
+    },
+    {
+      "name": "8192-linear",
+      "decode_tokens": 16,
+      "event_milliseconds_per_token": {
+        "matmul": 25.235625,
+        "norm": 3.10175,
+        "rope": 0.519375,
+        "vector": 1.0146875,
+        "attention": 16.40825,
+        "gather": 0.004375
+      },
+      "event_attributed_percent": {
+        "matmul": 54.52335779729794,
+        "norm": 6.701550884821315,
+        "rope": 1.122146527219818,
+        "vector": 2.192304316415613,
+        "attention": 35.451187976422766,
+        "gather": 0.00945249782254961
+      },
+      "matrix_operations": [
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "calls": 1184,
+          "milliseconds": 138.242975
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 58.502784
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 47.115072
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "calls": 16,
+          "milliseconds": 36.756896
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "calls": 176,
+          "milliseconds": 36.269376
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "calls": 640,
+          "milliseconds": 24.12128
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 20.982944
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 20.53424
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "calls": 128,
+          "milliseconds": 11.183072
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 8.372448
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 1.68912
+        }
+      ]
+    },
+    {
+      "name": "8192-ring",
+      "decode_tokens": 16,
+      "event_milliseconds_per_token": {
+        "matmul": 23.90275,
+        "norm": 3.2850625,
+        "rope": 0.6036875,
+        "vector": 0.837,
+        "attention": 15.2715625,
+        "gather": 0.004375
+      },
+      "event_attributed_percent": {
+        "matmul": 54.44267450186556,
+        "norm": 7.482301760499722,
+        "rope": 1.3750033809224866,
+        "vector": 1.9064132184816172,
+        "attention": 34.78364231405994,
+        "gather": 0.00996482417067751
+      },
+      "matrix_operations": [
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "calls": 768,
+          "milliseconds": 152.621216
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 60.902848
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "calls": 384,
+          "milliseconds": 49.52992
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "calls": 16,
+          "milliseconds": 35.426848
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "calls": 640,
+          "milliseconds": 24.828192
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 21.037056
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 320,
+          "milliseconds": 20.03824
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "calls": 128,
+          "milliseconds": 8.619392
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 8.031744
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "calls": 128,
+          "milliseconds": 1.408736
+        }
+      ]
+    }
+  ]
+}

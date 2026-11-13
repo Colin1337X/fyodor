@@ -116,7 +116,7 @@ are retained. These are training results, separate from the inference tables.
 
 ## Profile and remaining bottlenecks
 
-`NYA_CUDA_PROFILE=1` records event timings per operation class and disables executable graphs. Its rates include diagnostic overhead and must not be quoted as normal throughput. [Current short-workload profile](profile-warp-attention.log), pp32 + tg16 without warmup: matrix kernels 136.993 ms, norm 6.046, RoPE 4.117, vector/gating 6.477, attention 3.074, gather 0.257. Matrix operations consume about 87.3% of recorded GPU kernel time. Profiles sum all plan work, including untimed prefix preparation when `--context` is used; they do not isolate decode automatically.
+`NYA_CUDA_PROFILE=1` records event timings per operation class and disables executable graphs. Its rates include diagnostic overhead and must not be quoted as normal throughput. [Current short-workload profile](profile-warp-attention.log), pp32 + tg16 without warmup: matrix kernels 136.993 ms, norm 6.046, RoPE 4.117, vector/gating 6.477, attention 3.074, gather 0.257. Matrix operations consume about 87.3% of recorded GPU kernel time. Profiles sum all plan work by default. `NYA_CUDA_PROFILE_FROM=N` excludes batches starting before absolute position N; use the `--context` prefix length plus `--warmup 0` to isolate decode. See the [Gemma decode-only profile](gemma4-decode-profile-20261113/README.md) for scope checks and limitations.
 
 Ranked next optimizations by expected benefit (qualitative, not promised speedups):
 
