@@ -1,0 +1,279 @@
+CASE round=0 mode=ordinary
+Generation profile: mode=ordinary prompt=8205 generated=32 decode_loop_ms=1086.081200
+CUDA kernel GPU milliseconds: matmul=715.985 norm=89.746 rope=16.750 vector=23.208 attention=182.008 gather=0.133 (profiling disables graphs)
+CUDA profile scope: from_position=8205 batches=31 tokens=31 (batches starting below the threshold excluded)
+CUDA matrix profile: path=qkv type=14 rows=8192 columns=3840 batch=1 calls=620 milliseconds=39.882623
+CUDA matrix profile: path=dot type=12 rows=3840 columns=4096 batch=1 calls=1240 milliseconds=46.114879
+CUDA matrix profile: path=gate-up-q4 type=12 rows=15360 columns=3840 batch=1 calls=1488 milliseconds=288.099200
+CUDA matrix profile: path=dot type=14 rows=3840 columns=15360 batch=1 calls=744 milliseconds=111.859776
+CUDA matrix profile: path=dot type=12 rows=8192 columns=3840 batch=1 calls=248 milliseconds=15.510016
+CUDA matrix profile: path=dot type=12 rows=512 columns=3840 batch=1 calls=248 milliseconds=2.725408
+CUDA matrix profile: path=dot type=12 rows=3840 columns=8192 batch=1 calls=248 milliseconds=16.394432
+CUDA matrix profile: path=qkv type=12 rows=8192 columns=3840 batch=1 calls=620 milliseconds=38.631072
+CUDA matrix profile: path=dot type=12 rows=3840 columns=15360 batch=1 calls=744 milliseconds=91.587393
+CUDA matrix profile: path=dot type=14 rows=262144 columns=3840 batch=1 calls=31 milliseconds=65.179999
+CUDA attention profile: layer=0 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.971072
+CUDA attention profile: layer=1 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.864768
+CUDA attention profile: layer=2 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.854176
+CUDA attention profile: layer=3 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.862016
+CUDA attention profile: layer=4 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.852160
+CUDA attention profile: layer=5 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.316256
+CUDA attention profile: layer=6 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.872256
+CUDA attention profile: layer=7 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.857216
+CUDA attention profile: layer=8 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.859968
+CUDA attention profile: layer=9 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.864000
+CUDA attention profile: layer=10 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.892832
+CUDA attention profile: layer=11 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.314464
+CUDA attention profile: layer=12 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.857344
+CUDA attention profile: layer=13 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.880928
+CUDA attention profile: layer=14 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.890848
+CUDA attention profile: layer=15 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.877440
+CUDA attention profile: layer=16 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.911872
+CUDA attention profile: layer=17 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.366720
+CUDA attention profile: layer=18 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.865440
+CUDA attention profile: layer=19 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.872800
+CUDA attention profile: layer=20 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.872192
+CUDA attention profile: layer=21 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.875552
+CUDA attention profile: layer=22 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.879936
+CUDA attention profile: layer=23 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.324480
+CUDA attention profile: layer=24 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.849728
+CUDA attention profile: layer=25 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.880896
+CUDA attention profile: layer=26 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.863072
+CUDA attention profile: layer=27 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.866016
+CUDA attention profile: layer=28 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.883936
+CUDA attention profile: layer=29 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.320384
+CUDA attention profile: layer=30 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.904320
+CUDA attention profile: layer=31 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.914720
+CUDA attention profile: layer=32 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.903168
+CUDA attention profile: layer=33 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.874880
+CUDA attention profile: layer=34 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.896992
+CUDA attention profile: layer=35 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.376224
+CUDA attention profile: layer=36 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.932576
+CUDA attention profile: layer=37 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.872896
+CUDA attention profile: layer=38 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.863552
+CUDA attention profile: layer=39 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.867488
+CUDA attention profile: layer=40 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.875136
+CUDA attention profile: layer=41 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.360288
+CUDA attention profile: layer=42 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.933280
+CUDA attention profile: layer=43 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.881664
+CUDA attention profile: layer=44 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.879840
+CUDA attention profile: layer=45 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.876320
+CUDA attention profile: layer=46 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.926144
+CUDA attention profile: layer=47 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.348096
+CASE round=0 mode=mtp-serial2
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1320.162600
+Generation assistant profile: calls=20 forward_ms=229.743000
+CUDA kernel GPU milliseconds: matmul=716.721 norm=89.559 rope=16.807 vector=23.149 attention=251.439 gather=0.135 (profiling disables graphs)
+CUDA profile scope: from_position=8205 batches=31 tokens=31 (batches starting below the threshold excluded)
+CUDA matrix profile: path=qkv type=14 rows=8192 columns=3840 batch=1 calls=620 milliseconds=39.892703
+CUDA matrix profile: path=dot type=12 rows=3840 columns=4096 batch=1 calls=1240 milliseconds=46.355135
+CUDA matrix profile: path=gate-up-q4 type=12 rows=15360 columns=3840 batch=1 calls=1488 milliseconds=288.470272
+CUDA matrix profile: path=dot type=14 rows=3840 columns=15360 batch=1 calls=744 milliseconds=111.876480
+CUDA matrix profile: path=dot type=12 rows=8192 columns=3840 batch=1 calls=248 milliseconds=15.415776
+CUDA matrix profile: path=dot type=12 rows=512 columns=3840 batch=1 calls=248 milliseconds=2.918016
+CUDA matrix profile: path=dot type=12 rows=3840 columns=8192 batch=1 calls=248 milliseconds=16.348320
+CUDA matrix profile: path=qkv type=12 rows=8192 columns=3840 batch=1 calls=620 milliseconds=38.692800
+CUDA matrix profile: path=dot type=12 rows=3840 columns=15360 batch=1 calls=744 milliseconds=91.575777
+CUDA matrix profile: path=dot type=14 rows=262144 columns=3840 batch=1 calls=31 milliseconds=65.176063
+CUDA attention profile: layer=0 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.933824
+CUDA attention profile: layer=1 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.871776
+CUDA attention profile: layer=2 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.855200
+CUDA attention profile: layer=3 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.855232
+CUDA attention profile: layer=4 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.859712
+CUDA attention profile: layer=5 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.313632
+CUDA attention profile: layer=6 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.869216
+CUDA attention profile: layer=7 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.857696
+CUDA attention profile: layer=8 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.860640
+CUDA attention profile: layer=9 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.871520
+CUDA attention profile: layer=10 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.865248
+CUDA attention profile: layer=11 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.327392
+CUDA attention profile: layer=12 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.894016
+CUDA attention profile: layer=13 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.887584
+CUDA attention profile: layer=14 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.862432
+CUDA attention profile: layer=15 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.875424
+CUDA attention profile: layer=16 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.860864
+CUDA attention profile: layer=17 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.333152
+CUDA attention profile: layer=18 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.901184
+CUDA attention profile: layer=19 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.888864
+CUDA attention profile: layer=20 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.873760
+CUDA attention profile: layer=21 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.869216
+CUDA attention profile: layer=22 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.869472
+CUDA attention profile: layer=23 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.328960
+CUDA attention profile: layer=24 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.864512
+CUDA attention profile: layer=25 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.865664
+CUDA attention profile: layer=26 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.849920
+CUDA attention profile: layer=27 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.860032
+CUDA attention profile: layer=28 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.862208
+CUDA attention profile: layer=29 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.334016
+CUDA attention profile: layer=30 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.898496
+CUDA attention profile: layer=31 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.889664
+CUDA attention profile: layer=32 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.866848
+CUDA attention profile: layer=33 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.886816
+CUDA attention profile: layer=34 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.860320
+CUDA attention profile: layer=35 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.310208
+CUDA attention profile: layer=36 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.887584
+CUDA attention profile: layer=37 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.865632
+CUDA attention profile: layer=38 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.883808
+CUDA attention profile: layer=39 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.875872
+CUDA attention profile: layer=40 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.880896
+CUDA attention profile: layer=41 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.322560
+CUDA attention profile: layer=42 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.910144
+CUDA attention profile: layer=43 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.864288
+CUDA attention profile: layer=44 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.872736
+CUDA attention profile: layer=45 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.869088
+CUDA attention profile: layer=46 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=62 milliseconds=1.893536
+CUDA attention profile: layer=47 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=62 milliseconds=13.337504
+CASE round=0 mode=mtp-batch2
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1294.980700
+Generation assistant profile: calls=20 forward_ms=161.211400
+CUDA kernel GPU milliseconds: matmul=670.460 norm=72.359 rope=13.838 vector=21.277 attention=365.567 gather=0.109 (profiling disables graphs)
+CUDA profile scope: from_position=8205 batches=25 tokens=34 (batches starting below the threshold excluded)
+CUDA matrix profile: path=qkv type=14 rows=8192 columns=3840 batch=1 calls=320 milliseconds=20.565375
+CUDA matrix profile: path=dot type=12 rows=3840 columns=4096 batch=1 calls=640 milliseconds=23.868096
+CUDA matrix profile: path=gate-up-q4 type=12 rows=15360 columns=3840 batch=1 calls=768 milliseconds=148.859520
+CUDA matrix profile: path=dot type=14 rows=3840 columns=15360 batch=1 calls=384 milliseconds=57.811968
+CUDA matrix profile: path=dot type=12 rows=8192 columns=3840 batch=1 calls=128 milliseconds=7.955968
+CUDA matrix profile: path=dot type=12 rows=512 columns=3840 batch=1 calls=128 milliseconds=1.430048
+CUDA matrix profile: path=dot type=12 rows=3840 columns=8192 batch=1 calls=128 milliseconds=8.443840
+CUDA matrix profile: path=qkv type=12 rows=8192 columns=3840 batch=1 calls=320 milliseconds=19.904608
+CUDA matrix profile: path=dot type=12 rows=3840 columns=15360 batch=1 calls=384 milliseconds=47.404128
+CUDA matrix profile: path=dot type=14 rows=262144 columns=3840 batch=1 calls=34 milliseconds=71.648767
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=4096 columns=3840 batch=2 calls=360 milliseconds=16.131040
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=2048 columns=3840 batch=2 calls=540 milliseconds=15.068128
+CUDA matrix profile: path=small-batch-weight-reuse type=14 rows=2048 columns=3840 batch=2 calls=180 milliseconds=5.540608
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=4096 batch=2 calls=360 milliseconds=16.202688
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=15360 columns=3840 batch=2 calls=864 milliseconds=121.464863
+CUDA matrix profile: path=small-batch-weight-reuse type=14 rows=3840 columns=15360 batch=2 calls=216 milliseconds=39.998464
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=8192 columns=3840 batch=2 calls=72 milliseconds=5.694720
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=512 columns=3840 batch=2 calls=72 milliseconds=1.128704
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=8192 batch=2 calls=72 milliseconds=6.211104
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=15360 batch=2 calls=216 milliseconds=35.127328
+CUDA attention profile: layer=0 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.232704
+CUDA attention profile: layer=1 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.199968
+CUDA attention profile: layer=2 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.298336
+CUDA attention profile: layer=3 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.192800
+CUDA attention profile: layer=4 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.185376
+CUDA attention profile: layer=5 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.835712
+CUDA attention profile: layer=6 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.217856
+CUDA attention profile: layer=7 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.205440
+CUDA attention profile: layer=8 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.185984
+CUDA attention profile: layer=9 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.208576
+CUDA attention profile: layer=10 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.205120
+CUDA attention profile: layer=11 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.824896
+CUDA attention profile: layer=12 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.185056
+CUDA attention profile: layer=13 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.240544
+CUDA attention profile: layer=14 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.205664
+CUDA attention profile: layer=15 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.215808
+CUDA attention profile: layer=16 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.203616
+CUDA attention profile: layer=17 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.830912
+CUDA attention profile: layer=18 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.229536
+CUDA attention profile: layer=19 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.201344
+CUDA attention profile: layer=20 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.197376
+CUDA attention profile: layer=21 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.214656
+CUDA attention profile: layer=22 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.208256
+CUDA attention profile: layer=23 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=26.193056
+CUDA attention profile: layer=24 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.269088
+CUDA attention profile: layer=25 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.204192
+CUDA attention profile: layer=26 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.199136
+CUDA attention profile: layer=27 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.212256
+CUDA attention profile: layer=28 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.213088
+CUDA attention profile: layer=29 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.956704
+CUDA attention profile: layer=30 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.202432
+CUDA attention profile: layer=31 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.192064
+CUDA attention profile: layer=32 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.197088
+CUDA attention profile: layer=33 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.206560
+CUDA attention profile: layer=34 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.196864
+CUDA attention profile: layer=35 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.840544
+CUDA attention profile: layer=36 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.212736
+CUDA attention profile: layer=37 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.203200
+CUDA attention profile: layer=38 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.204064
+CUDA attention profile: layer=39 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.241312
+CUDA attention profile: layer=40 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.214144
+CUDA attention profile: layer=41 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.812512
+CUDA attention profile: layer=42 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.213088
+CUDA attention profile: layer=43 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.197600
+CUDA attention profile: layer=44 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.205696
+CUDA attention profile: layer=45 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.206528
+CUDA attention profile: layer=46 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=41 milliseconds=2.223648
+CUDA attention profile: layer=47 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=41 milliseconds=25.961408
+CUDA batched wide-value attention calls: 432
+CASE round=0 mode=mtp-batch4
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=4
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1238.210200
+Generation assistant profile: calls=29 forward_ms=231.892400
+CUDA kernel GPU milliseconds: matmul=645.979 norm=54.872 rope=10.290 vector=16.198 attention=331.997 gather=0.085 (profiling disables graphs)
+CUDA profile scope: from_position=8205 batches=19 tokens=40 (batches starting below the threshold excluded)
+CUDA matrix profile: path=qkv type=14 rows=8192 columns=3840 batch=1 calls=240 milliseconds=15.430720
+CUDA matrix profile: path=dot type=12 rows=3840 columns=4096 batch=1 calls=480 milliseconds=17.815616
+CUDA matrix profile: path=gate-up-q4 type=12 rows=15360 columns=3840 batch=1 calls=576 milliseconds=111.588288
+CUDA matrix profile: path=dot type=14 rows=3840 columns=15360 batch=1 calls=288 milliseconds=43.454016
+CUDA matrix profile: path=dot type=12 rows=8192 columns=3840 batch=1 calls=96 milliseconds=5.966368
+CUDA matrix profile: path=dot type=12 rows=512 columns=3840 batch=1 calls=96 milliseconds=1.054400
+CUDA matrix profile: path=dot type=12 rows=3840 columns=8192 batch=1 calls=96 milliseconds=6.352832
+CUDA matrix profile: path=qkv type=12 rows=8192 columns=3840 batch=1 calls=240 milliseconds=14.953024
+CUDA matrix profile: path=dot type=12 rows=3840 columns=15360 batch=1 calls=288 milliseconds=35.519488
+CUDA matrix profile: path=dot type=14 rows=262144 columns=3840 batch=1 calls=40 milliseconds=84.461856
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=4096 columns=3840 batch=4 calls=280 milliseconds=18.791648
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=2048 columns=3840 batch=4 calls=420 milliseconds=18.643488
+CUDA matrix profile: path=small-batch-weight-reuse type=14 rows=2048 columns=3840 batch=4 calls=140 milliseconds=6.028928
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=4096 batch=4 calls=280 milliseconds=19.621088
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=15360 columns=3840 batch=4 calls=672 milliseconds=143.831839
+CUDA matrix profile: path=small-batch-weight-reuse type=14 rows=3840 columns=15360 batch=4 calls=168 milliseconds=44.262976
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=8192 columns=3840 batch=4 calls=56 milliseconds=6.871776
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=512 columns=3840 batch=4 calls=56 milliseconds=1.377504
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=8192 batch=4 calls=56 milliseconds=7.682272
+CUDA matrix profile: path=small-batch-weight-reuse type=12 rows=3840 columns=15360 batch=4 calls=168 milliseconds=42.270912
+CUDA attention profile: layer=0 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.720256
+CUDA attention profile: layer=1 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.700032
+CUDA attention profile: layer=2 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.743744
+CUDA attention profile: layer=3 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.698976
+CUDA attention profile: layer=4 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.692832
+CUDA attention profile: layer=5 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=20.013504
+CUDA attention profile: layer=6 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.700160
+CUDA attention profile: layer=7 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.698656
+CUDA attention profile: layer=8 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.702816
+CUDA attention profile: layer=9 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.709088
+CUDA attention profile: layer=10 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.710912
+CUDA attention profile: layer=11 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=19.995680
+CUDA attention profile: layer=12 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.698688
+CUDA attention profile: layer=13 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.766080
+CUDA attention profile: layer=14 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.715776
+CUDA attention profile: layer=15 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.700992
+CUDA attention profile: layer=16 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.715840
+CUDA attention profile: layer=17 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=19.949248
+CUDA attention profile: layer=18 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.706368
+CUDA attention profile: layer=19 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.701312
+CUDA attention profile: layer=20 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.710112
+CUDA attention profile: layer=21 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.711040
+CUDA attention profile: layer=22 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.714816
+CUDA attention profile: layer=23 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=20.357152
+CUDA attention profile: layer=24 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.745312
+CUDA attention profile: layer=25 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.701952
+CUDA attention profile: layer=26 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.703616
+CUDA attention profile: layer=27 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.695808
+CUDA attention profile: layer=28 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.708512
+CUDA attention profile: layer=29 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=20.120320
+CUDA attention profile: layer=30 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.712768
+CUDA attention profile: layer=31 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.730528
+CUDA attention profile: layer=32 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.710752
+CUDA attention profile: layer=33 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.699936
+CUDA attention profile: layer=34 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.702016
+CUDA attention profile: layer=35 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=20.095680
+CUDA attention profile: layer=36 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.749856
+CUDA attention profile: layer=37 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.698688
+CUDA attention profile: layer=38 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.705152
+CUDA attention profile: layer=39 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.735648
+CUDA attention profile: layer=40 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.709888
+CUDA attention profile: layer=41 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=19.960736
+CUDA attention profile: layer=42 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.713920
+CUDA attention profile: layer=43 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.704704
+CUDA attention profile: layer=44 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.709056
+CUDA attention profile: layer=45 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.704224
+CUDA attention profile: layer=46 width=256 heads=16 kvheads=8 window=1024 batch_scope=all_selected kernels=31 milliseconds=1.771552
+CUDA attention profile: layer=47 width=512 heads=16 kvheads=1 window=0 batch_scope=all_selected kernels=31 milliseconds=20.024704
+CUDA batched wide-value attention calls: 336
