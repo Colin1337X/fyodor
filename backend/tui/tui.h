@@ -45,4 +45,6 @@ size_t tui_utf8(uint32_t code,char out[4]);
 /* Decode a console UTF-16 unit or navigation key. Non-pair input cancels a
  * pending high surrogate; zero means no complete scalar is available. */
 uint32_t tui_utf16(uint32_t *high,uint32_t code);
+/* One periodic refresh per second, independent of keyboard event frequency. */
+int tui_refresh_due(double *last,double now,int requested);
 #endif

@@ -11,6 +11,13 @@ void tui_init(tui_state *s)
     s->theme=fyodor_theme_at(0);
     snprintf(s->status,sizeof(s->status),"Ready. Press : for commands or ? for help.");
 }
+int tui_refresh_due(double *last,double now,int requested)
+{
+    if(!isfinite(now) || now<0) return requested!=0;
+    if(!isfinite(*last) || now<*last) {*last=now;return requested!=0;}
+    if(requested || now-*last>=1.0) {*last=now;return 1;}
+    return 0;
+}
 int tui_theme(tui_state *s,const char *id)
 {
     const fyodor_theme *theme=fyodor_theme_find(id);
