@@ -251,6 +251,14 @@ ctest --test-dir build-cuda --output-on-failure
 
 Headers are found through `CUDA_PATH`/`CUDA_HOME` or explicit `NYA_CUDA_INCLUDE_DIR` (contains `cuda.h`) and `NYA_NVRTC_INCLUDE_DIR` (contains `nvrtc.h`). Runtime selection is `NYA_COMPUTE=cuda`. Set `NYA_CUDA_NVRTC` to an absolute NVRTC library path, or configure `NYA_CUDA_NVRTC_LIBRARY`; Windows also searches the indicated `CUDA_PATH`, while Linux can use its system library loader. Keep the matching NVRTC builtins library beside NVRTC. NVIDIA libraries are external dependencies and are not bundled in source. `NYA_CUDA_DEBUG=1` prints compilation/fallback diagnostics to stderr.
 
+The experimental resident `NYA_CUDA_INTERLEAVED_REUSE=1` option converts four
+activation vectors to aligned float4 input for Q4_K/Q6_K verification projections.
+It requires `NYA_ENABLE_INTERLEAVED_REUSE=ON` and the optional source under
+`optcpp/matvec`; both switches default off. Scratch storage is budgeted before
+admission and other batch sizes retain existing dispatch. See the [correctness,
+memory and performance evidence](benchmarks/interleaved-reuse-20261114/README.md).
+Microbenchmark gains are not accepted whole-model decode scores.
+
 The experimental `NYA_CUDA_ASSISTED_FFN=1` option keeps MTP assistant gate/up
 intermediates on device through the gated feed-forward chain. It defaults off,
 uses existing native CUDA kernels behind a plain C descriptor, and retains full

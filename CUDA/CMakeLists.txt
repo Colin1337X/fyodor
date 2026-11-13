@@ -158,6 +158,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_SMALL_BATCH_REUSE AND
     target_compile_definitions(nya-engine PRIVATE NYA_SMALL_BATCH_REUSE=1)
 endif()
 
+option(NYA_ENABLE_INTERLEAVED_REUSE "Compile optional interleaved batch-four weight reuse" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTERLEAVED_REUSE AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_reuse.cu")
+    set(nya_interleaved_reuse "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_reuse.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_interleaved_reuse}")
+    file(READ "${nya_interleaved_reuse}" nya_interleaved_reuse_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_interleaved_reuse_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_INTERLEAVED_REUSE=1)
+endif()
+
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/training.cu")
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/training.cu" nya_training_hex HEX)
 string(PREPEND nya_training_hex "${nya_training_common_hex}" "0a")

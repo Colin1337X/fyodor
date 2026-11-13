@@ -1,0 +1,84 @@
+{
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+    "-std=c17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-I",
+    "backend/include",
+    "-I",
+    "backend/core",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\interleaved-reuse-20261114\\model.c",
+    "build-cuda/libnya-engine.a",
+    "-lbcrypt",
+    "C:/Windows/System32/vulkan-1.dll",
+    "-o",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\interleaved-verify.exe"
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "0",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_PROFILE": "0",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_TEST_VERIFY_INTERLEAVED": "1",
+    "NYA_TEST_VERIFY_RESIDENT": "1"
+  },
+  "sha256": {
+    "backend\\benchmarks\\interleaved-reuse-20261114\\model.c": "e6965d85e7fa2aea297d9f2a58f53e73f06c07e4afcaa57c41d74a305d6de5cd",
+    "build-cuda\\interleaved-verify.exe": "0912e5c87215dc25e66a9f10eb29530983b1f080720d7028e3ac17810b4ca1a7",
+    "build-cuda\\libnya-engine.a": "05cf9e1e1b58cd22dcd9fde89c831545fa3bef296429a27634a4fe8d7995f1fc",
+    "CUDA\\resident.inc": "92767b157dd9ddef0a196b4f681f015ca65ca0b69a2c73aee0d87637795fd83e"
+  },
+  "cases": [
+    {
+      "ring": 0,
+      "batch": 2,
+      "prefix": 257,
+      "exit_code": 0
+    },
+    {
+      "ring": 0,
+      "batch": 4,
+      "prefix": 257,
+      "exit_code": 0
+    },
+    {
+      "ring": 1,
+      "batch": 2,
+      "prefix": 257,
+      "exit_code": 0
+    },
+    {
+      "ring": 1,
+      "batch": 4,
+      "prefix": 257,
+      "exit_code": 0
+    }
+  ]
+}
