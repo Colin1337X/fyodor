@@ -1,0 +1,78 @@
+{
+  "accepted_benchmark": false,
+  "prefix": 8192,
+  "rows": [
+    {
+      "mode": "control",
+      "source_sha256": "3ecadf47524d1204717c227044a33222311eec7b8baa8008681f0da0082a9d30",
+      "logits": {
+        "kind": "logits",
+        "max_scaled": 0.00420031702976,
+        "max_absolute": 0.00556683540344,
+        "within_0_0005": false
+      },
+      "all_reported_rows_equal_control": true,
+      "environment_changes": {}
+    },
+    {
+      "mode": "native-matmul",
+      "source_sha256": "42b0dea81bc14064adac7a1f852a2f665478b9b6c36f7476d20cc8f8018f6a00",
+      "logits": {
+        "kind": "logits",
+        "max_scaled": 0.0033461850206,
+        "max_absolute": 0.00426483154297,
+        "within_0_0005": false
+      },
+      "all_reported_rows_equal_control": false,
+      "environment_changes": {
+        "NYA_CUDA_BLAS": {
+          "control": "1",
+          "candidate": "0"
+        }
+      }
+    },
+    {
+      "mode": "unsplit-attention",
+      "source_sha256": "053abdf664a6d714abcaa49e1cae8f51ca7067e8737a44910a8c2248aebb1cad",
+      "logits": {
+        "kind": "logits",
+        "max_scaled": 0.00367897041792,
+        "max_absolute": 0.00485706329346,
+        "within_0_0005": false
+      },
+      "all_reported_rows_equal_control": false,
+      "environment_changes": {
+        "NYA_CUDA_FLASH_DECODING_PP": {
+          "control": "short",
+          "candidate": "0"
+        },
+        "NYA_CUDA_WIDE_SPLIT": {
+          "control": "1",
+          "candidate": "0"
+        }
+      }
+    },
+    {
+      "mode": "unfused-projections",
+      "source_sha256": "9e721f605ac6a805dcaaf69ef6d56c899579c9e39184ff71cb868e2c15cdbb6d",
+      "logits": {
+        "kind": "logits",
+        "max_scaled": 0.00420031702976,
+        "max_absolute": 0.00556683540344,
+        "within_0_0005": false
+      },
+      "all_reported_rows_equal_control": true,
+      "environment_changes": {
+        "NYA_CUDA_GEMMA_GATE": {
+          "control": "1",
+          "candidate": "0"
+        },
+        "NYA_CUDA_GEMMA_QKV": {
+          "control": "1",
+          "candidate": "0"
+        }
+      }
+    }
+  ],
+  "note": "Equality is of reported error summaries, not a bytewise comparison of saved tensors. Diagnostic source revisions are identified in each input record."
+}

@@ -1,0 +1,94 @@
+{
+  "accepted_benchmark": false,
+  "build": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+    "-std=c17",
+    "-O3",
+    "-Wall",
+    "-Wextra",
+    "-Wconversion",
+    "-Wshadow",
+    "-Werror",
+    "-I",
+    "backend/include",
+    "-I",
+    "backend/core",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\wide-batch-split-20261114\\plan_capacity.c",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\libnya-engine.a",
+    "-lbcrypt",
+    "C:/Windows/System32/vulkan-1.dll",
+    "-o",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\plan-capacity.exe"
+  ],
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\plan-capacity.exe",
+    "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf"
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "0",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "0",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_PROFILE": "0",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_SPLIT_ATTENTION": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "0"
+  },
+  "sha256": {
+    "backend\\benchmarks\\wide-batch-split-20261114\\plan_capacity.c": "6ee776f36a822ecdcf03388ad5e10b9deb48d3001027fab537f719616e3d9f55",
+    "build-cuda\\libnya-engine.a": "b8a16c42fe973e502477bfafd0180ee395b1c068473d6247eeec41b759ea54ed",
+    "build-cuda\\plan-capacity.exe": "939e6f81714b9d8d157c6d038b44360b970fc8dbf058aa0cdafb415758021016"
+  },
+  "exit_code": 0,
+  "rows": [
+    {
+      "prefix": 1024,
+      "prefill_batch": 512,
+      "weights_bytes": 13194985664,
+      "kv_bytes": 706019328,
+      "scratch_bytes": 221737492,
+      "external_matmul_bytes": 71303168
+    },
+    {
+      "prefix": 4096,
+      "prefill_batch": 512,
+      "weights_bytes": 10904502464,
+      "kv_bytes": 2819948544,
+      "scratch_bytes": 322400788,
+      "external_matmul_bytes": 71303168
+    },
+    {
+      "prefix": 8192,
+      "prefill_batch": 512,
+      "weights_bytes": 8176566464,
+      "kv_bytes": 5638520832,
+      "scratch_bytes": 456618516,
+      "external_matmul_bytes": 71303168
+    }
+  ]
+}

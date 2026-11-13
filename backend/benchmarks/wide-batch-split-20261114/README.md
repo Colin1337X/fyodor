@@ -114,7 +114,14 @@ this diagnostic attribute all positive target-adapter engine counters to
 its PID 16572; no competing app was killed. This short observation is not
 full-run contamination clearance or benchmark acceptance. An additional
 unfused-projections mode disables Gemma QKV and gate/up fusion while preserving
-the control's matrix and attention settings; its 8K run is now in progress.
+the control's matrix and attention settings. Its completed 8K run reports
+exactly the same 144 cache-error rows and logit-error summary as the control:
+max scaled logit error 0.00420031703, still above 0.0005. Equality here concerns
+reported error summaries, not a bytewise comparison of saved tensors. The
+environment differs only in those two fusion flags. All four controls use
+the same runtime-library hash; prefix-controls-comparison.json records the
+input metadata hashes, environment changes and results. Disabling either
+fusion is therefore not a remedy for this workload.
 
 The native diagnostic and both scripts now accept an optional prefix length
 (3 through 262142, additionally bounded by the loaded model's capacity).
@@ -124,3 +131,37 @@ example, `run_prefix_kv.py control 1024` followed by
 The default remains 8192 and retains the original filenames; existing output
 is never overwritten. C17 and C23 strict-warning compilation both pass after
 this diagnostic-only extension. It does not change runtime code or tolerances.
+The 1024-token control completes with scaled logit error 0.0000880121101
+(absolute 0.000117957592), within the unchanged 0.0005 bound. The 4096-token
+control fails at 0.0102270856 (absolute 0.0140981674), larger than the 8K
+error. All 48 position-zero cache-error summaries are identical across these
+three lengths. The 2048-token control also fails at scaled error 0.0230067671
+(absolute 0.0241669603). The discrepancy appears between the tested 1K and
+2K endpoints and is non-monotonic over the tested lengths; this does not
+establish a specific onset token or identify an incorrect operation.
+These are context-local correctness diagnostics,
+not throughput measurements or acceptance of the unresolved 8192-token case.
+
+The separate plan_capacity.c probe creates and frees resident plans without
+executing inference. Under the same control settings, all three capacities
+admit prefill batch 512 and 71,303,168 bytes of external matmul scratch.
+Weights (including optional packed copies), KV and total scratch bytes are:
+
+| Prefix | Weights bytes | KV bytes | Scratch bytes |
+| ---: | ---: | ---: | ---: |
+| 1024 | 13,194,985,664 | 706,019,328 | 221,737,492 |
+| 4096 | 10,904,502,464 | 2,819,948,544 | 322,400,788 |
+| 8192 | 8,176,566,464 | 5,638,520,832 | 456,618,516 |
+
+Partial optional gate/up packing uses remaining memory after required buffers,
+so its storage varies with capacity. The observed batch admission does not
+explain the context-dependent mismatch. This plan-only observation is separate
+from the earlier inference processes and is not a retrospective measurement of
+their allocations. Command, settings, source/library/executable hashes and
+results are retained in plan-capacity.json. Strict C17/C23 compilation passes.
+
+The next diagnostic, narrow-prefix at 2048 tokens, changes only the requested
+prefill batch to two. This exercises the existing narrow matrix reductions
+instead of large GEMM and may help localize accumulation-path effects. It is
+not a proposed production fallback, does not replace the batch-512 correctness
+requirement, and cannot justify performance acceptance. Its run is in progress.

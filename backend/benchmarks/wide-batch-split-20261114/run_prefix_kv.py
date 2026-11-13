@@ -2,8 +2,8 @@
 import hashlib,json,os,subprocess,sys
 from pathlib import Path
 root=Path.cwd();out=Path(__file__).resolve().parent
-if len(sys.argv) not in (2,3) or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections'):
- raise SystemExit('Choose control, native-matmul, unsplit-attention or unfused-projections [prefix >= 3]')
+if len(sys.argv) not in (2,3) or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections','narrow-prefix'):
+ raise SystemExit('Choose control, native-matmul, unsplit-attention, unfused-projections or narrow-prefix [prefix >= 3]')
 prefix=8192
 if len(sys.argv)==3:
  if not sys.argv[2].isascii() or not sys.argv[2].isdecimal():raise SystemExit('Invalid prefix')
@@ -21,6 +21,7 @@ settings={k:v for k,v in settings.items() if not k.startswith('NYA_TEST_')}
 if mode=='native-matmul':settings['NYA_CUDA_BLAS']='0'
 elif mode=='unsplit-attention':settings.update(NYA_CUDA_WIDE_SPLIT='0',NYA_CUDA_FLASH_DECODING_PP='0')
 elif mode=='unfused-projections':settings.update(NYA_CUDA_GEMMA_QKV='0',NYA_CUDA_GEMMA_GATE='0')
+elif mode=='narrow-prefix':settings['NYA_CUDA_BATCH']='2'
 env.update(settings)
 command=[str(exe),'E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf',str(prefix)]
 path=out/f'prefix-kv-{tag}.log'
