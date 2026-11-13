@@ -55,3 +55,7 @@ before its GPU-creating helper import. Syntax checking and the live-workload
 negative preflight passed without creating an oracle. The sweep has NOT run.
 `--memcheck` only selects the output filename; an actual Compute Sanitizer
 invocation and terminal zero-error log are required separately.
+
+## Completed raw GPU sweep
+
+The subsequent 712-case sweep passed both batch widths, byte parity, guards and the small-case float64 bound. `oracle.json` retains the results and hashes. This supersedes the earlier pending raw-test status; sanitizer, timing and model-level checks remain pending. No Q6 speedup is claimed.
