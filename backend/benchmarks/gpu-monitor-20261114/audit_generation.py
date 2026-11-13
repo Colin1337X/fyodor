@@ -12,8 +12,19 @@ from coverage import audit
 from decode_intervals import parse
 
 MODES = ('ordinary', 'mtp-serial2', 'mtp-batch2', 'mtp-batch4')
-ORDER = [(round_, mode) for round_ in range(3)
-         for mode in (reversed(MODES) if round_ == 1 else MODES)]
+MODE_SETS = {'baseline': MODES,
+             'joint-base': ('ordinary', 'mtp-serial2', 'mtp-batch2', 'mtp-joint3')}
+
+
+def case_order(mode_set):
+    if mode_set not in MODE_SETS:
+        raise ValueError('Unsupported generation mode set')
+    modes = MODE_SETS[mode_set]
+    return [(round_, mode) for round_ in range(3)
+            for mode in (reversed(modes) if round_ == 1 else modes)]
+
+
+ORDER = case_order('baseline')
 CASE = re.compile(r'CASE round=(\d+) mode=(\S+)')
 
 
@@ -35,12 +46,13 @@ def lifetime(run):
     return pid, (before, end)
 
 
-def audit_run(run, stdout, stderr, samples, *, luid, lifetimes):
+def audit_run(run, stdout, stderr, samples, *, luid, lifetimes, mode_set='baseline'):
+    order = case_order(mode_set)
     pid, bounds = lifetime(run)
     if lifetimes.get(pid) != bounds:
         raise ValueError('Child lifetime mismatch')
     outputs = [json.loads(line) for line in stdout.splitlines() if line.startswith('{"round":')]
-    if [(row.get('round'), row.get('mode')) for row in outputs] != ORDER:
+    if [(row.get('round'), row.get('mode')) for row in outputs] != order:
         raise ValueError('Incomplete or reordered generation outputs')
     if any(type(row.get('round')) is not int or row.get('parity') is not True or type(row.get('generated')) is not int or row['generated'] != 32 or
            type(row.get('prompt')) is not int or row['prompt'] <= 0 for row in outputs):
@@ -57,7 +69,7 @@ def audit_run(run, stdout, stderr, samples, *, luid, lifetimes):
             if current is None:
                 raise ValueError('Timing without a generation case')
             current['lines'].append(line)
-    if [section['key'] for section in sections] != ORDER:
+    if [section['key'] for section in sections] != order:
         raise ValueError('Incomplete or reordered case labels')
     observations = []
     previous_end = bounds[0]
@@ -74,7 +86,7 @@ def audit_run(run, stdout, stderr, samples, *, luid, lifetimes):
         previous_end = interval['end']
         coverage = audit(samples, luid=luid, start=interval['start'], end=interval['end'], lifetimes=lifetimes)
         observations.append(dict(round=output['round'], mode=output['mode'], interval=interval, coverage=coverage))
-    return dict(accepted_benchmark=False, context=run['context'], process_id=pid,
+    return dict(accepted_benchmark=False, mode_set=mode_set, context=run['context'], process_id=pid,
                 sampled_coverage_clear=all(row['coverage']['sampled_coverage_clear'] for row in observations),
                 observations=observations)
 
@@ -85,10 +97,11 @@ def main():
     parser.add_argument('--samples', type=Path, required=True)
     parser.add_argument('--luid', required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--mode-set', choices=MODE_SETS, default='baseline')
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit('Refusing to overwrite evidence')
-    result = dict(accepted_benchmark=False, sampled_coverage_clear=False, runs=[], errors=[], sha256={})
+    result = dict(accepted_benchmark=False, mode_set=args.mode_set, sampled_coverage_clear=False, runs=[], errors=[], sha256={})
     def read(path):
         data = path.read_bytes()
         result['sha256'][str(path)] = hashlib.sha256(data).hexdigest()
@@ -113,7 +126,7 @@ def main():
         for run in runs:
             result['runs'].append(audit_run(run, read(args.folder / (run['context'] + '.stdout')),
                 read(args.folder / (run['context'] + '.stderr')), samples,
-                luid=args.luid.lower(), lifetimes=dict(spans)))
+                luid=args.luid.lower(), lifetimes=dict(spans), mode_set=args.mode_set))
         result['sampled_coverage_clear'] = all(run['sampled_coverage_clear'] for run in result['runs'])
     except (OSError, KeyError, TypeError, ValueError, AttributeError) as error:
         result['errors'].append(str(error))
