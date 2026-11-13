@@ -158,6 +158,16 @@ if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_SMALL_BATCH_REUSE AND
     target_compile_definitions(nya-engine PRIVATE NYA_SMALL_BATCH_REUSE=1)
 endif()
 
+option(NYA_ENABLE_INTERLEAVED_TWO "Compile optional interleaved batch-two Q6 weight reuse" OFF)
+if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTERLEAVED_TWO AND
+   EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_two.cu")
+    set(nya_interleaved_two "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_two.cu")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${nya_interleaved_two}")
+    file(READ "${nya_interleaved_two}" nya_interleaved_two_hex HEX)
+    string(APPEND nya_cuda_hex "0a" "${nya_interleaved_two_hex}")
+    target_compile_definitions(nya-engine PRIVATE NYA_INTERLEAVED_TWO=1)
+endif()
+
 option(NYA_ENABLE_INTERLEAVED_REUSE "Compile optional interleaved batch-four weight reuse" OFF)
 if(NYA_ENABLE_OPTCPP AND NYA_ENABLE_INTERLEAVED_REUSE AND
    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../optcpp/matvec/interleaved_reuse.cu")

@@ -259,6 +259,13 @@ admission and other batch sizes retain existing dispatch. See the [correctness,
 memory and performance evidence](benchmarks/interleaved-reuse-20261114/README.md).
 Microbenchmark gains are not accepted whole-model decode scores.
 
+`NYA_CUDA_INTERLEAVED_TWO=1` independently enables aligned float2 inputs for
+two-token Q6_K projections when built with `NYA_ENABLE_INTERLEAVED_TWO=ON`.
+Both switches default off. Q4_K retains its existing dispatch because the
+batch-two experiment did not show a consistent benefit. The two paths share
+budgeted scratch when enabled together; missing optional source or functions
+retain the existing kernels. See the [batch-two validation](benchmarks/interleaved-two-20261114/README.md).
+
 The experimental `NYA_CUDA_ASSISTED_FFN=1` option keeps MTP assistant gate/up
 intermediates on device through the gated feed-forward chain. It defaults off,
 uses existing native CUDA kernels behind a plain C descriptor, and retains full
