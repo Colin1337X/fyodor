@@ -1,4 +1,4 @@
-"""Check fused Q4 gate/up against the original three production kernels."""
+"""Compile native and multi-row Q6 kernels for diagnostics."""
 import ctypes as C, hashlib, json, os
 from pathlib import Path
 import array,random,struct,math
@@ -57,4 +57,3 @@ for name in ('nya_dot_q6_integer_14','nya_q6_rows_1','nya_q6_rows_2','nya_q6_row
 def call(name,blocks,args):
  packed=(P*len(args))(*(C.cast(C.byref(v),P) for v in args))
  check(launch(funcs[name],blocks,1,1,256,1,1,0,None,packed,None))
-
