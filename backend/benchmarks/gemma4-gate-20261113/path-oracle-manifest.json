@@ -1,0 +1,16 @@
+{
+  "revision": "bb2b89380bb87d81cbba7cf0022e217d681c0c4a",
+  "source_sha256": {
+    "CUDA/cuda.c": "294dfcf8bc7e5a0f37047e78563870473a62aaf0291a135570e41a5a2d9e8f06",
+    "CUDA/resident.inc": "9cf2c226efc981f0b49815cc3382b9bddb1a6f18d69471e935b847600d903a09",
+    "CUDA/CMakeLists.txt": "69f8b3112187dd8e62288891a561842f647b524161b23014c7c6d126493112ce",
+    "optcpp/matvec/gemma_gate.cu": "d1de94b0d34b98af08c06bb45a38aaa5ca1af209c22c6c661a6133baf59b7434",
+    "backend/benchmarks/gemma4-gate-20261113/path_oracle.c": "23db954be022df2bd46cc4b53d125a1550bedf356d41c81a64e3e1c68c5c0fd5",
+    "build-cuda/libnya-engine.a": "5e0b9c3871cc6f88368059722d5cc20f1562fd2c7ce2424813a44c09700203da",
+    "build-cuda/gemma-gate-path-oracle.exe": "0341e512c371d8621f4d25fcbb6d8b5012826bca7cc0175f4fa99d0a06ffb309"
+  },
+  "model": "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+  "model_sha256": "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134",
+  "build_command": "gcc -std=c17 -O3 -Wall -Wextra -Werror -I backend/include -I backend/core backend/benchmarks/gemma4-gate-20261113/path_oracle.c build-cuda/libnya-engine.a -lbcrypt C:/Windows/System32/vulkan-1.dll -o build-cuda/gemma-gate-path-oracle.exe",
+  "contract": "All nonsuppressed logits finite and max scaled difference <=0.001. Model-declared suppressed tokens must equal -infinity. Explicit expected CUDA launch reduction. Correctness only: desktop competitors present."
+}
