@@ -96,5 +96,18 @@ hashes are retained in prefix-kv-control.json; the summary retains all layer
 maxima. This localizes a batched-versus-serial prefix difference without proving
 which operation is responsible. summarize_prefix.py reports measured KV
 differences without defining or relaxing an acceptance tolerance.
-The native-matmul prefix probe is now running with cuBLAS disabled; its serial
-path and attention settings otherwise match the control.
+The native-matmul prefix probe completed with cuBLAS disabled; its serial
+path and attention settings otherwise match the control. Final-prefix logit
+max scaled error remains 0.00334618502 (max absolute 0.00426483154), above
+the unchanged 0.0005 bound. The largest sampled value difference rises to
+0.0172257 at layer 44, position 4096 (absolute 0.0727386). Disabling vendor
+matmul therefore does not resolve the discrepancy; the smaller final logit
+error alone is not evidence that native matmul is more accurate. All 144
+rows, the full log, hashes and layer summary are retained separately.
+
+The unsplit-attention prefix probe is in progress. Five PDH samples during
+this diagnostic attribute all positive target-adapter engine counters to
+its PID 16572; no competing app was killed. This short observation is not
+full-run contamination clearance or benchmark acceptance. An additional
+unfused-projections mode is prepared to disable Gemma QKV and gate/up fusion
+while preserving the control's matrix and attention settings; it has not run.

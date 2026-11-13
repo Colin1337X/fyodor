@@ -2,8 +2,8 @@
 import hashlib,json,os,subprocess,sys
 from pathlib import Path
 root=Path.cwd();out=Path(__file__).resolve().parent
-if len(sys.argv)!=2 or sys.argv[1] not in ('control','native-matmul','unsplit-attention'):
- raise SystemExit('Choose control, native-matmul or unsplit-attention')
+if len(sys.argv)!=2 or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections'):
+ raise SystemExit('Choose control, native-matmul, unsplit-attention or unfused-projections')
 mode=sys.argv[1];meta_path=out/f'prefix-kv-{mode}.json'
 if meta_path.exists():raise SystemExit('Refusing to overwrite evidence')
 compiler=root/'.tools/w64devkit/bin/gcc.exe';exe=root/f'build-cuda/prefix-kv-{mode}.exe'
@@ -14,6 +14,7 @@ settings=json.loads((out/'replay-control.json').read_text())['environment'].copy
 settings={k:v for k,v in settings.items() if not k.startswith('NYA_TEST_')}
 if mode=='native-matmul':settings['NYA_CUDA_BLAS']='0'
 elif mode=='unsplit-attention':settings.update(NYA_CUDA_WIDE_SPLIT='0',NYA_CUDA_FLASH_DECODING_PP='0')
+elif mode=='unfused-projections':settings.update(NYA_CUDA_GEMMA_QKV='0',NYA_CUDA_GEMMA_GATE='0')
 env.update(settings)
 command=[str(exe),'E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf']
 path=out/f'prefix-kv-{mode}.log'
