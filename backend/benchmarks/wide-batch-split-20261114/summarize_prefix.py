@@ -2,8 +2,8 @@
 import hashlib,json,math,sys
 from pathlib import Path
 out=Path(__file__).resolve().parent
-if len(sys.argv)!=2 or sys.argv[1] not in ('control','native-matmul','unsplit-attention'):
- raise SystemExit('Choose control, native-matmul or unsplit-attention')
+if len(sys.argv)!=2 or sys.argv[1] not in ('control','native-matmul','unsplit-attention','unfused-projections'):
+ raise SystemExit('Choose control, native-matmul, unsplit-attention or unfused-projections')
 path=out/f'prefix-kv-{sys.argv[1]}.json';meta=json.loads(path.read_text())
 assert meta['exit_code']==0
 rows=[r for r in meta['rows'] if r['kind']=='kv'];logits=[r for r in meta['rows'] if r['kind']=='logits']
