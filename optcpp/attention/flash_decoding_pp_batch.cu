@@ -1,6 +1,6 @@
 /* Original Fyodor batch extension of flash_decoding_pp_warp.cu.
    Query-major partial storage; identical per-query arithmetic and stable retry.
-   Experimental, not dispatched by the runtime. Compile after CUDA/resident.cu. */
+   Experimental, gated by NYA_ALIGNED_PREFIX. Compile after CUDA/resident.cu. */
 /* Original CUDA specialization of unified-scale attention. Eight independent
    warp partitions stream coalesced K/V, retaining unnormalized sums in registers.
    Selected only within the optional FDPP path. */
