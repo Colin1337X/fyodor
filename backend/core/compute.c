@@ -56,6 +56,12 @@ void nya_compute_context_stats(const nya_compute_context *c, nya_compute_stats *
     memset(stats,0,sizeof(*stats));
     if (c && c->api->context_stats) c->api->context_stats(c->state,stats);
 }
+int nya_compute_ffn_f32(nya_compute_context *c, const nya_compute_ffn *f)
+{
+    if(!c || !f || !f->gate || !f->up || !f->down || !f->input || !f->output ||
+       !f->width || !f->hidden || f->gelu>1 || !c->api->ffn_f32) return -1;
+    return c->api->ffn_f32(c->state,f);
+}
 nya_compute_context *nya_compute_create_for(const char *selection)
 {
     if (selection == NULL) selection = "cpu";

@@ -251,6 +251,13 @@ ctest --test-dir build-cuda --output-on-failure
 
 Headers are found through `CUDA_PATH`/`CUDA_HOME` or explicit `NYA_CUDA_INCLUDE_DIR` (contains `cuda.h`) and `NYA_NVRTC_INCLUDE_DIR` (contains `nvrtc.h`). Runtime selection is `NYA_COMPUTE=cuda`. Set `NYA_CUDA_NVRTC` to an absolute NVRTC library path, or configure `NYA_CUDA_NVRTC_LIBRARY`; Windows also searches the indicated `CUDA_PATH`, while Linux can use its system library loader. Keep the matching NVRTC builtins library beside NVRTC. NVIDIA libraries are external dependencies and are not bundled in source. `NYA_CUDA_DEBUG=1` prints compilation/fallback diagnostics to stderr.
 
+The experimental `NYA_CUDA_ASSISTED_FFN=1` option keeps MTP assistant gate/up
+intermediates on device through the gated feed-forward chain. It defaults off,
+uses existing native CUDA kernels behind a plain C descriptor, and retains full
+caller recomputation when unavailable. See the [validation and diagnostic
+contract](benchmarks/assisted-ffn-20261114/README.md). This does not make the whole
+assistant resident.
+
 CUDA supports F32, F16, BF16, Q4_0, Q8_0, Q4_K and Q6_K projections. Dense LLaMA and dense Gemma 4 (including shared KV) now use persistent device execution plans: compressed weights, activations, Q/K/V, attention/FFN scratch, KV and logits remain on the GPU. Prefill uses custom F32 64×64 tiled GEMM (32×32 for small shapes) in chunks of up to 512 tokens (`NYA_CUDA_BATCH=1..512`, reduced when the memory budget requires it); decode uses format-specialized warp reductions and reusable CUDA executable graphs. Only final logits return to the CPU. `NYA_CUDA_REFERENCE=1` selects the generic matvec kernel and disables fused multiply-add; normal mode permits FMA without enabling unsafe fast-math. `NYA_CUDA_GRAPHS=0` disables graph submission for diagnosis.
 
 Single-token non-Gemma decode fuses matching Q4_K gate/up projections and SiLU into one kernel, sharing activation reads while retaining each dot's accumulation order. Packed scale/minimum metadata is loaded as aligned 32-bit words and extracted with constant shifts; weight and activation precision are unchanged. The standalone Q4_K decode dot kernels use the same metadata loads. Q4_K/Q6_K decode scales use direct two-byte-aligned FP16 loads; the generic byte-based helper and reference-math conversion are retained. The fused gate/up block loop uses eight-way compiler unrolling while retaining each accumulation sequence. Other formats, batched execution and reference mode retain separate kernels. `NYA_CUDA_GATE_UP=0` disables this optimization for comparison; the selection is fixed when the execution plan is created. No extra buffers or host transfers are introduced.
