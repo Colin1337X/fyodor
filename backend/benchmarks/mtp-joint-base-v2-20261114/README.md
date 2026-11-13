@@ -46,3 +46,18 @@ joint-mode selection. Five offline validator tests passed. Both ring and linear
 runs completed in C17 and C23 with zero reported memory errors. These checks
 cover the architecture and stopping-boundary fixtures; the full Gemma model has
 not been run under this sanitizer. Production integration remains pending.
+
+## Monitored short-context diagnostic
+
+run_monitored.py requires both real-model correctness results, all CPU/GPU
+fixture results, both sanitizer results and their unchanged input hashes. It
+uses the shared runner's explicit joint-base mode inventory and continuous PDH
+coverage, retaining runner status and evidence hashes even when coverage fails.
+Invoke it with `short|long UNIQUE_LABEL`; existing outputs are refused.
+
+monitored-short-A completed all twelve cases with output parity and exactly three
+joint selections. The auditor recognized the expected joint-base case order.
+Continuous coverage rejected the timings due to unattributed System activity
+and invalid counter values. This is rejected diagnostic evidence, not a speedup
+claim. All 41 monitor tests passed before the run. The accepted short/8K scores
+remain 85.61025294% / 106.8707255% of llama.cpp.

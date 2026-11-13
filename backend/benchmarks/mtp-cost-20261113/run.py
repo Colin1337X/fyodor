@@ -2,6 +2,9 @@ import hashlib,importlib.util,json,os,subprocess,time,sys
 from pathlib import Path
 from contextlib import nullcontext
 root=Path.cwd(); out=Path(__file__).resolve().parent
+mode_set=os.environ.get('NYA_BENCH_MODE_SET','baseline')
+if mode_set not in ('baseline','joint-base'):
+    raise SystemExit('Unknown benchmark mode set')
 contexts=sys.argv[3:] or ['short','long']
 if len(set(contexts))!=len(contexts) or any(context not in ('short','long') for context in contexts):
     raise SystemExit('Contexts must be distinct short/long names')
@@ -29,6 +32,7 @@ env=os.environ.copy();env.update(settings)
 exe=root/(sys.argv[2] if len(sys.argv)>2 else 'build-cuda/mtp-cost.exe')
 meta={'revision':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'environment':settings,'gate_passed':accepted,'binary_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in [root/'backend/core/llm_cpu.c',Path(__file__),Path(__file__).with_name('model.c')]},'runs':[]}
 meta['accepted_benchmark']=False
+meta['mode_set']=mode_set
 meta['continuous_gpu_monitor']=os.environ.get('NYA_BENCH_GPU_MONITOR')=='1'
 monitor_directory=root/'backend/benchmarks/gpu-monitor-20261114'
 monitor_context=nullcontext()
@@ -70,6 +74,6 @@ with monitor_context as monitor_state:
 if meta['continuous_gpu_monitor']:
     command=[sys.executable,str(monitor_directory/'audit_generation.py'),str(out),
              '--samples',str(out/'gpu-pdh.jsonl'),'--luid',monitor_state['adapter']['counter_luid'],
-             '--output',str(out/'gpu-coverage.json')]
+             '--output',str(out/'gpu-coverage.json'),'--mode-set',mode_set]
     result=subprocess.run(command,env=env)
     if result.returncode:raise SystemExit(result.returncode)
