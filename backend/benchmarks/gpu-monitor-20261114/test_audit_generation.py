@@ -69,7 +69,8 @@ class GenerationAudit(unittest.TestCase):
 
     def test_unbounded_child(self):
         for field, value in [('exit_code', None), ('process_id', True), ('observer_clock', 'wall'),
-                             ('spawn_before_seconds', float('nan')), ('spawn_after_seconds', 15.)]:
+                             ('spawn_before_seconds', float('nan')), ('spawn_after_seconds', 15.),
+                             ('observer_error', 'snapshot failure'), ('terminated_by_observer', True)]:
             run = fixture()[0]; run[field] = value
             with self.subTest(field=field), self.assertRaises(ValueError): lifetime(run)
 

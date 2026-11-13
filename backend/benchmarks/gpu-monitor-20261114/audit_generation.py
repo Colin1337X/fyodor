@@ -28,6 +28,7 @@ def lifetime(run):
     before, after, end = (run.get(key) for key in
                           ('spawn_before_seconds', 'spawn_after_seconds', 'exit_observed_seconds'))
     if (run.get('exit_code') != 0 or isinstance(run.get('exit_code'), bool) or
+        run.get('observer_error') or run.get('terminated_by_observer') or
         run.get('observer_clock') != 'qpc' or not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0 or
         not all(finite(value) for value in (before, after, end)) or not 0 <= before <= after < end):
         raise ValueError('Invalid or incomplete child lifetime evidence')
