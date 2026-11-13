@@ -1,0 +1,138 @@
+{
+  "short": {
+    "ordinary": {
+      "matrix_ms": {
+        "qkv/batch1": 71.86928,
+        "dot/batch1": 332.24656,
+        "gate-up-q4/batch1": 286.569632
+      },
+      "target_attention_ms": 29.278111999999993,
+      "gpu_ms": {
+        "matmul": 690.685,
+        "norm": 90.756,
+        "rope": 15.932,
+        "vector": 23.038,
+        "attention": 29.278,
+        "gather": 0.138
+      }
+    },
+    "mtp-serial2": {
+      "matrix_ms": {
+        "qkv/batch1": 71.853152,
+        "dot/batch1": 332.284,
+        "gate-up-q4/batch1": 286.619776
+      },
+      "target_attention_ms": 28.883583999999995,
+      "gpu_ms": {
+        "matmul": 690.757,
+        "norm": 90.432,
+        "rope": 15.864,
+        "vector": 22.854,
+        "attention": 30.205,
+        "gather": 0.136
+      }
+    },
+    "mtp-batch2": {
+      "matrix_ms": {
+        "qkv/batch1": 37.126048,
+        "dot/batch1": 209.41321399999998,
+        "gate-up-q4/batch1": 147.957568,
+        "small-batch-weight-reuse/batch2": 261.290143
+      },
+      "target_attention_ms": 24.379455999999994,
+      "gpu_ms": {
+        "matmul": 655.787,
+        "norm": 73.669,
+        "rope": 13.332,
+        "vector": 20.462,
+        "attention": 25.703,
+        "gather": 0.105
+      }
+    },
+    "mtp-batch4": {
+      "matrix_ms": {
+        "qkv/batch1": 27.896384,
+        "dot/batch1": 187.692704,
+        "gate-up-q4/batch1": 110.945088,
+        "small-batch-weight-reuse/batch4": 308.49647899999997
+      },
+      "target_attention_ms": 18.632383999999995,
+      "gpu_ms": {
+        "matmul": 635.031,
+        "norm": 55.491,
+        "rope": 10.08,
+        "vector": 15.721,
+        "attention": 20.555,
+        "gather": 0.087
+      }
+    }
+  },
+  "long": {
+    "ordinary": {
+      "matrix_ms": {
+        "qkv/batch1": 78.51369500000001,
+        "dot/batch1": 349.371903,
+        "gate-up-q4/batch1": 288.0992
+      },
+      "target_attention_ms": 182.008352,
+      "gpu_ms": {
+        "matmul": 715.985,
+        "norm": 89.746,
+        "rope": 16.75,
+        "vector": 23.208,
+        "attention": 182.008,
+        "gather": 0.133
+      }
+    },
+    "mtp-serial2": {
+      "matrix_ms": {
+        "qkv/batch1": 78.58550299999999,
+        "dot/batch1": 349.665567,
+        "gate-up-q4/batch1": 288.470272
+      },
+      "target_attention_ms": 181.598368,
+      "gpu_ms": {
+        "matmul": 716.721,
+        "norm": 89.559,
+        "rope": 16.807,
+        "vector": 23.149,
+        "attention": 251.439,
+        "gather": 0.135
+      }
+    },
+    "mtp-batch2": {
+      "matrix_ms": {
+        "qkv/batch1": 40.469983,
+        "dot/batch1": 218.562815,
+        "gate-up-q4/batch1": 148.85952,
+        "small-batch-weight-reuse/batch2": 262.567647
+      },
+      "target_attention_ms": 295.70454400000006,
+      "gpu_ms": {
+        "matmul": 670.46,
+        "norm": 72.359,
+        "rope": 13.838,
+        "vector": 21.277,
+        "attention": 365.567,
+        "gather": 0.109
+      }
+    },
+    "mtp-batch4": {
+      "matrix_ms": {
+        "qkv/batch1": 30.383744,
+        "dot/batch1": 194.624576,
+        "gate-up-q4/batch1": 111.588288,
+        "small-batch-weight-reuse/batch4": 309.382431
+      },
+      "target_attention_ms": 229.04940800000003,
+      "gpu_ms": {
+        "matmul": 645.979,
+        "norm": 54.872,
+        "rope": 10.29,
+        "vector": 16.198,
+        "attention": 331.997,
+        "gather": 0.085
+      }
+    }
+  }
+}
