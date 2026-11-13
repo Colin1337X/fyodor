@@ -122,6 +122,13 @@ int nya_compute_plan_prefill(nya_compute_plan *p, const unsigned int *tokens, si
 {
     return p != NULL && p->api->plan_prefill != NULL ? p->api->plan_prefill(p->state, tokens, count, position, output) : -1;
 }
+int nya_compute_plan_can_borrow(const nya_compute_plan *p)
+{ return p && p->api->plan_hidden && p->api->plan_borrow_attention; }
+int nya_compute_plan_hidden(nya_compute_plan *p,float *out,size_t elements)
+{ return p && p->api->plan_hidden ? p->api->plan_hidden(p->state,out,elements) : -1; }
+int nya_compute_plan_borrow_attention(nya_compute_plan *p,size_t layer,size_t prefix,
+    const float *query,size_t heads,size_t window,float *out,size_t elements)
+{ return p && p->api->plan_borrow_attention ? p->api->plan_borrow_attention(p->state,layer,prefix,query,heads,window,out,elements) : -1; }
 int nya_compute_plan_can_rewind(const nya_compute_plan *p)
 { return p && p->api->plan_rewind != NULL; }
 int nya_compute_plan_rewind(nya_compute_plan *p, size_t position)

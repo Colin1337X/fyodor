@@ -41,7 +41,7 @@ typedef struct nya_cuda_plan {
     CUfunction dot_add[2], qkv[2], decode_request, attention_prefill, attention_split, attention_combine;
     size_t capacity, bytes, valid, batch, maximum_batch;
     nya_cuda_kv_layout *kv_layout;
-    size_t kv_high_water;
+    size_t kv_high_water, hidden_valid, hidden_offset;
     CUfunction rope_ring, attention_ring, attention_ring_split;
     CUfunction wide_value[4];
     int use_wide_value;
@@ -1080,6 +1080,7 @@ read_logits:
 batch_done:
     if(p->profile_active) {++p->profiled_batches;p->profiled_tokens+=count;}
     p->valid = position + count;
+    p->hidden_valid=p->valid;p->hidden_offset=(count-1)*m->embedding_length*sizeof(float);
     if(!position || p->valid>p->kv_high_water) p->kv_high_water=p->valid;
     if (c->pop(&previous) == CUDA_SUCCESS) return 0;
     p->failed = 1; return -1;
@@ -1135,6 +1136,53 @@ static int cuda_plan_rewind(void *opaque,size_t position)
     /* Physical writes survive a rewind; never make overwritten rows readable. */
     if(!position) p->kv_high_water=0;
     return 0;
+}
+static int cuda_plan_hidden(void *opaque,float *out,size_t elements)
+{
+    nya_cuda_plan *p=opaque;
+    if(!p || p->failed || !out || !p->valid || p->valid!=p->hidden_valid || elements!=p->model->embedding_length) return -1;
+    nya_cuda_context *c=p->cuda;CUcontext previous;
+    if(c->push(c->context)!=CUDA_SUCCESS)return -1;
+    size_t batch=p->batch;p->batch=1;
+    int bad=plan_norm(p,p->norm,p->x+p->hidden_offset,p->model->output_norm,elements,1);
+    p->batch=batch;
+    ++p->stats.synchronizations;
+    if(!bad && c->stream_sync(c->stream)!=CUDA_SUCCESS)bad=1;
+    if(!bad) {++p->stats.downloads;if(c->download(out,p->norm,elements*sizeof(float))!=CUDA_SUCCESS)bad=1;}
+    if(c->pop(&previous)!=CUDA_SUCCESS)bad=1;
+    if(!bad)for(size_t i=0;i<elements;++i)if(!isfinite(out[i]))bad=1;
+    if(bad)p->failed=1;
+    return bad?-1:0;
+}
+static int cuda_plan_borrow_attention(void *opaque,size_t layer,size_t prefix,
+    const float *query,size_t heads,size_t requested_window,float *out,size_t elements)
+{
+    nya_cuda_plan *p=opaque;
+    if(!p || p->failed || !query || !out || !prefix || prefix>p->valid || layer>=p->model->block_count || requested_window>UINT32_MAX)return -1;
+    const nya_llm_layer *w=&p->model->layers[layer];
+    if(!heads || heads>w->head_count || heads%w->kv_head_count || elements!=heads*w->head_dimension)return -1;
+    for(size_t i=0;i<elements;++i)if(!isfinite(query[i]))return -1;
+    size_t first=requested_window && prefix>requested_window?prefix-requested_window:0;
+    size_t slots=p->kv_layout?p->kv_layout[layer].slots:p->capacity;
+    if(!nya_cuda_kv_retained(p->kv_high_water,slots,first))return -1;
+    size_t base=p->kv_layout?p->kv_layout[layer].offset:w->cache_offset*p->capacity;
+    CUdeviceptr keys=p->keys+base*sizeof(float),values=p->values+base*sizeof(float),request=0;
+    unsigned width=w->head_dimension,nh=(unsigned)heads,nk=w->kv_head_count;
+    unsigned window=(unsigned)requested_window,end=(unsigned)(prefix-1),capacity=(unsigned)p->capacity,ring_slots=(unsigned)slots;
+    float scale=1;nya_cuda_context *c=p->cuda;CUcontext previous;
+    if(c->push(c->context)!=CUDA_SUCCESS)return -1;
+    int bad=0;++p->stats.uploads;
+    if(c->upload(p->q,query,elements*sizeof(float))!=CUDA_SUCCESS || c->stream_sync(NULL)!=CUDA_SUCCESS)bad=1;
+    ++p->stats.synchronizations;
+    void *args[]={&p->q,&keys,&values,&p->norm,&p->scores,&width,&nh,&nk,&window,&end,&capacity,&scale,&request,&ring_slots};
+    if(!bad && plan_grid(p,p->kv_layout?p->attention_ring:p->attention,heads,1,256,1,args))bad=1;
+    ++p->stats.synchronizations;
+    if(!bad && c->stream_sync(c->stream)!=CUDA_SUCCESS)bad=1;
+    if(!bad) {++p->stats.downloads;if(c->download(out,p->norm,elements*sizeof(float))!=CUDA_SUCCESS)bad=1;}
+    if(c->pop(&previous)!=CUDA_SUCCESS)bad=1;
+    if(!bad)for(size_t i=0;i<elements;++i)if(!isfinite(out[i]))bad=1;
+    if(bad)p->failed=1;
+    return bad?-1:0;
 }
 static void cuda_plan_stats(const void *opaque, nya_compute_stats *stats)
 { const nya_cuda_plan *p = opaque; *stats = p->stats; }

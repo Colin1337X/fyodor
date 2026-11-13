@@ -588,6 +588,21 @@ int main(int argc, char **argv)
             free(actual.text);
         }
         free(expected.text);
+        if(getenv("NYA_TEST_MTP_COMPARE")) {
+            nya_llm_context host_target=*target,host_assistant=*assistant;
+            host_target.compute=NULL;host_assistant.compute=NULL;
+            request.temperature=.7f;request.top_k=4;request.speculative_tokens=4;
+            for(request.seed=1;request.seed<=16;++request.seed) {
+                if(nya_llm_generate_draft(&host_target,&host_assistant,&request,&expected,error,sizeof(error)) ||
+                   nya_llm_generate_draft(target,assistant,&request,&actual,error,sizeof(error)) ||
+                   strcmp(expected.text,actual.text) || expected.generated_tokens!=actual.generated_tokens ||
+                   expected.accepted_draft_tokens!=actual.accepted_draft_tokens || expected.stop_reason!=actual.stop_reason) {
+                    fprintf(stderr,"MTP host/bridge sampled parity: %s\n",error);return 1;
+                }
+                free(expected.text);free(actual.text);
+            }
+            request.temperature=0;request.top_k=0;
+        }
         assistant->tokenizer.types[3] = 3;
         if (!nya_llm_tokenizers_match(&target->tokenizer, &assistant->tokenizer, 1) ||
             nya_llm_tokenizers_match(&target->tokenizer, &assistant->tokenizer, 0)) return 1;
