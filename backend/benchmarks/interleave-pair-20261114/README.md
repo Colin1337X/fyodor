@@ -63,3 +63,29 @@ proofs, retains all twelve forward/reverse/forward cases, verifies dispatch and
 output parity, and checks transitive build/evidence hashes before and after the
 child. This runner is prepared only; generation has not yet been executed with
 reuse. The active 8192-prefix lifecycle run retains exclusive GPU use first.
+
+## Long-context lifecycle validation
+
+`lifecycle-c17-8192/result.json` passes both reset cycles at prefix 8192 with
+four-token verification and ring KV. Each cycle reports max scaled error
+1.63989979e-05 against the unchanged 0.0005 bound. The child exited zero, reported
+568 integer calls, and all 33 recorded input/output hashes were independently
+verified. This validates lifecycle correctness, not throughput or launch savings.
+
+## Confirmed conversion dispatch reduction
+
+`inventory-257/result.json` passes the paired baseline/reuse lifecycle check.
+Baseline: 658 conversions, zero reuse, 658 projections. Candidate: 562 conversions,
+96 reused inputs, 658 projections. Thus this workload removes 96 conversion
+dispatches (14.59%) while preserving projection count and lifecycle correctness.
+All 47 recorded hashes independently verify. These host counts include graph
+construction; they do not establish a GPU replay count or throughput speedup.
+
+## Short-context generation correctness
+
+`generation-short-c17/result.json` passes all twelve ordinary/serial2/batch2/
+joint3 generation cases in forward/reverse/forward order, with 25 prompt tokens
+and 32 generated outputs. All outputs match and all three joint rounds select
+the integer kernel. Transitive input/output hashes verify. These unmonitored
+wall times do not update accepted llama.cpp scores. Long-context generation is
+the next check; production dispatch remains unchanged.
