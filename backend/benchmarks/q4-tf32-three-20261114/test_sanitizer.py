@@ -14,7 +14,7 @@ def fixture():
               for p in ('zero', 'one', 'alternating', 'subnormal', 'large', 'impulse')]
     for case in cases:
         case.update(guards_clear=True, maximum_fraction_of_float64_bound={
-            'nya_small_batch_12': .1, 'nya_q4_tf32_three': .2})
+            'nya_small_batch_12': .1, 'nya_q4_tf32_three': .2, 'nya_q4_tf32_three_hoisted': .2})
     return dict(passed=True, cases=cases, rejection_cases=[dict(columns=k, batch=b, output_unchanged=True)
         for k, b in ((0, 4), (1, 4), (255, 4), (257, 4), (256, 0), (256, 1), (256, 2), (256, 8))])
 

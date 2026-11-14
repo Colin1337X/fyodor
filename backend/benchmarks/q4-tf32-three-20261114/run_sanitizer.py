@@ -25,7 +25,7 @@ def validate_oracle(proof):
         raise ValueError('Incomplete, changed or reordered numerical inventory')
     for case in cases:
         fractions = case.get('maximum_fraction_of_float64_bound', {})
-        if case.get('guards_clear') is not True or set(fractions) != {'nya_small_batch_12', 'nya_q4_tf32_three'}:
+        if case.get('guards_clear') is not True or set(fractions) != {'nya_small_batch_12', 'nya_q4_tf32_three', 'nya_q4_tf32_three_hoisted'}:
             raise ValueError('Missing guards or kernel comparisons')
         if any(type(v) not in (int, float) or not math.isfinite(v) or not 0 <= v <= 1 for v in fractions.values()):
             raise ValueError('Independent numerical bound failed')

@@ -43,6 +43,7 @@ source+=b'\n'+(root/'optcpp/matvec/interleaved_integer.cu').read_bytes()
 source+=b'\n'+(root/'optcpp/matvec/integer_launch.cu').read_bytes()
 source+=b'\n'+(root/'optcpp/matvec/integer_metadata.cu').read_bytes()
 source+=b'\n'+(root/'optcpp/matvec/q4_tf32_three.cu').read_bytes()
+source+=b'\n'+(root/'optcpp/matvec/q4_tf32_three_hoisted.cu').read_bytes()
 program=P();module=P()
 check(create(C.byref(program),source,b'gate_pair_test.cu',0,None,None))
 opts=[f'--gpu-architecture=compute_{major}{minor}'.encode(),b'--std=c++11',b'--fmad=true',b'-DNYA_CUDA_FAST_MATH=1']
@@ -57,10 +58,10 @@ try:
  check(load(C.byref(module),ptx))
 finally:check(destroy(C.byref(program)))
 funcs={}
-for name in ['nya_small_batch_'+str(t) for t in (12,14)]+[f'nya_small_reuse_{t}_{n}' for t in (12,14) for n in (1,2,4)]+['nya_interleave_four','nya_interleaved_reuse_12_4','nya_interleaved_reuse_14_4','nya_interleaved_integer_12_4']+[f'nya_integer_launch_{r}_{b}' for r,b in ((4,4),(4,8),(8,3),(8,4))]+['nya_integer_metadata_12_4','nya_q4_tf32_three']:
+for name in ['nya_small_batch_'+str(t) for t in (12,14)]+[f'nya_small_reuse_{t}_{n}' for t in (12,14) for n in (1,2,4)]+['nya_interleave_four','nya_interleaved_reuse_12_4','nya_interleaved_reuse_14_4','nya_interleaved_integer_12_4']+[f'nya_integer_launch_{r}_{b}' for r,b in ((4,4),(4,8),(8,3),(8,4))]+['nya_integer_metadata_12_4','nya_q4_tf32_three','nya_q4_tf32_three_hoisted']:
  f=P();check(function(C.byref(f),module,name.encode()));funcs[name]=f
 
 def call(name,blocks,grid_y,args):
- threads=128 if name.startswith('nya_integer_launch_4_') or name=='nya_q4_tf32_three' else 256
+ threads=128 if name.startswith('nya_integer_launch_4_') or name in ('nya_q4_tf32_three','nya_q4_tf32_three_hoisted') else 256
  packed=(P*len(args))(*(C.cast(C.byref(v),P) for v in args))
  check(launch(funcs[name],blocks,grid_y,1,threads,1,1,0,None,packed,None))
