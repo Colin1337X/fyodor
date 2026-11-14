@@ -1,0 +1,42 @@
+CUDA native metadata Q4: selected
+CUDA native metadata Q4: selected
+CASE round=0 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+Generation profile: mode=ordinary prompt=8205 generated=32 decode_loop_ms=941.337400
+Generation interval: mode=ordinary prompt=8205 generated=32 clock=qpc start_seconds=2657.463694800 end_seconds=2658.405032200 valid=1
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=0 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1132.736300
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=2754.857559300 end_seconds=2755.990295600 valid=1
+Generation assistant profile: calls=20 forward_ms=191.441300
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=0 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=955.021700
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=2852.503223200 end_seconds=2853.458244900 valid=1
+Generation assistant profile: calls=20 forward_ms=108.630300
+CUDA batched graph captures: 1 replays: 9
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 1200
+CUDA batched split attention calls: 1200
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=0 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled

@@ -158,3 +158,13 @@ the three joint runs recorded 88 QKV capture/direct reuse hits. Six verification
 plans reused graphs; joint plans captured twice and replayed ten times.
 This is correctness evidence only: long-context controlled timing and
 full-model long sanitizer coverage remain pending.
+
+The subsequent `monitored-long-PostRebootA` attempt terminated before its
+first joint case completed. Three earlier cases matched output, but the PDH
+collector failed on sample 380 with `PdhGetFormattedCounterArrayW(data)`
+status `0xc0000bba` (invalid data), then exited nonzero after 381.15 seconds.
+The observer terminated its workload, as designed, rather than continuing
+without activity coverage. The runner exited 1; all 722 retained result hashes
+verified and inputs were unchanged. This incomplete run is rejected, not a
+long-decode score. The previously completed twelve-case correctness sweep
+remains separate evidence. No automatic retry or score acceptance occurred.
