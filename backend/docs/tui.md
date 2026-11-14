@@ -126,8 +126,8 @@ Display remains ASCII-escaped as documented for the resource browser.
 Page Up and Page Down move by the visible content height within the current
 resource page or detail/command output. Home and End jump to its beginning or
 end. `n` still fetches the next resource page; these keys do not issue additional
-store requests. Terminal command entry ignores navigation key codes rather than
-inserting escape-sequence suffixes. POSIX CSI/SS3 Home/End and numeric tilde
+store requests. While editing, Up/Down recalls command history; other navigation
+key codes are ignored rather than inserted as escape-sequence suffixes. POSIX CSI/SS3 Home/End and numeric tilde
 variants are supported, alongside Windows console virtual keys.
 
 Linux C17/C23 parser, workflow and real-PTY checks pass, including a long resource
@@ -141,3 +141,19 @@ intact. Clipping respects complete printable byte escapes, and Backspace updates
 the visible tail. Linux C17/C23 PTY tests and the Windows private-console test
 cover long input, editing and cancellation; parser tests cover exact widths,
 small widths and escaped control/non-ASCII bytes.
+
+### Resource browser command history
+
+Up/Down in command entry recalls the last 16 submitted commands. Returning past
+the newest entry restores the draft; recall does not execute anything. Enter
+submits the recalled or edited line and Escape cancels. Consecutive duplicate
+submissions collapse. Empty, cancelled and overlong discarded input is not saved.
+Quoted input is retained before argument parsing, including commands with syntax
+errors so they can be corrected. History is memory-only for the current session.
+
+An overlong draft retains its rejection state when restored after history
+navigation, preventing accidental execution of its truncated prefix. Windows
+private-console checks cover recall, quoted input and draft restoration. Linux
+C17/C23 real-PTY checks additionally cover duplicate suppression, bounded history,
+cancellation and overflow recovery. Parser and workflow checks pass alongside
+the interaction tests. This uses ordinary C without new runtime dependencies.

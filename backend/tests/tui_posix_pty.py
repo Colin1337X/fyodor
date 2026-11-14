@@ -40,6 +40,27 @@ def expect(text):
             break
     raise AssertionError(f'Missing terminal output {text!r}; exit={child.poll()}')
 
+
+def send_large(data):
+    # Drain repaint output while writing, so neither side fills the PTY buffer.
+    flags = fcntl.fcntl(master, fcntl.F_GETFL)
+    fcntl.fcntl(master, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+    offset = 0
+    deadline = time.monotonic() + 10
+    try:
+        while offset < len(data):
+            assert time.monotonic() < deadline, 'PTY input stalled'
+            readable, writable, _ = select.select([master], [master], [], .1)
+            if readable:
+                os.read(master, 65536)
+            if writable:
+                try:
+                    offset += os.write(master, data[offset:offset+256])
+                except BlockingIOError:
+                    pass
+    finally:
+        fcntl.fcntl(master, fcntl.F_SETFL, flags)
+
 try:
     with tempfile.TemporaryDirectory(prefix='fyodor-resource-pty-') as folder:
         db = str(Path(folder) / 'workspace.db')
@@ -79,10 +100,34 @@ try:
         expect(b'Command syntax error:')
         os.write(master, b'?jjj:resource import\r')
         expect(b'Import packages through the CLI.')
+        os.write(master, b':DRAFT_MARKER\x1b[A')
+        expect(b':resource import')
+        os.write(master, b'\x1b[A')
+        expect(b":resource 'unterminated")
+        os.write(master, b'\x1b[B\x1b[B')
+        expect(b':DRAFT_MARKER')
+        os.write(master, b'\x1b:resource list\r')
+        expect(b'Command exit 0')
+        os.write(master, b':\x1b[A\r')
+        expect(b'Command exit 0')
+        os.write(master, b':\x1b[A\x1b[A')
+        expect(b':resource import')  # Consecutive list submissions collapse.
+        os.write(master, b'\x1b')
+        for i in range(18):
+            os.write(master, f':HISTORY_{i:02}\r'.encode())
+            expect(b'Command exit')
+        os.write(master, b':' + b'\x1b[A' * 20)
+        expect(b':HISTORY_02')  # Only the newest 16 submissions survive.
+        os.write(master, b'\x1b')
         os.write(master, b':' + b'x' * 160 + b'TAIL_MARKER')
         expect(b'TAIL_MARKER')
         os.write(master, b'\x7fZ')
         expect(b'TAIL_MARKEZ')
+        os.write(master, b'\x1b')
+        send_large(b':' + b'x' * 8192 + b'\x1b[A\x1b[B\r')
+        expect(b'Command too long; discarded.')
+        os.write(master, b':\x1b[A')
+        expect(b':HISTORY_17')  # Neither cancelled nor overflowed input is saved.
         os.write(master, b'\x1b')
         os.write(master, b'q')
         expect(b'\x1b[?1049l')

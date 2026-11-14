@@ -127,6 +127,16 @@ try:
                     for char in "?jjj:resource import\r":
                         key(hin, char)
                     wait_for(lambda: "Import packages through the CLI." in visible())
+                    for char in ":DRAFT_MARKER":
+                        key(hin, char)
+                    key(hin, "\x00", 0x26)  # Up recalls without executing.
+                    wait_for(lambda: ":resource import" in visible())
+                    key(hin, "\x00", 0x26)
+                    wait_for(lambda: ":resource 'unterminated" in visible())
+                    key(hin, "\x00", 0x28)
+                    key(hin, "\x00", 0x28)
+                    wait_for(lambda: ":DRAFT_MARKER" in visible())
+                    key(hin, "\x1b")
                     for char in ":\ud83d\ude00":
                         key(hin, char)
                     wait_for(lambda: r"\xf0\x9f\x98\x80" in visible())
