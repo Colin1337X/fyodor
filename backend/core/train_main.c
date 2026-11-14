@@ -593,7 +593,7 @@ static int train_main(int argc, char **argv)
     if (o.metrics != NULL) {
         metrics = nya_file_create_exclusive(o.metrics);
         if (metrics == NULL) { snprintf(error,sizeof(error),"metrics output must be a new writable path"); goto cleanup; }
-        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads,validation_loss,eval_ms,eval_tokens,eval_units,compute,timing_source,preparation_ms,gradient_norm,device_used_bytes,device_peak_bytes,device_capacity_bytes\n",metrics);
+        fputs("step,loss,tokens,forward_ms,backward_ms,optimizer_ms,step_ms,tokens_per_second,graph_bytes,microbatches,loss_units,cpu_threads,validation_loss,eval_ms,eval_tokens,eval_units,compute,timing_source,preparation_ms,gradient_norm,device_used_bytes,device_peak_bytes,device_capacity_bytes,learning_rate\n",metrics);
     }
     if (o.eval_data != NULL) {
         train_evaluation evaluation;
@@ -621,8 +621,9 @@ static int train_main(int argc, char **argv)
             if (evaluated) failed |= fprintf(metrics,",%.9g,%.6f,%zu,%zu",evaluation.loss,evaluation.elapsed*1000,evaluation.tokens,evaluation.units) < 0;
             else failed |= fputs(",,,,",metrics) == EOF;
             failed |= fprintf(metrics,",%s,%s",o.compute,o.session?"cuda_events":"cpu_wall")<0;
-            if(o.session)failed |= fprintf(metrics,",%.6f,%.9g,%zu,%zu,%zu\n",m.preparation*1000,m.gradient_norm,m.device_bytes,m.device_peak,o.device_memory)<0;
-            else failed |= fputs(",,,,,\n",metrics)==EOF;
+            if(o.session)failed |= fprintf(metrics,",%.6f,%.9g,%zu,%zu,%zu",m.preparation*1000,m.gradient_norm,m.device_bytes,m.device_peak,o.device_memory)<0;
+            else failed |= fputs(",,,,,",metrics)==EOF;
+            failed |= fprintf(metrics,",%.9g\n",(double)optimizer.learning_rate)<0;
             if (failed || fflush(metrics)) { snprintf(error,sizeof(error),"metrics write failed"); goto cleanup; }
         }
         if (o.session || step == 0 || (step+1)%10 == 0 || step+1 == o.steps) {

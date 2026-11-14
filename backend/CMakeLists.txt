@@ -778,6 +778,9 @@ if(BUILD_TESTING)
         add_test(NAME train-evaluation COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_eval.py" "$<TARGET_FILE:fyodor-train>")
         set_tests_properties(train-evaluation PROPERTIES TIMEOUT 120)
+        add_test(NAME train-learning-rate-metrics COMMAND "${Python3_EXECUTABLE}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/train_learning_rate.py" "$<TARGET_FILE:fyodor-train>")
+        set_tests_properties(train-learning-rate-metrics PROPERTIES TIMEOUT 120)
         if(NYA_CUDA_AVAILABLE)
             foreach(workflow eval stop)
                 add_test(NAME train-cuda-${workflow} COMMAND "${Python3_EXECUTABLE}"

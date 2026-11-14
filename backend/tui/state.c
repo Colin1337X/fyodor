@@ -244,6 +244,10 @@ static int parse_sample(char *line,const int *indexes,size_t count,tui_sample *s
         sample->optional|=1U<<i;
     }
     if (indexes[8]>=0) snprintf(sample->compute,sizeof(sample->compute),"%s",parts[indexes[8]]);
+    if (indexes[9]>=0 && *parts[indexes[9]]) {
+        if (number(parts[indexes[9]],&sample->learning_rate) || sample->learning_rate<0) return -1;
+        sample->optional|=32U;
+    }
     return 0;
 }
 int tui_metrics(tui_state *s)
@@ -256,9 +260,9 @@ int tui_metrics(tui_state *s)
         fclose(f);snprintf(s->status,sizeof(s->status),"Waiting for a complete CSV header");s->samples=0;return -1;
     }
     header[strcspn(header,"\r\n")]=0;size_t n=fields(header,names,64);
-    const char *wanted[]={"step","loss","tokens_per_second","validation_loss","gradient_norm","device_used_bytes","device_peak_bytes","device_capacity_bytes","compute"};
-    int indexes[9];
-    for (unsigned i=0;i<9;++i) {
+    const char *wanted[]={"step","loss","tokens_per_second","validation_loss","gradient_norm","device_used_bytes","device_peak_bytes","device_capacity_bytes","compute","learning_rate"};
+    int indexes[10];
+    for (unsigned i=0;i<10;++i) {
         indexes[i]=index_of(names,n,wanted[i]);
         if (indexes[i]==-2 || (i<3 && indexes[i]<0)) {fclose(f);s->samples=0;snprintf(s->status,sizeof(s->status),"Metrics CSV schema is missing or duplicates required columns");return -1;}
     }
