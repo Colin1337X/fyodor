@@ -40,13 +40,19 @@ fallback or capture-only run from passing.
 C17 and C23 at prefix 257 each passed both reset paths with maximum scaled error
 2.19546455e-5, one capture and two batched graph replays. Each retained the
 single-download assertions and recorded 568 integer-kernel calls, including
-replayed operations. The result hashes were independently rechecked. The 8K
-lifecycle check is running; no result for it is claimed yet.
+replayed operations. The result hashes were independently rechecked. The C17 8K
+lifecycle check also passed both reset paths, with maximum scaled error
+1.63989979e-5, one capture, two replays and 568 integer calls. All 148 hashes
+verified after completion.
 
 `run_generation.py` is prepared to require both short lifecycle builds and the
 8K lifecycle before testing twelve ordinary/serial2/batch2/joint3 cases. It also
 requires six target plans with more batched replays than captures (three batch2
 and three joint3 runs), so matching output through fallback alone cannot pass.
+Short-context C17 generation passed all twelve ordered output-parity cases,
+including the required six plans with actual cached batched replay. This is
+correctness evidence only; no continuous activity coverage or accepted timing
+is provided by that generation run.
 
 `run_model_memcheck.py` is prepared for the new binaries and requires successful
 generation and lifecycle proofs. Its validator retains exact case order,
