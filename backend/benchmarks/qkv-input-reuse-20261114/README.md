@@ -150,3 +150,11 @@ timing is accepted. Historical accepted fixed-forward scores remain
 85.61025294% short and 106.8707255% at 8K versus llama.cpp, below the 125%
 target. The generation diagnostics use a different workload contract and
 cannot replace those fixed-forward scores.
+
+The C17 long generation sweep subsequently passed all twelve ordered cases
+at 8205 prompt tokens and 32 generated tokens, including the reversed middle
+round. All outputs matched; all 682 hashes independently verified. Each of
+the three joint runs recorded 88 QKV capture/direct reuse hits. Six verification
+plans reused graphs; joint plans captured twice and replayed ten times.
+This is correctness evidence only: long-context controlled timing and
+full-model long sanitizer coverage remain pending.
