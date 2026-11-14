@@ -71,3 +71,18 @@ Reset/rewind, suffix replacement, guarded outputs and single-bank readback
 assertions pass. All 953 recorded file identities verify after completion.
 Short generation validation follows; full-model sanitizer and timing remain
 pending. This lifecycle result is correctness evidence, not throughput.
+
+
+## Completed short generation, C17
+
+All twelve ordered short-generation cases pass, with 25-token prompts and
+32 generated tokens matching ordinary generation in every mode and round.
+Fusion capture/direct markers are [48,48,48], and all six verification plans
+capture and reuse their graphs. All 965 recorded input/output identities verify.
+This establishes output parity for the short C17 workload, not accepted timing.
+C23 generation, full-model memory checking and long generation remain pending.
+
+
+C23 short generation also passes all twelve cases with identical output parity
+requirements and fusion markers [48,48,48]. All 965 recorded identities verify.
+The full-model short memcheck can now proceed; it is not yet a passing result.
