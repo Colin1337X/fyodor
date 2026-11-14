@@ -30,3 +30,20 @@ parity, lifecycle and monitored decode timing. No production integration or
 accepted speed claim. Removing this optional source leaves the production build
 unchanged. Accepted llama.cpp scores remain 85.61025294% short and 106.8707255%
 at 8K; the 125% target is not achieved.
+
+## Prepared raw parity harness
+
+`build_pack.py` compiles the existing production C packer through a small test
+ABI in C17/C23. Each build passes 256 independently decoded metadata blocks,
+checks unchanged half-coefficient/payload bytes and zero padding, and verifies
+short-capacity rejection without altering guarded output. Commands and hashes
+are recorded in `pack-build.json`; no CUDA context is used.
+
+`check_kernel.py` prepares 207 GPU cases using that C packer, native Q4 outputs,
+byte-exact comparison, guarded interleaved inputs/outputs, partial rows, eleven
+matrix shapes, finite half-coefficient edge pairs and an independent float64
+bound on small cases. The isolated `common.py` includes the candidate and native
+kernels. These scripts have parsed successfully but have not executed GPU work.
+They refuse to create a GPU context until the active FFN-reuse sanitizer has a
+completed passing result. The `--memcheck` label alone is not sanitizer evidence;
+retain the actual Compute Sanitizer exit and summary when running that mode.
