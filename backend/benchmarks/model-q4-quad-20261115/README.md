@@ -43,3 +43,19 @@ C17 8192-prefix lifecycle passed both resets with four verified tokens each,
 maximum scaled logit error 1.63989979e-05, 96 four-row capture/direct calls,
 and retained graph reuse and rewind checks. All 910 hashes verified. This is
 long-context correctness evidence; generation parity is the next gate.
+
+C17 short generation passed all twelve ordered cases across ordinary, serial-two,
+batch-two and joint-three modes, with 32 generated tokens matching the ordinary
+baseline. Four-row execution markers were [96,96,96], alongside required Q6,
+Q4 and QKV evidence and six reused graph plans. All 922 hashes verified. C23
+short generation is running; full-model memcheck remains gated on that result.
+
+The pinned llama.cpp reference wrapper is prepared for this candidate. It
+retains source revision, prompt-token and output-byte parity, input hashes and
+continuous GPU coverage checks. Its missing-memcheck refusal was exercised
+before GPU work; no new reference timing is claimed.
+
+C23 short generation also passed all twelve cases with [96,96,96] four-row
+execution markers, required companion kernels and six reused graph plans.
+All 922 hashes verified. The complete short-model memcheck is the next gate;
+no accepted throughput change follows from generation parity alone.
