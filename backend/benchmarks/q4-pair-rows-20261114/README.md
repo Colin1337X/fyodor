@@ -30,3 +30,12 @@ checks on all timed outputs across eight shapes.
 GPU numerical correctness, sanitizers, performance and real-model admission
 remain pending. No production dispatch or mandatory build dependency changes.
 Accepted llama.cpp performance remains 85.61025294% short / 106.8707255% at 8K.
+
+Offline disassembly confirms eight `LDG.E.128` input-load instruction sites
+for two rows, versus eight for one row in the existing metadata kernel's
+retained instruction audit. Quantized byte-load sites double from four to
+eight and FFMA sites from forty to eighty, consistent with two independent
+row sums sharing the input loads. No HMMA sites occur in the candidate.
+All nineteen disassembly evidence hashes independently verified. These are
+static offline sites, not dynamic traffic, driver-JIT inspection, achieved
+occupancy or measured performance; the 80-register tradeoff still needs testing.
