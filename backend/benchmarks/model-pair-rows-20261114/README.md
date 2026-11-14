@@ -97,3 +97,13 @@ failed GPU activity attribution, including overlapping System PID 4 activity.
 Both collectors terminated successfully. Reverse ordering, long generation,
 and a current pinned-reference comparison remain pending. No accepted score
 or production dispatch change follows from these measurements.
+
+The reverse pair (DisabledB then EnabledB) also completed all twelve parity
+cases each, with 804 hashes verified per result. Disabled joint latencies were
+583.5007, 585.8086, 586.3216 ms (mean 585.2103, sample SD 1.5026); enabled
+were 567.3580, 570.6537, 559.1946 ms (mean 565.7354, sample SD 5.8993).
+The diagnostic latency reduction was 3.3278%. Both pairs favor the candidate,
+but neither establishes an accepted gain: reverse runs again failed activity
+attribution, and their second joint rounds also contained invalid target
+counters. All four runs retain accepted_benchmark=false. The 125% llama.cpp
+target remains unproven; production dispatch is unchanged.
