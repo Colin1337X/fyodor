@@ -19,3 +19,12 @@ addition to existing Q4/QKV/graph/readback/reset/rewind and numerical checks.
 Full-model validation is pending. Kernel improvements are diagnostic and do
 not establish model-level throughput. Production source/archive is unchanged.
 Accepted llama.cpp scores remain 85.6103% short / 106.8707% at 8K.
+
+C17 and C23 short lifecycle checks passed both resets at prefix 257 with
+four verified tokens, 44 Q6 capture/direct calls each, and maximum scaled
+logit error 0.0000219546455 (unchanged bound 0.0005). Reset/rewind/readback
+and graph reuse checks passed; all 836 hashes per result verified. The 8K
+lifecycle check is pending. The generation runner now requires three positive,
+well-formed Q6 markers as well as the existing twelve-case parity inventory,
+Q4/QKV and graph-reuse checks. Its missing-long-lifecycle refusal was exercised
+without launching a competing GPU workload. Model timings remain pending.
