@@ -45,3 +45,14 @@ bound, with positive integer execution counts and unchanged inputs. These checks
 cover reset, rewind, replacement and stale-suffix behavior from `test_verify.c`.
 They do not yet prove the reuse branch's launch savings or whole-model speed.
 The 8192-prefix C17 lifecycle check is next. Production dispatch remains unchanged.
+
+## Dispatch inventory diagnostic
+
+`build_inventory.py` builds separate baseline and reuse C17 host objects and
+lifecycle executables, instrumenting conversion and reuse dispatch counts.
+Both builds compile and link (`inventory-build.json`), leaving validated inputs
+unchanged. `run_inventory.py` is prepared to require equal projection counts,
+zero baseline reuse, positive candidate reuse, and an exact conversion-count
+reduction equal to the reused count, alongside the original lifecycle checks.
+It has not run on the GPU yet. Counts describe host dispatch/graph construction,
+not replayed GPU launches or throughput. No acceptance gate is relaxed.
