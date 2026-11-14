@@ -1,0 +1,88 @@
+{
+  "passed": true,
+  "gpu_execution": false,
+  "accepted_benchmark": false,
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sdk\\cuda_nvcc-windows-x86_64-13.1.115-archive\\bin\\ptxas.exe",
+    "-arch=sm_120",
+    "-v",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\attention-query-resources-20261115\\kernels.ptx",
+    "-o",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\attention-query-resources-20261115\\kernels.cubin"
+  ],
+  "entries": {
+    "nya_attention_cached_query_ring_split": {
+      "registers": 48,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_cached_query_ring": {
+      "registers": 54,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_cached_query_split": {
+      "registers": 60,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_cached_query": {
+      "registers": 52,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_batch_split16_ring_split": {
+      "registers": 48,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_batch_split16_ring": {
+      "registers": 44,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_batch_split16_split": {
+      "registers": 56,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    },
+    "nya_attention_batch_split16": {
+      "registers": 50,
+      "stack_bytes": 0,
+      "spill_store_bytes": 0,
+      "spill_load_bytes": 0
+    }
+  },
+  "changed_inputs": [],
+  "sha256": {
+    "CUDA\\matvec.cu": "b0c5074bca38638825f01cd4fb385f583e83968d0b3b913d8b59eae121dde216",
+    "CUDA\\gemm.cu": "cb73bd0a52ae2229693d7a38e218724ad4c884a54d24e83105e2e0c59cf8c40e",
+    "CUDA\\resident.cu": "cbf898dc5a2948b3e9caf0aad828f4e1af5dbec5cb7f693576a40e310bf0d0b3",
+    "optcpp\\attention\\wide_value16.cu": "6e12641629e783cf96a992305546a8bfbd79863cf94dd5fb4f62bc55b999e183",
+    "optcpp\\attention\\wide_batch_split16.cu": "eaf76e0031b2242f6cc84b42025b7eb47bfb25a0648d0382041bbb6a181d2e2c",
+    "optcpp\\attention\\wide_batch_cached_query.cu": "c88893a368f461fa7fc849d1d90460d9f01a61742b4330607a7de0d4fc9c2c82",
+    "backend\\benchmarks\\attention-query-resources-20261115\\inspect_resources.py": "cecf64e4adc4ce117a30680823c5662c1ca7b8b37c3dd14dc7678e7ec302fc76",
+    ".tools\\cuda-sdk\\cuda_nvcc-windows-x86_64-13.1.115-archive\\bin\\ptxas.exe": "cf15127c79c3e7592d720fa833f47be79a517de6ada2823777cbac88d9d4e4a7",
+    ".tools\\cuda-sdk\\cuda_nvrtc-windows-x86_64-13.1.115-archive\\bin\\x64\\nvrtc64_130_0.dll": "3e2371db636d41af6ae4bfe73cd315b8415190b6129ce6d3416909e22802b4e7",
+    ".tools\\cuda-sdk\\cuda_nvrtc-windows-x86_64-13.1.115-archive\\bin\\x64\\nvrtc-builtins64_131.dll": "7869f703c1b22c41b21d9865105ea973b7d2c144c0c79364d3eb2ec051d4d8bc",
+    "backend\\benchmarks\\attention-query-resources-20261115\\assembly.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\attention-query-resources-20261115\\assembly.stdout": "f4aa57019d463f3646e67146d7472b86c25cbfcae71b8a57e661fd81f4686253",
+    "backend\\benchmarks\\attention-query-resources-20261115\\compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\attention-query-resources-20261115\\kernels.cubin": "6d415aac2c3183f691c95d165029b8612c15547920e851d17b137d7ff0f87955",
+    "backend\\benchmarks\\attention-query-resources-20261115\\kernels.ptx": "7d58a5a7999e271d4c0dd2f78ecfac5ef2efdfefe0539159e83d93bc63e6bc23"
+  },
+  "limitation": "Offline compiler allocation, not driver-JIT resources, achieved occupancy, runtime safety, or throughput."
+}
