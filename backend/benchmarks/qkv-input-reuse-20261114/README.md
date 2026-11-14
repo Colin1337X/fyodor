@@ -45,3 +45,12 @@ two reset summaries with the requested prefix, four verified tokens, resident
 execution and scaled error no greater than 0.0005. The pending-long-profile
 gate was rechecked after this change and still stops before launching a GPU
 workload. Candidate GPU behavior remains unverified.
+
+The candidate full-model memcheck runner is prepared behind its own build,
+control, C17/C23 lifecycle and generation proofs. It verifies all prerequisite
+hashes, requires QKV reuse enabled and positive reuse trace markers alongside
+all twelve output comparisons, six graph-reuse plans and a unique zero-error
+sanitizer summary. Ten CPU evidence-validator tests cover missing reuse,
+failed sanitizer/dispatch evidence and wrong workloads; these tests do not
+execute the candidate on the GPU. The missing-lifecycle gate was exercised
+and correctly prevented a sanitizer launch.
