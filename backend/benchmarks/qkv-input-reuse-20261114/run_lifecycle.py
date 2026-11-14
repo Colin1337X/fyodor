@@ -23,7 +23,14 @@ proof_path = out / 'build.json'
 proof = json.loads(proof_path.read_text())
 assert proof['build_passed'] is True
 inputs = {root / name for name in proof['sha256']}
-inputs.update((proof_path, Path(__file__).resolve()))
+inputs.update((proof_path, Path(__file__).resolve(), pending))
+control_path=out/'control.json';control=json.loads(control_path.read_text())
+if control.get('passed') is not True:raise ValueError('Control checks failed')
+inputs.add(control_path)
+for name,h in control['sha256'].items():
+    path=root/name
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=h:raise ValueError(name)
+    inputs.add(path)
 for name, expected in proof['sha256'].items():
     assert hashlib.sha256((root / name).read_bytes()).hexdigest() == expected, name
 sys.path.insert(0, str(out.parent / 'mtp-joint-base-v2-20261114'))
@@ -47,7 +54,11 @@ exe = root / f'build-cuda/qkv-input-reuse-20261114/lifecycle-{standard}.exe'
 command = [str(exe), 'E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf', prefix]
 folder.mkdir()
 with (folder / 'stdout').open('x') as stdout, (folder / 'stderr').open('x') as stderr:
-    child = subprocess.run(command, env=env, stdout=stdout, stderr=stderr)
+    child = subprocess.Popen(command, env=env, stdout=stdout, stderr=stderr)
+    (folder/'running.json').write_text(json.dumps(dict(process_id=child.pid,command=command),indent=2))
+    try:child.wait()
+    finally:
+        if child.poll() is None:child.terminate();child.wait(timeout=15)
 trace = (folder / 'stderr').read_text()
 calls = [int(x) for x in re.findall(r'CUDA Q4 integer batch-four calls: (\d+)', trace)]
 changed = [name for name, expected in hashes.items()
@@ -56,11 +67,15 @@ selected = "CUDA native metadata Q4: selected" in trace
 graphs = [(int(a),int(b)) for a,b in re.findall(r'CUDA batched graph captures: (\d+) replays: (\d+)',trace)]
 graph_reused = any(captures > 0 and replays > captures for captures,replays in graphs)
 hits=[int(v) for v in re.findall(r'CUDA QKV input reuse capture/direct hits: (\d+)',trace)]
-passed = bool(hits) and min(hits)>0 and selected and graph_reused and child.returncode == 0 and bool(calls) and min(calls) > 0 and not changed
+rows=re.findall(r'^reset=(\d+) prefix=(\d+) tokens=(\d+) max_scaled=([\deE.+-]+) execution=(\S+)$',(folder/'stdout').read_text(),re.M)
+case_inventory=[(r,p,t,e) for r,p,t,error,e in rows]==[(str(r),prefix,'4','resident') for r in range(2)]
+numerics=len(rows)==2 and all(0<=float(error)<=0.0005 for r,p,t,error,e in rows)
+passed = case_inventory and numerics and bool(hits) and min(hits)>0 and selected and graph_reused and child.returncode == 0 and bool(calls) and min(calls) > 0 and not changed
 outputs = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
            for p in folder.iterdir() if p.is_file()}
 (folder / 'result.json').write_text(json.dumps(dict(passed=passed,
     accepted_benchmark=False, single_download_assertions_passed=passed, command=command,
+    reset_inventory_valid=case_inventory, numerical_summary_valid=numerics, process_id=child.pid,
     environment=settings, initial=initial, model_identity=identity, graph_counts=graphs, graph_reused=graph_reused,
     exit_code=child.returncode, metadata_selected=selected, integer_calls=calls, qkv_reuse_hits=hits, changed_inputs=changed,
     sha256={**hashes, **outputs},

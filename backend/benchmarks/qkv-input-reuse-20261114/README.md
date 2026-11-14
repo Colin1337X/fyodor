@@ -38,3 +38,10 @@ The generation runner is prepared behind successful C17/C23 short and C17
 long lifecycle evidence. It requires the existing twelve-case output parity,
 positive QKV reuse markers, metadata/integer selection and graph replay checks.
 No candidate GPU validation has run while the long profile owns the GPU.
+
+The lifecycle runner now verifies the recorded C control-test hashes before
+execution, records the actual child PID, and independently requires exactly
+two reset summaries with the requested prefix, four verified tokens, resident
+execution and scaled error no greater than 0.0005. The pending-long-profile
+gate was rechecked after this change and still stops before launching a GPU
+workload. Candidate GPU behavior remains unverified.
