@@ -29,3 +29,12 @@ independent Python float64 bound; maximum bound fraction was 0.01663237.
 Large shapes currently have byte-equivalence checks only, not an independent
 double oracle. All 42 compile/assembly/oracle hash checks verified. Sanitizers,
 large-shape independent bounds and timing remain pending.
+
+The independent host-double oracle now covers every output of all 367 GPU
+cases, including large model projection shapes. Before GPU use, C17 and C23
+O3 strict-warning builds each passed 352 finite fixtures against Python fsum,
+plus nonfinite and invalid-argument rejection checks. The full GPU rerun passed
+the unchanged absolute bound `2e-6 * sum(abs(double products)) + 1e-6`, with
+maximum bound fraction 0.01663237, byte-exact baseline outputs, guards and
+unchanged weights/input buffers. All 34 host-control/full-oracle hash checks
+verified. Memory/race/synchronization sanitizers and paired timing are pending.
