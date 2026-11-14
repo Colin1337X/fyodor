@@ -104,5 +104,12 @@ including their transitive hashes. It retains model identity, process/idle gates
 continuous GPU coverage, output parity, actual integer dispatch and post-run
 input-integrity checks. Three existing input-integrity regressions passed against
 this runner, covering changed/deleted inputs and output inventory separation.
-It has not run; the sanitizer prerequisite is now satisfied. Neither successful
-monitoring nor generation timing alone updates accepted decode scores.
+`monitored-short-A` completed all twelve matching generation cases and recorded
+2556 integer calls per joint round. All 102 input/output hashes verified and
+the runner reported no changed inputs. However, all twelve intervals failed
+continuous coverage because of unattributed GPU activity (PID 4, Windows
+System); one also contained an invalid target counter. The collector exited
+cleanly, but the coverage audit returned failure. All timings are rejected for
+performance acceptance. Do not kill System or silently allowlist its activity.
+Neither successful monitoring nor generation timing alone updates accepted
+decode scores.

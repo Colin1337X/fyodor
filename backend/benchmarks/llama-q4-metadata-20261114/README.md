@@ -45,11 +45,10 @@ GPU context. `inspect_ptx.py` compiles baseline and candidate together;
 `assemble.py` verifies that exact PTX hash and assembles offline for SM120.
 The candidate uses 70 registers/thread versus 64 for the baseline; neither
 reports a stack frame or spills. Runtime driver JIT and measured performance
-may differ. No GPU execution or performance measurement has occurred yet.
+may differ. Subsequent GPU validation and diagnostic timing are recorded below.
 
-Required next gates: guarded raw output parity, Compute Sanitizer, real-model
-parity and clean paired decode timing. The running readback sanitizer has
-exclusive GPU use. This candidate has no production dispatch or build dependency;
+Raw output parity and Compute Sanitizer passed, but diagnostic timing rejects
+this candidate for further integration in its current form. It has no production dispatch or build dependency;
 physically removing it leaves the production build unchanged. It must not be
 enabled on the basis of host tests or compiler evidence alone.
 
@@ -71,4 +70,23 @@ shape/coefficient inventory, parity/guards and small-shape float64 checks.
 Six CPU-only `test_memcheck.py` tests pass, including rejection of duplicate
 cases, invalid/missing/duplicate summaries and missing/NaN/failed bounds.
 `probe.py` requires raw and sanitizer evidence before measuring eight shapes
-in forward/reverse order. These harnesses are prepared, not GPU-validated.
+in forward/reverse order.
+
+## Completed GPU validation; rejected timing candidate
+
+After the readback sanitizer completed, raw execution and Compute Sanitizer
+each passed all 207 cases. The sanitizer exited zero with exactly one zero-error
+summary, and its complete ordered case inventory passed the stricter validator.
+The eight-shape probe preserved byte-identical outputs but showed 1.68%-5.73%
+higher mean latency than the native eight-row kernel. At 3840 columns/15360 rows,
+means were 0.125665342 ms native and 0.132191488 ms adapted (5.19% higher).
+At 15360 columns/3840 rows they were 0.140401600 and 0.148448353 ms (5.73% higher).
+
+This is synthetic diagnostic evidence without continuous activity coverage,
+not accepted end-to-end performance. Nevertheless, all tested shapes regressed,
+so this adaptation will not be integrated into production in its current form.
+The 70-versus-64 offline register count is a possible contributor, not a proven
+cause. The native four-group metadata variant has better diagnostic results;
+its real-model validation is the next candidate priority. Upstream's two-group
+decoder remains appropriate to study within its original packed-Q8 dot-product
+context, which differs from the F32 projection tested here.

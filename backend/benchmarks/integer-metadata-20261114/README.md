@@ -30,11 +30,11 @@ the compiler identity and source/tool/log hashes. This is not runtime driver-JIT
 allocation, measured occupancy or speed; raw parity and timing still decide
 whether to keep the candidate. No CUDA context was created by this check.
 
-No GPU execution, raw parity, memory checking or timing has occurred for this
-candidate. Those checks remain required before choosing or integrating it.
+Raw GPU parity, memory checking and synthetic timing have now completed below.
+Real-model correctness and accepted decode timing remain required for integration.
 Production dispatch is unchanged and removing this optional source leaves the
-production build unchanged. The active contiguous-readback sanitizer retains
-exclusive use of the GPU. Accepted decode scores remain 85.61025294% short and
+production build unchanged. GPU checks ran after the contiguous-readback
+sanitizer completed successfully. Accepted decode scores remain 85.61025294% short and
 106.8707255% at 8K versus llama.cpp; the requested 125% on both is not achieved.
 
 ## Prepared GPU validation
@@ -52,4 +52,19 @@ requires both raw and sanitizer evidence before comparing native/metadata kernel
 on eight shapes in forward/reverse order. It includes the same interleave call
 in each path, warmup and ten event observations per kernel/shape. This remains
 a synthetic diagnostic without continuous contamination coverage, not accepted
-end-to-end timing. All four harnesses parsed; none has executed GPU work yet.
+end-to-end timing.
+
+## Completed raw validation and diagnostic
+
+The raw sweep and Compute Sanitizer each passed all 207 cases; the sanitizer
+exited zero with exactly one zero-error summary. The eight-shape probe completed
+with byte-identical timed outputs, forward/reverse ordering and ten samples per
+kernel/shape. Mean candidate latency was 1.09%-3.50% below the native baseline.
+For the dominant 3840-column/15360-row expansion, means were 0.124483872 ms native
+and 0.122826559 ms candidate (1.33% lower). For 15360 columns/3840 rows they were
+0.140362432 and 0.138830976 ms (1.09% lower).
+
+These repeated synthetic weight-bank measurements have no continuous activity
+audit and are not accepted decode results. The modest gain warrants isolated
+real-model validation, not production admission. Preserve existing precision
+tolerances and compare against the same input-reuse/readback baseline.
