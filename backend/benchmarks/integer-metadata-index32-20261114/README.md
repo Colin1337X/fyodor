@@ -50,3 +50,29 @@ benefit justifies model integration, especially with a new size constraint;
 retain the existing kernel. These synthetic repeated weight-bank timings
 have no continuous contamination acceptance and are not end-to-end scores.
 No production dispatch changed and no accepted performance score increased.
+
+## Upload-ordering corrected confirmation
+
+After a separate normalization probe exposed missing upload ordering,
+`probe_upload_sync.py` added a context fence after buffer initialization and
+before the nonblocking graph stream is used. The fence is outside timing.
+This completed eight shapes with ABBA BAAB order, 1000 warmup operations per
+order, 40 observations per implementation/shape and exact timed-output checks.
+Use this corrected evidence rather than the historical unfenced probe.
+Positive changes mean slower than the existing metadata kernel.
+
+| Columns | Rows | Corrected latency change |
+| ---: | ---: | ---: |
+| 3840 | 512 | -0.059% |
+| 3840 | 2048 | -2.377% |
+| 3840 | 4096 | -1.290% |
+| 3840 | 8192 | +0.198% |
+| 3840 | 15360 | +1.568% |
+| 4096 | 3840 | -0.969% |
+| 8192 | 3840 | +0.425% |
+| 15360 | 3840 | -0.883% |
+
+The production-integration decision is unchanged: no reliable improvement
+for the dominant expansion workload was established. This remains a synthetic
+repeated-weight diagnostic without continuous contamination acceptance; it
+does not update accepted llama.cpp scores. Historical evidence is preserved.
