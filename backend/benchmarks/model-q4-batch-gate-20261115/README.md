@@ -81,3 +81,8 @@ Fusion capture/direct markers are [48,48,48], and all six verification plans
 capture and reuse their graphs. All 965 recorded input/output identities verify.
 This establishes output parity for the short C17 workload, not accepted timing.
 C23 generation, full-model memory checking and long generation remain pending.
+
+
+C23 short generation also passes all twelve cases with identical output parity
+requirements and fusion markers [48,48,48]. All 965 recorded identities verify.
+The full-model short memcheck can now proceed; it is not yet a passing result.
