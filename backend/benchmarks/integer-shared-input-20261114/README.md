@@ -29,12 +29,15 @@ currently running long-generation proof is complete and the process gate
 passes. That pending-proof refusal was exercised. After long-generation
 validation completed, all 207 raw cases passed byte-exact parity and guards.
 The same 207 cases passed Compute Sanitizer memcheck with zero errors and an
-identical case inventory. Race and synchronization checks remain pending.
+identical case inventory. Racecheck and synccheck also passed all 207 cases
+with zero errors and zero race warnings. All 57 sanitizer input/evidence hash
+checks independently verified.
 
 After raw parity, `run_sanitizer.py memcheck|racecheck|synccheck` retains separate
 logs and requires identical case inventories, zero errors (and zero race
 warnings), matching sources and harnesses. GPU correctness, synchronization,
-timing and model integration remain pending. No accepted score is changed.
+checks completed as above; model integration is rejected by timing below.
+No accepted score is changed.
 
 `probe.py` is prepared to compare the metadata and shared-input kernels over
 eight expansion/contraction shapes in forward/reverse order. Each event sample
@@ -44,3 +47,16 @@ after each timed group and retains all samples and standard deviations. All
 three sanitizer proofs are mandatory before its CUDA import. The missing-raw-
 proof refusal was exercised. Repeated weight banks and sparse environment
 snapshots make this a kernel diagnostic, not an accepted model throughput test.
+
+## Rejected timing result
+
+The shared-input kernel was slower on all eight shapes, by 18.24% to 35.73%
+mean event latency. The dominant 3840-column/15360-row expansion rose from
+0.121746623 to 0.154958079 ms (27.28%); the 15360-column/3840-row contraction
+rose from 0.137922720 to 0.169754175 ms (23.08%). Every timed output matched.
+Forward/reverse groups agree on the direction of the regression.
+
+The lower offline register count did not compensate for this implementation's
+shared-memory and synchronization overhead. The precise cost split is not
+profiled here. Retain the current metadata kernel; do not integrate this
+candidate or claim a model speed improvement from it.
