@@ -80,3 +80,9 @@ The prior random/coefficient evidence is unchanged. These new cases have NOT
 run yet: the competing-workload gate correctly refused execution while the
 full-model sanitizer was active, before CUDA context creation. Syntax compilation
 passed. This preparation is not numerical validation or performance evidence.
+
+The prepared structured-activation sweep has now run: all 25 cases passed
+byte-exact baseline comparison, independent float64 bounds, interleave/output
+guards and weight/input immutability checks. The maximum fraction of the
+established numerical bound was 0.010223528052255983. All 29 hashes verified.
+This adds numerical coverage; no new timing is claimed.

@@ -60,3 +60,8 @@ positive Q6 markers of 44 capture/direct calls, Q4/QKV execution and six reused
 graph plans. All 848 hashes per result verified. These validate generation
 correctness; their timings have no continuous contamination acceptance.
 Full-model short memcheck is now the next validation gate.
+
+Full-model short memcheck passed all twelve generation cases with exact output
+parity, three Q6 execution markers of 44, graph reuse and a unique zero-error
+sanitizer summary (exit 0). All 855 hashes verified. Elapsed instrumented time
+was 2594.7076649 seconds; this is correctness evidence, not throughput evidence.
