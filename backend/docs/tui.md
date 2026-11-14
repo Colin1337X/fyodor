@@ -151,6 +151,12 @@ submissions collapse. Empty, cancelled and overlong discarded input is not saved
 Quoted input is retained before argument parsing, including commands with syntax
 errors so they can be corrected. History is memory-only for the current session.
 
+Ctrl-U clears the active line; Ctrl-W removes trailing spaces and the preceding
+space-delimited word without splitting UTF-8 characters. Both controls recover
+from overlong input and leave submitted history intact. Windows private-console
+and Linux real-PTY tests cover clearing and Korean/emoji word removal; the PTY
+test also checks clearing an overflowed line before submitting a new command.
+
 An overlong draft retains its rejection state when restored after history
 navigation, preventing accidental execution of its truncated prefix. Windows
 private-console checks cover recall, quoted input and draft restoration. Linux

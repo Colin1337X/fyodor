@@ -132,6 +132,7 @@ static const char help[]="Browse: j/k move, Enter opens, n next page, r first pa
     "Page Up/Down move by screen; Home/End jump within the current list or output.\n"
     "Details: j/k scroll. : opens command entry; Escape cancels.\n"
     "Command Up/Down recalls 16 session entries and restores the current draft.\n"
+    "Command Ctrl-U clears the line; Ctrl-W deletes the previous space-delimited word.\n"
     "Commands omit fyodor --store PATH --namespace NAME. Example: resource list\n"
     "Quotes group arguments; backslashes are literal. No shell expansion.\n"
     "Local administrator mode. Scoped context commands enforce supplied principal grants.\n"
@@ -239,6 +240,13 @@ int fyodor_tui_run(int argc,char **argv)
                 if(key==27) editing=0;
                 else if(key==13||key==10) { if(overflow) { strcpy(state->log,"Command too long; discarded."); state->detail=1; state->scroll=0; } else { remember(state,entry); command(state,entry); } editing=0; }
                 else if(key==FYODOR_KEY_UP||key==FYODOR_KEY_DOWN) recall(state,entry,&length,&overflow,key==FYODOR_KEY_UP);
+                else if(key==21) { length=0; entry[0]=0; overflow=0; }
+                else if(key==23) {
+                    while(length && entry[length-1]==' ') --length;
+                    /* ASCII space cannot occur inside a UTF-8 character. */
+                    while(length && entry[length-1]!=' ') --length;
+                    entry[length]=0; overflow=0;
+                }
                 else if(key==8||key==127) { if(length) { do { --length; } while(length && ((unsigned char)entry[length]&0xc0)==0x80); entry[length]=0; } }
                 else if(key>=32&&key<=255) { if(length<sizeof(entry)-1) { entry[length++]=(char)key; entry[length]=0; } else overflow=1; }
                 continue;

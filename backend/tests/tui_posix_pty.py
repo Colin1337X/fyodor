@@ -36,8 +36,8 @@ def expect(text):
             received.extend(chunk)
             if text in received:
                 return
-        if child.poll() is not None:
-            break
+        # The child can exit with terminal-restoration bytes still buffered.
+        # Keep draining the PTY until EOF or the deadline.
     raise AssertionError(f'Missing terminal output {text!r}; exit={child.poll()}')
 
 
@@ -129,6 +129,16 @@ try:
         os.write(master, b':\x1b[A')
         expect(b':HISTORY_17')  # Neither cancelled nor overflowed input is saved.
         os.write(master, b'\x1b')
+        os.write(master, ':resource 한글🙂   \x17list\r'.encode())
+        expect(b'Command exit 0')
+        os.write(master, b'?')
+        expect(b'Browse: j/k')
+        os.write(master, b':wrong\x15resource list\r')
+        expect(b'Command exit 0')
+        os.write(master, b'?')
+        expect(b'Browse: j/k')
+        send_large(b':' + b'x' * 8192 + b'\x15resource list\r')
+        expect(b'Command exit 0')
         os.write(master, b'q')
         expect(b'\x1b[?1049l')
         assert child.wait(timeout=5) == 0
