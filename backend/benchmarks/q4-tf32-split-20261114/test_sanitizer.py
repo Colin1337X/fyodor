@@ -4,6 +4,7 @@ from run_sanitizer import validate, validate_oracle
 
 def fixture():
     shapes = [(256, r) for r in (1, 7, 9, 15, 16, 17, 63, 64, 65)]
+    shapes += [(k, 17) for k in (512, 768, 1024, 1280, 1792)]
     shapes += [(3840, r) for r in (512, 2048, 4096, 8192, 15360)]
     shapes += [(4096, 3840), (8192, 3840), (15360, 3840)]
     cases = [dict(columns=k, rows=r, half_bits=None, pattern='random') for k, r in shapes]
