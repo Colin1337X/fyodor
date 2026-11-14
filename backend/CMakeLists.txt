@@ -752,6 +752,11 @@ if(BUILD_TESTING)
         add_test(NAME application-tui-workflow COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/tui_workflow.py" "$<TARGET_FILE:fyodor-tui>" "$<TARGET_FILE:fyodor>")
         set_tests_properties(application-tui-workflow PROPERTIES TIMEOUT 60)
+        if(UNIX)
+            add_test(NAME application-tui-posix-pty COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/tui_posix_pty.py" "$<TARGET_FILE:fyodor-tui>" "$<TARGET_FILE:fyodor>")
+            set_tests_properties(application-tui-posix-pty PROPERTIES TIMEOUT 45 SKIP_RETURN_CODE 77)
+        endif()
         if(WIN32)
             add_test(NAME application-tui-console COMMAND "${Python3_EXECUTABLE}"
                 "${CMAKE_CURRENT_SOURCE_DIR}/tests/tui_console.py" "$<TARGET_FILE:fyodor-tui>")

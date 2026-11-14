@@ -102,3 +102,14 @@ mode restoration. Both C17 and C23 builds passed this PTY test and the state,
 snapshot and CLI checks on Ubuntu 26.04 WSL with GCC 15.2.0, optional C++ and all
 GPU backends disabled. The vendored SQLite build emitted a GCC string-overread
 warning; the builds completed and Fyodor's strict-warning targets passed.
+
+The resource browser (`fyodor-tui --store PATH --namespace NAME`) also decodes
+POSIX CSI/SS3 arrow sequences, including modified arrows. Unsupported complete
+sequences such as Delete are consumed without inserting their suffix into a
+command. A normal key immediately after Escape is retained for the next event.
+Decoding is bounded to 64 bytes and pending input resets on terminal entry.
+`application-tui-posix-pty` exercises actual resource selection with Down/Up,
+command editing, rapid Escape recovery, and terminal restoration. It reproduced
+wrong-resource selection in the original executable and passes with the fix
+under Linux C17/C23. The parser, workflow and Windows ConPTY checks also pass.
+This does not add training start/cancel/resume or asynchronous generation.

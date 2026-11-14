@@ -4,8 +4,20 @@
 #include <stdio.h>
 #include <string.h>
 #define CHECK(c) do { if(!(c)) { fprintf(stderr,"line %d: %s\n",__LINE__,#c); return 1; } } while(0)
+typedef struct { const unsigned char *bytes; size_t at; } key_stream;
+static int next_key(void *context)
+{
+    key_stream *s=context;
+    return s->bytes[s->at] ? s->bytes[s->at++] : FYODOR_KEY_IDLE;
+}
 int main(void)
 {
+    key_stream stream={(const unsigned char *)"\033[A\033[1;5B\033OC\033[D\033[3~x\033:y",0};
+    int pending=FYODOR_KEY_IDLE;
+    const int expected[]={FYODOR_KEY_UP,FYODOR_KEY_DOWN,FYODOR_KEY_RIGHT,
+        FYODOR_KEY_LEFT,FYODOR_KEY_IDLE,'x',27,':','y',FYODOR_KEY_IDLE};
+    for(size_t i=0;i<sizeof(expected)/sizeof(expected[0]);++i)
+        CHECK(fyodor_terminal_decode_key(next_key,&stream,&pending)==expected[i]);
     CHECK(fyodor_theme_count()==10);
     CHECK(fyodor_theme_find("bad")==NULL && fyodor_theme_at(10)==NULL);
     for(size_t i=0;i<fyodor_theme_count();++i) {
