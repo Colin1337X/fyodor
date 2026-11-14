@@ -32,3 +32,12 @@ After raw parity, `run_sanitizer.py memcheck|racecheck|synccheck` retains separa
 logs and requires identical case inventories, zero errors (and zero race
 warnings), matching sources and harnesses. GPU correctness, synchronization,
 timing and model integration remain pending. No accepted score is changed.
+
+`probe.py` is prepared to compare the metadata and shared-input kernels over
+eight expansion/contraction shapes in forward/reverse order. Each event sample
+contains 100 graph-captured operations, including the same activation packing
+for both kernels, after 30 warmup operations per order. It checks output bytes
+after each timed group and retains all samples and standard deviations. All
+three sanitizer proofs are mandatory before its CUDA import. The missing-raw-
+proof refusal was exercised. Repeated weight banks and sparse environment
+snapshots make this a kernel diagnostic, not an accepted model throughput test.
