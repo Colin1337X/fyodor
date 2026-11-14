@@ -226,3 +226,10 @@ The raw 118,171,430-byte log is preserved losslessly as samples.jsonl.gz
 The independent long generation was still live when this capture ended, so
 the capture cannot certify its complete workload. Long decode correlation
 must wait for completed generation evidence and retain uncovered intervals.
+
+Long C17 generation subsequently completed all twelve cases; all 922 hashes
+verified. decode-overlap-generation-long-c17.json brackets the first seven
+decode intervals, all with System-positive overlaps. Round 1 batch-two also
+has an above-100 owned-process overlap. The last five intervals fall outside
+the completed capture and remain explicitly unbracketed. No accepted score
+changes; empty event lists for those uncovered intervals are not idle evidence.
