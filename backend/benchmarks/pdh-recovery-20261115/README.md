@@ -27,3 +27,19 @@ model prerequisites and an independent post-run coverage audit even when the
 monitor rejects completion. audit_settings.py verifies both effective variants
 against completed C17/C23 generation proofs. The DisabledRecoveryA long baseline
 was launched; its outcome is pending and its live artifacts are not committed.
+
+Microsoft documents 0xC0000BBA as PDH_CSTATUS_INVALID_DATA (returned data is
+invalid), distinct from PDH_RETRY and buffer-sizing PDH_MORE_DATA. Recovery here
+is a diagnostic policy, not a documented promise that a subsequent sample will
+succeed. The code alone does not establish a driver defect, another application,
+or a counter-instance lifetime as the cause. References:
+https://learn.microsoft.com/en-us/windows/win32/perfctrs/pdh-error-codes
+https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcounterarrayw
+
+DisabledRecoveryA completed all twelve long cases with parity and validated
+execution inventories. All 1011 recorded identities verify. Three joint decode
+loops took 812.4364, 794.8721 and 807.5827 ms per 32 tokens (mean 804.9637333,
+sample SD 9.0703031). Six isolated PDH errors were retained; the collector
+completed cooperative shutdown with failed=true. Every joint interval fails
+coverage, also reporting unattributed activity. No accepted score changes.
+The enabled counterpart is the next comparison; this is not a measured gain.
