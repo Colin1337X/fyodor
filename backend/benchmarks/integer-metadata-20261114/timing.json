@@ -1,0 +1,2965 @@
+{
+  "accepted_benchmark": false,
+  "reason": "Synthetic repeated weight banks; not end-to-end decode and no interval contamination audit",
+  "source_sha256": "8f18248a3e1b1059df1ae9da40fe5d92c76ac4e2fb88dd5acebbd302c3770820",
+  "oracle_sha256": "d9dfd3d7f9615a9d5b5dd21f179598ce537e9407fdbf00c34aaa231530311a0f",
+  "harness_sha256": "ed78aff58fee7ddfd3e7dd2f8962460f0d8a3c42f9ac2383f4d81ba01fc8096d",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "compute_capability": [
+    12,
+    0
+  ],
+  "operations_per_sample": 100,
+  "warmup_operations_per_order": 30,
+  "results": [
+    {
+      "dtype": 12,
+      "columns": 3840,
+      "rows": 512,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.00711679995059967,
+          0.007061759829521179,
+          0.00709663987159729,
+          0.007060800194740296,
+          0.00702239990234375,
+          0.007095999717712402,
+          0.007089279890060425,
+          0.00711072027683258,
+          0.007169600129127502,
+          0.007102720141410827
+        ],
+        "metadata": [
+          0.006952959895133972,
+          0.006963840126991272,
+          0.006963520050048828,
+          0.006974719762802124,
+          0.006966720223426819,
+          0.006963520050048828,
+          0.006924480199813843,
+          0.006958720088005066,
+          0.006960319876670837,
+          0.00694271981716156
+        ]
+      },
+      "means_ms": {
+        "native": 0.007092671990394592,
+        "metadata": 0.0069571520090103145
+      },
+      "sample_stddev_ms": {
+        "native": 3.926359152771336e-05,
+        "metadata": 1.4266568806533316e-05
+      },
+      "environment": [
+        {
+          "time": 1794631957.4357986,
+          "utilization": 6,
+          "memory": "772 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 49.16666666666667,
+            "idle_ticks": 5806820937500,
+            "total_ticks": 8742718281250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631957.574079,
+          "utilization": 6,
+          "memory": "772 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 48.14814814814815,
+            "idle_ticks": 5806825312500,
+            "total_ticks": 8742726718750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631957.7272928,
+          "utilization": 6,
+          "memory": "772 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.99999999999999,
+            "idle_ticks": 5806830468750,
+            "total_ticks": 8742736093750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631957.8793244,
+          "utilization": 6,
+          "memory": "772 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.592592592592595,
+            "idle_ticks": 5806835312500,
+            "total_ticks": 8742744531250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 3840,
+      "rows": 2048,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.01978656053543091,
+          0.019829440116882324,
+          0.019879679679870605,
+          0.019787839651107787,
+          0.019831039905548097,
+          0.019783680438995362,
+          0.019791680574417114,
+          0.01981376051902771,
+          0.019814079999923705,
+          0.01983199954032898
+        ],
+        "metadata": [
+          0.019159040451049804,
+          0.01919327974319458,
+          0.01919648051261902,
+          0.019157119989395142,
+          0.019157119989395142,
+          0.019157119989395142,
+          0.019257919788360597,
+          0.019256319999694824,
+          0.01923359990119934,
+          0.019220800399780275
+        ]
+      },
+      "means_ms": {
+        "native": 0.01981497609615326,
+        "metadata": 0.019198880076408388
+      },
+      "sample_stddev_ms": {
+        "native": 2.9836249601173982e-05,
+        "metadata": 4.1267462531438236e-05
+      },
+      "environment": [
+        {
+          "time": 1794631958.0530627,
+          "utilization": 6,
+          "memory": "778 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 31.944444444444443,
+            "idle_ticks": 5806842968750,
+            "total_ticks": 8742755781250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631958.2007027,
+          "utilization": 6,
+          "memory": "778 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.29629629629629,
+            "idle_ticks": 5806847500000,
+            "total_ticks": 8742764218750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631958.3730416,
+          "utilization": 6,
+          "memory": "778 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 40.90909090909091,
+            "idle_ticks": 5806853593750,
+            "total_ticks": 8742774531250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631958.5197976,
+          "utilization": 6,
+          "memory": "778 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 33.333333333333336,
+            "idle_ticks": 5806859218750,
+            "total_ticks": 8742782968750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 3840,
+      "rows": 4096,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.03506175994873047,
+          0.0351094388961792,
+          0.03519711971282959,
+          0.035150399208068846,
+          0.03533792018890381,
+          0.03508224010467529,
+          0.035159358978271486,
+          0.03514688014984131,
+          0.035151360034942625,
+          0.03515104055404663
+        ],
+        "metadata": [
+          0.033884479999542236,
+          0.03410815954208374,
+          0.0340064001083374,
+          0.034031360149383544,
+          0.033969919681549075,
+          0.033884479999542236,
+          0.033901119232177736,
+          0.03396352052688598,
+          0.03398047924041748,
+          0.03419456005096436
+        ]
+      },
+      "means_ms": {
+        "native": 0.03515475177764893,
+        "metadata": 0.03399244785308838
+      },
+      "sample_stddev_ms": {
+        "native": 7.559526718453888e-05,
+        "metadata": 9.949313540221229e-05
+      },
+      "environment": [
+        {
+          "time": 1794631958.7180765,
+          "utilization": 6,
+          "memory": "782 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.58974358974359,
+            "idle_ticks": 5806866093750,
+            "total_ticks": 8742795156250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631958.8940444,
+          "utilization": 6,
+          "memory": "782 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.45454545454546,
+            "idle_ticks": 5806871718750,
+            "total_ticks": 8742805468750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631959.0543947,
+          "utilization": 6,
+          "memory": "782 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 38.46153846153846,
+            "idle_ticks": 5806877968750,
+            "total_ticks": 8742815625000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631959.2214274,
+          "utilization": 6,
+          "memory": "782 MiB",
+          "temperature": "37 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 27.86885245901639,
+            "idle_ticks": 5806884843750,
+            "total_ticks": 8742825156250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 3840,
+      "rows": 8192,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.06577184200286865,
+          0.06607967853546143,
+          0.06624671936035156,
+          0.0662611198425293,
+          0.06629631996154785,
+          0.06575136184692383,
+          0.06609920024871827,
+          0.06623904228210449,
+          0.06615520000457764,
+          0.0643225622177124
+        ],
+        "metadata": [
+          0.06330399990081786,
+          0.06358431816101075,
+          0.06362783908843994,
+          0.06373695850372314,
+          0.06393152236938476,
+          0.06330399990081786,
+          0.06344863891601563,
+          0.0636732816696167,
+          0.06376832008361816,
+          0.06377632141113282
+        ]
+      },
+      "means_ms": {
+        "native": 0.06592230463027954,
+        "metadata": 0.06361552000045777
+      },
+      "sample_stddev_ms": {
+        "native": 0.0005945666917518131,
+        "metadata": 0.00020822272604466041
+      },
+      "environment": [
+        {
+          "time": 1794631959.4732258,
+          "utilization": 23,
+          "memory": "790 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 61.45833333333333,
+            "idle_ticks": 5806890625000,
+            "total_ticks": 8742840156250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631959.6532938,
+          "utilization": 23,
+          "memory": "790 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.833333333333336,
+            "idle_ticks": 5806896718750,
+            "total_ticks": 8742851406250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631959.8383195,
+          "utilization": 23,
+          "memory": "790 MiB",
+          "temperature": "36 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 40.27777777777778,
+            "idle_ticks": 5806903437500,
+            "total_ticks": 8742862656250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631960.0166702,
+          "utilization": 23,
+          "memory": "790 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.84848484848485,
+            "idle_ticks": 5806910156250,
+            "total_ticks": 8742872968750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 3840,
+      "rows": 15360,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.1277126407623291,
+          0.12702624320983888,
+          0.12138400077819825,
+          0.12264575958251953,
+          0.12308639526367188,
+          0.12795904159545898,
+          0.12681599617004394,
+          0.1219257640838623,
+          0.12297183990478516,
+          0.12331104278564453
+        ],
+        "metadata": [
+          0.12530719757080078,
+          0.12578463554382324,
+          0.12122624397277831,
+          0.12019552230834961,
+          0.12096159934997558,
+          0.12551199913024902,
+          0.1258297634124756,
+          0.12207167625427245,
+          0.12009663581848144,
+          0.12128031730651856
+        ]
+      },
+      "means_ms": {
+        "native": 0.12448387241363526,
+        "metadata": 0.12282655906677246
+      },
+      "sample_stddev_ms": {
+        "native": 0.0025723031522603005,
+        "metadata": 0.00246101240822999
+      },
+      "environment": [
+        {
+          "time": 1794631960.3550973,
+          "utilization": 23,
+          "memory": "804 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 50.0,
+            "idle_ticks": 5806920468750,
+            "total_ticks": 8742893593750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631960.5740974,
+          "utilization": 0,
+          "memory": "804 MiB",
+          "temperature": "39 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.523809523809526,
+            "idle_ticks": 5806929062500,
+            "total_ticks": 8742906718750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631960.7813382,
+          "utilization": 0,
+          "memory": "804 MiB",
+          "temperature": "39 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 50.0,
+            "idle_ticks": 5806935156250,
+            "total_ticks": 8742918906250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631960.9937384,
+          "utilization": 28,
+          "memory": "804 MiB",
+          "temperature": "42 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.523809523809526,
+            "idle_ticks": 5806943750000,
+            "total_ticks": 8742932031250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 4096,
+      "rows": 3840,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.03506175994873047,
+          0.035173439979553224,
+          0.0352892804145813,
+          0.03521120071411133,
+          0.03517087936401367,
+          0.03506207942962646,
+          0.03502943992614746,
+          0.03517119884490967,
+          0.035157439708709715,
+          0.03514656066894531
+        ],
+        "metadata": [
+          0.03384351968765259,
+          0.033961920738220214,
+          0.034027841091156,
+          0.033961598873138425,
+          0.03394016027450562,
+          0.03384351968765259,
+          0.033969919681549075,
+          0.03402559995651245,
+          0.03392287969589233,
+          0.034007680416107175
+        ]
+      },
+      "means_ms": {
+        "native": 0.03514732789993286,
+        "metadata": 0.03395046401023865
+      },
+      "sample_stddev_ms": {
+        "native": 7.790747691156872e-05,
+        "metadata": 6.606507124127804e-05
+      },
+      "environment": [
+        {
+          "time": 1794631961.1937664,
+          "utilization": 28,
+          "memory": "782 MiB",
+          "temperature": "42 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.15384615384615,
+            "idle_ticks": 5806950312500,
+            "total_ticks": 8742944218750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631961.3614018,
+          "utilization": 28,
+          "memory": "782 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 35.0,
+            "idle_ticks": 5806956406250,
+            "total_ticks": 8742953593750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631961.5368264,
+          "utilization": 28,
+          "memory": "782 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 50.0,
+            "idle_ticks": 5806961562500,
+            "total_ticks": 8742963906250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631961.695147,
+          "utilization": 28,
+          "memory": "782 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.84848484848485,
+            "idle_ticks": 5806968281250,
+            "total_ticks": 8742974218750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 8192,
+      "rows": 3840,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.07079967975616455,
+          0.07109632015228272,
+          0.07124576091766358,
+          0.06832384109497071,
+          0.06809216022491454,
+          0.07086175918579102,
+          0.07128960132598877,
+          0.0712390422821045,
+          0.07126399993896484,
+          0.06852159976959228
+        ],
+        "metadata": [
+          0.06995007991790772,
+          0.07027135848999023,
+          0.07018847942352295,
+          0.06935743808746338,
+          0.0678716802597046,
+          0.06992928028106689,
+          0.0702348804473877,
+          0.07027775764465333,
+          0.06764095783233642,
+          0.06754335880279541
+        ]
+      },
+      "means_ms": {
+        "native": 0.07027337646484375,
+        "metadata": 0.06932652711868287
+      },
+      "sample_stddev_ms": {
+        "native": 0.0013670580560623071,
+        "metadata": 0.0011669576199315715
+      },
+      "environment": [
+        {
+          "time": 1794631961.9392774,
+          "utilization": 37,
+          "memory": "790 MiB",
+          "temperature": "48 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.333333333333336,
+            "idle_ticks": 5806976250000,
+            "total_ticks": 8742988281250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631962.1228223,
+          "utilization": 37,
+          "memory": "790 MiB",
+          "temperature": "48 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 54.16666666666667,
+            "idle_ticks": 5806981406250,
+            "total_ticks": 8742999531250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631962.3151557,
+          "utilization": 37,
+          "memory": "790 MiB",
+          "temperature": "48 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.44444444444444,
+            "idle_ticks": 5806987656250,
+            "total_ticks": 8743010781250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631962.4929945,
+          "utilization": 37,
+          "memory": "790 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.72222222222222,
+            "idle_ticks": 5806995000000,
+            "total_ticks": 8743022031250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 12,
+      "columns": 15360,
+      "rows": 3840,
+      "batch": 4,
+      "order": [
+        "native",
+        "metadata",
+        "metadata",
+        "native"
+      ],
+      "samples_ms": {
+        "native": [
+          0.14413824081420898,
+          0.14065183639526369,
+          0.13709759712219238,
+          0.1374281597137451,
+          0.13895936012268068,
+          0.14475296020507813,
+          0.14284223556518555,
+          0.14065952301025392,
+          0.1378166389465332,
+          0.13927776336669923
+        ],
+        "metadata": [
+          0.14197759628295897,
+          0.13969183921813966,
+          0.13642815589904786,
+          0.13653152465820312,
+          0.13748928070068359,
+          0.14216192245483397,
+          0.14276543617248535,
+          0.13729023933410645,
+          0.13685152053833008,
+          0.13712224006652832
+        ]
+      },
+      "means_ms": {
+        "native": 0.14036243152618408,
+        "metadata": 0.13883097553253174
+      },
+      "sample_stddev_ms": {
+        "native": 0.0027638578805041594,
+        "metadata": 0.002566678460904867
+      },
+      "environment": [
+        {
+          "time": 1794631962.840939,
+          "utilization": 37,
+          "memory": "804 MiB",
+          "temperature": "38 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.21212121212122,
+            "idle_ticks": 5807006093750,
+            "total_ticks": 8743042656250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631963.0729175,
+          "utilization": 0,
+          "memory": "804 MiB",
+          "temperature": "40 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.11111111111111,
+            "idle_ticks": 5807014375000,
+            "total_ticks": 8743056718750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631963.3043938,
+          "utilization": 0,
+          "memory": "804 MiB",
+          "temperature": "40 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.44444444444444,
+            "idle_ticks": 5807022187500,
+            "total_ticks": 8743070781250
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794631963.5375674,
+          "utilization": 5,
+          "memory": "804 MiB",
+          "temperature": "40 C",
+          "power": "23.80 W",
+          "processes": [
+            {
+              "pid": "3692",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\Microsoft.WindowsTerminal_1.24.12741.0_x64__8wekyb3d8bbwe\\WindowsTerminal.exe"
+            },
+            {
+              "pid": "4164",
+              "type": "C+G",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+            },
+            {
+              "pid": "7240",
+              "type": "C+G",
+              "name": "C:\\Windows\\System32\\ApplicationFrameHost.exe"
+            },
+            {
+              "pid": "8168",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\TextInputHost.exe"
+            },
+            {
+              "pid": "8672",
+              "type": "C+G",
+              "name": "C:\\Windows\\SystemApps\\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\\CrossDeviceResume.exe"
+            },
+            {
+              "pid": "10972",
+              "type": "C+G",
+              "name": "C:\\Windows\\explorer.exe"
+            },
+            {
+              "pid": "14136",
+              "type": "C+G",
+              "name": "C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application\\157.0.4341.46\\msedgewebview2.exe"
+            },
+            {
+              "pid": "21464",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"
+            },
+            {
+              "pid": "23800",
+              "type": "C+G",
+              "name": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1103.4239.0_x64__2p2nqsd0c76g0\\app\\resources\\cua_node\\bin\\node_modules\\@oai\\sky\\bin\\windows\\swift\\x64\\codex-computer-use-swift.exe"
+            },
+            {
+              "pid": "34396",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 51.72413793103448,
+            "idle_ticks": 5807028750000,
+            "total_ticks": 8743084375000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    }
+  ]
+}
