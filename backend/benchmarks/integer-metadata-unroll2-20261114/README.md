@@ -35,3 +35,33 @@ Before creating its GPU context, the raw harness also calls the independent
 boundary matrix auditor, checking all 336 ordered cases and the underlying
 evidence hashes. Those verified hashes join the raw run's before/after input
 snapshot. An incomplete C23 matrix currently prevents GPU execution.
+
+## Rejected after correctness and timing
+
+The 207-case raw sweep passed byte-exact comparisons against both existing
+kernels, output guards and the unchanged small-shape float64 bound. All 242
+raw input hashes verified. Memcheck, racecheck and synccheck each repeated
+all 207 cases with zero reported errors; their 57 input/evidence hash
+checks independently verified.
+
+The synthetic metadata/unroll2/unroll2/metadata probe includes activation
+packing, ten observations per kernel and shape, and byte-exact timed output
+checks. The candidate regressed all eight shapes:
+
+| Columns | Rows | Metadata ms | Unroll2 ms | Latency increase |
+| ---: | ---: | ---: | ---: | ---: |
+| 3840 | 512 | 0.006963 | 0.012752 | 83.15% |
+| 3840 | 2048 | 0.020927 | 0.031181 | 49.00% |
+| 3840 | 4096 | 0.035233 | 0.054559 | 54.85% |
+| 3840 | 8192 | 0.066126 | 0.100013 | 51.24% |
+| 3840 | 15360 | 0.127804 | 0.205522 | 60.81% |
+| 4096 | 3840 | 0.034542 | 0.055030 | 59.31% |
+| 8192 | 3840 | 0.071044 | 0.106747 | 50.25% |
+| 15360 | 3840 | 0.144146 | 0.247270 | 71.54% |
+
+These are repeated weight-bank diagnostics, not clean end-to-end decode
+scores. The candidate is rejected for model integration. Its lower register
+allocation did not compensate for partial unrolling; loop/addressing overhead
+and reduced compiler scheduling freedom are hypotheses, not measured causal
+attributions. No real-model or throughput improvement is claimed, and the
+existing metadata kernel and production dispatch remain unchanged.

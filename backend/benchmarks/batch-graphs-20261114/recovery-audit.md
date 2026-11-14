@@ -142,3 +142,10 @@ independently verified. The two C23 width-512 configurations remain pending
 or running. Five aggregate-audit tests pass, covering a complete 336-case
 fixture and rejection of a missing configuration, wrong standard executable,
 modified raw evidence and omitted evidence hash.
+
+All eight C17/C23 boundary configurations have now completed successfully:
+336 ordered parity cases, each configuration with six graph captures and
+42 replays. `boundary-matrix-audit.json` records independent validation of
+configuration identities, raw markers, terminal success and 238 unique hashes.
+The full boundary sanitizer matrix is complete. Clean performance acceptance
+and production integration remain outstanding.
