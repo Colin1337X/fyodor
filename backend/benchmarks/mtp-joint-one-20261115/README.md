@@ -103,3 +103,15 @@ System activity, invalid counters and incomplete capture still reject coverage.
 monitor-preflight-refusal.json records refusal on the still-missing candidate
 model sanitizer result, before output creation or GPU launch. This prepares the
 comparison; it does not supply a completed timing result or change accepted scores.
+
+## Long generation completed
+
+The long-context process exited zero after all twelve ordered cases, each with
+8,205 prompt tokens, 32 generated tokens and exact output parity. All three joint
+rounds selected proposal window one. long-verification.json independently
+rechecks 101 input/evidence files across the build, short and long generation,
+boundary sanitizers and comparison proof. These timings remain unaccepted.
+
+The full-model short-context Compute Sanitizer run has now started. Its completion
+is still required before the monitored joint-three/joint-one comparison; this
+long-generation result alone does not prove memory safety or performance.
