@@ -27,3 +27,28 @@ coefficient extremes, broad adversarial patterns, and actual integer-kernel
 throughput. It cannot establish a numerical guarantee, model parity, speedup
 or acceptable precision mode. The current model sanitizer continues separately;
 no live inputs or production code were changed.
+
+## Adversarial screen: three-pass candidate rejected
+
+screen_adversarial.py isolates one weighted lane while larger zero-weight
+lanes control each residual scale. It covers four half coefficients, three
+activation magnitudes and four selected lanes, across one through five passes:
+240 observations, four token outputs each. All artifact hashes verified.
+
+Outputs outside the unchanged bound: one pass 140, two 92, three 48, four 16,
+five 0. The sampled five-pass success is not a general guarantee; these fixtures
+have only five distinct nonzero magnitudes, which favors eventual reconstruction.
+
+A concrete three-pass failure uses coefficient 0.029998779296875, activation
+magnitude factor 1048576, and selected lane 3. The original weighted activation
+is 0.010485759936273098; reconstructed activation is zero. The expected dot is
+0.00031455999808827073 against a bound of 0.0000010006291199961765: error is
+314.36 times the allowed bound. Four passes also fail with coefficient 1 and
+selected lane 4 (10.49 times the bound).
+
+The initial random/multiscale/impulse screen was insufficient. Fixed three-pass
+Q8 reconstruction is rejected as a general substitute for F32 activations.
+Do not proceed to a three-pass CUDA kernel based on the earlier screen alone.
+A future approach would need a proven error-controlled fallback or preservation
+of residual information, followed by accumulation and real-model validation.
+No numerical tolerance was changed and no production quantization was added.
