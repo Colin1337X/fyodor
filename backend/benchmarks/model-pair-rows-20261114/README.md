@@ -86,3 +86,14 @@ Paired-row markers were [128,128,128]; all 773 recorded hashes independently
 verified. Elapsed instrumented runtime was 2594.1107 seconds, which is not
 a performance measurement. Long generation and controlled end-to-end timing
 remain pending. Accepted scores remain 85.6103% short / 106.8707% at 8K.
+
+Initial same-binary short timing pair (EnabledA then DisabledA) completed
+all twelve output-parity cases each with unchanged inputs; all 804 hashes
+per result independently verified. Enabled joint latencies were 567.7618,
+584.4596, 566.6410 ms (mean 572.9541, sample SD 9.9798); disabled were
+584.0433, 578.1663, 580.4917 ms (mean 580.9004, sample SD 2.9597). The
+preliminary 1.3679% latency decrease is diagnostic only: every joint interval
+failed GPU activity attribution, including overlapping System PID 4 activity.
+Both collectors terminated successfully. Reverse ordering, long generation,
+and a current pinned-reference comparison remain pending. No accepted score
+or production dispatch change follows from these measurements.
