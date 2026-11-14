@@ -21,7 +21,7 @@ for replay accounting. No new device code or public ABI is introduced.
 
 Separate C17/C23 lifecycle and generation binaries built with warnings treated
 as errors, from verified batched-graph inputs. Production dispatch/archive
-remain unchanged. Long-context lifecycle, failure, generation, sanitizer and paired timing
+remain unchanged. Failure, generation, sanitizer and paired timing
 validation remain pending; completed short lifecycle evidence is described below. The runner refuses GPU work
 until the currently running long-context profile has completed successfully.
 
@@ -67,7 +67,11 @@ the unchanged 0.0005 bound. Each trace records 88 QKV capture/direct reuse
 hits and one graph capture with two replays. All 670 hashes per result were
 independently verified. These counters prove selection, not elapsed-time
 savings; generation, memory safety and paired throughput remain unproven.
-The 8192-prefix lifecycle is the next GPU check.
+The 8192-prefix C17 lifecycle also passed both resets with maximum scaled
+logit error 0.0000163989979, 88 capture/direct reuse hits, one capture/two
+replays and all 670 hashes independently verified. Reset/rewind/replacement
+checks and the one-download assertion remain enabled. This establishes the
+candidate lifecycle at short and 8K prefixes, not full generation or speed.
 
 The monitored timing runner is prepared behind candidate control/lifecycle,
 context-specific generation, C23 generation and full-model short memcheck
