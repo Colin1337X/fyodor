@@ -80,3 +80,14 @@ Existing graph, Q4/Q6 and QKV execution checks pass; all 920 recorded identities
 verify independently. These are full-generation correctness results, not accepted
 timing. The C23 8K lifecycle with memcheck filtered to cached-query kernels has
 now started; its result remains pending.
+
+run_monitored.py prepares long-context on/off comparisons with the separate
+recoverable diagnostic PDH collector. It retains unchanged coverage rejection
+rules and always marks results unaccepted. The prerequisite list includes the
+scoped C23 model memcheck, all completed lifecycle/generation proofs and existing
+batch-boundary checks. It requires six positive cached-query records when enabled
+and none when disabled. Nine inventory test cases pass; an actual preflight
+refusal confirms that pending memcheck prevents any workload launch or evidence
+directory creation. audit_settings.py checks both variants against C17/C23
+generation environments: only cached-query selection changes. The model timing
+comparison has not started.
