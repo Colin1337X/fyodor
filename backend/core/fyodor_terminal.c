@@ -6,6 +6,9 @@
 #include <windows.h>
 static HANDLE input_handle, output_handle;
 static DWORD input_mode, output_mode;
+static unsigned char pending_utf8[4];
+static int pending_at, pending_count;
+static WCHAR pending_high;
 #else
 #include <unistd.h>
 #include <termios.h>
@@ -37,6 +40,7 @@ int fyodor_terminal_begin(void)
     const char *term=getenv("TERM");
     if(term && strcmp(term,"dumb")==0) return 0;
 #ifdef _WIN32
+    pending_at=0; pending_count=0; pending_high=0;
     input_handle=GetStdHandle(STD_INPUT_HANDLE); output_handle=GetStdHandle(STD_OUTPUT_HANDLE);
     if(!GetConsoleMode(input_handle,&input_mode)||!GetConsoleMode(output_handle,&output_mode)) return 0;
     if(!SetConsoleMode(output_handle,output_mode|ENABLE_VIRTUAL_TERMINAL_PROCESSING)) return 0;
@@ -123,8 +127,7 @@ int fyodor_terminal_key(void)
 {
     if(interrupted) return FYODOR_KEY_END;
 #ifdef _WIN32
-    static unsigned char pending[4]; static int at,count;
-    if(at<count) return pending[at++];
+    if(pending_at<pending_count) return pending_utf8[pending_at++];
     DWORD wait=WaitForSingleObject(input_handle,100);
     if(wait==WAIT_TIMEOUT) return FYODOR_KEY_IDLE;
     if(wait!=WAIT_OBJECT_0) return FYODOR_KEY_END;
@@ -132,15 +135,27 @@ int fyodor_terminal_key(void)
     if(!ReadConsoleInputW(input_handle,&record,1,&got)||got==0) return FYODOR_KEY_END;
     if(record.EventType!=KEY_EVENT||!record.Event.KeyEvent.bKeyDown) return FYODOR_KEY_IDLE;
     KEY_EVENT_RECORD key=record.Event.KeyEvent;
+    if(key.wVirtualKeyCode==VK_UP || key.wVirtualKeyCode==VK_DOWN ||
+       key.wVirtualKeyCode==VK_LEFT || key.wVirtualKeyCode==VK_RIGHT ||
+       key.uChar.UnicodeChar==0) pending_high=0;
     if(key.wVirtualKeyCode==VK_UP) return FYODOR_KEY_UP;
     if(key.wVirtualKeyCode==VK_DOWN) return FYODOR_KEY_DOWN;
     if(key.wVirtualKeyCode==VK_LEFT) return FYODOR_KEY_LEFT;
     if(key.wVirtualKeyCode==VK_RIGHT) return FYODOR_KEY_RIGHT;
     if(key.uChar.UnicodeChar==0) return FYODOR_KEY_IDLE;
-    count=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,&key.uChar.UnicodeChar,1,(char *)pending,4,NULL,NULL);
-    at=0;
-    if(count<=0) return FYODOR_KEY_IDLE;
-    return pending[at++];
+    WCHAR c=key.uChar.UnicodeChar,units[2];
+    WCHAR high=pending_high; pending_high=0;
+    if(c>=0xd800 && c<=0xdbff) { pending_high=c; return FYODOR_KEY_IDLE; }
+    int unit_count=1; units[0]=c;
+    if(c>=0xdc00 && c<=0xdfff) {
+        if(!high) return FYODOR_KEY_IDLE;
+        units[0]=high; units[1]=c; unit_count=2;
+    }
+    pending_count=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,units,unit_count,
+        (char *)pending_utf8,4,NULL,NULL);
+    pending_at=0;
+    if(pending_count<=0) return FYODOR_KEY_IDLE;
+    return pending_utf8[pending_at++];
 #else
     return fyodor_terminal_decode_key(terminal_byte,NULL,&pending_key);
 #endif

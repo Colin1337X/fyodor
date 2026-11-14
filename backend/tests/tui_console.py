@@ -75,10 +75,12 @@ def visible():
     finally:
         k.CloseHandle(h)
 
-def key(h, char):
+def key(h, char, virtual=None):
     record, written = Input(), W.DWORD()
     record.type = 1
     record.event.key = Key(True, 1, ord(char.upper()) if char.isalpha() else 0, 0, char, 0)
+    if virtual is not None:
+        record.event.key.virtual = virtual
     assert k.WriteConsoleInputW(h, C.byref(record), 1, C.byref(written)) and written.value == 1
 
 hin, hout = handle("CONIN$"), handle("CONOUT$")
@@ -101,6 +103,23 @@ try:
                 wait_for(lambda: "Command exit 0" in visible())
                 key(hin, "t")
                 wait_for(lambda: "Theme: Fyodor Dark" in visible())
+                if color == "none" and quit_key == "q":
+                    for char in ":\ud83d\ude00":
+                        key(hin, char)
+                    wait_for(lambda: r"\xf0\x9f\x98\x80" in visible())
+                    key(hin, "\x1b")
+                    # Cancelled UTF-16 input must not leak into a new command.
+                    for char in ":\ud83d\x1b:\ude00resource list\r":
+                        key(hin, char)
+                    wait_for(lambda: "Command exit 0" in visible())
+                    key(hin, "?")
+                    wait_for(lambda: "Browse: j/k" in visible())
+                    for char in ":\ud83d":
+                        key(hin, char)
+                    key(hin, "\x00", 0x25)  # Left arrow interrupts the pair.
+                    for char in "\ude00resource list\r":
+                        key(hin, char)
+                    wait_for(lambda: "Command exit 0" in visible())
                 key(hin, quit_key)
                 assert child.wait(timeout=5) == 0
                 assert (mode(hin), mode(hout)) == original, "Terminal modes not restored"
