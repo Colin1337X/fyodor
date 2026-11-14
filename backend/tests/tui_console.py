@@ -104,6 +104,13 @@ try:
                 key(hin, "t")
                 wait_for(lambda: "Theme: Fyodor Dark" in visible())
                 if color == "none" and quit_key == "q":
+                    for char in ":" + "x" * 160 + "TAIL_MARKER":
+                        key(hin, char)
+                    wait_for(lambda: "TAIL_MARKER" in visible())
+                    key(hin, "\b")
+                    key(hin, "Z")
+                    wait_for(lambda: "TAIL_MARKEZ" in visible())
+                    key(hin, "\x1b")
                     key(hin, "?")
                     wait_for(lambda: "Browse: j/k" in visible())
                     key(hin, "\x00", 0x23)  # End

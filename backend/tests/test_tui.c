@@ -55,5 +55,18 @@ int main(void)
     file=tmpfile(); CHECK(file!=NULL); fyodor_terminal_text(file,"ab\033c",5);
     CHECK(fflush(file)==0 && fseek(file,0,SEEK_SET)==0);
     memset(text,0,sizeof(text)); CHECK(fread(text,1,sizeof(text)-1,file)==2); CHECK(strcmp(text,"ab")==0); fclose(file);
+    const struct {const char *input,*expected;size_t limit;} tails[]={
+        {"abcdef","",0},{"abcdef",".",1},{"abcdef","..",2},
+        {"abcdef","...",3},{"abcdef","...ef",5},{"abcdef","abcdef",6},
+        {"abc\033Z","abc\\x1bZ",8},{"abc\033Z","...Z",7},
+        {"long\033","...\\x1b",7},{"\xc2\x9b","\\xc2\\x9b",8},
+        {"","",20}};
+    for(size_t i=0;i<sizeof(tails)/sizeof(tails[0]);++i) {
+        file=tmpfile(); CHECK(file!=NULL);
+        fyodor_terminal_text_tail(file,tails[i].input,tails[i].limit);
+        CHECK(fflush(file)==0 && fseek(file,0,SEEK_SET)==0);
+        memset(text,0,sizeof(text)); size_t got=fread(text,1,sizeof(text)-1,file);
+        CHECK(got<=tails[i].limit && strcmp(text,tails[i].expected)==0); fclose(file);
+    }
     return 0;
 }
