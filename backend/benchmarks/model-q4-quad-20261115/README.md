@@ -38,3 +38,8 @@ including independent Q6/Q4/QKV requirements. The missing-full-model-memcheck
 refusal was exercised before creating a measurement folder or GPU workload.
 This preparation does not resolve counter coverage or authorize accepting
 unattributed activity. No monitored timing has been collected for this candidate.
+
+C17 8192-prefix lifecycle passed both resets with four verified tokens each,
+maximum scaled logit error 1.63989979e-05, 96 four-row capture/direct calls,
+and retained graph reuse and rewind checks. All 910 hashes verified. This is
+long-context correctness evidence; generation parity is the next gate.
