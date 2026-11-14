@@ -3,6 +3,8 @@ import hashlib
 import json
 from pathlib import Path
 import tempfile
+import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 import check_replay
@@ -52,6 +54,12 @@ class Prerequisites(unittest.TestCase):
         self.input.write_bytes(b'changed source')
         with self.assertRaisesRegex(RuntimeError,'Changed prerequisite'):
             check_replay.prerequisites()
+
+    def test_optimized_python_is_refused_before_cuda(self):
+        run = subprocess.run([sys.executable,'-O',str(Path(check_replay.__file__).resolve())],
+                             capture_output=True,text=True)
+        self.assertNotEqual(run.returncode,0)
+        self.assertIn('Replay validation requires Python assertions',run.stderr)
 
 
 if __name__ == '__main__':

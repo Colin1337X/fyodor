@@ -69,8 +69,9 @@ upload synchronization before capture and readback synchronization after replay.
 Before importing CUDA bindings, the runner requires successful full-model metadata
 sanitizer evidence and source hashes, the host and compilation proofs, and a GPU
 process inventory check. Its refusal while the sanitizer remains live was
-exercised without creating a CUDA context. Five CPU prerequisite tests cover
-valid, missing, failed, nonzero-exit and changed-input evidence. Device execution
+exercised without creating a CUDA context. Six CPU prerequisite tests cover
+valid, missing, failed, nonzero-exit and changed-input evidence, plus refusal of
+optimized Python before CUDA import so parity assertions cannot be disabled. Device execution
 has not yet run; neither graph ordering nor quantized replay parity is claimed.
 `--memcheck` selects a separate result filename for running under Compute
 Sanitizer; that filename alone is not proof of a successful sanitizer summary.
