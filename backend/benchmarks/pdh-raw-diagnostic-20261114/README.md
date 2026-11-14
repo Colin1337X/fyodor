@@ -233,3 +233,30 @@ decode intervals, all with System-positive overlaps. Round 1 batch-two also
 has an above-100 owned-process overlap. The last five intervals fall outside
 the completed capture and remain explicitly unbracketed. No accepted score
 changes; empty event lists for those uncovered intervals are not idle evidence.
+
+## Transfer-only control reproduced formatted-array failure
+
+transfer_control.py is an original CUDA-driver diagnostic, independent of model
+inference. It allocates one 4 MiB device buffer and pinned/pageable host buffers,
+then alternates six-second idle/pageable/pinned phases in forward/reverse/forward
+order. Downloads use the same synchronous driver call for both host types, with
+20 ms sleeps between operations. Every completed transfer phase verifies all
+bytes. This isolates host allocation type for correlation, not model throughput.
+The prior TinyLlama pinned-staging performance regression remains rejected.
+
+TransferControlA passed all nine phases for owned PID 9768, with no cleanup
+errors and unchanged source. Capture TransferCaptureA stopped at sample index
+10 (11 samples total): formatted array sizing returned MORE_DATA for 415
+entries, but the data call returned 0xc0000bba and count zero. The same-query
+raw read immediately afterward succeeded with 415 entries, all raw statuses
+zero. Eighteen new target-adapter entries appeared, all belonging to PID 9768;
+the remaining raw names were already present in the preceding sample.
+
+This reproduces the previously intermittent whole-array failure with formatted
+reads first and records usable raw data on the failing collection. It links
+the failure observationally to new CUDA counter instances, without proving
+causality. The observer ended before the transfer-mode comparison; no claim
+about pinned versus pageable System activity or performance follows. The raw
+log is losslessly compressed with hashes in archive.json, and failure-detail.json
+retains API calls and all new raw entries. Existing benchmark coverage policy,
+production transfers and accepted performance scores remain unchanged.
