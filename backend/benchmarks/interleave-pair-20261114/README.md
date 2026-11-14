@@ -71,3 +71,12 @@ four-token verification and ring KV. Each cycle reports max scaled error
 1.63989979e-05 against the unchanged 0.0005 bound. The child exited zero, reported
 568 integer calls, and all 33 recorded input/output hashes were independently
 verified. This validates lifecycle correctness, not throughput or launch savings.
+
+## Confirmed conversion dispatch reduction
+
+`inventory-257/result.json` passes the paired baseline/reuse lifecycle check.
+Baseline: 658 conversions, zero reuse, 658 projections. Candidate: 562 conversions,
+96 reused inputs, 658 projections. Thus this workload removes 96 conversion
+dispatches (14.59%) while preserving projection count and lifecycle correctness.
+All 47 recorded hashes independently verify. These host counts include graph
+construction; they do not establish a GPU replay count or throughput speedup.
