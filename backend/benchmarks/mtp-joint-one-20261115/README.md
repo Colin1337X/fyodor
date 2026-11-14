@@ -52,3 +52,19 @@ These four runs validate the fixture's memory handling, not full Gemma execution
 under the sanitizer. The unchanged real-model runner has started long-context
 correctness validation; completion and full-model sanitization remain pending.
 No performance score changes or production integration.
+
+## Full-model sanitizer gate prepared
+
+run_model_memcheck.py requires completed short and long generation proofs and
+both edge sanitizer results, verifying their hashes before GPU launch. It uses
+the short correctness run's recorded environment, rechecks both GGUF identities,
+and records transitive build/runner/tool hashes before execution and verifies
+those inputs again afterward. Output validation requires all twelve ordered
+ordinary/serial-two/batch-two/joint-one cases, exact prompt/output counts, parity,
+exactly three complete one-proposal markers and a unique zero-error summary.
+Six offline validator tests pass, including wrong/extra/malformed markers.
+
+sanitizer-preflight-refusal.json records refusal on the missing completed long
+proof, before creating a sanitizer output folder or launching GPU work. The
+long generation process remains independent and live. This is runner/gate
+validation, not completed full-model sanitization or a performance result.
