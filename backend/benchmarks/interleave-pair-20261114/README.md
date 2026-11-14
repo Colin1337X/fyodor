@@ -76,8 +76,7 @@ binary. It requires successful compile/link, dispatch inventory, short/long
 generation and full-model sanitizer proofs before launching GPU work. It retains
 the existing model identity, idle/environment, continuous GPU monitoring,
 transitive input hashes, output parity and dispatch-count checks. Three existing
-input-integrity regression tests pass against the new runner. It has not run;
-the sanitizer prerequisite has now passed. Monitoring alone never marks a run
+input-integrity regression tests pass against the new runner. The first short run completed and was rejected as described below. Monitoring alone never marks a run
 as an accepted benchmark, and contamination remains grounds for rejection.
 
 ## Completed full-model memory validation
@@ -89,3 +88,12 @@ Elapsed instrumented time was 2953.3552161 seconds; it is not a throughput resul
 `environment-note.json` records stopping a restarted Roblox GPU client during
 the run. No timing from this run is accepted. Production integration still
 requires controlled paired performance evidence.
+
+## Rejected monitored short run A
+
+`monitored-short-A` completed all twelve cases with output parity, unchanged
+inputs, and 2556 integer calls in each of three joint rounds. The idle gate
+passed, but continuous coverage did not: sampled intervals contained
+unattributed GPU activity and invalid target counters. The runner exited one.
+The run is retained as rejected evidence and contributes no accepted score.
+Stopping Roblox before this run did not establish a clean measurement.
