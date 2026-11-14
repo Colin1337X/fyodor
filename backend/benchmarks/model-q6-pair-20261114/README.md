@@ -35,3 +35,11 @@ tests pass, including missing/extra/zero/malformed Q6 markers and the inherited
 parity, graph reuse, summary and workload checks. The runner refused absent
 generation evidence before launching GPU work. These are validator checks,
 not a completed full-model sanitizer run.
+
+The monitored on/off wrapper changes only NYA_CUDA_Q6_PAIR_ROWS between
+variants. Q4 paired rows and QKV input reuse remain enabled and their positive
+execution markers remain mandatory. Q6 markers must be exactly three positive
+entries when enabled, and absent when disabled; malformed entries fail both.
+Seven CPU trace-validator tests pass. The missing-full-model-memcheck refusal
+was exercised without launching GPU work. Activity evidence rules are unchanged;
+this preparation does not resolve PDH invalid-data or System attribution issues.
