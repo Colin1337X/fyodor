@@ -33,7 +33,9 @@ def expect(text):
             received.extend(chunk)
             if text in received:
                 return
-        if child.poll() is not None:
+        # Exit does not imply the PTY is drained: a final frame may occupy
+        # several reads, with the restoration sequence in the last chunk.
+        elif child.poll() is not None:
             break
     raise AssertionError(f'Missing terminal output {text!r}; exit={child.poll()}')
 
