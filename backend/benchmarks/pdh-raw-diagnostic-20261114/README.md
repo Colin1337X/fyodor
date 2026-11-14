@@ -138,3 +138,28 @@ Microsoft documents that PDH_FMT_NOCAP100 preserves values exceeding 100%;
 that flag is already used. This generic PDH behavior alone does not establish
 that these particular GPU engine values are valid utilization measurements:
 https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcountervalue
+
+## Formatted-first diagnostic
+
+capture_formatted_first.py reverses the same-query read order: formatted values
+are read before raw values, including a raw read after a formatted API failure.
+This tests whether reading raw counters first affects failure reproduction.
+It does not modify the benchmark collector or relax coverage acceptance.
+
+FormattedFirstA completed 120 idle samples without API failures or invalid
+statuses. All 6426 valid target-counter pairs agreed exactly between formatted
+values and raw deltas. No inference workload overlapped this capture, so it
+cannot establish loaded coverage or show that changing read order fixes it.
+The raw log is preserved losslessly as samples.jsonl.gz with archive hashes.
+
+FormattedFirstLoadedA is a separate 900-sample capture started before the
+model-q4-quad-20261115/run_formatted_first_generation.py short c17 workload.
+The generation runner retains its numerical, execution-marker, graph-reuse and
+input-hash checks. Both artifacts explicitly reject timing acceptance. They
+are independent processes; the capture may end before generation completes.
+Loaded results must be inspected after completion before drawing conclusions.
+
+The loaded short C17 generation workload completed all twelve cases with output
+parity, four-row execution markers [96,96,96], and six reused graph plans.
+All 923 recorded hashes verified. The bounded counter observer was still live
+at this checkpoint; generation success is not counter-coverage acceptance.
