@@ -55,6 +55,16 @@ and also requires capture plus reuse in six verification cases. Nine CPU tests
 pass, including missing/duplicated graph evidence and capture-without-reuse.
 No full-model graph sanitizer result is claimed yet.
 
+`boundaries.c` and its build/run scripts prepare additional F32 fixture coverage
+for head widths 256/512 and linear/ring KV. Within the same plan, tests advance
+through positions 250/254/256/258/8190/8192/8196 with batches two/four, changing
+tokens after rewinds and repeating after reset. The independent session disables
+graphs and produces serial-reference logits. Assertions require exact cache
+capture/replay deltas, six captured topologies, 42 verifications, output guards,
+one download each and the unchanged 0.0005 scaled-error bound. C17/C23 fixture
+binaries compile successfully; GPU fixture execution is still pending. These
+small F32 cases complement real-model quantized validation, not replace it.
+
 Real-model lifecycle results, generation parity, full-model memory checks,
 two-token and topology-boundary coverage and controlled timing must establish
 runtime correctness before production admission. No speedup is claimed from
