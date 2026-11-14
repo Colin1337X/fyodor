@@ -38,3 +38,13 @@ the unchanged absolute bound `2e-6 * sum(abs(double products)) + 1e-6`, with
 maximum bound fraction 0.01663237, byte-exact baseline outputs, guards and
 unchanged weights/input buffers. All 34 host-control/full-oracle hash checks
 verified. Memory/race/synchronization sanitizers and paired timing are pending.
+
+The full 367-case independent-bound and byte-parity sweep passed under
+Compute Sanitizer memcheck, racecheck and synccheck. Each exited zero with
+a unique zero-error/hazard summary. All 198 input/output/proof hash checks
+verified. Instrumented elapsed times (11.26/27.57/8.47 seconds) are correctness
+run durations, not performance results. The validator also rejected missing
+or reordered cases, absent bounds, NaN/exceeded bounds, absent byte parity,
+absent guards and wrong batch metadata in CPU negative checks. Unsupported
+launch rejection tests and non-random activation patterns remain additional
+coverage work; no real-model integration or speed claim has been made.
