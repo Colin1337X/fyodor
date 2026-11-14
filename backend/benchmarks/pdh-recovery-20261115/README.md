@@ -43,3 +43,14 @@ sample SD 9.0703031). Six isolated PDH errors were retained; the collector
 completed cooperative shutdown with failed=true. Every joint interval fails
 coverage, also reporting unattributed activity. No accepted score changes.
 The enabled counterpart is the next comparison; this is not a measured gain.
+
+EnabledRecoveryA also completed all twelve cases with parity, fusion markers
+[48,48,48] and all required execution inventories. All 1011 identities verify
+for each variant. Enabled joint loops took 790.0157, 798.5245 and 799.2713 ms
+(mean 795.9371667; sample SD 5.1417169), versus disabled mean 804.9637333 ms.
+The 1.12136% lower diagnostic latency is small relative to run variation.
+Only disabled-then-enabled order is complete. Both captures fail coverage;
+enabled also has an invalid target counter in joint round zero. Four isolated
+collector errors were recovered in enabled; neither capture is accepted.
+long-comparison-diagnostic.json retains both distributions and rejection reasons.
+No robust speedup or production promotion follows; accepted scores are unchanged.

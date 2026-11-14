@@ -1,0 +1,185 @@
+{
+  "accepted_benchmark": false,
+  "records": [
+    {
+      "label": "DisabledRecoveryA",
+      "accepted_benchmark": false,
+      "output_parity": true,
+      "verified_hashes": 1011,
+      "joint_ms": [
+        812.4364,
+        794.8721,
+        807.5827
+      ],
+      "mean_ms": 804.9637333333334,
+      "sample_sd_ms": 9.070303105372684,
+      "coverage_errors": [
+        [
+          "collector error",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ],
+        [
+          "collector error",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ],
+        [
+          "collector error",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ]
+      ],
+      "collector_errors": [
+        {
+          "kind": "error",
+          "index": 148,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 34571.3164351,
+          "qpc_observed_seconds": 34571.3169712,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 226,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 34649.4918505,
+          "qpc_observed_seconds": 34649.4923761,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 297,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 34720.6475317,
+          "qpc_observed_seconds": 34720.6481398,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 741,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 35165.6440262,
+          "qpc_observed_seconds": 35165.6447811,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 914,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 35339.0146601,
+          "qpc_observed_seconds": 35339.0156561,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 1100,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 35525.425961,
+          "qpc_observed_seconds": 35525.4264967,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        }
+      ],
+      "collector_end": {
+        "kind": "end",
+        "samples": 1176,
+        "requested_stop": true,
+        "failed": true,
+        "elapsed_seconds": 1178.707334599996
+      },
+      "fusion_calls": []
+    },
+    {
+      "label": "EnabledRecoveryA",
+      "accepted_benchmark": false,
+      "output_parity": true,
+      "verified_hashes": 1011,
+      "joint_ms": [
+        790.0157,
+        798.5245,
+        799.2713
+      ],
+      "mean_ms": 795.9371666666667,
+      "sample_sd_ms": 5.141716947998312,
+      "coverage_errors": [
+        [
+          "collector error",
+          "invalid target counter",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ],
+        [
+          "collector error",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ],
+        [
+          "collector error",
+          "missing successful cooperative termination",
+          "unattributed GPU activity"
+        ]
+      ],
+      "collector_errors": [
+        {
+          "kind": "error",
+          "index": 15,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 35666.9903597,
+          "qpc_observed_seconds": 35666.9909123,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 22,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 35674.0050041,
+          "qpc_observed_seconds": 35674.0055542,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 473,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 36125.9910427,
+          "qpc_observed_seconds": 36125.9919506,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        },
+        {
+          "kind": "error",
+          "index": 879,
+          "message": "PdhGetFormattedCounterArrayW(data): PDH status 0xc0000bba",
+          "qpc_before_collect": 36532.9339557,
+          "qpc_observed_seconds": 36532.9345033,
+          "recovery_attempt": 1,
+          "accepted_benchmark": false
+        }
+      ],
+      "collector_end": {
+        "kind": "end",
+        "samples": 1177,
+        "requested_stop": true,
+        "failed": true,
+        "elapsed_seconds": 1179.7641399999993
+      },
+      "fusion_calls": [
+        48,
+        48,
+        48
+      ]
+    }
+  ],
+  "diagnostic_latency_change_percent": -1.1213631487828501,
+  "limitations": [
+    "Both captures fail GPU coverage.",
+    "Only disabled-then-enabled order completed; no robust speedup or accepted ratio established."
+  ]
+}
