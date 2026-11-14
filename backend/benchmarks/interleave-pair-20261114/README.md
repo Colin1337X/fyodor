@@ -46,17 +46,17 @@ python backend/benchmarks/interleave-pair-20261114/run_generation.py long c17
 python backend/benchmarks/interleave-pair-20261114/run_model_memcheck.py short
 ```
 
-Runners refuse to overwrite existing evidence. Long-context generation is active;
-its result is not yet available. The full-model sanitizer runner is prepared but
-has not executed. Its seven evidence-validator regression tests pass (using the
+Runners refuse to overwrite existing evidence. Long-context generation has passed
+all twelve cases (details below). The full-model short-context sanitizer is active;
+its result is not yet available. Its seven evidence-validator regression tests pass (using the
 existing integer-launch sanitizer test cases against this runner). It requires
 successful build, context-generation, short/long lifecycle and dispatch-inventory
 proofs, validates transitive hashes before and after execution, and requires
 exactly one zero-error sanitizer summary plus all twelve matching generation
 cases. Runner tests do not establish GPU memory safety.
 
-Remaining gates include long generation parity, full-model sanitizer validation,
-and controlled paired throughput comparisons. Review the net decode benefit
+Remaining gates include full-model sanitizer validation and controlled paired
+throughput comparisons. Review the net decode benefit
 before production integration. Accepted llama.cpp scores remain 85.61025294%
 short and 106.8707255% at 8K. No result here establishes the requested 125% target.
 
@@ -68,3 +68,15 @@ zero; all three joint rounds recorded 2556 integer calls. All 41 input/output
 hashes were independently verified after completion. These unmonitored timings
 remain excluded from performance acceptance. Full-model short-context Compute
 Sanitizer validation is now the active GPU check.
+
+
+## Monitored throughput runner
+
+`run_monitored.py short|long UNIQUE_LABEL` is prepared for this exact FFN-reuse
+binary. It requires successful compile/link, dispatch inventory, short/long
+generation and full-model sanitizer proofs before launching GPU work. It retains
+the existing model identity, idle/environment, continuous GPU monitoring,
+transitive input hashes, output parity and dispatch-count checks. Three existing
+input-integrity regression tests pass against the new runner. It has not run;
+the sanitizer prerequisite is still pending. Monitoring alone never marks a run
+as an accepted benchmark, and contamination remains grounds for rejection.
