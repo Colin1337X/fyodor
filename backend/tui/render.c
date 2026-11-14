@@ -89,7 +89,12 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
             break;
         }
     }
-    if(h>7 && (last->optional&2U)) line(f,x+2,y+6,w-4,0,"Gradient norm %.6g",last->gradient);
+    if(h>7) {
+        if((last->optional&34U)==34U)
+            line(f,x+2,y+6,w-4,0,"Learning rate %.6g    Gradient norm %.6g",last->learning_rate,last->gradient);
+        else if(last->optional&32U) line(f,x+2,y+6,w-4,0,"Learning rate %.6g",last->learning_rate);
+        else if(last->optional&2U) line(f,x+2,y+6,w-4,0,"Gradient norm %.6g",last->gradient);
+    }
     if(h>8) {
         if((last->optional&20U)==20U)
             line(f,x+2,y+7,w-4,0,"Device used %.1f / %.1f MiB capacity",last->used/1048576.0,last->capacity/1048576.0);

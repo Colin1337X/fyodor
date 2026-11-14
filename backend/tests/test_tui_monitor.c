@@ -235,6 +235,15 @@ int main(int argc,char **argv)
     CHECK(!write_csv(argv[1],"step,loss,tokens_per_second\n4,2,20\n"));
     CHECK(!tui_metrics(&s));tui_render(&s,f,80,30);
     CHECK(!frame_contains(f,"Device used") && !frame_contains(f,"Device peak") && !frame_contains(f,"Device capacity"));
+    CHECK(!frame_contains(f,"Learning rate"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,learning_rate,gradient_norm\n5,2,20,0.002,1.5\n"));
+    CHECK(!tui_metrics(&s));tui_render(&s,f,80,30);
+    CHECK(frame_contains(f,"Learning rate 0.002    Gradient norm 1.5"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,learning_rate\n6,2,20,0\n7,2,20,-1\n8,2,20,nan\n"));
+    CHECK(!tui_metrics(&s) && s.samples==1 && s.malformed==2);tui_render(&s,f,80,30);
+    CHECK(frame_contains(f,"Learning rate 0"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,learning_rate\n9,2,20,\n"));
+    CHECK(!tui_metrics(&s));tui_render(&s,f,80,30);CHECK(!frame_contains(f,"Learning rate"));
     s.chart=0;
     tui_key(&s,':');
     for(int i=0;i<70;++i) tui_key(&s,0xac00);

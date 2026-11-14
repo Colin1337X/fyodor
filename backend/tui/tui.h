@@ -11,7 +11,7 @@
 #define TUI_HEIGHT 80
 typedef struct tui_sample {
     uint64_t step;
-    double loss, rate, validation, gradient, used, peak, capacity;
+    double loss, rate, validation, gradient, used, peak, capacity, learning_rate;
     unsigned optional;
     char compute[24];
 } tui_sample;
