@@ -1,0 +1,2238 @@
+{
+  "accepted_benchmark": false,
+  "passed": true,
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-base-generation-v2-20261114\\generation.exe",
+    "short"
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "1",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "1",
+    "NYA_CUDA_ALIGNED_PREFIX": "1",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_ASSISTED_FFN": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_INTERLEAVED_INTEGER": "1",
+    "NYA_CUDA_PROFILE": "1",
+    "NYA_CUDA_PROFILE_FROM": "25"
+  },
+  "model_identity": {
+    "models": {
+      "E:\\models\\Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf": {
+        "sha256": "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134",
+        "size": 7381381760,
+        "mtime_ns": 1783703292580532500
+      },
+      "E:\\models\\mtp-gemma-4-12B-it.gguf": {
+        "sha256": "c50c91c35f04903815b2e8930cbb8c8c5bee0e1aa00748c30a7b8ff05d2310b4",
+        "size": 253707328,
+        "mtime_ns": 1783702529116062500
+      }
+    },
+    "provenance": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-resident-target-20261113\\model-results.json",
+    "provenance_sha256": "af05a02fca17c53c9f1c42d044ea3b4148ea7db8e7477bef540c5bce449df128"
+  },
+  "limitations": [
+    "Profiling disables graphs; wall times cannot be used as throughput.",
+    "No continuous contamination acceptance; kernel timings locate costs only.",
+    "Aggregate target-plan profiling includes borrowed helper operations while profiling is active."
+  ],
+  "exit_code": 0,
+  "integer_calls": [
+    2556,
+    2556,
+    2556
+  ],
+  "cases": [
+    {
+      "round": 0,
+      "mode": "ordinary",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.704
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.726273
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 287.137855
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.988448
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.624736
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 3.206432
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.196544
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.2664
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 83.003967
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 64.989248
+        }
+      ],
+      "target_attention_ms": 29.714655999999994,
+      "gpu_ms": {
+        "matmul": 691.844,
+        "norm": 92.658,
+        "rope": 16.215,
+        "vector": 23.709,
+        "attention": 29.715,
+        "gather": 0.136
+      }
+    },
+    {
+      "round": 0,
+      "mode": "mtp-serial2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.585312
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.589217
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 286.994464
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.952
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.657504
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 3.115776
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.202624
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.256704
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 82.803007
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 65.011679
+        }
+      ],
+      "target_attention_ms": 29.4464,
+      "gpu_ms": {
+        "matmul": 691.168,
+        "norm": 91.899,
+        "rope": 16.204,
+        "vector": 22.75,
+        "attention": 30.763,
+        "gather": 0.137
+      }
+    },
+    {
+      "round": 0,
+      "mode": "mtp-batch2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 19.409984
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 640,
+          "milliseconds": 20.94656
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 768,
+          "milliseconds": 148.372672
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 57.969312
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.069056
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 1.49536
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.861216
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 17.81504
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 43.1352
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 16,
+          "milliseconds": 33.620992
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 16.22784
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 540,
+          "milliseconds": 15.10624
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 5.355232
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 16.146208
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 864,
+          "milliseconds": 120.873888
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 432,
+          "milliseconds": 32.225184
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 5.679296
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 1.132608
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 6.122912
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 216,
+          "milliseconds": 34.98256
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 18,
+          "milliseconds": 18.924288
+        }
+      ],
+      "target_attention_ms": 24.223583999999995,
+      "gpu_ms": {
+        "matmul": 630.472,
+        "norm": 73.347,
+        "rope": 12.973,
+        "vector": 20.51,
+        "attention": 25.549,
+        "gather": 0.113
+      }
+    },
+    {
+      "round": 0,
+      "mode": "mtp-joint3",
+      "matrices": [
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 17.906688
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1080,
+          "milliseconds": 18.787264
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 360,
+          "milliseconds": 7.502368
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 18.722848
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1728,
+          "milliseconds": 126.851519
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 42.236384
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 5.97392
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 1.59408
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 6.774912
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 37.331616
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 18,
+          "milliseconds": 23.299552
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 6.058176
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 200,
+          "milliseconds": 6.557504
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 240,
+          "milliseconds": 46.354112
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 18.0344
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.20992
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 0.451872
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.446336
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 5.583712
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 13.311072
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 5,
+          "milliseconds": 10.490752
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.797888
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 60,
+          "milliseconds": 1.685088
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 0.612032
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.790944
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 96,
+          "milliseconds": 13.464544
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 48,
+          "milliseconds": 3.59216
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.662336
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.1264
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.67568
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 24,
+          "milliseconds": 3.881696
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 2,
+          "milliseconds": 2.107968
+        }
+      ],
+      "target_attention_ms": 14.880608000000006,
+      "gpu_ms": {
+        "matmul": 448.876,
+        "norm": 42.956,
+        "rope": 7.765,
+        "vector": 13.918,
+        "attention": 16.606,
+        "gather": 0.067
+      }
+    },
+    {
+      "round": 1,
+      "mode": "mtp-joint3",
+      "matrices": [
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 17.92768
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1080,
+          "milliseconds": 18.679104
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 360,
+          "milliseconds": 7.443168
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 18.719776
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1728,
+          "milliseconds": 126.755359
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 42.261312
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 5.982144
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 1.590624
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 6.79552
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 37.303392
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 18,
+          "milliseconds": 23.307104
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 6.055232
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 200,
+          "milliseconds": 6.568736
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 240,
+          "milliseconds": 46.391936
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 18.057024
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.216544
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 0.460768
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.450944
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 5.61504
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 13.31648
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 5,
+          "milliseconds": 10.497728
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.77696
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 60,
+          "milliseconds": 1.714464
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 0.620288
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.790368
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 96,
+          "milliseconds": 13.515872
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 48,
+          "milliseconds": 3.592672
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.658688
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.126144
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.678272
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 24,
+          "milliseconds": 3.87792
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 2,
+          "milliseconds": 2.110016
+        }
+      ],
+      "target_attention_ms": 14.817184000000001,
+      "gpu_ms": {
+        "matmul": 448.857,
+        "norm": 42.758,
+        "rope": 7.716,
+        "vector": 14.008,
+        "attention": 16.531,
+        "gather": 0.069
+      }
+    },
+    {
+      "round": 1,
+      "mode": "mtp-batch2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 19.445824
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 640,
+          "milliseconds": 20.938624
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 768,
+          "milliseconds": 148.5576
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 58.011168
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.083488
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 1.468384
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.863648
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 17.91104
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 42.93952
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 16,
+          "milliseconds": 33.644671
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 16.010912
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 540,
+          "milliseconds": 15.247776
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 5.482848
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 16.112768
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 864,
+          "milliseconds": 121.29312
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 432,
+          "milliseconds": 32.26688
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 5.637632
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 1.15968
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 6.142368
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 216,
+          "milliseconds": 35.073824
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 18,
+          "milliseconds": 18.95504
+        }
+      ],
+      "target_attention_ms": 24.000352,
+      "gpu_ms": {
+        "matmul": 631.247,
+        "norm": 72.746,
+        "rope": 12.633,
+        "vector": 20.568,
+        "attention": 25.326,
+        "gather": 0.111
+      }
+    },
+    {
+      "round": 1,
+      "mode": "mtp-serial2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.66416
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.553697
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 287.065376
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.929472
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.600768
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 2.832
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.258304
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.292288
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 83.159679
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 65.034495
+        }
+      ],
+      "target_attention_ms": 28.778783999999995,
+      "gpu_ms": {
+        "matmul": 691.39,
+        "norm": 90.366,
+        "rope": 15.806,
+        "vector": 22.938,
+        "attention": 30.09,
+        "gather": 0.136
+      }
+    },
+    {
+      "round": 1,
+      "mode": "ordinary",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.626656
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.551777
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 287.50672
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.963936
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.75088
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 2.884992
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.213728
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.535936
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 82.950975
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 65.11904
+        }
+      ],
+      "target_attention_ms": 28.998464000000006,
+      "gpu_ms": {
+        "matmul": 692.105,
+        "norm": 90.561,
+        "rope": 15.829,
+        "vector": 23.053,
+        "attention": 28.998,
+        "gather": 0.136
+      }
+    },
+    {
+      "round": 2,
+      "mode": "ordinary",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.680736
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.574561
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 287.01728
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.956128
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.70032
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 2.89824
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.19824
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.406656
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 83.008479
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 65.105952
+        }
+      ],
+      "target_attention_ms": 28.878175999999996,
+      "gpu_ms": {
+        "matmul": 691.547,
+        "norm": 90.645,
+        "rope": 15.771,
+        "vector": 22.448,
+        "attention": 28.878,
+        "gather": 0.138
+      }
+    },
+    {
+      "round": 2,
+      "mode": "mtp-serial2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 37.601248
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 1240,
+          "milliseconds": 40.569601
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 1488,
+          "milliseconds": 287.160096
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 111.9776
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 13.620928
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 2.891424
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 248,
+          "milliseconds": 15.217248
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 620,
+          "milliseconds": 34.264
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 744,
+          "milliseconds": 82.851199
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 31,
+          "milliseconds": 65.054528
+        }
+      ],
+      "target_attention_ms": 28.804384000000002,
+      "gpu_ms": {
+        "matmul": 691.208,
+        "norm": 90.286,
+        "rope": 15.816,
+        "vector": 23.022,
+        "attention": 30.133,
+        "gather": 0.138
+      }
+    },
+    {
+      "round": 2,
+      "mode": "mtp-batch2",
+      "matrices": [
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 19.3824
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 640,
+          "milliseconds": 20.963648
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 768,
+          "milliseconds": 148.48224
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 57.923616
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.098816
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 1.481312
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 128,
+          "milliseconds": 7.93152
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 320,
+          "milliseconds": 17.869408
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 384,
+          "milliseconds": 42.859424
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 16,
+          "milliseconds": 33.65648
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 15.978528
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 540,
+          "milliseconds": 15.206272
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 5.545792
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 360,
+          "milliseconds": 16.11984
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 864,
+          "milliseconds": 121.615104
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 432,
+          "milliseconds": 32.476576
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 5.744096
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 1.131296
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 72,
+          "milliseconds": 6.118464
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 216,
+          "milliseconds": 35.09792
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 18,
+          "milliseconds": 19.07504
+        }
+      ],
+      "target_attention_ms": 23.862080000000002,
+      "gpu_ms": {
+        "matmul": 631.758,
+        "norm": 73.122,
+        "rope": 12.808,
+        "vector": 20.427,
+        "attention": 25.188,
+        "gather": 0.108
+      }
+    },
+    {
+      "round": 2,
+      "mode": "mtp-joint3",
+      "matrices": [
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 17.934944
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1080,
+          "milliseconds": 18.83232
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 360,
+          "milliseconds": 7.44096
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 4,
+          "calls": 720,
+          "milliseconds": 18.756736
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 1728,
+          "milliseconds": 127.263679
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 42.339552
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 5.998912
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 1.597344
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 4,
+          "calls": 144,
+          "milliseconds": 6.802368
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 4,
+          "calls": 432,
+          "milliseconds": 37.38544
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 4,
+          "calls": 18,
+          "milliseconds": 23.415136
+        },
+        {
+          "path": "qkv",
+          "type": 14,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 6.057312
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 1,
+          "calls": 200,
+          "milliseconds": 6.577504
+        },
+        {
+          "path": "gate-up-q4",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 240,
+          "milliseconds": 46.384512
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 18.019776
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.212384
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 0.46336
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 1,
+          "calls": 40,
+          "milliseconds": 2.447968
+        },
+        {
+          "path": "qkv",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 100,
+          "milliseconds": 5.569536
+        },
+        {
+          "path": "dot",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 1,
+          "calls": 120,
+          "milliseconds": 13.372096
+        },
+        {
+          "path": "dot",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 1,
+          "calls": 5,
+          "milliseconds": 10.490592
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 4096,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.78048
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 60,
+          "milliseconds": 1.728992
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 2048,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 0.622464
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 4096,
+          "batch": 2,
+          "calls": 40,
+          "milliseconds": 1.795232
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 15360,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 96,
+          "milliseconds": 13.515744
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 48,
+          "milliseconds": 3.605984
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 8192,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.629312
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 512,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.126912
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 8192,
+          "batch": 2,
+          "calls": 8,
+          "milliseconds": 0.677888
+        },
+        {
+          "path": "small-batch-weight-reuse",
+          "type": 12,
+          "rows": 3840,
+          "columns": 15360,
+          "batch": 2,
+          "calls": 24,
+          "milliseconds": 3.882112
+        },
+        {
+          "path": "interleaved-weight-reuse",
+          "type": 14,
+          "rows": 262144,
+          "columns": 3840,
+          "batch": 2,
+          "calls": 2,
+          "milliseconds": 2.1192
+        }
+      ],
+      "target_attention_ms": 14.911551999999999,
+      "gpu_ms": {
+        "matmul": 449.847,
+        "norm": 43.031,
+        "rope": 7.662,
+        "vector": 14.042,
+        "attention": 16.642,
+        "gather": 0.07
+      }
+    }
+  ],
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\generation-build.json": "5d7f3894b19d960ad0869b88f7720d1612d8b5102546ee0da4b2d3a95bd3a4f8",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\model-memcheck-short\\result.json": "681d505c0f5a042d989fe377171070308a9ab8da39d5913184fec2bce93c3e81",
+    "backend\\benchmarks\\interleaved-integer-20261114\\verify-prefix257-ring1-count4.json": "42dc32059ae1f79302db72d922a96e9d995e74684199e857c0547f23abf767ed",
+    "backend\\benchmarks\\interleaved-integer-20261114\\verify-prefix8192-ring1-count4.json": "24cd7990bba598d9ff1637ad609d0dd48557c38d877d314aa795d406f1b752ce",
+    "backend\\benchmarks\\joint-decode-profile-20261114\\run.py": "232adceaec1ac9ebe67c346539244e0e028bed9e65ea77e47d3fd33f9e825046",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\monitored-short-A\\timing.json": "cff929eb5c2b14d04bb67afd70628b8d46842d83f03e3e0f4d89b6a0c589e9ce",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\model_identity.py": "72fcc8bd4433e51c1a649cb7d2118735ec0b81388d1cf0785a4e0f5490b0a193",
+    "backend\\benchmarks\\joint-decode-profile-20261114\\short-integer\\stdout": "bcb77f06cf6418e36e5efdda8b081c91edcff41e02c935ef010a33ad3583d569",
+    "backend\\benchmarks\\joint-decode-profile-20261114\\short-integer\\stderr": "644f4d2df0fd9e9c16370aacc0ebd3a819cf89d1bdeb15d8d3fcf9591e8b7be9",
+    "backend\\benchmarks\\interleaved-integer-20261114\\memcheck-run.json": "3032b3663cb23709b8cf43e69b4472afc4ef17bcaee72e61506ea4c0b106c6c6"
+  }
+}
