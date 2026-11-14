@@ -29,3 +29,12 @@ launch. The full-model sanitizer runner retains the same gates and requires
 four-row enablement/execution; 13 validator tests pass, and its missing-generation
 refusal was exercised. These are harness tests, not completed generation or
 full-model sanitizer runs.
+
+The monitored on/off wrapper now toggles only NYA_CUDA_Q4_QUAD_ROWS. Q6
+paired rows, Q4 paired rows and QKV reuse remain enabled in both variants.
+Exactly three positive four-row markers are required when enabled and none
+when disabled; malformed entries fail either mode. Eight offline tests passed,
+including independent Q6/Q4/QKV requirements. The missing-full-model-memcheck
+refusal was exercised before creating a measurement folder or GPU workload.
+This preparation does not resolve counter coverage or authorize accepting
+unattributed activity. No monitored timing has been collected for this candidate.
