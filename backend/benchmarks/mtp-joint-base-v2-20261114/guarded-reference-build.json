@@ -1,0 +1,73 @@
+{
+  "quiet_gap_seconds": 2,
+  "accepted_benchmark": false,
+  "executed_generation": false,
+  "commands": [
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\include",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\ggml\\include",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-joint-base-v2-20261114\\llama_guarded.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\llama.dll",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\ggml.dll",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\ggml-base.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\guarded-reference-20261114\\llama-generation-c17.exe"
+    ],
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c23",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\include",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\ggml\\include",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-joint-base-v2-20261114\\llama_guarded.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\llama.dll",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\ggml.dll",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\ggml-base.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\guarded-reference-20261114\\llama-generation-c23.exe"
+    ]
+  ],
+  "upstream_revision": "5266f24da75dc449bd56cbed7addb9c8e4a6a73e",
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\llama_guarded.c": "c7e84e380e2c58f440d0f82fab906e704bfbaea33b3394478f1ed5af243c9aa1",
+    "backend\\benchmarks\\mtp-joint-base-v2-20261114\\build_guarded_reference.py": "0d0a6f85489207078db4fe38e6a870d36666a4afe4a867b9d620ee7942f2b7fb",
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\llama_generation.c": "e41baca759ce72a4deed65bf000e4bf39079f44a82e0f1531607ee806a32d7e3",
+    ".tools\\reference-llama-b10809\\include\\llama.h": "b214d2c12c09e671c23dd756f1f82b670dd63150fd73de867d8f5393edcf68b1",
+    ".tools\\reference-llama-b10809\\ggml\\include\\ggml.h": "fe7805b500fb2f96ae1d184dd5bd53d822939796f911a683ccde57e6114973e7",
+    ".tools\\reference-llama-b10809\\ggml\\include\\ggml-backend.h": "0305a9742164ae118ef0490a720971934938c9e62cb174ccd68babf1992fa9c0",
+    ".tools\\reference-llama-b10809\\LICENSE": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285",
+    ".tools\\llama-b10809-cuda\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cuda\\ggml.dll": "ace83896f205f4bf2ecd3a31f9681867084d808ad847cd61da83efcbc6485cf8",
+    ".tools\\llama-b10809-cuda\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    ".tools\\llama-b10809-cuda\\ggml-cuda.dll": "d860635f2be8faf7590103851225afdf3f0b2e5e26012815017b0a0a087d4441",
+    ".tools\\llama-b10809-cuda\\cublas64_13.dll": "f1d500d0cd892f5b8c6b6cdbffd82d0c55d5f5427215668e7ceb55aeeccc1b63",
+    ".tools\\llama-b10809-cuda\\cublasLt64_13.dll": "b592cd016d7673e9cb97716a22b27c4010ee635377a3ba28f37070a9bdb76a68",
+    "build-cuda\\guarded-reference-20261114\\llama-generation-c17.exe": "e2f67040483e8b710d07fc6ad21fdebb3faf3b77f03154f4a5ccfabf46e50d92",
+    "build-cuda\\guarded-reference-20261114\\llama-generation-c23.exe": "e2f67040483e8b710d07fc6ad21fdebb3faf3b77f03154f4a5ccfabf46e50d92"
+  },
+  "limitations": [
+    "Two-second gaps may change clocks; attribution diagnostic only, not comparable performance.",
+    "Needs the recorded external DLL directory in PATH for execution.",
+    "Must run after sanitizer completion under continuous GPU observation.",
+    "Generation timing cannot replace fixed-forward benchmark scores."
+  ]
+}

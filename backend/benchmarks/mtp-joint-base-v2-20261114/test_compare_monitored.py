@@ -29,6 +29,8 @@ class CoverageGate(unittest.TestCase):
             (folder / 'timing.json').write_text(json.dumps(dict(gate_passed=False)))
             (folder / 'gpu-coverage.json').write_text(json.dumps(audit))
             with self.assertRaisesRegex(ValueError, 'Idle gate'):load_audit(folder)
+            (folder / 'timing.json').write_text(json.dumps(dict(gate_passed=True, quiet_gap_seconds=2)))
+            with self.assertRaisesRegex(ValueError, 'Quiet-gap'):load_audit(folder)
             (folder / 'input').write_bytes(b'changed')
             audit['sha256'] = {'input': '0' * 64}
             (folder / 'gpu-coverage.json').write_text(json.dumps(audit))

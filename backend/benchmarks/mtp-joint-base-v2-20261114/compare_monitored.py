@@ -19,6 +19,8 @@ def load_audit(folder):
     if audit.get('errors') or audit.get('sampled_coverage_clear') is not True:
         raise ValueError(f'Incomplete or contaminated coverage: {folder}')
     timing = json.loads((folder / 'timing.json').read_text())
+    if timing.get('quiet_gap_seconds', 0) != 0:
+        raise ValueError('Quiet-gap attribution runs are not performance comparisons')
     if timing.get('gate_passed') is not True:
         raise ValueError(f'Idle gate did not pass: {folder}')
     runs = audit['runs']
