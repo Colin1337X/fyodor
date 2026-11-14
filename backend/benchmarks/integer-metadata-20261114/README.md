@@ -106,3 +106,15 @@ integer calls, the metadata selection marker was present, and each result's
 111 hashes verified after completion. Long-context C17 generation is running;
 its output and timing are not yet accepted. Full-model sanitizer and monitored
 performance validation remain outstanding for this candidate.
+
+## Offline launch-bound follow-up
+
+`audit_launch_bound.py` compiles an additional entry from the exact metadata
+source, changing only its symbol and minimum blocks-per-SM launch bound from
+three to four. In the same SM120 offline module, ptxas reports 64 registers for
+the baseline, 66 for the current metadata kernel and 61 for the bound-four
+variant, all with zero stack frame and zero spills. The generated source hash,
+transformation, tool identity and input hashes are recorded in
+`launch-bound-assembly.json`. This does not establish runtime JIT resources,
+occupancy, parity or speed. It justifies testing this launch bound after the
+current GPU run finishes. No running input or production dispatch was changed.
