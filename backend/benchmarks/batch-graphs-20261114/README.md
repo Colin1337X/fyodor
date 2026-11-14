@@ -129,3 +129,26 @@ marker, and the observer stopped the model process. The case inventory is
 therefore incomplete. Inputs remained unchanged; this is rejected evidence,
 not a numerical parity failure or a performance score. A fresh uniquely named
 attempt may retry the transient counter collection, retaining this failure.
+
+Attempt B completed all twelve parity cases with six graph-reusing plans,
+three positive integer-dispatch counts and 234 verified hashes. Its collector
+stopped successfully, but every decode interval had unattributed GPU activity;
+two also had invalid target counters. The matching short llama.cpp generation
+run completed three rounds with identical output and a healthy collector. All
+three reference intervals had unattributed activity; two had invalid counters.
+Its nine evidence, five prerequisite and six validator hashes verified.
+
+The following are retained **contaminated diagnostic observations**, not
+accepted performance comparisons. First rounds are excluded; no speed ratio
+or score promotion is justified. Cross-engine execution order was not reversed.
+
+| Short generation decode loop, 32 outputs | Warm round 1 (ms) | Warm round 2 (ms) |
+| --- | ---: | ---: |
+| Fyodor ordinary | 791.205 | 802.270 |
+| Fyodor serial2 | 914.322 | 888.345 |
+| Fyodor batch2 | 794.505 | 808.066 |
+| Fyodor joint3 with batched graphs | 611.211 | 621.710 |
+| llama.cpp matching generation | 702.589 | 719.456 |
+
+Evidence: `monitored-short-B` and `reference-short-A`. Accepted fixed-forward
+scores remain unchanged at 85.61025294% short and 106.8707255% at 8K.
