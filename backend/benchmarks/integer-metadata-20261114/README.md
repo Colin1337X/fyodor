@@ -68,3 +68,21 @@ These repeated synthetic weight-bank measurements have no continuous activity
 audit and are not accepted decode results. The modest gain warrants isolated
 real-model validation, not production admission. Preserve existing precision
 tolerances and compare against the same input-reuse/readback baseline.
+
+## Isolated real-model integration
+
+`build_model.py` verifies the raw sanitizer and completed readback baseline,
+then creates a separate CUDA override and four C17/C23 executables. It appends
+the metadata source to the existing NVRTC module and changes only the selected
+four-token Q4 kernel. The FFN input reuse, contiguous readback, lifecycle harness
+and production archive are preserved. A diagnostic selection marker plus
+positive execution counts prevents silent fallback from passing this check.
+
+`run_lifecycle.py c17|c23 257|8192` retains the validated reset/rewind and logit
+checks and requires the metadata marker. Both C17 and C23 at prefix 257 pass
+both reset paths with maximum scaled error 2.19546455e-5, 568 integer calls,
+and one contiguous download per four-row verification. Each result's 101 hashes
+independently verified. The C17 8192-prefix lifecycle is running; no result is
+claimed yet. `run_generation.py` requires these lifecycle proofs before testing
+whole-model output parity. No accepted end-to-end speedup or production dispatch
+is introduced by this isolated integration.
