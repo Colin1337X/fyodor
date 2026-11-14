@@ -23,10 +23,9 @@ current FP contraction options and verifies its entry symbol. `compile.json`
 records options and source/PTX hashes. Compilation creates no CUDA context and
 executes no GPU work; the ongoing FFN-reuse sanitizer remains isolated.
 
-Pending: native-versus-packed raw byte-exact parity over partial rows, multiple
-column counts and finite coefficient extremes; independent numerical oracle;
-output guards and Compute Sanitizer; paired kernel timing; real-model selection,
-parity, lifecycle and monitored decode timing. No production integration or
+Raw parity, guards, independent numerical checks, Compute Sanitizer and kernel
+timing have completed (results below). Real-model integration is not warranted
+by the slower kernel diagnostic. No production integration or
 accepted speed claim. Removing this optional source leaves the production build
 unchanged. Accepted llama.cpp scores remain 85.61025294% short and 106.8707255%
 at 8K; the 125% target is not achieved.
@@ -43,7 +42,7 @@ are recorded in `pack-build.json`; no CUDA context is used.
 byte-exact comparison, guarded interleaved inputs/outputs, partial rows, eleven
 matrix shapes, finite half-coefficient edge pairs and an independent float64
 bound on small cases. The isolated `common.py` includes the candidate and native
-kernels. These scripts have parsed successfully but have not executed GPU work.
+kernels. All 207 raw cases passed, including under Compute Sanitizer.
 They refuse to create a GPU context until the active FFN-reuse sanitizer has a
 completed passing result. The `--memcheck` label alone is not sanitizer evidence;
 retain the actual Compute Sanitizer exit and summary when running that mode.
@@ -57,7 +56,7 @@ rise from 4 to 20 and three word-load sites disappear. Both retain 32 FMA sites,
 20 shuffle sites and the same FP32 multiply/subtract/add site counts. This
 confirms a metadata instruction tradeoff, not lower elapsed time: PTX counts are
 not dynamic instructions, SASS, physical registers, occupancy or throughput.
-Actual kernel timing and parity remain required before choosing this candidate.
+Completed timing below supports retaining the native layout for this candidate.
 
 ## Prepared sanitizer runner
 
@@ -68,4 +67,28 @@ workload, retains stdout/stderr and requires exactly one zero-error summary plus
 all matching guarded cases. Input hashes are checked again after execution.
 Its CPU-only validator accepted a complete zero-error fixture and rejected
 nonzero exit, missing/duplicate/nonzero error summaries, missing cases, failed
-byte parity and failed guards. The runner has not executed on the GPU yet.
+byte parity and failed guards. The GPU run completed with exit zero and one zero-error summary.
+
+## Completed checks and rejected timing candidate
+
+`oracle.json` passes all 207 cases byte-exactly against the native Q4 kernel,
+including guarded inputs/outputs and the independent float64 bound on small
+cases. `memcheck-run.json` repeats all 207 under Compute Sanitizer with exit zero
+and one zero-error summary. Input and evidence hashes independently verified.
+
+`probe.py` compares the native eight-row/bound-three kernel against packed Q4
+using the same interleaved input, output and graph-event harness. It checks the
+raw/sanitizer proofs before creating a CUDA context. Each of eight shapes has
+ten observations per kernel, with forward/reverse order, 30 warmup operations
+per order and 100 operations per observation. Timed outputs remain byte-exact.
+The packed weights are prepared outside timing; both paths include input layout
+conversion. These synthetic repeated-weight diagnostics have no continuous GPU
+coverage audit and do not change accepted end-to-end scores.
+
+The packed variant is slower on every tested shape: roughly 23%-34% higher
+latency. The dominant 3840-column/15360-row FFN expansion rises from
+0.1287565775 ms to 0.1727368946 ms (34.16%). Reduced metadata bit operations
+did not offset this implementation's larger weight layout and byte-load tradeoff.
+These observations do not isolate the individual causes. Retain the evidence,
+leave production dispatch unchanged, and do not pursue model integration of
+this variant without a materially different kernel and new measurements.
