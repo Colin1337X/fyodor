@@ -1,0 +1,42 @@
+{
+  "accepted_benchmark": false,
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_TEST_MTP_COMPARE": "1",
+    "NYA_CUDA_BATCH": "8",
+    "NYA_CUDA_RING_KV": "0",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_SPECULATIVE_BATCH": "1",
+    "NYA_CUDA_SMALL_BATCH": "1"
+  },
+  "runs": [
+    {
+      "standard": "c17",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\architecture-edge-c17.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\edge-fixture-linear-c17.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": true
+    },
+    {
+      "standard": "c23",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\architecture-edge-c23.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\edge-fixture-linear-c23.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": true
+    }
+  ],
+  "passed": true,
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-one-20261115\\edge-fixture-build.json": "724d2f289c872b956f02ee84d33599ebb8dae61df54d477a24752cf970944147",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\run_edge_fixture.py": "62728835fcce680d7f9fccf66efe12117f4e0834ce60e692ad57a3a2a6770e7f",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\edge-fixture-linear\\c17.stdout": "14dbb8fdfc14dadb9f684ade30035b59b853c2b64b869845f8f26ed0ec8269f7",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\edge-fixture-linear\\c23.stdout": "14dbb8fdfc14dadb9f684ade30035b59b853c2b64b869845f8f26ed0ec8269f7",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\edge-fixture-linear\\c17.stderr": "70d126d442fc652205a0262d940a79dd9decb5936050e7fe5da748dec797a3ff",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\edge-fixture-linear\\c23.stderr": "70d126d442fc652205a0262d940a79dd9decb5936050e7fe5da748dec797a3ff"
+  }
+}
