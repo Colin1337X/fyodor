@@ -39,3 +39,34 @@ row sums sharing the input loads. No HMMA sites occur in the candidate.
 All nineteen disassembly evidence hashes independently verified. These are
 static offline sites, not dynamic traffic, driver-JIT inspection, achieved
 occupancy or measured performance; the 80-register tradeoff still needs testing.
+
+## GPU validation and repeated timing
+
+The candidate subsequently passed all 224 cases with byte-identical output
+against the existing metadata kernel and the unchanged independent double
+bound. Eight unsupported-shape checks and input/output guards passed. The
+same complete sweep passed memcheck, racecheck and synccheck with zero
+errors/hazards. Independent audit verified 7167 compilation, assembly,
+disassembly, numerical and sanitizer hashes, plus both timing-harness hashes.
+
+Two timing sweeps retained 40 samples per kernel/shape each, 100 interleave
+and matvec operations/sample, synchronized uploads and numerical checks on
+timed outputs. The second reverses both shape traversal and initial kernel
+order. Positive values below are slower; negative values are faster.
+
+| Columns | Rows | First latency change | Reversed latency change |
+| --- | --- | --- | --- |
+| 3840 | 512 | +32.123% | +32.171% |
+| 3840 | 2048 | +2.480% | +2.059% |
+| 3840 | 4096 | +6.081% | +6.286% |
+| 3840 | 8192 | +3.376% | +3.082% |
+| 3840 | 15360 | -6.170% | -5.871% |
+| 4096 | 3840 | +1.519% | +1.314% |
+| 8192 | 3840 | -2.025% | -2.013% |
+| 15360 | 3840 | -6.072% | -5.579% |
+
+Global promotion is rejected because five shapes regress. The repeated
+large expansion/down-projection gains justify a selective full-model
+experiment, which remains pending. These are repeated-weight-bank kernel
+diagnostics without continuous activity acceptance, not accepted end-to-end
+decode results. Production dispatch and llama.cpp scorecards are unchanged.
