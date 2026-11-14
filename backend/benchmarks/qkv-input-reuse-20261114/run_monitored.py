@@ -31,12 +31,25 @@ def graph_inventory(trace):
     return counts, len([1 for captures,replays in counts if captures>0 and replays>captures]) == 6
 
 
+def reuse_inventory(trace, enabled):
+    prefix = 'CUDA QKV input reuse capture/direct hits:'
+    lines = [line for line in trace.splitlines() if prefix in line]
+    matches = [re.fullmatch(re.escape(prefix) + r' (\d+)', line) for line in lines]
+    hits = [int(match[1]) for match in matches if match]
+    valid = len(hits) == 3 and all(v > 0 for v in hits) if enabled else not hits
+    return hits, valid and all(matches)
+
+
 def main():
     root = Path.cwd()
     out = Path(__file__).resolve().parent
-    if len(sys.argv) != 3 or sys.argv[1] not in ('short', 'long'):
-        raise SystemExit('Usage: run_monitored.py short|long UNIQUE_LABEL')
-    context, label = sys.argv[1:]
+    if len(sys.argv) not in (3, 4) or sys.argv[1] not in ('short', 'long'):
+        raise SystemExit('Usage: run_monitored.py short|long UNIQUE_LABEL [enabled|disabled]')
+    context, label = sys.argv[1:3]
+    variant = sys.argv[3] if len(sys.argv) == 4 else 'enabled'
+    if variant not in ('enabled', 'disabled'):
+        raise SystemExit('Choose enabled or disabled QKV reuse')
+    enabled = variant == 'enabled'
     if not label.isascii() or not label.isalnum():
         raise SystemExit('Label must be ASCII alphanumeric')
     folder = out / f'monitored-{context}-{label}'
@@ -79,7 +92,7 @@ def main():
     gate.idle()
     env = {k: v for k, v in os.environ.items() if not k.startswith('NYA_')}
     env.update(PYTHONDONTWRITEBYTECODE='1', NYA_CUDA_PROFILE='0', NYA_CUDA_BATCH_GRAPHS='1', NYA_BENCH_GPU_MONITOR='1',
-        NYA_BENCH_MODE_SET='joint-base', NYA_CUDA_QKV_INPUT_REUSE='1', NYA_CUDA_ALIGNED_PREFIX='1', NYA_CUDA_WIDE_BATCH_SPLIT='1',
+        NYA_BENCH_MODE_SET='joint-base', NYA_CUDA_QKV_INPUT_REUSE='1' if enabled else '0', NYA_CUDA_ALIGNED_PREFIX='1', NYA_CUDA_WIDE_BATCH_SPLIT='1',
         NYA_CUDA_WIDE_BATCH='1', NYA_CUDA_SMALL_BATCH_REUSE='1', NYA_CUDA_INTERLEAVED_REUSE='1',
         NYA_CUDA_INTERLEAVED_TWO='1', NYA_CUDA_INTERLEAVED_INTEGER='1', NYA_CUDA_BATCH_LOGITS='1',
         NYA_CUDA_ASSISTED_FFN='1', NYA_CUDA_MTP_WIDE_VALUE='1', NYA_SPECULATIVE_EARLY_REJECT='1')
@@ -98,8 +111,7 @@ def main():
     trace = (folder / f'{context}.stderr').read_text()
     metadata_selected = 'CUDA native metadata Q4: selected' in trace
     graph_counts, graphs_reused = graph_inventory(trace)
-    hits = [int(v) for v in re.findall(r'CUDA QKV input reuse capture/direct hits: (\d+)',trace)]
-    reuse_selected = len(hits)>=3 and min(hits)>0
+    hits, reuse_valid = reuse_inventory(trace, enabled)
     selected = trace.count('MTP joint base: enabled; proposal window=3')
     evidence = [p for p in folder.iterdir() if p.is_file()]
     calls = [int(v) for v in re.findall(r'CUDA Q4 integer batch-four calls: (\d+)',trace)]
@@ -109,13 +121,13 @@ def main():
     correct = ([(r['round'],r['mode']) for r in rows]==expected and
                all(r.get('parity') is True and r.get('generated')==32 and
                    r.get('prompt')==(25 if context=='short' else 8205) for r in rows))
-    result = dict(accepted_benchmark=False, metadata_selected=metadata_selected, model_identity=identity, integer_calls=calls, qkv_reuse_hits=hits, qkv_reuse_selected=reuse_selected, output_parity=correct, runner_exit=completed.returncode, joint_rounds=selected,
+    result = dict(accepted_benchmark=False, metadata_selected=metadata_selected, model_identity=identity, integer_calls=calls, qkv_reuse_hits=hits, qkv_reuse_enabled=enabled, qkv_reuse_inventory_valid=reuse_valid, output_parity=correct, runner_exit=completed.returncode, joint_rounds=selected,
         command=command, environment_overrides={k:v for k,v in env.items() if k.startswith('NYA_')}, changed_inputs=changed, inputs_unchanged=not changed, graph_counts=graph_counts, graphs_reused=graphs_reused,
         sha256={**before, **snapshot(root, evidence)})
     (folder / 'result.json').write_text(json.dumps(result, indent=2))
     if changed:
         raise SystemExit('Inputs changed during monitored run: ' + ', '.join(changed))
-    if not reuse_selected or not graphs_reused or not metadata_selected or selected != 3 or len(calls)!=3 or min(calls)<=0 or not correct:
+    if not reuse_valid or not graphs_reused or not metadata_selected or selected != 3 or len(calls)!=3 or min(calls)<=0 or not correct:
         raise SystemExit('Output parity or joint/integer execution inventory failed')
     raise SystemExit(completed.returncode)
 

@@ -93,3 +93,13 @@ in these correctness runs, so they establish no speedup or updated score.
 The candidate full-model short Compute Sanitizer run started only after both
 standards passed generation. Long generation, sanitizer completion and
 controlled timing remain pending; production dispatch is unchanged.
+
+The monitored runner also accepts a final `enabled` (default) or `disabled`
+argument. Both variants use the exact same candidate executable and retain
+all output/graph checks; only the QKV reuse switch changes. Enabled requires
+exactly the three positive reuse markers observed in validated generation;
+disabled requires no reuse markers. Five CPU tests cover valid inventories,
+missing/extra or malformed markers, zero hits and unexpected reuse in the disabled path.
+Use distinct labels in enabled/disabled/disabled/enabled order for a paired
+short diagnostic before attributing any timing change to this optimization.
+This comparison is still pending and does not substitute for llama.cpp runs.
