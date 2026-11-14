@@ -24,9 +24,19 @@ requires completed raw and memory evidence, then compares all three kernels on
 eight shapes in forward/reverse order with identical interleave work, warmup,
 ten samples per kernel/shape and byte-identical output checks. This synthetic
 diagnostic does not have continuous activity coverage and cannot update accepted
-decode scores. No GPU execution or timing has occurred for this variant yet.
+decode scores. Completed GPU results are recorded below.
 
-The next action is raw parity, memory checks and the three-way diagnostic once
-the existing long-generation workload has finished. Only a useful result can
-justify another isolated real-model build. Accepted scores remain 85.61025294%
+Raw parity and Compute Sanitizer each passed all 207 cases after long generation
+finished. The sanitizer exited zero with exactly one zero-error summary. The
+three-way diagnostic retained byte-identical outputs and completed all eight
+shapes. Compared with metadata bound-three, bound-four mean latency increased
+by 9.33%, 3.74%, 2.47%, 2.21%, 0.16%, 2.67% and 0.11% on the first seven shapes
+in the recorded order. Only the 15360-column/3840-row contraction improved:
+0.138007904 ms versus 0.140811872 ms, a 1.99% decrease. This is a diagnostic,
+not an accepted performance result or proof of an occupancy-based cause.
+
+Do not replace the bound-three kernel globally. A shape-specific follow-up
+would require a controlled repeat and real-model validation; the current
+bound-three candidate continues to full-model memory checking. Lower register
+allocation alone was not sufficient to improve most shapes. Accepted scores remain 85.61025294%
 short and 106.8707255% at 8K of llama.cpp, below the requested 125% on both.
