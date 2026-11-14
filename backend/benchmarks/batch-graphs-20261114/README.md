@@ -140,8 +140,8 @@ three reference intervals had unattributed activity; two had invalid counters.
 Its nine evidence, five prerequisite and six validator hashes verified.
 
 The following are retained **contaminated diagnostic observations**, not
-accepted performance comparisons. First rounds are excluded; no speed ratio
-or score promotion is justified. Cross-engine execution order was not reversed.
+accepted performance comparisons. First rounds are excluded; no score
+promotion is justified. Cross-engine execution order was not reversed.
 
 | Short generation decode loop, 32 outputs | Warm round 1 (ms) | Warm round 2 (ms) |
 | --- | ---: | ---: |
@@ -160,3 +160,33 @@ three integer-call counts of 2556. All 158 hashes independently verified.
 Roblox reopened during this correctness-only run and was stopped again
 (`gpu-cleanup-roblox-long.json`); none of these call durations is accepted
 performance evidence.
+
+## Completed long diagnostics and descriptive ratios
+
+Monitored long attempt A completed all twelve parity cases, six graph-reusing
+plans and three positive integer counts. Its 237 hashes verified and its
+collector stopped successfully. Every decode interval had unattributed activity;
+six also had invalid target counters. The matching long llama.cpp run completed
+three matching-output rounds with a healthy collector. All three intervals had
+unattributed activity; the first also had an invalid counter. Its nine evidence,
+five prerequisite and six validator hashes verified.
+
+| Long generation decode loop, 32 outputs | Warm round 1 (ms) | Warm round 2 (ms) |
+| --- | ---: | ---: |
+| Fyodor ordinary | 944.286 | 937.950 |
+| Fyodor serial2 | 1046.930 | 1055.957 |
+| Fyodor batch2 | 955.726 | 960.857 |
+| Fyodor joint3 with batched graphs | 846.881 | 811.277 |
+| llama.cpp matching generation | 1455.430 | 1466.512 |
+
+To provide the requested ongoing percentages without promoting rejected runs,
+`summarize_diagnostics.py` records descriptive ratios with explicit failed
+coverage and `accepted_benchmark=false`: joint3 is 115.3395% short and 176.2161%
+long, calculated as 100 times llama mean latency divided by Fyodor mean latency.
+The shared comparison routine verifies case inventories, prompt/output counts
+and exact output bytes. These are arithmetic summaries of contaminated data,
+not verified speedups, and do not prove the 125% goal. Only two warmed samples
+per cell and no reversed cross-engine ordering are available. Existing clean
+comparison gates remain unchanged and still reject these runs.
+
+Accepted fixed-forward scores remain 85.61025294% short and 106.8707255% at 8K.
