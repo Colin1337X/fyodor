@@ -52,6 +52,8 @@ def weights(dtype, width):
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError('Replay validation requires Python assertions; disable -O/PYTHONOPTIMIZE')
     if sys.argv[1:] not in ([], ['--memcheck']):
         raise SystemExit('Expected no arguments or --memcheck')
     destination = out/('memcheck-oracle.json' if sys.argv[1:] else 'oracle.json')
