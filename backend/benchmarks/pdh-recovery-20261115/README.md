@@ -21,3 +21,9 @@ sample resetting the consecutive count, unknown error and close failure.
 All six pass on Windows. These are offline fault-injection tests, not evidence
 of clean GPU monitoring or improved decode performance. Live runner integration
 and a new long comparison remain pending.
+
+Live integration now uses run_cost.py and run_monitored.py, with the original
+model prerequisites and an independent post-run coverage audit even when the
+monitor rejects completion. audit_settings.py verifies both effective variants
+against completed C17/C23 generation proofs. The DisabledRecoveryA long baseline
+was launched; its outcome is pending and its live artifacts are not committed.
