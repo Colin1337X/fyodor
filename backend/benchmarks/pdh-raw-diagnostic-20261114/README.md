@@ -59,3 +59,21 @@ byte-for-byte before committing. Decompress beside the archive as `samples.jsonl
 to rerun the analyzer or verify the original manifest. The uncompressed live log
 remains locally available. The analysis and capture manifests retain original
 source and raw-log hashes; no samples were omitted from the compressed artifact.
+
+## Native-generation reproduction
+
+`capture_native.py --samples 900 --label NativeA` is the same raw/formatted
+collector with accurate native-workload metadata. It runs independently beside
+`model-q6-pair-20261114/run_raw_diagnostic_generation.py long c17`. That workload
+retains the validated generation runner's prerequisites, output parity, graph
+reuse, execution markers and source hashes, and writes a separate evidence
+folder. The observer starts first and records QPC timestamps; native generation
+also records QPC intervals. The observer stops on the first API failure or its
+sample limit; native generation may continue afterward. Neither process nor its
+artifacts certify coverage or performance. This arrangement is for capturing
+raw values on the collection where formatted data fails, not replacing the
+benchmark collector or retrying failed measurements into acceptance.
+
+Both scripts passed syntax compilation. The NativeA experiment is running;
+results are pending. Existing accepted benchmark rules and prior manifests are
+unchanged. The observer launches no GPU kernels.
