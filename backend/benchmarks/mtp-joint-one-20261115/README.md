@@ -68,3 +68,17 @@ sanitizer-preflight-refusal.json records refusal on the missing completed long
 proof, before creating a sanitizer output folder or launching GPU work. The
 long generation process remains independent and live. This is runner/gate
 validation, not completed full-model sanitization or a performance result.
+
+## Comparison build audit
+
+compare_builds.py verifies both existing build manifests and their recorded
+hashes. The generated C cores differ only by the single proposal-window
+assignment; generation harnesses differ only by mtp-joint3/mtp-joint1 labels.
+Provider archive hashes and build commands match after normalizing experiment
+paths. Six offline tests reject extra core changes, duplicate assignments,
+workload changes, compiler-flag differences and archive mismatches.
+comparison-build-proof.json retains the audited inputs. This is source/build
+comparability, not certification of unrecorded compiler/header history or of
+runtime conditions. It does not authorize comparing historical unmonitored
+times or using a different provider pipeline as the baseline. Long correctness,
+full-model sanitization and matched monitored ordering remain required.
