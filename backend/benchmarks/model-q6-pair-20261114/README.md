@@ -82,3 +82,19 @@ Neither run qualifies for benchmark acceptance, and no llama.cpp score changes.
 Reverse-order measurement remains pending. These are model diagnostic timings,
 not an accepted performance improvement or a replacement for matched reference
 measurements at both short and long context.
+
+The reverse-order short pair also completed all twelve parity cases per variant;
+all 886 hashes per result verified, with inputs unchanged and correct independent
+Q6 enable/disable markers. Joint decode-loop timings for 32 output tokens:
+
+- DisabledB: 555.1583, 553.7899, 572.8316 ms; mean 560.5932667 ms,
+  sample standard deviation 10.6207689 ms.
+- EnabledB: 551.1176, 552.2292, 554.0236 ms; mean 552.4568 ms,
+  sample standard deviation 1.4663084 ms.
+
+The reverse-order diagnostic latency change is -1.4514%, similar to -1.5325%
+in the first order. Every joint interval again had unattributed GPU activity;
+none of these timings qualifies for acceptance. Across these four runs, the
+unattributed positive engine PID in joint intervals was System/PID 4. Its causal
+origin is not established. Numerical parity remains valid, but accepted scores
+stay 85.6103% short / 106.8707% at 8K. Long-context generation is the next check.
