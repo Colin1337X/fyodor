@@ -1,0 +1,42 @@
+{
+  "accepted_benchmark": false,
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_TEST_MTP_COMPARE": "1",
+    "NYA_CUDA_BATCH": "8",
+    "NYA_CUDA_RING_KV": "0",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_SPECULATIVE_BATCH": "1",
+    "NYA_CUDA_SMALL_BATCH": "1"
+  },
+  "runs": [
+    {
+      "standard": "c17",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\architecture-c17.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\fixture-linear-c17.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": true
+    },
+    {
+      "standard": "c23",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\architecture-c23.exe",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\joint-one-generation-20261115\\fixture-linear-c23.gguf"
+      ],
+      "exit_code": 0,
+      "joint_base_selected": true
+    }
+  ],
+  "passed": true,
+  "sha256": {
+    "backend\\benchmarks\\mtp-joint-one-20261115\\fixture-build.json": "3e690dddc3fd0dff7c9fab01eda7b52899db6c5840b2a3088d42a2609aca6cd3",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\run_fixture.py": "7550d03879a071cc4759938f4a0e7853320a6ad03120fc4fa533aa34fb1d277e",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\fixture-linear\\c17.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\fixture-linear\\c23.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\fixture-linear\\c17.stderr": "64b43d6adeb35f276d73084d9b80522c235cfb140bbca58b68fbc2043c55598d",
+    "backend\\benchmarks\\mtp-joint-one-20261115\\fixture-linear\\c23.stderr": "64b43d6adeb35f276d73084d9b80522c235cfb140bbca58b68fbc2043c55598d"
+  }
+}
