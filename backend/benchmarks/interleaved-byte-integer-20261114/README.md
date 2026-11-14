@@ -58,3 +58,14 @@ rise from 4 to 20 and three word-load sites disappear. Both retain 32 FMA sites,
 confirms a metadata instruction tradeoff, not lower elapsed time: PTX counts are
 not dynamic instructions, SASS, physical registers, occupancy or throughput.
 Actual kernel timing and parity remain required before choosing this candidate.
+
+## Prepared sanitizer runner
+
+`run_memcheck.py` runs the same 207-case sweep under the actual Compute Sanitizer
+executable with error exit code 99. It requires prior raw parity and the completed
+FFN-reuse memory audit, checks kernel/harness/packer hashes, rejects another GPU
+workload, retains stdout/stderr and requires exactly one zero-error summary plus
+all matching guarded cases. Input hashes are checked again after execution.
+Its CPU-only validator accepted a complete zero-error fixture and rejected
+nonzero exit, missing/duplicate/nonzero error summaries, missing cases, failed
+byte parity and failed guards. The runner has not executed on the GPU yet.
