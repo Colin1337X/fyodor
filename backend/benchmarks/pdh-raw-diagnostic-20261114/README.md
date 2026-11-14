@@ -41,3 +41,21 @@ values, instance churn and API/status failures. It refuses live/incomplete logs.
 Four manual CPU checks covered a 150% raw/format match, invalid status exclusion,
 API failure with disappearing instance, and malformed adapter identity. Its
 incomplete-capture refusal was also exercised. Agreement alone is not acceptance.
+
+## Completed SanitizerA observation
+
+All 900 samples completed with unchanged inputs, no API failures and no invalid
+raw/formatted statuses. The adapter had 64,728 consecutive matched counters;
+the largest difference between formatted values and 100*delta(first)/delta(second)
+was 2.842170943040401e-14. There were 299 readings above 100%, maximum
+145.20836230841672%. No instance-set changes occurred during this capture.
+This reproduces the out-of-range symptom in raw data but not the earlier
+formatted-array API failure. It proves neither actual utilization nor causal
+attribution of System activity; acceptance policy remains unchanged.
+
+The 102,416,913-byte raw log is retained in Git as `SanitizerA/samples.jsonl.gz`.
+`archive.json` records both hashes and sizes; lossless decompression was checked
+byte-for-byte before committing. Decompress beside the archive as `samples.jsonl`
+to rerun the analyzer or verify the original manifest. The uncompressed live log
+remains locally available. The analysis and capture manifests retain original
+source and raw-log hashes; no samples were omitted from the compressed artifact.
