@@ -8,6 +8,7 @@
 
 #define LINE_CAPACITY 8192
 #define LOG_CAPACITY 65536
+#define HISTORY_CAPACITY 16
 typedef struct {
     fyodor_store *store;
     char *path,*name_space;
@@ -15,10 +16,39 @@ typedef struct {
     size_t count,selected,scroll;
     char after[FYODOR_RESOURCE_URI_CAPACITY];
     char log[LOG_CAPACITY];
+    char history[HISTORY_CAPACITY][LINE_CAPACITY],draft[LINE_CAPACITY];
+    size_t history_count,history_at;
+    int draft_overflow;
     int detail;
     const fyodor_theme *theme;
     fyodor_color_mode colors;
 } tui_state;
+static void remember(tui_state *state,const char *line)
+{
+    if(!line[strspn(line," \t")]) return;
+    if(state->history_count && !strcmp(state->history[state->history_count-1],line)) return;
+    if(state->history_count==HISTORY_CAPACITY) {
+        memmove(state->history,state->history+1,(HISTORY_CAPACITY-1)*LINE_CAPACITY);
+        --state->history_count;
+    }
+    strcpy(state->history[state->history_count++],line);
+}
+static void recall(tui_state *state,char *entry,size_t *length,int *overflow,int older)
+{
+    if(!state->history_count) return;
+    if(older) {
+        if(state->history_at==state->history_count) {
+            strcpy(state->draft,entry); state->draft_overflow=*overflow;
+        }
+        if(state->history_at) --state->history_at;
+    } else {
+        if(state->history_at==state->history_count) return;
+        ++state->history_at;
+    }
+    int draft=state->history_at==state->history_count;
+    strcpy(entry,draft?state->draft:state->history[state->history_at]);
+    *length=strlen(entry); *overflow=draft?state->draft_overflow:0;
+}
 static void style(const tui_state *state,fyodor_theme_role foreground,fyodor_theme_role background)
 {
     char sgr[80];
@@ -101,6 +131,7 @@ static void command(tui_state *state,char *line)
 static const char help[]="Browse: j/k move, Enter opens, n next page, r first page, b back, q quit.\n"
     "Page Up/Down move by screen; Home/End jump within the current list or output.\n"
     "Details: j/k scroll. : opens command entry; Escape cancels.\n"
+    "Command Up/Down recalls 16 session entries and restores the current draft.\n"
     "Commands omit fyodor --store PATH --namespace NAME. Example: resource list\n"
     "Quotes group arguments; backslashes are literal. No shell expansion.\n"
     "Local administrator mode. Scoped context commands enforce supplied principal grants.\n"
@@ -206,13 +237,14 @@ int fyodor_tui_run(int argc,char **argv)
             dirty=1;
             if(editing) {
                 if(key==27) editing=0;
-                else if(key==13||key==10) { if(overflow) { strcpy(state->log,"Command too long; discarded."); state->detail=1; state->scroll=0; } else command(state,entry); editing=0; }
+                else if(key==13||key==10) { if(overflow) { strcpy(state->log,"Command too long; discarded."); state->detail=1; state->scroll=0; } else { remember(state,entry); command(state,entry); } editing=0; }
+                else if(key==FYODOR_KEY_UP||key==FYODOR_KEY_DOWN) recall(state,entry,&length,&overflow,key==FYODOR_KEY_UP);
                 else if(key==8||key==127) { if(length) { do { --length; } while(length && ((unsigned char)entry[length]&0xc0)==0x80); entry[length]=0; } }
                 else if(key>=32&&key<=255) { if(length<sizeof(entry)-1) { entry[length++]=(char)key; entry[length]=0; } else overflow=1; }
                 continue;
             }
             if(key=='q') break;
-            if(key==':') { editing=1; length=0; entry[0]=0; overflow=0; }
+            if(key==':') { editing=1; length=0; entry[0]=0; overflow=0; state->history_at=state->history_count; }
             else if(key=='?') { strcpy(state->log,help); state->detail=1; state->scroll=0; }
             else if(key=='b') state->detail=0;
             else if(key=='r') page(state,0);
