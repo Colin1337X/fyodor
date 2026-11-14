@@ -82,3 +82,17 @@ successful compilation or from the isolated request/gather test alone.
 
 Accepted decode remains 85.61025294% short and 106.8707255% at 8K relative to
 llama.cpp. The 125% target on both contexts is still unmet.
+
+## Prepared monitored timing
+
+`run_monitored.py short|long LABEL` retains the process/idle gate, continuous
+activity collector, exact generation-case inventory, integer dispatch and
+before/after input hashes. It additionally requires capture and reuse in six
+verification cases. Before timing it verifies the short full-model sanitizer,
+both lifecycle lengths, all eight boundary fixtures, C23 short generation and
+C17 generation for the requested context. Thus short timing does not depend on
+an unrelated long-generation run, while long timing cannot skip its own parity
+proof. Four CPU tests pass and refusal of the pending sanitizer was exercised
+without creating timing output or starting another GPU workload. This runner
+has not yet produced timing evidence, and does not itself declare benchmark
+acceptance from coverage alone.
