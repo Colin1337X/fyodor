@@ -26,3 +26,11 @@ Next gates: link isolated generation/lifecycle executables; validate short/long
 logits, output parity, reset/rewind and failure recovery; run Compute Sanitizer;
 then compare end-to-end decode with and without reuse under clean monitoring.
 Do not replace accepted scores from a compile check or inferred launch savings.
+
+`build_executables.py` now links four isolated C17/C23 executables: joint-base
+generation and the existing four-token lifecycle harness. The original build
+inputs and production archive hashes match before and after linking. The outputs
+are recorded in `executables.json`, with `gpu_validated=false`. Linking is not
+admission: the current launch-bound candidate remains first in the GPU queue.
+Before throughput acceptance, confirm the reuse branch is exercised and compare
+its launch inventory with the original; parity alone does not prove selection.
