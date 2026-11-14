@@ -63,3 +63,23 @@ racecheck) and matching raw/sanitized source identities. Seven offline validator
 tests pass. sanitizer-preflight-refusal.json records refusal before launching
 the sanitizer because raw validation is still pending. No GPU sanitizer result
 is claimed for this fusion candidate yet.
+
+## Paired timing harness prepared
+
+probe.py requires the complete raw result and all three passing sanitizer
+results, with recorded input/evidence hashes checked before creating a context.
+It compares native metadata projections plus nya_vector GELU with fusion,
+including one input interleave in both operations. Six shapes include partial
+rows and the full Gemma expansion. Each shape runs separate/fused, fused/separate,
+fused/separate, separate/fused ordering, retaining 40 samples per variant, their
+means and sample standard deviations. Each sample contains 100 graph operations;
+each order has 1,000 warmup operations. Default-stream uploads are fenced before
+nonblocking graph execution. Output buffers are reset before each order and must
+match the separate-pipeline reference byte-for-byte, including guard bytes.
+
+Syntax compilation and the missing-raw-result refusal pass; no timing execution
+has occurred. This compares the native metadata baseline, not the separate
+experimental pair-row kernel. Even a later synthetic gain must survive comparison
+with relevant stronger candidates and full-model testing. Repeated weight banks
+and snapshot-only activity checks make these timings diagnostic, never accepted
+llama.cpp performance scores.
