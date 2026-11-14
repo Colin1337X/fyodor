@@ -137,6 +137,14 @@ try:
                     key(hin, "\x00", 0x28)
                     wait_for(lambda: ":DRAFT_MARKER" in visible())
                     key(hin, "\x1b")
+                    for char in ":resource 한글\ud83d\ude00   \x17list\r":
+                        key(hin, char)
+                    wait_for(lambda: "Command exit 0" in visible())
+                    key(hin, "?")
+                    wait_for(lambda: "Browse: j/k" in visible())
+                    for char in ":wrong\x15resource list\r":
+                        key(hin, char)
+                    wait_for(lambda: "Command exit 0" in visible())
                     for char in ":\ud83d\ude00":
                         key(hin, char)
                     wait_for(lambda: r"\xf0\x9f\x98\x80" in visible())
