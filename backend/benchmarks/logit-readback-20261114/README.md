@@ -59,3 +59,15 @@ sanitizer coverage remain pending.
 four-row verification, and 568 integer calls. All 47 recorded hashes independently
 verified after exit zero. This extends the lifecycle evidence to prefix 8192;
 full-generation and sanitizer validation remain pending for this candidate.
+
+## Completed short-context generation
+
+`generation-short-c17` and `generation-short-c23` each passed all twelve
+ordinary/serial2/batch2/joint3 cases in forward/reverse/forward order with
+25 prompt tokens and 32 generated outputs. Both processes exited zero, and
+each joint round recorded 2556 integer calls. All input/output hashes were
+independently verified. `run_generation.py` requires explicit successful build
+and short/long lifecycle proofs before execution, then verifies model identity,
+process ownership, output parity, mode selection and unchanged inputs.
+These correctness runs have no accepted timing claim. Long-context generation
+and GPU memory validation remain pending.
