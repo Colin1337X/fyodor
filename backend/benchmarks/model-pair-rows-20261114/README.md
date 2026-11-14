@@ -69,3 +69,13 @@ Six CPU tests pass. The pending-memcheck refusal was exercised without
 starting another GPU workload. The unchanged continuous activity collector
 can still reject or abort runs on invalid counters; no evidence requirement
 has been relaxed and no new timing has been measured with this wrapper.
+
+`run_reference.py` prepares the corresponding pinned llama.cpp comparison.
+It requires revision `5266f24da75dc449bd56cbed7addb9c8e4a6a73e`, a successful
+candidate build and full-model short memcheck, context-specific generation,
+identical prompt tokens, and byte-matching expected output. It preserves
+absolute external-tool paths in the input manifest, verifies hashes before
+and after execution, and includes that manifest directly in the coverage
+result. The active-GPU refusal was exercised while the sanitizer was running;
+no new reference timing has been launched. Activity failures still reject
+acceptance, and this wrapper does not resolve the Windows PDH failures.
