@@ -107,3 +107,9 @@ but neither establishes an accepted gain: reverse runs again failed activity
 attribution, and their second joint rounds also contained invalid target
 counters. All four runs retain accepted_benchmark=false. The 125% llama.cpp
 target remains unproven; production dispatch is unchanged.
+
+C17 long generation passed all twelve ordered cases at 8205 prompt tokens
+and 32 output tokens, including all three joint rounds. Paired-row markers
+were [128,128,128], QKV reuse hits [88,88,88], with six reused graph plans.
+All 766 hashes independently verified. This establishes output correctness
+for the tested long workload; it is not a controlled throughput measurement.
