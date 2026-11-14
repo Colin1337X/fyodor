@@ -60,3 +60,14 @@ output/scratch pointers, row/column/stride/batch arguments, launch geometry,
 profile cleanup, and failure propagation for both conversion and fused launch.
 Only a successful fused launch increments its execution counter. This is host
 wiring evidence, not additional GPU numerical or sanitizer coverage.
+
+
+## Completed long-prefix lifecycle
+
+C17 lifecycle at prefix 8192 passes both resets with maximum scaled logit error
+0.0000163989979, below the unchanged 0.0005 bound. All 48 Gemma layers dispatch
+the fused kernel; one verification graph is captured and replayed twice.
+Reset/rewind, suffix replacement, guarded outputs and single-bank readback
+assertions pass. All 953 recorded file identities verify after completion.
+Short generation validation follows; full-model sanitizer and timing remain
+pending. This lifecycle result is correctness evidence, not throughput.
