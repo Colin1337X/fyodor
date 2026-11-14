@@ -1,0 +1,212 @@
+{
+  "passed": true,
+  "accepted_benchmark": false,
+  "model_identity": {
+    "models": {
+      "E:\\models\\Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf": {
+        "sha256": "59656d7494d6376ca97e9e20b64ea2e16cd97f12ec6d47bfccba91cb785b5134",
+        "size": 7381381760,
+        "mtime_ns": 1783703292580532500
+      },
+      "E:\\models\\mtp-gemma-4-12B-it.gguf": {
+        "sha256": "c50c91c35f04903815b2e8930cbb8c8c5bee0e1aa00748c30a7b8ff05d2310b4",
+        "size": 253707328,
+        "mtime_ns": 1783702529116062500
+      }
+    },
+    "provenance": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-resident-target-20261113\\model-results.json",
+    "provenance_sha256": "af05a02fca17c53c9f1c42d044ea3b4148ea7db8e7477bef540c5bce449df128"
+  },
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\integer-launch-20261114\\generation-c17.exe",
+    "short"
+  ],
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "1",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "1",
+    "NYA_CUDA_ALIGNED_PREFIX": "1",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_ASSISTED_FFN": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_INTERLEAVED_INTEGER": "1",
+    "NYA_CUDA_PROFILE": "0"
+  },
+  "limitation": "Output correctness only; no continuous contamination acceptance or accepted timing.",
+  "exit_code": 0,
+  "cases": [
+    {
+      "round": 0,
+      "mode": "ordinary",
+      "seconds": 4.4915116,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 0,
+      "accepted": 0,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 0,
+      "mode": "mtp-serial2",
+      "seconds": 2.3225948,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 0,
+      "mode": "mtp-batch2",
+      "seconds": 2.2075515,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 59,
+      "parity": true
+    },
+    {
+      "round": 0,
+      "mode": "mtp-joint3",
+      "seconds": 2.0222522,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 28,
+      "accepted": 17,
+      "target_steps": 68,
+      "parity": true
+    },
+    {
+      "round": 1,
+      "mode": "mtp-joint3",
+      "seconds": 2.0130211,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 28,
+      "accepted": 17,
+      "target_steps": 68,
+      "parity": true
+    },
+    {
+      "round": 1,
+      "mode": "mtp-batch2",
+      "seconds": 2.2071596,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 59,
+      "parity": true
+    },
+    {
+      "round": 1,
+      "mode": "mtp-serial2",
+      "seconds": 2.2545593,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 1,
+      "mode": "ordinary",
+      "seconds": 2.1982177,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 0,
+      "accepted": 0,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 2,
+      "mode": "ordinary",
+      "seconds": 2.2163918,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 0,
+      "accepted": 0,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 2,
+      "mode": "mtp-serial2",
+      "seconds": 2.2838046,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 56,
+      "parity": true
+    },
+    {
+      "round": 2,
+      "mode": "mtp-batch2",
+      "seconds": 2.1955786,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 20,
+      "accepted": 15,
+      "target_steps": 59,
+      "parity": true
+    },
+    {
+      "round": 2,
+      "mode": "mtp-joint3",
+      "seconds": 2.0131965,
+      "prompt": 25,
+      "generated": 32,
+      "draft": 28,
+      "accepted": 17,
+      "target_steps": 68,
+      "parity": true
+    }
+  ],
+  "integer_calls": [
+    2556,
+    2556,
+    2556
+  ],
+  "sha256": {
+    "backend\\benchmarks\\integer-launch-20261114\\generation-build.json": "554387a75b5970680b8da6015bbce25e9382d39e4a8f35791c88274070a66803",
+    "backend\\benchmarks\\integer-launch-20261114\\model-build.json": "6b9e0c1d12756be9fcac261d8e7de79876ea0e00672060f898de9133227ab2cc",
+    "backend\\benchmarks\\integer-launch-20261114\\verify-prefix257-ring1-count4.json": "467caa31fc71cfad4296ea70f3aeefba733bf333a7776755a50eb6526f94cffd",
+    "backend\\benchmarks\\integer-launch-20261114\\run_generation.py": "355dd05fcf521aaf587430f1890ca25f037f90883a3ae550c30e5e53c06cd250",
+    "backend\\benchmarks\\joint-decode-profile-20261114\\short-integer\\result.json": "bebc7e021a1d85f427d42a394fc39871214784e671f589101013c8f1faa2a70a",
+    "build-cuda\\integer-launch-20261114\\generation-c17.exe": "fcd83f36f73861cf3c1cb6325c31aa13efabbfff2439d7f23895d3372d306d8f",
+    "backend\\benchmarks\\integer-launch-20261114\\generation-short-c17\\stdout": "6ac7aab26fc162b186359abc4052be7872a894230fadaae821f5eab8e3fbdfd4",
+    "backend\\benchmarks\\integer-launch-20261114\\generation-short-c17\\stderr": "277f47e52117107b312f0877ee141436e359dc70b24062b2f08526270ccbecf8"
+  }
+}
