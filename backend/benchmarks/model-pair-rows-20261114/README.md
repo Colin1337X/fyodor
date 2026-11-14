@@ -113,3 +113,11 @@ and 32 output tokens, including all three joint rounds. Paired-row markers
 were [128,128,128], QKV reuse hits [88,88,88], with six reused graph plans.
 All 766 hashes independently verified. This establishes output correctness
 for the tested long workload; it is not a controlled throughput measurement.
+
+Pinned llama.cpp short ReferenceA completed with matching prompt/output
+evidence and unchanged inputs. Decode latencies for 32 outputs were 697.1370,
+696.1089, 671.6750 ms (mean 688.3070, sample SD 14.4129). All 856 input
+hashes and ten output hashes independently verified. Every measured interval
+failed attribution of overlapping GPU activity. This separate reference run
+is diagnostic only; neither it nor the earlier candidate measurements establish
+an accepted llama.cpp-relative score or the 125% target.
