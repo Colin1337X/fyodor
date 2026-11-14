@@ -87,3 +87,10 @@ rewind, replacement-token, stale-suffix, output-guard and original 0.0005-bound
 assertions all pass. The child exited zero and all recorded input hashes match.
 This is long-context numerical evidence, not long-context generation throughput.
 Full-model sanitizer and long joint-base generation remain pending.
+
+The monitored runner now snapshots the executable, transitive proof inputs,
+runner/configuration and PDH monitoring Python sources before execution. It
+preserves those original digests and rejects changed or missing inputs after the
+child exits. Three offline integrity tests cover mutation, deletion and keeping
+new output files separate from input identity; all ten admission/integrity tests
+pass. This hardens the pending run and does not constitute a monitored GPU pass.
