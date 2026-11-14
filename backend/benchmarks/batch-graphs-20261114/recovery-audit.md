@@ -106,3 +106,19 @@ The first context-boundary sanitizer (C17, width 256, linear KV) also passed all
 42 ordered cases, six captures and 42 replays; 180 hashes independently
 verified. The other seven boundary sanitizer configurations remain pending.
 None of this correctness evidence updates accepted throughput scores.
+
+## Completed extended matrix
+
+All 96 v2 cases now passed: both C standards, both head widths, both KV layouts,
+eight cold failure sites and four cached failure sites. The independent
+`audit_recovery_v2.py` checked the complete inventory, terminal results, exact
+injection/recovery markers, zero-error memcheck summaries, operation-specific
+create/free counts and 571 unique hashes. Every process finished with zero live
+tracked handles and zero ownership errors. `recovery-v2-audit.json` records
+this completed scope. Four CPU tests exercise valid histories and rejection
+of bad terminal states, missing/duplicate evidence and bad resource accounting.
+
+The seven remaining boundary sanitizer configurations are running separately;
+only the previously completed C17/256/linear boundary run is claimed here.
+These results do not replace full-model validation, prove recovery from all
+real driver errors, or establish a clean throughput improvement.
