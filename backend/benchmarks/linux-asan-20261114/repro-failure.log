@@ -1,0 +1,19 @@
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==34579==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x633573530aac bp 0x7ffd7bc80a90 sp 0x7ffd7bc809c0 T0)
+==34579==The signal is caused by a READ memory access.
+==34579==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x633573530aac in sum (/tmp/fyodor-asan-repro+0x2aac) (BuildId: aa9699e6e9e6b0a814692f0e363486dfda7a8c48)
+    #1 0x63357353061b in main (/tmp/fyodor-asan-repro+0x261b) (BuildId: aa9699e6e9e6b0a814692f0e363486dfda7a8c48)
+    #2 0x706ae482a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #3 0x706ae482a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #4 0x6335735308c4 in _start (/tmp/fyodor-asan-repro+0x28c4) (BuildId: aa9699e6e9e6b0a814692f0e363486dfda7a8c48)
+
+==34579==Register values:
+rax = 0x0000000000000001  rbx = 0x00006c6ae26d0001  rcx = 0x00000d8d5c4da010  rdx = 0x00006c6ae26d0080  
+rdi = 0x00006c6ae26d00a0  rsi = 0x00006c6ae26d0120  rbp = 0x00007ffd7bc80a90  rsp = 0x00007ffd7bc809c0  
+ r8 = 0x00007ffd7bc809e0   r9 = 0x00000d8d5c4da014  r10 = 0x0000000000000000  r11 = 0x0000000000000000  
+r12 = 0x00000d8d5c4da000  r13 = 0x0000000000000001  r14 = 0x0000706ae5b84000  r15 = 0x0000633573533d20  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/tmp/fyodor-asan-repro+0x2aac) (BuildId: aa9699e6e9e6b0a814692f0e363486dfda7a8c48) in sum
+==34579==ABORTING
