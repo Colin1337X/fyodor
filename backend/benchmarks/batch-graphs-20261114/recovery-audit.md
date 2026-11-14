@@ -37,9 +37,9 @@ Track graph/graph-executable create/free counts in the wrapper, and run the
 GPU cases under Compute Sanitizer. Injection must never enter the production
 dispatch or alter the inputs of the currently running model sanitizer.
 
-None of these graph-specific failure injections has run yet. Successful
-ordinary boundary fixtures and full-model generation must not be cited as
-evidence for this recovery matrix.
+At the initial audit, none of these graph-specific failure injections had run.
+The execution evidence below now covers five injection configurations. Ordinary
+boundary fixtures and generation do not establish the remaining failure paths.
 
 `build_faults.py` now builds separate C17/C23 lifecycle and generation binaries
 under `build-cuda/batch-graph-faults-20261114`. `fault_hooks.h` wraps capture
@@ -60,3 +60,22 @@ requires exactly one injection marker and one zero-error summary, and checks
 input hashes before/after. Its pending-model-sanitizer gate was exercised;
 no recovery GPU case has run yet. Resource create/free accounting and the
 remaining injection sites above are still outstanding.
+
+## Completed initial recovery matrix
+
+All 40 Compute Sanitizer memcheck runs passed: C17/C23, head widths 256/512,
+linear/ring KV, and five injection configurations (capture begin, capture end,
+instantiation, initial launch, cached launch). Each run recorded exactly one
+expected injection and one zero-error sanitizer summary. The fixture verified
+failed-session invalidation, output guards, CPU reset parity at the unchanged
+0.0005 scaled-error bound, and fresh resident-session parity.
+
+The complete case inventory, raw markers, terminal results and 306 unique
+input/evidence hashes were independently verified after all runs completed.
+Evidence is in the 40 `recovery-<standard>-<width>-ring<ring>-<site>-<cache>`
+directories. These tiny fixtures establish these injected failure paths only;
+they do not prove recovery from every real driver failure or accept any timing.
+
+Request update, kernel lowering during capture, readback/synchronization and
+explicit graph resource create/free accounting remain outstanding. Production
+admission and the 125% decode performance target remain unproven.
