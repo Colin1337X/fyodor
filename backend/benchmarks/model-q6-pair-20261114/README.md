@@ -65,3 +65,20 @@ Full-model short memcheck passed all twelve generation cases with exact output
 parity, three Q6 execution markers of 44, graph reuse and a unique zero-error
 sanitizer summary (exit 0). All 855 hashes verified. Elapsed instrumented time
 was 2594.7076649 seconds; this is correctness evidence, not throughput evidence.
+
+The first short Q6 on/off timing pair completed all twelve parity cases per
+variant with unchanged inputs; all 886 hashes per result verified. Q4 paired
+rows and QKV reuse stayed enabled. Q6 markers were [44,44,44] when enabled
+and absent when disabled. Joint decode-loop times for 32 output tokens:
+
+- EnabledA: 552.1318, 550.9024, 552.0806 ms; mean 551.7049333 ms,
+  sample standard deviation 0.6954856 ms.
+- DisabledA: 554.9232, 554.4746, 571.4768 ms; mean 560.2915333 ms,
+  sample standard deviation 9.6893216 ms.
+
+The diagnostic mean latency change is -1.5325%. Every joint interval had
+unattributed GPU activity; DisabledA's last two also had invalid target counters.
+Neither run qualifies for benchmark acceptance, and no llama.cpp score changes.
+Reverse-order measurement remains pending. These are model diagnostic timings,
+not an accepted performance improvement or a replacement for matched reference
+measurements at both short and long context.
