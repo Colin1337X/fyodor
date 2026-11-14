@@ -61,11 +61,15 @@ try:
         expect(b'Command exit 0')
         os.write(master, b':wrong\x1b:resource list\r')
         expect(b'Command exit 0')
+        os.write(master, b"?jjj:resource 'unterminated\r")
+        expect(b'Command syntax error:')
+        os.write(master, b'?jjj:resource import\r')
+        expect(b'Import packages through the CLI.')
         os.write(master, b'q')
         expect(b'\x1b[?1049l')
         assert child.wait(timeout=5) == 0
         assert termios.tcgetattr(slave) == original, 'Terminal settings were not restored'
-        print('Resource PTY arrows, unsupported keys, Escape lookahead and restoration passed')
+        print('Resource PTY navigation, command errors, Escape lookahead and restoration passed')
 finally:
     if child is not None and child.poll() is None:
         child.terminate()
