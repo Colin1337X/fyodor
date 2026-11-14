@@ -67,3 +67,16 @@ These synthetic repeated-weight-bank timings include interleaving and retain
 environment snapshots, but lack continuous activity acceptance. They justify
 further isolated model testing, not a production promotion or end-to-end win.
 Accepted llama.cpp scores remain 85.6103% short / 106.8707% at 8K.
+
+## Structured activation coverage preparation
+
+`check_patterns.py` retains the independent C double oracle, byte-exact existing
+kernel comparison, interleaving/output guards, immutable weights/inputs and
+source hashes from the full numerical harness. It prepares 25 cases: signed
+zeros, alternating signs, per-token impulses, small normal values (2^-80), and
+large finite values (2^40), across 256/9, 512/17 and the three selected model
+column/row shapes. Four token rows use distinct signs/magnitudes or positions.
+The prior random/coefficient evidence is unchanged. These new cases have NOT
+run yet: the competing-workload gate correctly refused execution while the
+full-model sanitizer was active, before CUDA context creation. Syntax compilation
+passed. This preparation is not numerical validation or performance evidence.
