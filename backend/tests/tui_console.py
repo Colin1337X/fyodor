@@ -104,6 +104,16 @@ try:
                 key(hin, "t")
                 wait_for(lambda: "Theme: Fyodor Dark" in visible())
                 if color == "none" and quit_key == "q":
+                    key(hin, "?")
+                    wait_for(lambda: "Browse: j/k" in visible())
+                    key(hin, "\x00", 0x23)  # End
+                    wait_for(lambda: "Generation is synchronous" in visible() and "Browse: j/k" not in visible())
+                    key(hin, "\x00", 0x24)  # Home
+                    wait_for(lambda: "Browse: j/k" in visible())
+                    key(hin, "\x00", 0x22)  # Page Down
+                    wait_for(lambda: "Browse: j/k" not in visible())
+                    key(hin, "\x00", 0x21)  # Page Up
+                    wait_for(lambda: "Browse: j/k" in visible())
                     for char in "?jjj:resource 'unterminated\r":
                         key(hin, char)
                     wait_for(lambda: "Command syntax error:" in visible())

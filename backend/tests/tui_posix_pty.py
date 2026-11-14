@@ -47,6 +47,8 @@ try:
         for i in range(2):
             package = dict(schema=1, uri=f'fyodor://writing/notes/00000000-0000-4000-8000-{i+1:012d}',
                            title=f'Note {i}', content=f'UNIQUE_DETAIL_{i}', metadata={}, provenance={})
+            if i == 0:
+                package['content'] += ''.join(f'\nLONG_LINE_{n:03}' for n in range(50))
             run = subprocess.run([sys.argv[2], *base, 'resource', 'import'],
                                  input=json.dumps(package), text=True, capture_output=True, timeout=10)
             assert run.returncode == 0, run.stderr
@@ -56,6 +58,18 @@ try:
         os.write(master, b'\x1b[B\r')
         expect(b'UNIQUE_DETAIL_1')
         os.write(master, b'b\x1bOA\r')
+        expect(b'UNIQUE_DETAIL_0')
+        os.write(master, b'\x1b[F')
+        expect(b'LONG_LINE_049')
+        os.write(master, b'\x1b[H')
+        expect(b'UNIQUE_DETAIL_0')
+        os.write(master, b'\x1b[6~')
+        expect(b'LONG_LINE_025')
+        os.write(master, b'\x1b[5~')
+        expect(b'UNIQUE_DETAIL_0')
+        os.write(master, b'b\x1b[6~\r')
+        expect(b'UNIQUE_DETAIL_1')
+        os.write(master, b'b\x1b[5~\r')
         expect(b'UNIQUE_DETAIL_0')
         os.write(master, b':resource lis\x1b[3~t\r')
         expect(b'Command exit 0')

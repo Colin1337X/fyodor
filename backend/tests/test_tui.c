@@ -18,6 +18,11 @@ int main(void)
         FYODOR_KEY_LEFT,FYODOR_KEY_IDLE,'x',27,':','y',FYODOR_KEY_IDLE};
     for(size_t i=0;i<sizeof(expected)/sizeof(expected[0]);++i)
         CHECK(fyodor_terminal_decode_key(next_key,&stream,&pending)==expected[i]);
+    key_stream pages={(const unsigned char *)"\033[H\033OF\033[1~\033[4~\033[7~\033[8~\033[5~\033[6;2~\033[999999~",0};
+    const int page_keys[]={FYODOR_KEY_HOME,FYODOR_KEY_LAST,FYODOR_KEY_HOME,FYODOR_KEY_LAST,
+        FYODOR_KEY_HOME,FYODOR_KEY_LAST,FYODOR_KEY_PAGE_UP,FYODOR_KEY_PAGE_DOWN,FYODOR_KEY_IDLE};
+    for(size_t i=0;i<sizeof(page_keys)/sizeof(page_keys[0]);++i)
+        CHECK(fyodor_terminal_decode_key(next_key,&pages,&pending)==page_keys[i]);
     CHECK(fyodor_theme_count()==10);
     CHECK(fyodor_theme_find("bad")==NULL && fyodor_theme_at(10)==NULL);
     for(size_t i=0;i<fyodor_theme_count();++i) {

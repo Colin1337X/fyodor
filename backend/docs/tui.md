@@ -120,3 +120,17 @@ commands. Cancellation, navigation, and ordinary intervening characters clear
 incomplete pairs; orphaned low surrogates are ignored. The private Windows
 console regression covers emoji entry, cancellation and arrow interruption.
 Display remains ASCII-escaped as documented for the resource browser.
+
+### Resource browser page navigation
+
+Page Up and Page Down move by the visible content height within the current
+resource page or detail/command output. Home and End jump to its beginning or
+end. `n` still fetches the next resource page; these keys do not issue additional
+store requests. Terminal command entry ignores navigation key codes rather than
+inserting escape-sequence suffixes. POSIX CSI/SS3 Home/End and numeric tilde
+variants are supported, alongside Windows console virtual keys.
+
+Linux C17/C23 parser, workflow and real-PTY checks pass, including a long resource
+and list boundary movement. Windows parser, workflow and private-console checks
+also pass, including Home/End and Page Up/Down in detail output. No Go or Rust
+runtime is introduced.
