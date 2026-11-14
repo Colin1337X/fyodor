@@ -110,3 +110,17 @@ The following long-generation preflight found RobloxPlayerBeta.exe on the GPU
 and refused to launch. That identified non-critical process was stopped under
 the user's authorization; the long C17 generation check then started. Its result
 is still pending. The full-model sanitizer is not continuous contamination proof.
+
+`compare_paired.py` prepares a four-run generation diagnostic in external
+Fyodor/llama/llama/Fyodor order. Supply those completed run folders and `--output`
+to aggregate four warmed observations per engine/mode (rounds 1 and 2 from each
+run). It checks nonoverlapping process lifetimes in ABBA order, identical model
+byte identities, unchanged engine builds/configurations between repetitions,
+matching context/counts/output bytes, native dispatch/input-integrity proofs,
+and all existing per-case coverage and idle gates. Changed inputs and contaminated
+runs are rejected without ratios. Fifteen offline tests pass across paired
+comparison, model-memcheck admission and monitored-input integrity.
+
+This is prepared tooling, not a completed paired measurement. Its result remains
+`accepted_benchmark=false`; CPU/thermal equivalence and decode accounting still
+need review. It does not replace the older fixed-forward accepted scorecard.
