@@ -98,3 +98,10 @@ none of these timings qualifies for acceptance. Across these four runs, the
 unattributed positive engine PID in joint intervals was System/PID 4. Its causal
 origin is not established. Numerical parity remains valid, but accepted scores
 stay 85.6103% short / 106.8707% at 8K. Long-context generation is the next check.
+
+C17 long-context generation now passes all twelve ordered cases with 8205-token
+prompts and 32 generated tokens matching the ordinary baseline. Q6 execution
+markers are [44,44,44], with Q4/QKV execution and six graph-reuse plans validated.
+All 848 hashes verified. This extends full-model output correctness to the long
+workload; the generation run is not an accepted timing result. A monitored long
+Q6-enabled timing run follows using unchanged coverage rules.
