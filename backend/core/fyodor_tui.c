@@ -171,7 +171,12 @@ static void render(tui_state *state,const char *entry,int editing,unsigned colum
     }
     fprintf(stdout,"\033[%u;1H",rows-1);
     style(state,FYODOR_TEXT,FYODOR_SURFACE_RAISED);
-    if(editing) { fputc(':',stdout); fyodor_terminal_text_tail(stdout,entry,columns-2); }
+    if(editing) {
+        fputc(':',stdout); fyodor_terminal_text_tail(stdout,entry,columns-2);
+        fprintf(stdout,"\033[%u;1H",rows);
+        style(state,FYODOR_TEXT_MUTED,FYODOR_BACKGROUND);
+        fyodor_terminal_text(stdout,"Enter run | Esc cancel | Up/Down history | Ctrl-U clear | Ctrl-W word",columns-1);
+    }
     else fyodor_terminal_text(stdout,state->detail?"b back | j/k scroll":state->log,columns-1);
     (void)fflush(stdout);
 }

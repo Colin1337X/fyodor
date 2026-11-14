@@ -156,6 +156,8 @@ space-delimited word without splitting UTF-8 characters. Both controls recover
 from overlong input and leave submitted history intact. Windows private-console
 and Linux real-PTY tests cover clearing and Korean/emoji word removal; the PTY
 test also checks clearing an overflowed line before submitting a new command.
+While command entry is active, the bottom row shows a width-clipped shortcut
+hint for submission, cancellation, history and line/word editing.
 
 An overlong draft retains its rejection state when restored after history
 navigation, preventing accidental execution of its truncated prefix. Windows
