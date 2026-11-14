@@ -36,6 +36,11 @@ import environment
 if any(not environment.desktop_identity_allowed(p) for p in environment.snapshot()['processes']):
     raise SystemExit('Another GPU workload remains')
 
+# Independently revalidate every boundary case and its recorded inputs.
+sys.path.insert(0,str(out.parent/'batch-graphs-20261114'))
+from audit_boundary_matrix import audit as audit_boundaries
+boundary_audit=audit_boundaries(root,out.parent/'batch-graphs-20261114')
+
 # Snapshot every compiled source and prerequisite before creating a context.
 input_paths=[root/'CUDA'/name for name in ('matvec.cu','gemm.cu','resident.cu')]
 input_paths += [root/'optcpp/matvec'/name for name in
@@ -44,7 +49,7 @@ input_paths += [root/'optcpp/matvec'/name for name in
 input_paths += [Path(__file__).resolve(),out/'common.py',out/'compile.json']
 input_paths += [out.parent/f'batch-graphs-20261114/boundary-memcheck-{standard}-{width}-ring{ring}/result.json'
     for standard in ('c17','c23') for width in ('256','512') for ring in ('0','1')]
-input_hashes={str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in input_paths}
+input_hashes={**boundary_audit['sha256'], **{str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in input_paths}}
 
 # This module creates the GPU context. All pending-run checks precede its import.
 from common import *
