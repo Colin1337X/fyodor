@@ -51,13 +51,17 @@ folder.mkdir()
 
 env = {key: value for key, value in os.environ.items() if not key.startswith(('NYA_', 'GGML_', 'LLAMA_'))}
 env.pop('CUDA_VISIBLE_DEVICES', None)
-env['PATH'] = str(root / '.tools/llama-b10809-cuda') + os.pathsep + env['PATH']
+library_directory = root / '.tools/llama-b10809-cuda'
+env['PATH'] = str(library_directory) + os.pathsep + env['PATH']
 spec = importlib.util.spec_from_file_location('environment', out.parent / 'gemma4-qkv-20261029/environment.py')
 gate = importlib.util.module_from_spec(spec); spec.loader.exec_module(gate)
 gate.configure(folder)
 gate.idle()  # A failed idle gate stops this launch; it is not an accepted measurement.
 metadata = dict(accepted_benchmark=False, gate_passed=True, runs=[], errors=[],
                 model_identity=model_identity,
+                child_cwd=str(library_directory),
+                library_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                    for p in library_directory.glob('*.dll')},
                 source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 build_manifest_sha256=hashlib.sha256((reference / 'llama-generation-build.json').read_bytes()).hexdigest())
 result = dict(accepted_benchmark=False, runs=[], errors=[], sampled_coverage_clear=False,
@@ -79,7 +83,7 @@ try:
             metadata['runs'].append(row)
             with (folder / f'{context}.stdout').open('xb') as stdout, (folder / f'{context}.stderr').open('xb') as stderr:
                 row['spawn_before_seconds'] = time.perf_counter()
-                process = subprocess.Popen(command, env=env, stdout=stdout, stderr=stderr)
+                process = subprocess.Popen(command, env=env, cwd=library_directory, stdout=stdout, stderr=stderr)
                 row.update(spawn_after_seconds=time.perf_counter(), process_id=process.pid)
                 try:
                     while process.poll() is None:

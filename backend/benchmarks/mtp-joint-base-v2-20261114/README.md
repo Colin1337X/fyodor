@@ -44,8 +44,9 @@ linear fixtures in both standards. It requires ordinary edge success, matching
 inputs, zero child exit, exactly one zero-error summary, all 22 edge cases, and
 joint-mode selection. Five offline validator tests passed. Both ring and linear
 runs completed in C17 and C23 with zero reported memory errors. These checks
-cover the architecture and stopping-boundary fixtures; the full Gemma model has
-not been run under this sanitizer. Production integration remains pending.
+cover the architecture and stopping-boundary fixtures. The separate full-Gemma
+short-context sanitizer described below also passed. Production integration
+remains pending.
 
 ## Monitored short-context diagnostic
 
@@ -73,22 +74,35 @@ validator tests pass, including incomplete runs, bad summaries, wrong workload
 and absent dispatch. `python run_model_memcheck.py short` starts the short case
 from the repository root when supplied with the script's full relative path.
 
-The short full-model run was launched after these tests. It is pending at this
-checkpoint; running.json is only a launch record, never completion evidence.
-Only a terminal result.json with validated logs can establish a pass. The
-long full-model sanitizer has not run. Sanitizer timings are not benchmarks.
+The short full-model run completed in 2614.43 seconds with exit code zero,
+all twelve cases in order, output parity, all three joint-mode selections,
+and one Compute Sanitizer summary reporting zero errors. The terminal result
+and all nine recorded evidence hashes were verified after completion.
+running.json remains only a launch record; result.json establishes completion.
+The long full-model sanitizer has not run. Sanitizer timings are not benchmarks.
 
 ## Independent reference preparation
 
 run_reference.py adapts the existing aligned-prefix reference runner to this
-experiment's completed correctness evidence and pending full-model sanitizer.
+experiment's completed correctness and full-model short sanitizer evidence.
 It accepts `short|long UNIQUE_LABEL`, validates the unchanged native/reference
 builds and prompt-token evidence, checks exact generated text against the native
 correctness run, and retains continuous GPU coverage. It cannot accept a score.
 The existing 14 reference build inputs and 22 prompt-token proof inputs were
 rechecked with no changes. Six reference interval tests and four comparison
 tests passed. Its GPU exclusivity check refused the active sanitizer before
-creating an output folder. The reference has not executed at this checkpoint.
+creating an output folder. After sanitizer completion, reference-short-A failed
+before inference because backend discovery did not search PATH for CUDA0. The
+unchanged reference binary was then launched from its recorded DLL directory,
+matching upstream's executable/current-directory backend discovery. That child
+working directory and every DLL hash are retained in reference-short-B.
+
+reference-short-B completed all three rounds with matching prompt token IDs and
+exact native output bytes. The collector stopped successfully, but System PID 4
+activity invalidated rounds zero and two; round one alone had clear sampled
+coverage. No score is accepted and no clean round is cherry-picked. This shows
+the unknown activity also occurs in the external reference; it does not establish
+ownership or justify relaxing coverage rules. Both attempts are preserved.
 
 The reference runner also re-hashes both external GGUF files with bounded
 memory before launch. model_identity.py compares them with the previously
