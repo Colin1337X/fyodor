@@ -72,3 +72,11 @@ records and verifies its source/artifact hashes before launching. The actual
 missing-prerequisite check refuses without creating a run directory or launching
 a GPU process (filtered-memcheck-preflight.json). The sanitizer run itself is
 pending; long generation is still active.
+
+C17 long generation completed all twelve ordered parity cases at 8205 prompt
+tokens and 32 generated tokens. Cached-query capture/direct counts are
+[48,56,56,48,48,56], covering three batched-two and three joint cases.
+Existing graph, Q4/Q6 and QKV execution checks pass; all 920 recorded identities
+verify independently. These are full-generation correctness results, not accepted
+timing. The C23 8K lifecycle with memcheck filtered to cached-query kernels has
+now started; its result remains pending.
