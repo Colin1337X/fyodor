@@ -45,3 +45,27 @@ Pending: full-model numerical/lifecycle validation, whole-model sanitizer,
 short/long decode with continuous contamination and equivalent llama.cpp
 comparison. Accepted Gemma scores remain 85.61025294% short and 106.8707255% at
 8K; the 125% target has not been achieved.
+
+## Isolated full-model admission
+
+`build_model.py` appends the candidate to a copy of the generated CUDA source
+and changes only the integer function lookup to `nya_integer_launch_8_3` in a
+copied CUDA host translation unit. Both C17 and C23 compile with strict warnings.
+The production archive and runtime dispatch remain unchanged. The generated
+header, objects, source inputs and build commands are hashed in model-build.json.
+
+The real Gemma 257-prefix ring-KV lifecycle passed both resets with maximum
+scaled logit error 0.0000219546455 against serial execution, within the original
+0.0005 bound. The test retains guards, rejected argument checks, rewind, stale
+suffix rejection and replacement-token validation. External model bytes are
+hashed before execution. The trace confirms integer-path selection and calls;
+the isolated build manifest identifies the selected launch-bound symbol.
+
+Joint-base generation links the previously validated core with this isolated
+CUDA object. Both C17 and C23 executables passed all twelve short-context cases
+(ordinary, serial2, batch2, joint3 over three rounds). Each joint round recorded
+2556 integer kernel calls, and generated output matched ordinary decoding.
+Input and output hashes were verified. This is output correctness evidence,
+without continuous contamination acceptance; wall times are not accepted scores.
+Long-context lifecycle, full-model sanitizer with this candidate and monitored
+short/long throughput remain pending.

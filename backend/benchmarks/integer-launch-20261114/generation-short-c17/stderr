@@ -1,0 +1,97 @@
+CASE round=0 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+Generation profile: mode=ordinary prompt=25 generated=32 decode_loop_ms=753.888400
+Generation interval: mode=ordinary prompt=25 generated=32 clock=qpc start_seconds=135545.526886600 end_seconds=135546.280775000 valid=1
+CASE round=0 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=894.461300
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135547.708889800 end_seconds=135548.603351100 valid=1
+Generation assistant profile: calls=20 forward_ms=138.202900
+CASE round=0 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=768.742500
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135550.042650600 end_seconds=135550.811393100 valid=1
+Generation assistant profile: calls=20 forward_ms=66.459600
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=0 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=582.899500
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135552.249771300 end_seconds=135552.832670800 valid=1
+Generation assistant profile: calls=28 forward_ms=92.054300
+CUDA interleaved weight-reuse calls: 2961
+CUDA Q4 integer batch-four calls: 2556
+CUDA interleaved batch-two Q6 calls: 45
+CUDA batched output projection calls: 10
+CASE round=1 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=582.663200
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135554.264095900 end_seconds=135554.846759100 valid=1
+Generation assistant profile: calls=28 forward_ms=91.784600
+CUDA interleaved weight-reuse calls: 2961
+CUDA Q4 integer batch-four calls: 2556
+CUDA interleaved batch-two Q6 calls: 45
+CUDA batched output projection calls: 10
+CASE round=1 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=770.629200
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135556.283651800 end_seconds=135557.054281000 valid=1
+Generation assistant profile: calls=20 forward_ms=66.373800
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=1 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=822.818100
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135558.485443400 end_seconds=135559.308261500 valid=1
+Generation assistant profile: calls=20 forward_ms=66.331400
+CASE round=1 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+Generation profile: mode=ordinary prompt=25 generated=32 decode_loop_ms=755.879800
+Generation interval: mode=ordinary prompt=25 generated=32 clock=qpc start_seconds=135560.749950700 end_seconds=135561.505830500 valid=1
+CASE round=2 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+Generation profile: mode=ordinary prompt=25 generated=32 decode_loop_ms=756.889300
+Generation interval: mode=ordinary prompt=25 generated=32 clock=qpc start_seconds=135562.966352000 end_seconds=135563.723241300 valid=1
+CASE round=2 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=824.010000
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135565.183639100 end_seconds=135566.007649100 valid=1
+Generation assistant profile: calls=20 forward_ms=66.826100
+CASE round=2 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=770.370800
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135567.433554000 end_seconds=135568.203924800 valid=1
+Generation assistant profile: calls=20 forward_ms=66.930100
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=2 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=25 generated=32 decode_loop_ms=585.282600
+Generation interval: mode=mtp prompt=25 generated=32 clock=qpc start_seconds=135569.630904100 end_seconds=135570.216186700 valid=1
+Generation assistant profile: calls=28 forward_ms=93.744100
+CUDA interleaved weight-reuse calls: 2961
+CUDA Q4 integer batch-four calls: 2556
+CUDA interleaved batch-two Q6 calls: 45
+CUDA batched output projection calls: 10
+CUDA assisted feed-forward calls: 816
