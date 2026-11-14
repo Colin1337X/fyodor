@@ -65,3 +65,29 @@ allocation did not compensate for partial unrolling; loop/addressing overhead
 and reduced compiler scheduling freedom are hypotheses, not measured causal
 attributions. No real-model or throughput improvement is claimed, and the
 existing metadata kernel and production dispatch remain unchanged.
+
+## Upload-ordering corrected confirmation
+
+After a separate normalization probe exposed missing upload ordering,
+`probe_upload_sync.py` added a context fence after buffer initialization and
+before the nonblocking graph stream is used. The fence is outside timing.
+This completed eight shapes with ABBA BAAB order, 1000 warmup operations per
+order, 40 observations per implementation/shape and exact timed-output checks.
+Use this corrected evidence rather than the historical unfenced probe.
+Positive changes mean slower than the existing metadata kernel.
+
+| Columns | Rows | Corrected latency change |
+| ---: | ---: | ---: |
+| 3840 | 512 | +69.519% |
+| 3840 | 2048 | +56.394% |
+| 3840 | 4096 | +56.838% |
+| 3840 | 8192 | +58.554% |
+| 3840 | 15360 | +50.772% |
+| 4096 | 3840 | +56.863% |
+| 8192 | 3840 | +47.505% |
+| 15360 | 3840 | +72.733% |
+
+The production-integration decision is unchanged: no reliable improvement
+for the dominant expansion workload was established. This remains a synthetic
+repeated-weight diagnostic without continuous contamination acceptance; it
+does not update accepted llama.cpp scores. Historical evidence is preserved.

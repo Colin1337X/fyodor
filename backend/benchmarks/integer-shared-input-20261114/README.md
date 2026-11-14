@@ -60,3 +60,29 @@ The lower offline register count did not compensate for this implementation's
 shared-memory and synchronization overhead. The precise cost split is not
 profiled here. Retain the current metadata kernel; do not integrate this
 candidate or claim a model speed improvement from it.
+
+## Upload-ordering corrected confirmation
+
+After a separate normalization probe exposed missing upload ordering,
+`probe_upload_sync.py` added a context fence after buffer initialization and
+before the nonblocking graph stream is used. The fence is outside timing.
+This completed eight shapes with ABBA BAAB order, 1000 warmup operations per
+order, 40 observations per implementation/shape and exact timed-output checks.
+Use this corrected evidence rather than the historical unfenced probe.
+Positive changes mean slower than the existing metadata kernel.
+
+| Columns | Rows | Corrected latency change |
+| ---: | ---: | ---: |
+| 3840 | 512 | +36.944% |
+| 3840 | 2048 | +30.382% |
+| 3840 | 4096 | +30.604% |
+| 3840 | 8192 | +30.318% |
+| 3840 | 15360 | +26.133% |
+| 4096 | 3840 | +29.993% |
+| 8192 | 3840 | +18.138% |
+| 15360 | 3840 | +22.702% |
+
+The production-integration decision is unchanged: no reliable improvement
+for the dominant expansion workload was established. This remains a synthetic
+repeated-weight diagnostic without continuous contamination acceptance; it
+does not update accepted llama.cpp scores. Historical evidence is preserved.
