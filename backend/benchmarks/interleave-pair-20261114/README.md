@@ -1,91 +1,61 @@
 # Adjacent gate/up input conversion reuse (experimental)
 
-The retained joint-base profile identifies matrix work as about 85% of recorded
-GPU kernel time. Its largest group is batch-four Q4 feed-forward expansion.
-`CUDA/resident.inc` currently converts `p->norm` into interleaved input separately
-for the gate and up projections, despite both reading the same input and using
-the same scratch layout. This candidate skips the second conversion only when
-both adjacent projections select an interleaved kernel and neither uses cuBLAS.
-Batch sizes are restricted to two/four; aligned prefix batches are excluded.
-The reuse flag is cleared immediately after the up call, including its failure
-path, so no scratch validity is inferred across layers, requests or graph builds.
+The joint-base profile identifies matrix work as about 85% of recorded GPU kernel
+time. Its largest group is batch-four Q4 feed-forward expansion. The original
+`CUDA/resident.inc` converts `p->norm` separately for gate and up, although both
+read the same input and use the same scratch layout.
 
-`build.py` modifies only an isolated copy of the host translation unit. It reuses
-the validated launch-bound candidate header and compiles strict C17/C23 objects.
-It checks the original build manifest before and after compilation. Production
-source, archive, dispatch and the currently running sanitizer inputs are intact.
-No new C++ dependency is introduced; this remains removable CUDA host C code.
+This isolated host-C candidate skips the second conversion only for adjacent
+projections that both select an interleaved kernel, at batch two or four, without
+cuBLAS dispatch. Aligned prefix batches are excluded. The reuse flag is cleared
+immediately after the up call, before error handling. No scratch validity is
+inferred across layers, requests or graph builds. Projection arithmetic is intact.
 
-Both host builds pass (`build.json`). Initial C17/C23 real-model lifecycle
-validation also passes, as recorded below; throughput remains unvalidated. It is not integrated
-or enabled by default. It saves one conversion launch per eligible FFN pair;
-it does not remove either projection or change their arithmetic. The whole-model
-benefit is unknown and must be measured after the current candidate finishes.
+Production source and dispatch remain unchanged. No C++ dependency is introduced.
+`build.py` transforms an isolated host translation unit; `build_executables.py`
+links C17/C23 lifecycle and joint-base generation executables. Both verify the
+original validated build inputs. Compile/link manifests alone are not admission.
 
-Remaining gates: validate long-context lifecycle and short/long generation
-logits, output parity, reset/rewind and failure recovery; run Compute Sanitizer;
-then compare end-to-end decode with and without reuse under clean monitoring.
-Do not replace accepted scores from a compile check or inferred launch savings.
+## Completed checks
 
-`build_executables.py` now links four isolated C17/C23 executables: joint-base
-generation and the existing four-token lifecycle harness. The original build
-inputs and production archive hashes match before and after linking. The outputs
-are recorded in `executables.json`, with `gpu_validated=false`. Linking is not
-admission: the current launch-bound candidate remains first in the GPU queue.
-Before throughput acceptance, confirm the reuse branch is exercised and compare
-its launch inventory with the original; parity alone does not prove selection.
+- `lifecycle-c17-257` and `lifecycle-c23-257`: both reset cycles pass four-token
+  verification with ring KV. Maximum scaled error is 2.19546455e-05 against the
+  original 0.0005 bound. Original reset, rewind, replacement, stale-suffix and
+  output-guard assertions remain in the lifecycle harness.
+- `lifecycle-c17-8192`: both reset cycles pass at prefix 8192, with maximum scaled
+  error 1.63989979e-05, 568 integer calls and exit zero. All 33 recorded hashes
+  independently verified.
+- `inventory-257`: baseline performs 658 conversions and 658 projections;
+  candidate performs 562 conversions, reuses 96 inputs and retains 658
+  projections. Both lifecycle runs pass; all 47 hashes independently verified.
+  This removes 14.59% of conversion dispatches in this test, not 14.59% of decode
+  time. Counts include host dispatch and graph construction, not GPU replays.
+- `generation-short-c17`: all twelve ordinary/serial2/batch2/joint3 cases pass
+  output parity in forward/reverse/forward order, with 25 prompt tokens and 32
+  generated outputs. All three joint rounds execute the integer kernel; all 41
+  input/output hashes independently verified. Unmonitored timing is not accepted.
 
-## Initial real-model lifecycle validation
+## Reproduction and remaining gates
 
-`run_lifecycle.py` now checks all linked-input hashes before execution and again
-at exit, verifies model identity, and retains the original lifecycle assertions.
-C17 and C23 at prefix 257 / ring KV / four-token verification both pass: both
-reset cycles report max scaled error 2.19546455e-05 against the unchanged 0.0005
-bound, with positive integer execution counts and unchanged inputs. These checks
-cover reset, rewind, replacement and stale-suffix behavior from `test_verify.c`.
-They do not yet prove the reuse branch's launch savings or whole-model speed.
-The 8192-prefix C17 lifecycle check is next. Production dispatch remains unchanged.
+Run from the engineering worktree root with `PYTHONDONTWRITEBYTECODE=1`:
 
-## Dispatch inventory diagnostic
+```
+python backend/benchmarks/interleave-pair-20261114/run_lifecycle.py c17 8192
+python backend/benchmarks/interleave-pair-20261114/run_inventory.py
+python backend/benchmarks/interleave-pair-20261114/run_generation.py long c17
+python backend/benchmarks/interleave-pair-20261114/run_model_memcheck.py short
+```
 
-`build_inventory.py` builds separate baseline and reuse C17 host objects and
-lifecycle executables, instrumenting conversion and reuse dispatch counts.
-Both builds compile and link (`inventory-build.json`), leaving validated inputs
-unchanged. `run_inventory.py` is prepared to require equal projection counts,
-zero baseline reuse, positive candidate reuse, and an exact conversion-count
-reduction equal to the reused count, alongside the original lifecycle checks.
-It has not run on the GPU yet. Counts describe host dispatch/graph construction,
-not replayed GPU launches or throughput. No acceptance gate is relaxed.
+Runners refuse to overwrite existing evidence. Long-context generation is active;
+its result is not yet available. The full-model sanitizer runner is prepared but
+has not executed. Its seven evidence-validator regression tests pass (using the
+existing integer-launch sanitizer test cases against this runner). It requires
+successful build, context-generation, short/long lifecycle and dispatch-inventory
+proofs, validates transitive hashes before and after execution, and requires
+exactly one zero-error sanitizer summary plus all twelve matching generation
+cases. Runner tests do not establish GPU memory safety.
 
-`run_generation.py` prepares short/long C17/C23 generation correctness checks
-for the reuse executables. It requires the completed 257-prefix C17/C23 lifecycle
-proofs, retains all twelve forward/reverse/forward cases, verifies dispatch and
-output parity, and checks transitive build/evidence hashes before and after the
-child. This runner is prepared only; generation has not yet been executed with
-reuse. The active 8192-prefix lifecycle run retains exclusive GPU use first.
-
-## Long-context lifecycle validation
-
-`lifecycle-c17-8192/result.json` passes both reset cycles at prefix 8192 with
-four-token verification and ring KV. Each cycle reports max scaled error
-1.63989979e-05 against the unchanged 0.0005 bound. The child exited zero, reported
-568 integer calls, and all 33 recorded input/output hashes were independently
-verified. This validates lifecycle correctness, not throughput or launch savings.
-
-## Confirmed conversion dispatch reduction
-
-`inventory-257/result.json` passes the paired baseline/reuse lifecycle check.
-Baseline: 658 conversions, zero reuse, 658 projections. Candidate: 562 conversions,
-96 reused inputs, 658 projections. Thus this workload removes 96 conversion
-dispatches (14.59%) while preserving projection count and lifecycle correctness.
-All 47 recorded hashes independently verify. These host counts include graph
-construction; they do not establish a GPU replay count or throughput speedup.
-
-## Short-context generation correctness
-
-`generation-short-c17/result.json` passes all twelve ordinary/serial2/batch2/
-joint3 generation cases in forward/reverse/forward order, with 25 prompt tokens
-and 32 generated outputs. All outputs match and all three joint rounds select
-the integer kernel. Transitive input/output hashes verify. These unmonitored
-wall times do not update accepted llama.cpp scores. Long-context generation is
-the next check; production dispatch remains unchanged.
+Remaining gates include long generation parity, full-model sanitizer validation,
+and controlled paired throughput comparisons. Review the net decode benefit
+before production integration. Accepted llama.cpp scores remain 85.61025294%
+short and 106.8707255% at 8K. No result here establishes the requested 125% target.
