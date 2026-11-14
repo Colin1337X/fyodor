@@ -53,3 +53,13 @@ context-creating CUDA helper. These are preparation checks, not numerical passes
 After that sanitizer completes successfully, run check_kernel.py without flags
 for raw validation. Sanitizer labels only select separate evidence filenames;
 they do not themselves invoke or certify Compute Sanitizer.
+
+run_sanitizer.py invokes the actual Compute Sanitizer executable for memcheck,
+racecheck or synccheck, requires the complete passing raw sweep and unchanged
+inputs, records the child PID, and checks all 222 cases and eight rejections
+again. Both projection bounds, exact fusion output and guards are mandatory.
+The result requires one zero-error summary (or zero hazards/errors/warnings for
+racecheck) and matching raw/sanitized source identities. Seven offline validator
+tests pass. sanitizer-preflight-refusal.json records refusal before launching
+the sanitizer because raw validation is still pending. No GPU sanitizer result
+is claimed for this fusion candidate yet.
