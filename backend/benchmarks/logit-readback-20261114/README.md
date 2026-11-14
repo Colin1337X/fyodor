@@ -80,8 +80,11 @@ zero, exactly one zero-error summary, all twelve ordered matching cases and
 three actual integer-kernel execution counts. Seven existing sanitizer-evidence
 regression tests passed against this runner, covering failed exits, malformed
 summaries, missing/reordered/wrong-context cases and absent kernel execution.
-The short-context full-model sanitizer is now running. No completed memory-safety
-result is available yet.
+The short-context full-model sanitizer completed successfully in 2692.05 seconds:
+exit zero, exactly one zero-error summary and all twelve matching generation
+cases. Each joint round executed 2556 integer kernels. All 68 recorded hashes
+independently verified after completion. This instrumented run is correctness
+evidence only; none of its timings updates performance scores.
 
 ## Completed long-context generation
 
@@ -90,7 +93,7 @@ ordinary/serial2/batch2/joint3 cases at 8205 prompt tokens and 32 generated
 outputs, in forward/reverse/forward order. Each joint round recorded 2556
 integer calls. All 60 recorded input/output hashes independently verified after
 completion. These unmonitored correctness timings do not update performance
-scores. The full-model short-context sanitizer is the next active check.
+scores. The full-model short-context sanitizer also passed, as recorded above.
 
 ## Prepared monitored comparison runner
 
@@ -101,5 +104,5 @@ including their transitive hashes. It retains model identity, process/idle gates
 continuous GPU coverage, output parity, actual integer dispatch and post-run
 input-integrity checks. Three existing input-integrity regressions passed against
 this runner, covering changed/deleted inputs and output inventory separation.
-It has not run; the sanitizer prerequisite remains active. Neither successful
+It has not run; the sanitizer prerequisite is now satisfied. Neither successful
 monitoring nor generation timing alone updates accepted decode scores.
