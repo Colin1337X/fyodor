@@ -59,3 +59,11 @@ C23 short generation also passed all twelve cases with [96,96,96] four-row
 execution markers, required companion kernels and six reused graph plans.
 All 922 hashes verified. The complete short-model memcheck is the next gate;
 no accepted throughput change follows from generation parity alone.
+
+Full-model short memcheck passed all twelve ordered generation cases with
+output parity, required independent four-row/Q6/Q4/QKV execution evidence,
+six reused graph plans and a unique zero-error sanitizer summary. Exit code
+was zero, elapsed instrumented time 2590.5897336 seconds, and all 929 hashes
+verified after completion. This is correctness evidence, not throughput.
+Monitored short on/off timing is the next measurement; coverage policy remains
+unchanged and long generation is still pending.
