@@ -188,3 +188,25 @@ void fyodor_terminal_text(FILE *out,const char *text,size_t limit)
         else { if(limit-written<4) break; fprintf(out,"\\x%02x",(unsigned)c); written+=4; }
     }
 }
+void fyodor_terminal_text_tail(FILE *out,const char *text,size_t limit)
+{
+    const unsigned char *first=(const unsigned char *)text;
+    const unsigned char *end=first+strlen(text),*start=end;
+    size_t used=0;
+    while(start>first) {
+        unsigned char c=start[-1]; size_t width=c>=32&&c<127?1:4;
+        if(width>limit-used) break;
+        used+=width; --start;
+    }
+    if(start>first) {
+        size_t dots=limit<3?limit:3;
+        for(size_t i=0;i<dots;++i) fputc('.',out);
+        limit-=dots; start=end; used=0;
+        while(start>first) {
+            unsigned char c=start[-1]; size_t width=c>=32&&c<127?1:4;
+            if(width>limit-used) break;
+            used+=width; --start;
+        }
+    }
+    fyodor_terminal_text(out,(const char *)start,limit);
+}

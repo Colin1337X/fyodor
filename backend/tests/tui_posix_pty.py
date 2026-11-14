@@ -79,6 +79,11 @@ try:
         expect(b'Command syntax error:')
         os.write(master, b'?jjj:resource import\r')
         expect(b'Import packages through the CLI.')
+        os.write(master, b':' + b'x' * 160 + b'TAIL_MARKER')
+        expect(b'TAIL_MARKER')
+        os.write(master, b'\x7fZ')
+        expect(b'TAIL_MARKEZ')
+        os.write(master, b'\x1b')
         os.write(master, b'q')
         expect(b'\x1b[?1049l')
         assert child.wait(timeout=5) == 0

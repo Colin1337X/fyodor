@@ -134,3 +134,10 @@ Linux C17/C23 parser, workflow and real-PTY checks pass, including a long resour
 and list boundary movement. Windows parser, workflow and private-console checks
 also pass, including Home/End and Page Up/Down in detail output. No Go or Rust
 runtime is introduced.
+
+Command entry keeps its tail visible when its escaped display exceeds the
+terminal width. An ellipsis marks the hidden prefix; the full command remains
+intact. Clipping respects complete printable byte escapes, and Backspace updates
+the visible tail. Linux C17/C23 PTY tests and the Windows private-console test
+cover long input, editing and cancellation; parser tests cover exact widths,
+small widths and escaped control/non-ASCII bytes.

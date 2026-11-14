@@ -14,4 +14,6 @@ void fyodor_terminal_size(unsigned *columns, unsigned *rows);
 /* Escapes controls and non-ASCII bytes into printable ASCII, including bidi
  * and terminal escape sequences. Width therefore equals rendered byte count. */
 void fyodor_terminal_text(FILE *out, const char *text, size_t limit);
+/* Tail clipping for command entry, with an ellipsis when clipped. */
+void fyodor_terminal_text_tail(FILE *out, const char *text, size_t limit);
 #endif
