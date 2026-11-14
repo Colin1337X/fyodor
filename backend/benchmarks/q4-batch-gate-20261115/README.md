@@ -32,3 +32,24 @@ shape rejection, sanitizer checks, paired synthetic timing, then full-model
 parity and monitored performance before considering integration. Fusion can
 regress due to scheduling or activation latency; compilation alone establishes
 neither correctness nor performance. Accepted scores remain unchanged.
+
+## Guarded numerical harness prepared
+
+check_kernel.py prepares 222 cases plus eight unsupported-shape checks. Gate and
+up use independently generated native weights. Each separate projection must
+meet the existing independent C float64 oracle bound; fused output must then be
+byte-exact against those projections followed by the existing nya_vector GELU.
+All final values must be finite. Inputs, both weight arrays, interleaved-input
+guards and output guards are checked. Cases cover warp/block row boundaries,
+the full 15360-by-3840 shape, finite half-coefficient extremes and zero, constant,
+alternating, subnormal, large and impulse activations. Large activations are
+bounded at 2^12 here to keep the gated product finite; this is not a claim of
+all-input overflow handling.
+
+The combined reference/candidate harness compiles offline, with all required
+entry points present. preflight-refusal.json records actual refusal while the
+joint-one full-model sanitizer prerequisite is missing, before importing the
+context-creating CUDA helper. These are preparation checks, not numerical passes.
+After that sanitizer completes successfully, run check_kernel.py without flags
+for raw validation. Sanitizer labels only select separate evidence filenames;
+they do not themselves invoke or certify Compute Sanitizer.
