@@ -48,6 +48,13 @@ lifecycle check is running; no result for it is claimed yet.
 requires six target plans with more batched replays than captures (three batch2
 and three joint3 runs), so matching output through fallback alone cannot pass.
 
+`run_model_memcheck.py` is prepared for the new binaries and requires successful
+generation and lifecycle proofs. Its validator retains exact case order,
+metadata selection, integer execution, output parity and one zero-error summary,
+and also requires capture plus reuse in six verification cases. Nine CPU tests
+pass, including missing/duplicated graph evidence and capture-without-reuse.
+No full-model graph sanitizer result is claimed yet.
+
 Real-model lifecycle results, generation parity, full-model memory checks,
 two-token and topology-boundary coverage and controlled timing must establish
 runtime correctness before production admission. No speedup is claimed from
