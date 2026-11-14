@@ -108,3 +108,15 @@ All forty samples per variant and their standard deviations remain in timing.jso
 This supports testing against the stronger experimental pair-row baseline next;
 it does not justify production integration. Full-model correctness and monitored
 performance remain pending. Accepted llama.cpp/PyTorch scores are unchanged.
+
+## Completed comparison against paired projections
+
+The independent pair-row comparison also passes all six shapes with byte-exact
+outputs and guards. It uses the same four forward/reverse orders, forty samples
+per variant, and complete interleave/projection/GELU operation. At the model's
+3840-column, 15360-row expansion, two paired projections plus GELU average
+0.2578501763 ms versus 0.2437933269 ms fused (5.4500% lower latency).
+The complete samples, standard deviations and verified prerequisites are in
+timing-pair.json. This remains synthetic diagnostic evidence, not an accepted
+model throughput result. An isolated full-model integration is the next gate;
+production dispatch and accepted scores remain unchanged.
