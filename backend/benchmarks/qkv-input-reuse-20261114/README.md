@@ -68,3 +68,11 @@ hits and one graph capture with two replays. All 670 hashes per result were
 independently verified. These counters prove selection, not elapsed-time
 savings; generation, memory safety and paired throughput remain unproven.
 The 8192-prefix lifecycle is the next GPU check.
+
+The monitored timing runner is prepared behind candidate control/lifecycle,
+context-specific generation, C23 generation and full-model short memcheck
+proofs, with the unchanged base device-boundary proofs also verified. It
+requires positive QKV reuse and graph replay markers, records the explicit
+environment overrides and uses the existing continuous GPU activity collector.
+The missing-memcheck gate was exercised without launching another GPU job.
+Coverage alone cannot accept a benchmark; activity failures remain disqualifying.
