@@ -34,7 +34,7 @@ static int call(nya_server *server, const char *method, const char *path, const 
 #else
         CHECK(select(receiver+1,&read_set,NULL,NULL,&timeout) > 0);
 #endif
-        int received = recv(receiver,response_text+used,(int)(sizeof(response_text)-used-1),0);
+        int received = (int)recv(receiver,response_text+used,(nya_socket_io_length)(sizeof(response_text)-used-1),0);
         CHECK(received >= 0); if (received == 0) break; used += (size_t)received;
     }
     nya_socket_close(receiver); response_text[used] = '\0';
