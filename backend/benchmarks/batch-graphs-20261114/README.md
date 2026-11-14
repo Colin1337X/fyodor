@@ -59,7 +59,14 @@ generation and lifecycle proofs. Its validator retains exact case order,
 metadata selection, integer execution, output parity and one zero-error summary,
 and also requires capture plus reuse in six verification cases. Nine CPU tests
 pass, including missing/duplicated graph evidence and capture-without-reuse.
-The full-model short graph sanitizer is now running; no result is claimed yet.
+The full-model short graph sanitizer passed all twelve ordered parity cases,
+with one zero-error summary and exit code zero. All 165 recorded hashes
+independently verified. Six verification plans captured and reused batched
+graphs (batch2: one capture/nine replays; joint3: two captures/ten replays).
+The run took 2741 seconds. A competing Roblox process was observed and stopped
+during this correctness run; `gpu-cleanup-roblox.json` records the cleanup.
+Sanitized call times are excluded from performance acceptance. Long-context
+generation, graph-specific recovery checks and controlled timing remain pending.
 
 `boundaries.c` and its build/run scripts prepare additional F32 fixture coverage
 for head widths 256/512 and linear/ring KV. Within the same plan, tests advance
