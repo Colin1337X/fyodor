@@ -41,3 +41,25 @@ SM120 offline assembly reports 40 registers, no stack frame or spills, and
 no barriers for the prototype. These are compiler resource reports, not
 achieved occupancy or a measured speedup. Compilation and assembly evidence
 hashes independently verified before committing. GPU execution is pending.
+
+The independent numerical oracle is native C with double coefficients,
+products, sums and absolute-product sums. C17/C23 shared libraries compiled
+at O3 with strict warnings; each passed 198 finite fixtures against Python
+`math.fsum`, three nonfinite-coefficient rejections and an invalid-argument
+check. It has no CUDA dependency and uses none of the device metadata helpers.
+
+`check_kernel.py` is prepared for 219 cases: 17 shapes including row-tile
+tails, all 196 finite-half coefficient pairs at 17 rows, and six additional
+bounded input patterns (zero, one, alternating, subnormal, large, impulse).
+Both the native oracle kernel and tensor-core candidate must satisfy the
+existing `2e-6 * sum(abs(double products)) + 1e-6` bound on every output,
+including the large shapes. Input/weight/output guards and independent
+interleave layout checks remain required. Eight unsupported-shape calls use
+null inputs and must leave output untouched. Finite extremes near F32 overflow
+are not covered by these bounded patterns and remain an admission limitation.
+
+The harness verifies compilation, assembly and host-oracle proof hashes and
+requires the active QKV full-model sanitizer to finish before creating a GPU
+context. Its pending-prerequisite refusal was exercised. None of these 219
+GPU cases has run yet; preparation and host oracle checks are not candidate
+GPU correctness evidence. No numerical tolerance was relaxed.
