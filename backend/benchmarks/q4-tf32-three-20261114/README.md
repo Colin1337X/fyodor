@@ -72,3 +72,9 @@ actual child PID and preserves terminal failure evidence. Six CPU validator
 tests pass, including missing/reordered cases, malformed numerical evidence,
 guard failures and nonzero/duplicate sanitizer summaries. The missing-raw
 prerequisite refusal was exercised; no tensor-core sanitizer has run yet.
+
+Offline disassembly of the verified SM120 cubin contains three
+`HMMA.1688.F32.TF32` instruction sites in the candidate function. The complete
+function disassembly, tool identities and hashes are retained. This confirms
+intended tensor-core code generation only; static sites do not prove dynamic
+execution, numerical correctness, achieved occupancy or performance.
