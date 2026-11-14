@@ -121,3 +121,13 @@ hashes and ten output hashes independently verified. Every measured interval
 failed attribution of overlapping GPU activity. This separate reference run
 is diagnostic only; neither it nor the earlier candidate measurements establish
 an accepted llama.cpp-relative score or the 125% target.
+
+Monitored long EnabledA aborted after 673 PDH samples: the data call to
+PdhGetFormattedCounterArrayW returned 0xc0000bba (invalid data). The owned
+collector exited 1; the runner detected its exit and terminated its workload.
+Six completed cases had matching output, but the full twelve-case inventory
+was incomplete, so result output_parity=false. Two joint rounds completed
+with paired-row markers [128,128]. All 806 hashes independently verified and
+inputs were unchanged. This failed capture is retained, not restarted or
+accepted as a performance result. It reproduces the collector failure seen
+in the earlier QKV long run, despite the successful idle observer control.
