@@ -74,3 +74,11 @@ valid, missing, failed, nonzero-exit and changed-input evidence. Device executio
 has not yet run; neither graph ordering nor quantized replay parity is claimed.
 `--memcheck` selects a separate result filename for running under Compute
 Sanitizer; that filename alone is not proof of a successful sanitizer summary.
+
+`run_memcheck.py` now wraps that mode after ordinary replay validation succeeds.
+It requires all 192 cases in their exact order, the expected changing tokens and
+positions, parity/guards, a zero process exit and exactly one zero-error summary.
+It also checks unchanged inputs and identical raw/sanitized compilation options
+and source hashes. Seven CPU validator tests pass, including missing/duplicate
+cases, incorrect replay fields, cleanup failure and invalid sanitizer summaries.
+The wrapper is prepared; no GPU replay or replay-sanitizer result exists yet.
