@@ -34,3 +34,14 @@ are recorded in `executables.json`, with `gpu_validated=false`. Linking is not
 admission: the current launch-bound candidate remains first in the GPU queue.
 Before throughput acceptance, confirm the reuse branch is exercised and compare
 its launch inventory with the original; parity alone does not prove selection.
+
+## Initial real-model lifecycle validation
+
+`run_lifecycle.py` now checks all linked-input hashes before execution and again
+at exit, verifies model identity, and retains the original lifecycle assertions.
+C17 and C23 at prefix 257 / ring KV / four-token verification both pass: both
+reset cycles report max scaled error 2.19546455e-05 against the unchanged 0.0005
+bound, with positive integer execution counts and unchanged inputs. These checks
+cover reset, rewind, replacement and stale-suffix behavior from `test_verify.c`.
+They do not yet prove the reuse branch's launch savings or whole-model speed.
+The 8192-prefix C17 lifecycle check is next. Production dispatch remains unchanged.
