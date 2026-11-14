@@ -49,7 +49,7 @@ verified after completion.
 8K lifecycle before testing twelve ordinary/serial2/batch2/joint3 cases. It also
 requires six target plans with more batched replays than captures (three batch2
 and three joint3 runs), so matching output through fallback alone cannot pass.
-Short-context C17 generation passed all twelve ordered output-parity cases,
+Short-context C17 and C23 generation each passed all twelve ordered output-parity cases,
 including the required six plans with actual cached batched replay. This is
 correctness evidence only; no continuous activity coverage or accepted timing
 is provided by that generation run.
@@ -59,7 +59,7 @@ generation and lifecycle proofs. Its validator retains exact case order,
 metadata selection, integer execution, output parity and one zero-error summary,
 and also requires capture plus reuse in six verification cases. Nine CPU tests
 pass, including missing/duplicated graph evidence and capture-without-reuse.
-No full-model graph sanitizer result is claimed yet.
+The full-model short graph sanitizer is now running; no result is claimed yet.
 
 `boundaries.c` and its build/run scripts prepare additional F32 fixture coverage
 for head widths 256/512 and linear/ring KV. Within the same plan, tests advance
@@ -68,8 +68,12 @@ tokens after rewinds and repeating after reset. The independent session disables
 graphs and produces serial-reference logits. Assertions require exact cache
 capture/replay deltas, six captured topologies, 42 verifications, output guards,
 one download each and the unchanged 0.0005 scaled-error bound. C17/C23 fixture
-binaries compile successfully; GPU fixture execution is still pending. These
-small F32 cases complement real-model quantized validation, not replace it.
+binaries compile successfully. All eight GPU fixture combinations (C17/C23,
+width 256/512, linear/ring KV) passed 42 cases each: 336 total verifications.
+Every fixture reported six captures and 42 replays, including changing-token
+rewinds and the second reset cycle. Recorded hashes independently verified.
+These small F32 cases complement real-model quantized validation, not replace it;
+they have not yet been repeated under Compute Sanitizer.
 
 Real-model lifecycle results, generation parity, full-model memory checks,
 two-token and topology-boundary coverage and controlled timing must establish
