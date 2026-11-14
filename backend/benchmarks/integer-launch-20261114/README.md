@@ -134,3 +134,13 @@ and all three joint rounds report 2556 integer calls. The runner's eight recorde
 input/output hashes were independently rechecked. These unmonitored wall times
 are not accepted throughput; the accepted fixed-forward scores remain unchanged.
 Short-context monitored run A is the next measurement gate.
+
+## Rejected monitored short run A
+
+`monitored-short-A` completed twelve matching generation cases, three joint
+rounds and 2556 integer calls per joint round. All snapshotted inputs stayed
+unchanged. The collector stopped cooperatively, but decode coverage reports
+invalid target counters and activity outside the benchmark process. Observed
+PIDs include Desktop Window Manager (1992), Codex (21464), and System (4).
+These are not nonessential GPU applications to terminate. The run is retained
+as rejected evidence; it does not update the accepted short/long scores.
