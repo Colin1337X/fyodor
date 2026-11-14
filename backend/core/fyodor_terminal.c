@@ -12,6 +12,7 @@ static DWORD input_mode, output_mode;
 #include <sys/ioctl.h>
 #include <poll.h>
 static struct termios saved_mode;
+static int pending_key=FYODOR_KEY_IDLE;
 #endif
 static int active;
 static volatile sig_atomic_t interrupted;
@@ -45,6 +46,7 @@ int fyodor_terminal_begin(void)
     }
 #else
     if(!isatty(STDIN_FILENO)||!isatty(STDOUT_FILENO)||tcgetattr(STDIN_FILENO,&saved_mode)!=0) return 0;
+    pending_key=FYODOR_KEY_IDLE;
     struct termios raw=saved_mode;
     raw.c_lflag &= (tcflag_t)~(ICANON|ECHO|ISIG);
     raw.c_iflag &= (tcflag_t)~(IXON|ICRNL);
@@ -78,6 +80,45 @@ void fyodor_terminal_size(unsigned *columns,unsigned *rows)
     if(*rows<1) *rows=1;
     if(*rows>100) *rows=100;
 }
+/* Decode terminal key sequences while keeping a quick key after Escape. */
+int fyodor_terminal_decode_key(int (*reader)(void *),void *context,int *pending)
+{
+    int key=*pending;
+    *pending=FYODOR_KEY_IDLE;
+    if(key==FYODOR_KEY_IDLE) key=reader(context);
+    if(key!=27) return key;
+    key=reader(context);
+    if(key!='[' && key!='O') {
+        if(key!=FYODOR_KEY_IDLE) *pending=key;
+        return 27;
+    }
+    for(unsigned i=0;i<64;++i) {
+        key=reader(context);
+        if(key<0) return key;
+        if(key>=0x40 && key<=0x7e) {
+            if(key=='A') return FYODOR_KEY_UP;
+            if(key=='B') return FYODOR_KEY_DOWN;
+            if(key=='C') return FYODOR_KEY_RIGHT;
+            if(key=='D') return FYODOR_KEY_LEFT;
+            return FYODOR_KEY_IDLE;
+        }
+        if(key<0x20 || key>0x3f) { *pending=key; return FYODOR_KEY_IDLE; }
+    }
+    return FYODOR_KEY_IDLE;
+}
+#ifndef _WIN32
+static int terminal_byte(void *context)
+{
+    (void)context;
+    struct pollfd fd={STDIN_FILENO,POLLIN,0};
+    int ready=poll(&fd,1,100);
+    if(ready<0) return interrupted?FYODOR_KEY_END:FYODOR_KEY_IDLE;
+    if(ready==0) return FYODOR_KEY_IDLE;
+    unsigned char byte;
+    if(read(STDIN_FILENO,&byte,1)!=1) return FYODOR_KEY_END;
+    return byte;
+}
+#endif
 int fyodor_terminal_key(void)
 {
     if(interrupted) return FYODOR_KEY_END;
@@ -101,13 +142,7 @@ int fyodor_terminal_key(void)
     if(count<=0) return FYODOR_KEY_IDLE;
     return pending[at++];
 #else
-    struct pollfd fd={STDIN_FILENO,POLLIN,0};
-    int ready=poll(&fd,1,100);
-    if(ready<0) return interrupted?FYODOR_KEY_END:FYODOR_KEY_IDLE;
-    if(ready==0) return FYODOR_KEY_IDLE;
-    unsigned char byte;
-    if(read(STDIN_FILENO,&byte,1)!=1) return FYODOR_KEY_END;
-    return byte;
+    return fyodor_terminal_decode_key(terminal_byte,NULL,&pending_key);
 #endif
 }
 void fyodor_terminal_text(FILE *out,const char *text,size_t limit)

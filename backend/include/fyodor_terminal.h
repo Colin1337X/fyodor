@@ -7,6 +7,8 @@ enum { FYODOR_KEY_END=-1, FYODOR_KEY_IDLE=-2, FYODOR_KEY_UP=256,
 int fyodor_terminal_begin(void);
 void fyodor_terminal_end(void);
 int fyodor_terminal_key(void);
+/* Reader returns a byte or END/IDLE. Initialize pending to FYODOR_KEY_IDLE. */
+int fyodor_terminal_decode_key(int (*reader)(void *),void *context,int *pending);
 void fyodor_terminal_size(unsigned *columns, unsigned *rows);
 /* Escapes controls and non-ASCII bytes into printable ASCII, including bidi
  * and terminal escape sequences. Width therefore equals rendered byte count. */
