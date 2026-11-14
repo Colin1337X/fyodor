@@ -282,3 +282,47 @@ int tui_metrics(tui_state *s)
     snprintf(s->status,sizeof(s->status),failed?"Metrics read failed":s->malformed?"Metrics updated; malformed rows skipped (see training panel)":"Metrics refreshed from completed CSV rows. Space freezes this view.");
     return failed?-1:0;
 }
+
+static int input_byte(int (*reader)(void *),void *context,int *pending)
+{
+    if(*pending>=0) {int c=*pending;*pending=-1;return c;}
+    return reader(context);
+}
+uint32_t tui_read_key(int (*reader)(void *),void *context,int *pending)
+{
+    int c=input_byte(reader,context,pending);if(c<0) return 0;
+    if(c==27) {
+        int next=input_byte(reader,context,pending);
+        if(next=='[' || next=='O') {
+            /* Consume complete CSI/SS3 sequences, including unsupported keys,
+             * so Delete/Home/function-key suffixes cannot become command text. */
+            for(unsigned i=0;i<64;++i) {
+                next=input_byte(reader,context,pending);if(next<0) return 0;
+                if(next>=0x40 && next<=0x7e) {
+                    if(next=='A') return TUI_UP;
+                    if(next=='B') return TUI_DOWN;
+                    if(next=='C') return TUI_RIGHT;
+                    if(next=='D') return TUI_LEFT;
+                    return 0;
+                }
+                if(next<0x20 || next>0x3f) {*pending=next;return 0;}
+            }
+            return 0;
+        }
+        *pending=next;return TUI_ESCAPE;
+    }
+    if(c==13 || c==10) return TUI_ENTER;
+    if(c==127 || c==8) return TUI_BACKSPACE;
+    if(c==9) return TUI_TAB;
+    if(c<128) return (uint32_t)c;
+    unsigned need;uint32_t value,minimum;
+    if(c>=0xc2 && c<=0xdf) {need=1;value=(uint32_t)c&31;minimum=128;}
+    else if(c>=0xe0 && c<=0xef) {need=2;value=(uint32_t)c&15;minimum=2048;}
+    else if(c>=0xf0 && c<=0xf4) {need=3;value=(uint32_t)c&7;minimum=65536;}else return 0;
+    while(need--) {
+        c=input_byte(reader,context,pending);if(c<0) return 0;
+        if((c&0xc0)!=0x80) {*pending=c;return 0;}
+        value=(value<<6)|((uint32_t)c&63);
+    }
+    return value>=minimum && value<=0x10ffff && !(value>=0xd800 && value<=0xdfff)?value:0;
+}

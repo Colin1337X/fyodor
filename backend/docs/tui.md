@@ -87,3 +87,11 @@ inspection reports 667 tensors and 43 metadata entries.
 The physical-removal build also passes all 79 registered tests (four expected
 ROCm/MLX hardware skips) with optcpp and CUDA template directories absent,
 including the monitor theme CLI test and training/export/inference workflows.
+
+POSIX input keeps one byte of lookahead: a character immediately after Escape,
+or a new key after malformed UTF-8, is preserved for the next event. Common
+CSI/SS3 key sequences are consumed through their final byte (bounded to 64 bytes);
+unsupported Delete/Home/function-key suffixes are not inserted as command text.
+The plain C decoder has byte-stream regression coverage under C17 and C23,
+including Unicode bounds, malformed input recovery and modified arrow keys.
+These checks run on Windows too; they do not replace a live POSIX terminal test.
