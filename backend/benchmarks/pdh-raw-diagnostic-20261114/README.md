@@ -163,3 +163,23 @@ The loaded short C17 generation workload completed all twelve cases with output
 parity, four-row execution markers [96,96,96], and six reused graph plans.
 All 923 recorded hashes verified. The bounded counter observer was still live
 at this checkpoint; generation success is not counter-coverage acceptance.
+
+## Invalid-instance history classification
+
+classify_invalid.py verifies completed capture hashes and ordered sample
+inventory before classifying each invalid target entry as new, present in the
+preceding raw array, or unknown after missing history. A failed collection or
+missing raw array resets history; it cannot be treated as proof of a new
+instance. Six offline tests cover startup, persistence, missing collections,
+missing raw arrays, adapter filtering and reordered samples.
+
+NativeA classification reproduced all 36 invalid formatted entries as newly
+appearing instances, with zero present/unknown cases. This is observational
+classification, not a causal explanation or permission to accept invalid data.
+It does not explain the separate formatted-array API failure.
+
+After the short formatted-first workload completed, the still-running observer
+also overlapped the separate long C17 generation correctness run (PID 6664).
+That run uses the ordinary generation runner and writes generation-long-c17;
+its status must be checked independently. No timings from this diagnostic
+capture qualify as accepted benchmark results.
