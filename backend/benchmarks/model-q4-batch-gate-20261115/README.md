@@ -108,3 +108,13 @@ none of these instrumented timings is a performance result.
 
 Long-context generation validation now follows. The kernel remains experimental,
 and accepted llama.cpp scores stay 85.6103% short / 106.8707% at 8K.
+
+
+## Completed long-context generation
+
+All twelve C17 long-generation cases pass with 8205-token prompts and 32 output
+tokens matching ordinary generation. Fusion markers are [48,48,48], with graph
+capture/reuse and the existing Q4/Q6/QKV execution inventories validated.
+All 965 recorded file identities verify independently. This completes the
+planned long-context generation correctness gate, without performance acceptance.
+Monitored on/off comparisons now follow, retaining the existing coverage rules.
