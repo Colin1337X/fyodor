@@ -105,3 +105,12 @@ markers are [44,44,44], with Q4/QKV execution and six graph-reuse plans validate
 All 848 hashes verified. This extends full-model output correctness to the long
 workload; the generation run is not an accepted timing result. A monitored long
 Q6-enabled timing run follows using unchanged coverage rules.
+
+The first monitored long Q6-enabled attempt was aborted after 145 complete PDH
+samples. The formatted-array data call returned 0xc0000bba; the owned collector
+exited 1 and the runner terminated its own benchmark child. Only the first
+ordinary-generation case completed, so the full parity/execution inventory is
+false and no joint-decode timing comparison is available. All 888 recorded
+hashes verified and inputs remained unchanged. The result is retained as an
+incomplete, rejected timing attempt. This reproduces the earlier collector
+failure; restarting the same measurement does not resolve its cause.
