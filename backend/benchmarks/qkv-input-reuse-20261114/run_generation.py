@@ -39,7 +39,12 @@ result=dict(passed=False,accepted_benchmark=False,model_identity=identity,comman
  limitation='Output correctness only; no continuous contamination acceptance or accepted timing.')
 try:
  with (folder/'stdout').open('xb') as stdout,(folder/'stderr').open('xb') as stderr:
-  result['exit_code']=subprocess.run(command,env=env,stdout=stdout,stderr=stderr).returncode
+  child=subprocess.Popen(command,env=env,stdout=stdout,stderr=stderr)
+  result['process_id']=child.pid
+  (folder/'running.json').write_text(json.dumps(dict(process_id=child.pid,command=command),indent=2))
+  try:result['exit_code']=child.wait()
+  finally:
+   if child.poll() is None:child.terminate();child.wait(timeout=15)
  assert result['exit_code']==0
  rows=[json.loads(l) for l in (folder/'stdout').read_text().splitlines() if l.startswith('{"round":')]
  modes=('ordinary','mtp-serial2','mtp-batch2','mtp-joint3')

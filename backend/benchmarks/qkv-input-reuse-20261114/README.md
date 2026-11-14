@@ -54,3 +54,8 @@ sanitizer summary. Ten CPU evidence-validator tests cover missing reuse,
 failed sanitizer/dispatch evidence and wrong workloads; these tests do not
 execute the candidate on the GPU. The missing-lifecycle gate was exercised
 and correctly prevented a sanitizer launch.
+
+The generation runner records the actual child PID and command before waiting,
+so long runs can be tracked directly without starting a duplicate workload.
+An interrupted runner terminates and waits for its child before finalizing
+evidence; the ordinary output-parity and prerequisite checks are unchanged.
