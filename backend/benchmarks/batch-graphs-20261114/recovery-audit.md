@@ -49,3 +49,14 @@ The launch hook can be armed after warming a cached executable. All four
 binaries compiled; input hashes were unchanged. No GPU recovery execution is
 claimed. Request/update, readback and resource-count wrappers remain to be
 implemented alongside the recovery fixture.
+
+`recovery.c` and `build_recovery.py` now compile a C17/C23 fixture that first
+warms a two-token graph, then injects a failure into a cold four-token graph or
+cached two-token launch. It checks failed verification, output guards, hidden
+logits and rejected rewind/verification, reset to CPU reference, parity after
+reset, and a fresh resident session with parity. Widths 256/512 and linear/ring
+KV are selectable. `run_recovery.py` runs one case under Compute Sanitizer,
+requires exactly one injection marker and one zero-error summary, and checks
+input hashes before/after. Its pending-model-sanitizer gate was exercised;
+no recovery GPU case has run yet. Resource create/free accounting and the
+remaining injection sites above are still outstanding.
