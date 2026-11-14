@@ -96,3 +96,19 @@ are now included in all 219 numerical cases and eight unsupported-shape
 checks; the numerical/sanitizer validators require all three kernel results.
 The six validator tests pass, and the pending-sanitizer launch gate was
 rechecked. Neither tensor-core variant has executed on the GPU yet.
+
+### First GPU numerical result: rejected
+
+The subsequent raw sweep completed ten cases, then the first tensor-core
+variant failed at columns=3840, rows=2048, output index 54: 715.7755126953125
+versus the independent double result 715.8040803880559. Its absolute error
+was 1.093530089840172 times the unchanged allowed bound. `oracle.json`
+preserves the failure and all 717 input hashes were independently verified.
+The hoisted variant passed the earlier ten cases but was not reached on the
+failing case; neither variant has numerical admission. No sanitizer or timing
+run follows this failed gate, and production dispatch remains unchanged.
+
+The next investigation is accumulation error: both variants feed every
+residual and dominant product into one growing F32 MMA accumulator across
+the entire input width. Separate residual accumulators and bounded K chunks
+are candidate remedies to test, not established explanations or fixes.
