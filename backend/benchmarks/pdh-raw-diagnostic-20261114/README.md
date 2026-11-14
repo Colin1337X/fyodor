@@ -158,3 +158,8 @@ The generation runner retains its numerical, execution-marker, graph-reuse and
 input-hash checks. Both artifacts explicitly reject timing acceptance. They
 are independent processes; the capture may end before generation completes.
 Loaded results must be inspected after completion before drawing conclusions.
+
+The loaded short C17 generation workload completed all twelve cases with output
+parity, four-row execution markers [96,96,96], and six reused graph plans.
+All 923 recorded hashes verified. The bounded counter observer was still live
+at this checkpoint; generation success is not counter-coverage acceptance.
