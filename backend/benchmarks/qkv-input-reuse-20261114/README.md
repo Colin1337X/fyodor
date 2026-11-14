@@ -21,8 +21,8 @@ for replay accounting. No new device code or public ABI is introduced.
 
 Separate C17/C23 lifecycle and generation binaries built with warnings treated
 as errors, from verified batched-graph inputs. Production dispatch/archive
-remain unchanged. GPU lifecycle, reset/rewind, failure, generation, sanitizer
-and paired timing validation remain pending. The runner refuses GPU work
+remain unchanged. Long-context lifecycle, failure, generation, sanitizer and paired timing
+validation remain pending; completed short lifecycle evidence is described below. The runner refuses GPU work
 until the currently running long-context profile has completed successfully.
 
 `run_control.py` extracts the actual generated C helper and compiles it with
@@ -37,14 +37,14 @@ performance evidence.
 The generation runner is prepared behind successful C17/C23 short and C17
 long lifecycle evidence. It requires the existing twelve-case output parity,
 positive QKV reuse markers, metadata/integer selection and graph replay checks.
-No candidate GPU validation has run while the long profile owns the GPU.
+Candidate GPU validation began only after the long profile completed successfully.
 
 The lifecycle runner now verifies the recorded C control-test hashes before
 execution, records the actual child PID, and independently requires exactly
 two reset summaries with the requested prefix, four verified tokens, resident
 execution and scaled error no greater than 0.0005. The pending-long-profile
 gate was rechecked after this change and still stops before launching a GPU
-workload. Candidate GPU behavior remains unverified.
+workload. Subsequent short lifecycle evidence is recorded below.
 
 The candidate full-model memcheck runner is prepared behind its own build,
 control, C17/C23 lifecycle and generation proofs. It verifies all prerequisite
@@ -59,3 +59,12 @@ The generation runner records the actual child PID and command before waiting,
 so long runs can be tracked directly without starting a duplicate workload.
 An interrupted runner terminates and waits for its child before finalizing
 evidence; the ordinary output-parity and prerequisite checks are unchanged.
+
+C17 and C23 short-prefix lifecycle checks now pass both reset cycles with
+four verified tokens, graph capture/replay, rewind/replacement guards and
+maximum scaled logit error 0.0000219546455 versus serial execution, within
+the unchanged 0.0005 bound. Each trace records 88 QKV capture/direct reuse
+hits and one graph capture with two replays. All 670 hashes per result were
+independently verified. These counters prove selection, not elapsed-time
+savings; generation, memory safety and paired throughput remain unproven.
+The 8192-prefix lifecycle is the next GPU check.
