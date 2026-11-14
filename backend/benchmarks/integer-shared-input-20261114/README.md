@@ -16,6 +16,12 @@ The optional kernel is isolated in `optcpp/matvec/integer_shared_input.cu`.
 NVRTC compute_120 compilation passed without a CUDA context or GPU execution.
 Production dispatch and existing validated binaries remain unchanged.
 
+Offline SM120 assembly uses 55 registers, 4096 bytes of shared memory, and no
+stack or spill traffic for the candidate. The current metadata candidate's
+separate offline census used 66 registers. This is an allocation result only:
+runtime JIT allocation, achieved occupancy and throughput remain unmeasured.
+`assemble.py` checks that its PTX matches the compile proof before assembly.
+
 `check_kernel.py` prepares 207 byte-exact cases against both the serial native
 oracle and the current metadata kernel, including 1/7/9-row tails and finite
 half-coefficient edge cases. It refuses to create a GPU context until the
