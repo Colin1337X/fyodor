@@ -94,3 +94,19 @@ preserves those original digests and rejects changed or missing inputs after the
 child exits. Three offline integrity tests cover mutation, deletion and keeping
 new output files separate from input identity; all ten admission/integrity tests
 pass. This hardens the pending run and does not constitute a monitored GPU pass.
+
+## Completed combined-candidate full-model memcheck
+
+`model-memcheck-short/result.json` records successful completion of the Q4
+launch-bound candidate combined with joint-base generation: exit zero, all
+12 ordinary/serial2/batch2/joint3 cases matching over three rounds, all three
+joint rounds selected, 2556 integer calls in each joint round, and exactly one
+`ERROR SUMMARY: 0 errors`. The runner checked its original input hashes after
+execution; the completed result and retained logs were revalidated independently.
+Elapsed sanitizer time was 2671.857 seconds. No sanitizer timing is a throughput
+measurement and no accepted performance score changes.
+
+The following long-generation preflight found RobloxPlayerBeta.exe on the GPU
+and refused to launch. That identified non-critical process was stopped under
+the user's authorization; the long C17 generation check then started. Its result
+is still pending. The full-model sanitizer is not continuous contamination proof.
