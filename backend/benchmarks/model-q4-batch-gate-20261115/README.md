@@ -24,3 +24,23 @@ Recorded source and artifact identities were rechecked after compilation.
 Status: compilation only. Dispatch boundary tests, model lifecycle/parity,
 full-model sanitizers and monitored short/long comparison remain pending.
 No production promotion or accepted performance score change is justified.
+
+
+## Dispatch and short lifecycle validation
+
+The actual extracted eligibility predicate passes 9,584 cases in each of C17
+and C23. Coverage includes all combinations of optional kernel/reference/Gemma/
+fusion/scratch/vendor/null-tensor flags, surrounding dimensions, batch sizes,
+Q4 versus other dtypes, and incorrect byte sizes for either weight tensor.
+
+Both C17 and C23 real-Gemma lifecycle checks pass at prefix 257. Each performs
+two resets, four-token verification, graph capture/replay, one-bank download,
+invalid-argument guards, KV rewind and suffix replacement against serial logits.
+Both report maximum scaled error 0.0000219546455 versus the unchanged 0.0005
+limit, 48 fused capture/direct dispatches, and one graph capture/two replays.
+Evidence hashes were independently rechecked after completion.
+
+The generation marker validator rejects missing/duplicate/malformed/zero
+markers, and thirteen sanitizer-evidence tests pass. These tests validate the
+admission logic; full-model sanitizer execution is still pending. Long-prefix
+lifecycle and generation correctness remain required before model timing.
