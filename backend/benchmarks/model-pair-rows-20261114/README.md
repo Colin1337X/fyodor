@@ -51,3 +51,11 @@ are validator tests, not a completed model sanitizer run. The generation
 runner refused the missing long-lifecycle prerequisite, and the sanitizer
 runner refused missing generation evidence without launching a GPU job.
 The current 8K lifecycle process remains active; it has not been restarted.
+
+The 8K lifecycle subsequently passed both resets with maximum scaled logit
+error 0.0000163989979 and 128 paired-row capture/direct calls; all 754 hashes
+verified. Short generation then passed all twelve ordered cases in both
+C17 and C23 builds, with exact output parity, graph reuse and paired-row
+markers [128,128,128]. All 766 hashes per generation result independently
+verified. Full-model memcheck, long generation and end-to-end performance
+remain pending. These are correctness results, not updated speed scores.
