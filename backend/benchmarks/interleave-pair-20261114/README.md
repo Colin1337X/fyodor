@@ -97,3 +97,12 @@ passed, but continuous coverage did not: sampled intervals contained
 unattributed GPU activity and invalid target counters. The runner exited one.
 The run is retained as rejected evidence and contributes no accepted score.
 Stopping Roblox before this run did not establish a clean measurement.
+
+`diagnose_counters.py` preserves counter identities and values from the rejected
+run in `monitored-short-A-counter-diagnosis.json`, after verifying the original
+audit inputs. All 54 invalid case-overlap entries have null values and status
+3221228474. Unknown positive entries identify PID 4, physical adapter 0, engine
+13 (`copy`). Entries may repeat across overlapping sampled intervals; they are
+not independent events. The report neither attributes System work to Fyodor nor
+proves external contention. Sampling intervals can include activity outside the
+decode interval. The original rejection and acceptance rules remain unchanged.
