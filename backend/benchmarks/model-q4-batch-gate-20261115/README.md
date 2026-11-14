@@ -144,3 +144,11 @@ coverage. short-comparison-diagnostic.json preserves all samples, both orders,
 variation and rejection reasons. The first pair's gain is not a robust measured
 model improvement, and fusion remains experimental. Long-context comparison is
 next; accepted scores are unchanged.
+
+
+The first monitored long DisabledA attempt is incomplete. After 175 collection
+attempts, formatted PDH array data returned 0xc0000bba and the collector exited.
+The observer terminated its owned benchmark child. Only the first ordinary case
+completed with parity; no joint comparison is available. All result identities
+verify. Retain the failed raw capture; do not retry unchanged monitoring as if
+it had established a usable baseline.
