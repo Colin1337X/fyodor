@@ -86,3 +86,12 @@ C23 generation, full-model memory checking and long generation remain pending.
 C23 short generation also passes all twelve cases with identical output parity
 requirements and fusion markers [48,48,48]. All 965 recorded identities verify.
 The full-model short memcheck can now proceed; it is not yet a passing result.
+
+
+The effective-settings audit evaluates the actual outer runner environment block
+and the inner timing runner's setting construction without launching either.
+Both enabled/disabled variants match the completed C17/C23 generation settings,
+except the intentional fusion toggle; monitoring controls are also required.
+Injected inherited NYA flags are filtered. settings-audit.json retains both full
+effective environments and source identities. This audits configuration only;
+it does not imply completed monitoring or sanitizer execution.
