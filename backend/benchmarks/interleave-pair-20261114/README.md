@@ -47,16 +47,15 @@ python backend/benchmarks/interleave-pair-20261114/run_model_memcheck.py short
 ```
 
 Runners refuse to overwrite existing evidence. Long-context generation has passed
-all twelve cases (details below). The full-model short-context sanitizer is active;
-its result is not yet available. Its seven evidence-validator regression tests pass (using the
+all twelve cases (details below). The full-model short-context sanitizer has passed
+(details below). Its seven evidence-validator regression tests pass (using the
 existing integer-launch sanitizer test cases against this runner). It requires
 successful build, context-generation, short/long lifecycle and dispatch-inventory
 proofs, validates transitive hashes before and after execution, and requires
 exactly one zero-error sanitizer summary plus all twelve matching generation
 cases. Runner tests do not establish GPU memory safety.
 
-Remaining gates include full-model sanitizer validation and controlled paired
-throughput comparisons. Review the net decode benefit
+Remaining gates include controlled paired throughput comparisons. Review the net decode benefit
 before production integration. Accepted llama.cpp scores remain 85.61025294%
 short and 106.8707255% at 8K. No result here establishes the requested 125% target.
 
@@ -67,7 +66,7 @@ and 32 generated outputs, in forward/reverse/forward order. The process exited
 zero; all three joint rounds recorded 2556 integer calls. All 41 input/output
 hashes were independently verified after completion. These unmonitored timings
 remain excluded from performance acceptance. Full-model short-context Compute
-Sanitizer validation is now the active GPU check.
+Sanitizer validation also passed as recorded below.
 
 
 ## Monitored throughput runner
@@ -78,5 +77,15 @@ generation and full-model sanitizer proofs before launching GPU work. It retains
 the existing model identity, idle/environment, continuous GPU monitoring,
 transitive input hashes, output parity and dispatch-count checks. Three existing
 input-integrity regression tests pass against the new runner. It has not run;
-the sanitizer prerequisite is still pending. Monitoring alone never marks a run
+the sanitizer prerequisite has now passed. Monitoring alone never marks a run
 as an accepted benchmark, and contamination remains grounds for rejection.
+
+## Completed full-model memory validation
+
+`model-memcheck-short/result.json` records exit zero, all twelve matching
+ordinary/serial2/batch2/joint3 cases, and exactly one `ERROR SUMMARY: 0 errors`.
+All 69 recorded input/output hashes independently verified after completion.
+Elapsed instrumented time was 2953.3552161 seconds; it is not a throughput result.
+`environment-note.json` records stopping a restarted Roblox GPU client during
+the run. No timing from this run is accepted. Production integration still
+requires controlled paired performance evidence.
