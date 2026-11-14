@@ -26,6 +26,7 @@
 #include <windows.h>
 typedef SOCKET nya_socket;
 typedef int nya_socket_length;
+typedef int nya_socket_io_length;
 #define NYA_INVALID_SOCKET INVALID_SOCKET
 #else
 /* These headers provide the small POSIX sockets surface used below. */
@@ -37,6 +38,7 @@ typedef int nya_socket_length;
 #include <unistd.h>
 typedef int nya_socket;
 typedef socklen_t nya_socket_length;
+typedef size_t nya_socket_io_length;
 #define NYA_INVALID_SOCKET (-1)
 #endif
 
@@ -714,9 +716,10 @@ static int nya_http_receive(
         int received;
         size_t available = capacity - total - 1;
 
+        /* Bound transfers for Winsock and for the shared int result below. */
         if (available > INT_MAX) available = INT_MAX;
         if (nya_socket_wait(client, 0, deadline, server) != 0) return -4;
-        received = (int)recv(client, buffer + total, (int)available, 0);
+        received = (int)recv(client, buffer + total, (nya_socket_io_length)available, 0);
         if (received < 0 && nya_socket_retryable()) continue;
         if (received <= 0) {
             return -1;
@@ -918,7 +921,7 @@ static int nya_socket_send_all(nya_socket socket_value, const char *data, size_t
 #endif
         if (remaining > INT_MAX) remaining = INT_MAX;
         if (nya_socket_wait(socket_value, 1, deadline, server) != 0) return -1;
-        sent = (int)send(socket_value, data + total, (int)remaining, flags);
+        sent = (int)send(socket_value, data + total, (nya_socket_io_length)remaining, flags);
         if (sent < 0 && nya_socket_retryable()) continue;
         if (sent <= 0) {
             return -1;
@@ -2602,7 +2605,7 @@ int nya_server_run(nya_server *server)
 #ifdef MSG_NOSIGNAL
                 flags = MSG_NOSIGNAL;
 #endif
-                (void)send(client, busy, (int)(sizeof(busy) - 1), flags);
+                (void)send(client, busy, (nya_socket_io_length)(sizeof(busy) - 1), flags);
                 nya_socket_close(client);
             }
         }
