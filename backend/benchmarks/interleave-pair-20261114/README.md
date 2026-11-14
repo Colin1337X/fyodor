@@ -59,3 +59,12 @@ Remaining gates include long generation parity, full-model sanitizer validation,
 and controlled paired throughput comparisons. Review the net decode benefit
 before production integration. Accepted llama.cpp scores remain 85.61025294%
 short and 106.8707255% at 8K. No result here establishes the requested 125% target.
+
+## Completed long-context generation
+
+`generation-long-c17/result.json` passes all twelve cases at prompt length 8205
+and 32 generated outputs, in forward/reverse/forward order. The process exited
+zero; all three joint rounds recorded 2556 integer calls. All 41 input/output
+hashes were independently verified after completion. These unmonitored timings
+remain excluded from performance acceptance. Full-model short-context Compute
+Sanitizer validation is now the active GPU check.
