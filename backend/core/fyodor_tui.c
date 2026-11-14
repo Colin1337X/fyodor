@@ -99,6 +99,7 @@ static void command(tui_state *state,char *line)
     fclose(empty); fclose(capture); state->detail=1; state->scroll=0;
 }
 static const char help[]="Browse: j/k move, Enter opens, n next page, r first page, b back, q quit.\n"
+    "Page Up/Down move by screen; Home/End jump within the current list or output.\n"
     "Details: j/k scroll. : opens command entry; Escape cancels.\n"
     "Commands omit fyodor --store PATH --namespace NAME. Example: resource list\n"
     "Quotes group arguments; backslashes are literal. No shell expansion.\n"
@@ -123,7 +124,7 @@ static void render(tui_state *state,const char *entry,int editing,unsigned colum
     if(columns<45||rows<8) { fyodor_terminal_text(stdout,"Resize terminal (45x8 minimum); q quits.",columns-1); (void)fflush(stdout); return; }
     fyodor_terminal_text(stdout,"Fyodor | Resources | local administrator",columns-1); fputs("\r\n",stdout);
     style(state,FYODOR_TEXT_MUTED,FYODOR_BACKGROUND);
-    fyodor_terminal_text(stdout,"j/k move Enter open n next r first b back : command t theme ? help q quit",columns-1); fputs("\r\n",stdout);
+    fyodor_terminal_text(stdout,"j/k PgUp/PgDn Home/End | Enter open n next b back : command ? help q quit",columns-1); fputs("\r\n",stdout);
     style(state,FYODOR_TEXT,FYODOR_BACKGROUND);
     if(state->detail) safe_lines(state->log,state->scroll,rows-4,columns);
     else {
@@ -221,6 +222,20 @@ int fyodor_tui_run(int argc,char **argv)
                 state->theme=fyodor_theme_at((i+1)%fyodor_theme_count());
                 (void)snprintf(state->log,sizeof(state->log),"Theme: %s",state->theme->name);
                 state->detail=0;
+            }
+            else if(key==FYODOR_KEY_HOME || key==FYODOR_KEY_LAST ||
+                    key==FYODOR_KEY_PAGE_UP || key==FYODOR_KEY_PAGE_DOWN) {
+                size_t *at=state->detail?&state->scroll:&state->selected;
+                size_t limit=state->count?state->count-1:0,step=rows>4?rows-4:1;
+                if(state->detail) {
+                    limit=0;
+                    for(const char *p=state->log;*p;++p) if(*p=='\n' && p[1]) ++limit;
+                }
+                if(*at>limit) *at=limit;
+                if(key==FYODOR_KEY_HOME) *at=0;
+                else if(key==FYODOR_KEY_LAST) *at=limit;
+                else if(key==FYODOR_KEY_PAGE_UP) *at=*at>step?*at-step:0;
+                else *at+=limit-*at<step?limit-*at:step;
             }
             else if(key=='j'||key==FYODOR_KEY_DOWN) {
                 if(state->detail) { size_t lines=0; for(const char *p=state->log;*p;++p) if(*p=='\n') ++lines; if(state->scroll<lines) ++state->scroll; }

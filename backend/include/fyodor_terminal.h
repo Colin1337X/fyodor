@@ -3,7 +3,8 @@
 #include <stdio.h>
 /* One foreground terminal per process. No application-service dependencies. */
 enum { FYODOR_KEY_END=-1, FYODOR_KEY_IDLE=-2, FYODOR_KEY_UP=256,
-       FYODOR_KEY_DOWN, FYODOR_KEY_LEFT, FYODOR_KEY_RIGHT };
+       FYODOR_KEY_DOWN, FYODOR_KEY_LEFT, FYODOR_KEY_RIGHT,
+       FYODOR_KEY_HOME, FYODOR_KEY_LAST, FYODOR_KEY_PAGE_UP, FYODOR_KEY_PAGE_DOWN };
 int fyodor_terminal_begin(void);
 void fyodor_terminal_end(void);
 int fyodor_terminal_key(void);

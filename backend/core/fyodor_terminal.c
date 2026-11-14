@@ -96,6 +96,7 @@ int fyodor_terminal_decode_key(int (*reader)(void *),void *context,int *pending)
         if(key!=FYODOR_KEY_IDLE) *pending=key;
         return 27;
     }
+    unsigned parameter=0; int parameter_done=0,csi=key=='[';
     for(unsigned i=0;i<64;++i) {
         key=reader(context);
         if(key<0) return key;
@@ -104,9 +105,20 @@ int fyodor_terminal_decode_key(int (*reader)(void *),void *context,int *pending)
             if(key=='B') return FYODOR_KEY_DOWN;
             if(key=='C') return FYODOR_KEY_RIGHT;
             if(key=='D') return FYODOR_KEY_LEFT;
+            if(key=='H') return FYODOR_KEY_HOME;
+            if(key=='F') return FYODOR_KEY_LAST;
+            if(key=='~' && csi) {
+                if(parameter==1 || parameter==7) return FYODOR_KEY_HOME;
+                if(parameter==4 || parameter==8) return FYODOR_KEY_LAST;
+                if(parameter==5) return FYODOR_KEY_PAGE_UP;
+                if(parameter==6) return FYODOR_KEY_PAGE_DOWN;
+            }
             return FYODOR_KEY_IDLE;
         }
         if(key<0x20 || key>0x3f) { *pending=key; return FYODOR_KEY_IDLE; }
+        if(!parameter_done && key>='0' && key<='9') {
+            if(parameter<1000) parameter=parameter*10+(unsigned)(key-'0');
+        } else parameter_done=1;
     }
     return FYODOR_KEY_IDLE;
 }
@@ -137,11 +149,17 @@ int fyodor_terminal_key(void)
     KEY_EVENT_RECORD key=record.Event.KeyEvent;
     if(key.wVirtualKeyCode==VK_UP || key.wVirtualKeyCode==VK_DOWN ||
        key.wVirtualKeyCode==VK_LEFT || key.wVirtualKeyCode==VK_RIGHT ||
+       key.wVirtualKeyCode==VK_HOME || key.wVirtualKeyCode==VK_END ||
+       key.wVirtualKeyCode==VK_PRIOR || key.wVirtualKeyCode==VK_NEXT ||
        key.uChar.UnicodeChar==0) pending_high=0;
     if(key.wVirtualKeyCode==VK_UP) return FYODOR_KEY_UP;
     if(key.wVirtualKeyCode==VK_DOWN) return FYODOR_KEY_DOWN;
     if(key.wVirtualKeyCode==VK_LEFT) return FYODOR_KEY_LEFT;
     if(key.wVirtualKeyCode==VK_RIGHT) return FYODOR_KEY_RIGHT;
+    if(key.wVirtualKeyCode==VK_HOME) return FYODOR_KEY_HOME;
+    if(key.wVirtualKeyCode==VK_END) return FYODOR_KEY_LAST;
+    if(key.wVirtualKeyCode==VK_PRIOR) return FYODOR_KEY_PAGE_UP;
+    if(key.wVirtualKeyCode==VK_NEXT) return FYODOR_KEY_PAGE_DOWN;
     if(key.uChar.UnicodeChar==0) return FYODOR_KEY_IDLE;
     WCHAR c=key.uChar.UnicodeChar,units[2];
     WCHAR high=pending_high; pending_high=0;
