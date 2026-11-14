@@ -101,3 +101,20 @@ the existing evidence provides no model-level benefit, and the continuous
 coverage problem remains unresolved. Do not retry this measurement unchanged
 or claim the isolated kernel gain as an inference throughput gain. Production
 was never switched to this candidate, so no production rollback is required.
+
+## Completed long-context generation
+
+C17 long generation completed all twelve ordered cases with 8205 prompt tokens,
+32 generated tokens and output parity. Four-row markers were [96,96,96], Q6
+markers [44,44,44], and QKV reuse [88,88,88]; six graph plans recorded reuse.
+All 922 recorded hashes verified after completion. This closes the pending
+long-generation correctness check, not the long-model sanitizer or performance
+acceptance. The four-row candidate remains unpromoted after its short timing
+regression and unresolved monitoring coverage.
+
+The independent formatted-first counter capture brackets the first seven
+native long-decode intervals. All seven overlap positive System activity;
+one (round 1, batch-two) also overlaps an above-100 owned CUDA reading. No
+sampling gaps occurred in those seven intervals. The final five intervals
+are unbracketed because the fixed capture ended before generation. Their
+empty event lists must not be interpreted as clean GPU coverage.
