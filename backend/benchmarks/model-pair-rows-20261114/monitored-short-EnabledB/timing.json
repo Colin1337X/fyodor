@@ -1,0 +1,1075 @@
+{
+  "revision": "239b3cd74c92897d2da5b4f5c7e813cc00b7de86",
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "1",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "1",
+    "NYA_CUDA_ALIGNED_PREFIX": "1",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_ASSISTED_FFN": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_INTERLEAVED_INTEGER": "1"
+  },
+  "gate_passed": true,
+  "binary_sha256": "92bec18823372b0f990085ee53933c97686c814d5c9ac2744129f82554b31f43",
+  "source_sha256": {
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\core\\llm_cpu.c": "d11261a18a47a2820c2a78e2f992142d6a59ee092bdfa4a8302dddb7b7dd0764",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-cost-20261113\\run.py": "845eb6c719d3b6433b363faa01c96d6850a80edc0f2caff3e07909dabfce28dc",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-cost-20261113\\model.c": "b768e4379d788ac2d344584baacf79724b82907514923226a6ef84a945f01935"
+  },
+  "runs": [
+    {
+      "context": "short",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe",
+        "short"
+      ],
+      "samples": [
+        {
+          "time": 1794659217.11796,
+          "utilization": 0,
+          "memory": "0 MiB",
+          "temperature": "32 C",
+          "power": "3.57 W",
+          "processes": [],
+          "cpu": {
+            "busy_percent": 18.34763948497854,
+            "idle_ticks": 300258750000,
+            "total_ticks": 424775937500
+          },
+          "pstate": "P8",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659218.2651787,
+          "utilization": 0,
+          "memory": "1455 MiB",
+          "temperature": "33 C",
+          "power": "17.96 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 40.54054054054054,
+            "idle_ticks": 300300000000,
+            "total_ticks": 424845312500
+          },
+          "pstate": "P1",
+          "sm_clock": "2580 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659219.4243922,
+          "utilization": 15,
+          "memory": "4967 MiB",
+          "temperature": "34 C",
+          "power": "21.37 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.44144144144144,
+            "idle_ticks": 300340625000,
+            "total_ticks": 424914687500
+          },
+          "pstate": "P1",
+          "sm_clock": "2610 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659220.5703511,
+          "utilization": 17,
+          "memory": "13337 MiB",
+          "temperature": "34 C",
+          "power": "21.45 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 39.49771689497717,
+            "idle_ticks": 300382031250,
+            "total_ticks": 424983125000
+          },
+          "pstate": "P1",
+          "sm_clock": "2610 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659221.7180943,
+          "utilization": 22,
+          "memory": "13337 MiB",
+          "temperature": "34 C",
+          "power": "26.22 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.98642533936652,
+            "idle_ticks": 300421406250,
+            "total_ticks": 425052187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659222.866534,
+          "utilization": 50,
+          "memory": "13337 MiB",
+          "temperature": "45 C",
+          "power": "67.89 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.86363636363636,
+            "idle_ticks": 300460000000,
+            "total_ticks": 425120937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2812 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659224.0251372,
+          "utilization": 21,
+          "memory": "13337 MiB",
+          "temperature": "36 C",
+          "power": "26.48 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 55.18018018018018,
+            "idle_ticks": 300491093750,
+            "total_ticks": 425190312500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659225.154436,
+          "utilization": 95,
+          "memory": "13601 MiB",
+          "temperature": "57 C",
+          "power": "181.63 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 38.42592592592593,
+            "idle_ticks": 300532656250,
+            "total_ticks": 425257812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659226.3007338,
+          "utilization": 20,
+          "memory": "13601 MiB",
+          "temperature": "39 C",
+          "power": "27.43 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.79279279279279,
+            "idle_ticks": 300572343750,
+            "total_ticks": 425327187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2805 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659227.443993,
+          "utilization": 94,
+          "memory": "13605 MiB",
+          "temperature": "58 C",
+          "power": "180.21 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.0958904109589,
+            "idle_ticks": 300612656250,
+            "total_ticks": 425395625000
+          },
+          "pstate": "P1",
+          "sm_clock": "2775 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659228.5997176,
+          "utilization": 21,
+          "memory": "13605 MiB",
+          "temperature": "39 C",
+          "power": "27.35 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 47.297297297297305,
+            "idle_ticks": 300649218750,
+            "total_ticks": 425465000000
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659229.7492497,
+          "utilization": 100,
+          "memory": "13607 MiB",
+          "temperature": "47 C",
+          "power": "97.18 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.57013574660633,
+            "idle_ticks": 300687500000,
+            "total_ticks": 425534062500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659230.9113,
+          "utilization": 20,
+          "memory": "13611 MiB",
+          "temperature": "38 C",
+          "power": "26.70 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 49.775784753363226,
+            "idle_ticks": 300722500000,
+            "total_ticks": 425603750000
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659232.0610888,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "49 C",
+          "power": "97.82 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.3514739229025,
+            "idle_ticks": 300760156250,
+            "total_ticks": 425672656250
+          },
+          "pstate": "P1",
+          "sm_clock": "2850 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659233.2104094,
+          "utilization": 20,
+          "memory": "13611 MiB",
+          "temperature": "40 C",
+          "power": "27.51 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 48.752834467120174,
+            "idle_ticks": 300795468750,
+            "total_ticks": 425741562500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659234.3487911,
+          "utilization": 94,
+          "memory": "13611 MiB",
+          "temperature": "60 C",
+          "power": "178.35 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.11872146118722,
+            "idle_ticks": 300832343750,
+            "total_ticks": 425810000000
+          },
+          "pstate": "P1",
+          "sm_clock": "2850 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659235.500396,
+          "utilization": 21,
+          "memory": "13611 MiB",
+          "temperature": "40 C",
+          "power": "27.56 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.14672686230248,
+            "idle_ticks": 300870312500,
+            "total_ticks": 425879218750
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659236.6499417,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "48 C",
+          "power": "97.85 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.64692482915717,
+            "idle_ticks": 300908281250,
+            "total_ticks": 425947812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659237.808764,
+          "utilization": 95,
+          "memory": "13611 MiB",
+          "temperature": "61 C",
+          "power": "180.03 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 47.07207207207207,
+            "idle_ticks": 300945000000,
+            "total_ticks": 426017187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659238.959414,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "49 C",
+          "power": "97.98 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.846846846846844,
+            "idle_ticks": 300981875000,
+            "total_ticks": 426086562500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659240.1105456,
+          "utilization": 70,
+          "memory": "13611 MiB",
+          "temperature": "54 C",
+          "power": "136.92 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.79279279279279,
+            "idle_ticks": 301021562500,
+            "total_ticks": 426155937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2715 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659241.2638812,
+          "utilization": 21,
+          "memory": "13611 MiB",
+          "temperature": "39 C",
+          "power": "27.04 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 39.05191873589165,
+            "idle_ticks": 301063750000,
+            "total_ticks": 426225156250
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659242.425392,
+          "utilization": 69,
+          "memory": "13611 MiB",
+          "temperature": "47 C",
+          "power": "36.50 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.69662921348315,
+            "idle_ticks": 301103593750,
+            "total_ticks": 426294687500
+          },
+          "pstate": "P1",
+          "sm_clock": "2767 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659243.58011,
+          "utilization": 21,
+          "memory": "13611 MiB",
+          "temperature": "39 C",
+          "power": "27.08 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.270270270270274,
+            "idle_ticks": 301141562500,
+            "total_ticks": 426364062500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659244.7265933,
+          "utilization": 92,
+          "memory": "10287 MiB",
+          "temperature": "62 C",
+          "power": "177.05 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.11872146118722,
+            "idle_ticks": 301178437500,
+            "total_ticks": 426432500000
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659245.8747797,
+          "utilization": 20,
+          "memory": "13611 MiB",
+          "temperature": "40 C",
+          "power": "27.22 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 47.07207207207207,
+            "idle_ticks": 301215156250,
+            "total_ticks": 426501875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2850 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659247.004845,
+          "utilization": 95,
+          "memory": "13611 MiB",
+          "temperature": "62 C",
+          "power": "176.98 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 37.03703703703704,
+            "idle_ticks": 301257656250,
+            "total_ticks": 426569375000
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659248.155387,
+          "utilization": 22,
+          "memory": "13611 MiB",
+          "temperature": "41 C",
+          "power": "27.62 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.24324324324324,
+            "idle_ticks": 301297031250,
+            "total_ticks": 426638750000
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794659249.3065941,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "51 C",
+          "power": "98.45 W",
+          "processes": [
+            {
+              "pid": "3032",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-pair-rows-20261114\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.55251141552512,
+            "idle_ticks": 301337031250,
+            "total_ticks": 426707187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2835 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ],
+      "observer_clock": "qpc",
+      "spawn_before_seconds": 7079.8200903,
+      "spawn_after_seconds": 7079.8229688,
+      "process_id": 3032,
+      "exit_observed_seconds": 7113.1535704,
+      "exit_code": 0
+    }
+  ],
+  "accepted_benchmark": false,
+  "mode_set": "joint-base",
+  "continuous_gpu_monitor": true
+}
