@@ -63,3 +63,12 @@ cached-query calls are absent as required at this prefix. All 920 recorded
 identities per run verify independently. These are fallback-generation results,
 not evidence of a short-context gain. C17 long generation is now running and
 must prove positive cached-query execution as well as all twelve output matches.
+
+run_filtered_memcheck.py prepares an 8K C23 lifecycle under Compute Sanitizer
+with --kernel-name regex=nya_attention_cached_query. This instruments only the
+new cached-query kernels; it must never be described as full-model sanitizer
+coverage. It requires completed long generation with six positive execution
+records and verifies its source/artifact hashes before launching. The actual
+missing-prerequisite check refuses without creating a run directory or launching
+a GPU process (filtered-memcheck-preflight.json). The sanitizer run itself is
+pending; long generation is still active.
