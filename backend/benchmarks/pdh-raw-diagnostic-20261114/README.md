@@ -305,3 +305,27 @@ arguments, not an explicit host-to-device request copy. This upload control is
 therefore general transfer evidence, not a reproduction of the runtime request
 path. Testing the actual request-update kernel is the relevant next control.
 No production code, transfer policy or performance acceptance changed.
+
+## Actual request-kernel control
+
+request-compile/compile_only.py extracts the exact nya_decode_request function
+from CUDA/resident.cu and compiles it with NVRTC for compute_120 without opening
+a GPU context. It reuses the earlier compilation wrapper; its generic pending
+validation list does not imply a new optimization or runtime integration.
+run_request_control.py verifies the compilation manifest and source hashes,
+then alternates idle/direct/graph phases in forward/reverse/forward order.
+The runtime's one-block, one-thread request kernel writes token 123 and
+position 456. Each active iteration synchronizes the same nonblocking stream
+and sleeps 20 ms. A readback outside each phase checks both written values and
+eight-byte guards on each side. Graph captures the same kernel and arguments.
+
+RequestControlA passed all nine phases and cleanup, with 286-287 launches per
+active phase and unchanged inputs. RequestCaptureA completed 90 samples with
+no API failure, 18 invalid startup formatted entries, and 5796 valid pairs
+(maximum raw/formatted difference 4.440892098500626e-16). All nine phases are
+bracketed. None of the 44 wholly interior samples has System-positive,
+other-process-positive, invalid or above-100 events. The exact small request
+kernel, both directly submitted and graph-replayed, is not a sufficient
+reproduction of model-run System activity. This does not test model-scale
+allocations or a full decode graph. No runtime or acceptance-policy change
+follows from this negative control; raw capture is losslessly archived.
