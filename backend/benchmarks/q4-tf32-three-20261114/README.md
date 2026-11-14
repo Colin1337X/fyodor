@@ -63,3 +63,12 @@ requires the active QKV full-model sanitizer to finish before creating a GPU
 context. Its pending-prerequisite refusal was exercised. None of these 219
 GPU cases has run yet; preparation and host oracle checks are not candidate
 GPU correctness evidence. No numerical tolerance was relaxed.
+
+`run_sanitizer.py` is prepared for memcheck, racecheck and synccheck after
+raw GPU numerical validation. It requires the exact 219-case/eight-rejection
+inventory, finite bound fractions in [0,1] for both kernels, guards, matching
+source/input hashes and a unique zero-error tool summary. It records the
+actual child PID and preserves terminal failure evidence. Six CPU validator
+tests pass, including missing/reordered cases, malformed numerical evidence,
+guard failures and nonzero/duplicate sanitizer summaries. The missing-raw
+prerequisite refusal was exercised; no tensor-core sanitizer has run yet.
