@@ -56,3 +56,10 @@ zero baseline reuse, positive candidate reuse, and an exact conversion-count
 reduction equal to the reused count, alongside the original lifecycle checks.
 It has not run on the GPU yet. Counts describe host dispatch/graph construction,
 not replayed GPU launches or throughput. No acceptance gate is relaxed.
+
+`run_generation.py` prepares short/long C17/C23 generation correctness checks
+for the reuse executables. It requires the completed 257-prefix C17/C23 lifecycle
+proofs, retains all twelve forward/reverse/forward cases, verifies dispatch and
+output parity, and checks transitive build/evidence hashes before and after the
+child. This runner is prepared only; generation has not yet been executed with
+reuse. The active 8192-prefix lifecycle run retains exclusive GPU use first.
