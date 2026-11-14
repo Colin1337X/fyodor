@@ -141,3 +141,21 @@ not a long-workload sanitizer pass or performance acceptance.
 
 The monitored same-provider comparison has started with baseline-short-A.
 Candidate timing and reversed order remain pending; no accepted score changes.
+
+## Short comparison rejected; joint-one remains unpromoted
+
+baseline-short-A and candidate-short-A each completed all twelve cases with
+output parity. All per-case coverage audits reject invalid target counters and/or
+unattributed activity; System/PID 4 remains among the positive engines. Their
+all-three-round diagnostic means are 629.316 ms for joint-three and 674.649 ms
+for joint-one per 32-token decode. These are descriptive rejected measurements,
+not accepted performance ratios or a certified regression.
+
+The reverse-order candidate-short-B collector failed after fifteen samples with
+PdhGetFormattedCounterArrayW status 0xc0000bba. The observer terminated its owned
+benchmark child after three completed cases. That run has no complete comparison;
+baseline-short-B was not launched to pretend to complete the missing pair.
+comparison-short-rejected.json verifies prerequisite/source hashes, records the
+completed inventories and retains all three captures. No joint-one promotion or
+accepted score change follows. The next isolated kernel candidate is the native
+batch-four gate/up fusion in ../q4-batch-gate-20261115/.

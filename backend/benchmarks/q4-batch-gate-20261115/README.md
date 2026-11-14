@@ -83,3 +83,28 @@ experimental pair-row kernel. Even a later synthetic gain must survive compariso
 with relevant stronger candidates and full-model testing. Repeated weight banks
 and snapshot-only activity checks make these timings diagnostic, never accepted
 llama.cpp performance scores.
+
+## Completed isolated validation and first timing
+
+All 222 numerical cases and eight unsupported-shape cases pass. Both projection
+oracles satisfy the unchanged float64 bounds (maximum fraction 0.05542385), and
+all fused outputs are byte-exact against the separate native projections/GELU.
+Memcheck, racecheck and synccheck each repeat the complete sweep with exit zero
+and a unique zero-error/hazard summary. Their input and evidence hashes were
+independently verified before timing.
+
+The first six-shape timing completed with output/guard parity throughout:
+
+| Columns | Rows | Separate mean ms | Fused mean ms | Diagnostic latency reduction |
+| --- | --- | --- | --- | --- |
+| 256 | 17 | 0.003714 | 0.002416 | 34.93% |
+| 3840 | 512 | 0.013741 | 0.011310 | 17.69% |
+| 3840 | 2048 | 0.038460 | 0.034592 | 10.06% |
+| 3840 | 4096 | 0.067837 | 0.062376 | 8.05% |
+| 3840 | 8192 | 0.156643 | 0.129620 | 17.25% |
+| 3840 | 15360 | 0.291142 | 0.244302 | 16.09% |
+
+All forty samples per variant and their standard deviations remain in timing.json.
+This supports testing against the stronger experimental pair-row baseline next;
+it does not justify production integration. Full-model correctness and monitored
+performance remain pending. Accepted llama.cpp/PyTorch scores are unchanged.
