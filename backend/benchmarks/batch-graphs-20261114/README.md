@@ -96,3 +96,21 @@ proof. Four CPU tests pass and refusal of the pending sanitizer was exercised
 without creating timing output or starting another GPU workload. This runner
 has not yet produced timing evidence, and does not itself declare benchmark
 acceptance from coverage alone.
+
+## Matching generation reference
+
+The historical reference runner's tokenizer proof referenced an older
+`build-cpu/libnya-engine.a`. `compare_prompt_tokens.py` preserves that evidence
+and rebuilds separate CPU-only C17/C23 tokenizer executables. The C17 runs
+match llama.cpp token IDs exactly at 25 and 8205 prompt tokens. The new proof
+is under `prompt-token-parity`; 193 available prerequisite hashes verify.
+`run_reference.py` uses this proof and this candidate's generation/sanitizer
+proofs. Its process gate refused launch while the model sanitizer was active.
+No new reference GPU timing has run.
+
+Generation decode intervals exclude prefill and teardown but include sampling,
+assistant work and transfers. Their first output uses prefill logits. Compare
+them with the matching llama.cpp generation harness, not the historical
+fixed-forward scorecard. New generation ratios must be reported separately,
+with contamination and repetition/order limitations, until acceptance is
+established. The sanitizer's overall call seconds are not decode scores.
