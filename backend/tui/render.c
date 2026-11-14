@@ -90,7 +90,13 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
         }
     }
     if(h>7 && (last->optional&2U)) line(f,x+2,y+6,w-4,0,"Gradient norm %.6g",last->gradient);
-    if(h>8 && (last->optional&4U)) line(f,x+2,y+7,w-4,0,"Device used %.1f MiB",last->used/1048576.0);
+    if(h>8) {
+        if((last->optional&20U)==20U)
+            line(f,x+2,y+7,w-4,0,"Device used %.1f / %.1f MiB capacity",last->used/1048576.0,last->capacity/1048576.0);
+        else if(last->optional&4U) line(f,x+2,y+7,w-4,0,"Device used %.1f MiB",last->used/1048576.0);
+        else if(last->optional&16U) line(f,x+2,y+7,w-4,0,"Device capacity %.1f MiB",last->capacity/1048576.0);
+    }
+    if(h>9 && (last->optional&8U)) line(f,x+2,y+8,w-4,0,"Device peak %.1f MiB",last->peak/1048576.0);
     if(h<14) return;
     int gx=x+3,gy=y+10,gw=w-6,gh=h-12;
     size_t start=s->samples>(size_t)gw?s->samples-(size_t)gw:0;

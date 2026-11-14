@@ -17,7 +17,10 @@ inference. Inspection errors distinguish malformed/truncated containers,
 unsupported formats or versions, resource limits, and read failures; failed
 inspection clears the previous model details. The training view follows the CSV produced by `fyodor-train --metrics`:
 step, loss, tokens/s, compute provider, optional validation loss, gradient norm,
-and device memory. The validation readout retains the latest evaluation within
+and device memory. Memory telemetry shows usage alongside capacity when both are
+available, plus peak usage on its own line. Missing fields stay blank; a reported
+zero remains a real zero. Capacity is the trainer's reported device budget.
+The validation readout retains the latest evaluation within
 the displayed history and labels its step, even when newer training rows have
 no evaluation. Restarting or replacing the metrics history clears the old value.
 The validation graph keeps missing evaluations as gaps rather than repeating
