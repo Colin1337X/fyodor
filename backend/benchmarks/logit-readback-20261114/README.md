@@ -30,3 +30,16 @@ real-model lifecycle/output parity, physical transfer-count evidence, sanitizer
 validation and paired decode timing. This candidate is not production-integrated
 and has no accepted performance claim. Accepted scores remain 85.61025294% short
 and 106.8707255% at 8K versus llama.cpp, below the requested 125% target.
+
+## CPU sanitizer evidence
+
+`cpu-sanitizer.json` records passing Linux GCC C17/C23 ASan/UBSan executions of
+the readback helper tests, with `detect_stack_use_after_return=1` and UBSan halt
+on error. Build/run commands, logs and input/output hashes are retained. This
+checks host memory handling in the mock harness, not CUDA execution safety.
+
+`run_lifecycle.py c17|c23 257|8192` is prepared for the isolated real-model build.
+It validates model identity and build hashes, retains logs and verifies inputs
+again after exit. A passing run must satisfy the harness's exactly-one-download
+assertion for four-row verification as well as the original numerical/lifecycle
+checks. No real-model run from this experiment has started yet.
