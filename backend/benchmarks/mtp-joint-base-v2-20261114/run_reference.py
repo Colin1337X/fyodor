@@ -21,19 +21,22 @@ from monitor_capture import capture
 from coverage import audit
 from audit_generation import lifetime
 
-if len(sys.argv) != 3 or sys.argv[1] not in ('short', 'long'):
-    raise SystemExit('Usage: run_reference.py short|long UNIQUE_LABEL')
-context, label = sys.argv[1:]
+if len(sys.argv) not in (3, 4) or sys.argv[1] not in ('short', 'long') or (len(sys.argv)==4 and sys.argv[3]!='guarded'):
+    raise SystemExit('Usage: run_reference.py short|long UNIQUE_LABEL [guarded]')
+context, label = sys.argv[1:3]
+guarded = len(sys.argv)==4
+build_manifest = out / 'guarded-reference-build.json' if guarded else reference / 'llama-generation-build.json'
+binary_directory = 'guarded-reference-20261114' if guarded else 'aligned-generation-20261114'
 if not label.isascii() or not label.isalnum():
     raise SystemExit('Label must be ASCII alphanumeric')
-folder = out / f'reference-{context}-{label}'
+folder = out / f'reference-{"guarded-" if guarded else ""}{context}-{label}'
 if folder.exists():
     raise SystemExit('Refusing to overwrite reference evidence')
 spec = importlib.util.spec_from_file_location('preflight', out.parent / 'gemma4-qkv-20261029/environment.py')
 preflight = importlib.util.module_from_spec(spec); spec.loader.exec_module(preflight)
 if any(not preflight.desktop_identity_allowed(p) for p in preflight.snapshot()['processes']):
     raise SystemExit('Another GPU workload remains; no reference launched')
-proof_paths = [reference / 'llama-generation-build.json', reference / 'prompt-token-parity/result.json', out / 'generation-build.json',
+proof_paths = [build_manifest, reference / 'prompt-token-parity/result.json', out / 'generation-build.json',
                out / 'model-memcheck-short/result.json', out / f'{context}-correctness/correctness.json']
 for path in proof_paths:
     proof = json.loads(path.read_text())
@@ -58,12 +61,13 @@ gate = importlib.util.module_from_spec(spec); spec.loader.exec_module(gate)
 gate.configure(folder)
 gate.idle()  # A failed idle gate stops this launch; it is not an accepted measurement.
 metadata = dict(accepted_benchmark=False, gate_passed=True, runs=[], errors=[],
+                quiet_gap_seconds=2 if guarded else 0,
                 model_identity=model_identity,
                 child_cwd=str(library_directory),
                 library_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest()
                     for p in library_directory.glob('*.dll')},
                 source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                build_manifest_sha256=hashlib.sha256((reference / 'llama-generation-build.json').read_bytes()).hexdigest())
+                build_manifest_sha256=hashlib.sha256(build_manifest.read_bytes()).hexdigest())
 result = dict(accepted_benchmark=False, runs=[], errors=[], sampled_coverage_clear=False,
               prerequisite_sha256={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in proof_paths},
               validator_sha256={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -78,7 +82,7 @@ try:
     with capture(folder) as monitor:
         for context in (context,):
             monitor.check_alive()
-            command = [str(root / 'build-cuda/aligned-generation-20261114/llama-generation-c17.exe'), tokens['model'], context]
+            command = [str(root / 'build-cuda' / binary_directory / 'llama-generation-c17.exe'), tokens['model'], context]
             row = dict(context=context, command=command, observer_clock='qpc', samples=[])
             metadata['runs'].append(row)
             with (folder / f'{context}.stdout').open('xb') as stdout, (folder / f'{context}.stderr').open('xb') as stderr:

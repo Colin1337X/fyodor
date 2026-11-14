@@ -104,6 +104,26 @@ coverage. No score is accepted and no clean round is cherry-picked. This shows
 the unknown activity also occurs in the external reference; it does not establish
 ownership or justify relaxing coverage rules. Both attempts are preserved.
 
+reference-long-A also completed three rounds with identical 8205 prompt IDs and
+matching 32-token output. System activity invalidated rounds zero and two, and
+round zero additionally contained an invalid counter. Round one had clear sampled
+coverage. The collector stopped successfully; no long score is accepted.
+
+## Quiet-gap attribution control
+
+build_guarded_reference.py builds a separate C17/C23 reference harness with
+two-second Sleep calls immediately before the start timestamp and after the end
+timestamp. The decode work and measured endpoints are unchanged. Select it with
+the final `guarded` argument to run_reference.py. The gaps isolate sampled decode
+brackets from neighboring prefill/cleanup work, but can change GPU clocks; these
+runs are rejected by compare_monitored.py for performance comparisons.
+
+reference-guarded-short-A completed all three rounds with matching output and a
+healthy collector. Round zero still had System activity and an invalid counter;
+round two had an invalid counter, while round one had clear sampled coverage.
+This does not establish ownership or clear the environment. The native scores
+remain unchanged. Strict C17/C23 builds and comparison rejection tests passed.
+
 The reference runner also re-hashes both external GGUF files with bounded
 memory before launch. model_identity.py compares them with the previously
 recorded target/assistant SHA-256 values and rejects missing, replaced or
