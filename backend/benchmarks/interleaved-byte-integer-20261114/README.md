@@ -47,3 +47,14 @@ kernels. These scripts have parsed successfully but have not executed GPU work.
 They refuse to create a GPU context until the active FFN-reuse sanitizer has a
 completed passing result. The `--memcheck` label alone is not sanitizer evidence;
 retain the actual Compute Sanitizer exit and summary when running that mode.
+
+## Static PTX tradeoff
+
+`inspect_ptx.py` compiles the native eight-row/bound-three kernel and packed
+candidate in one NVRTC module without a CUDA context. In their static PTX,
+`and.b32` sites fall from 24 to 1 and `shr.u32` from 22 to 1, but byte-load sites
+rise from 4 to 20 and three word-load sites disappear. Both retain 32 FMA sites,
+20 shuffle sites and the same FP32 multiply/subtract/add site counts. This
+confirms a metadata instruction tradeoff, not lower elapsed time: PTX counts are
+not dynamic instructions, SASS, physical registers, occupancy or throughput.
+Actual kernel timing and parity remain required before choosing this candidate.
