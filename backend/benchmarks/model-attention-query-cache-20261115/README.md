@@ -56,3 +56,10 @@ run_generation.py requires both fallback proofs and the positive C17 8K lifecycl
 Short generation must report no cached-query calls; long generation requires
 six positive execution records across the three batched-two and joint rounds.
 The C17 short generation run has started; its result is not yet established.
+
+Short generation now passes all twelve ordered cases in both C17 and C23.
+Output parity, existing Q4/Q6/QKV execution inventories and graph reuse pass;
+cached-query calls are absent as required at this prefix. All 920 recorded
+identities per run verify independently. These are fallback-generation results,
+not evidence of a short-context gain. C17 long generation is now running and
+must prove positive cached-query execution as well as all twelve output matches.
