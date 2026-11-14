@@ -90,8 +90,11 @@ sanitizer results, the joint-one long correctness result and the comparison buil
 proof before creating an output directory. It verifies recorded hashes and GGUF
 identities, requires continuous monitoring, and restricts each mode inventory to
 its verified executable. An existing output directory is never reused. Inherited
-NYA flags are removed from the child environment; only recorded settings and the
-runner's explicit overrides are applied. Monitor sources are hashed along with
+NYA flags are removed from the child environment. Both candidates must have
+identical recorded correctness-run settings, with hashes verified through their
+proofs; those exact settings are applied without performance-flag overrides.
+Five focused tests reject differences, missing/changed evidence, invalid settings
+and incomplete candidate pairs. Monitor sources are hashed along with
 prerequisites and checked again after a successful audit.
 
 audit_joint_one.py adds the joint-one case inventory to the unchanged coverage
