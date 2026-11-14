@@ -329,3 +329,52 @@ kernel, both directly submitted and graph-replayed, is not a sufficient
 reproduction of model-run System activity. This does not test model-scale
 allocations or a full decode graph. No runtime or acceptance-policy change
 follows from this negative control; raw capture is losslessly archived.
+
+## Large-allocation request control
+
+run_allocation_control.py repeats the actual request-kernel control while holding
+12 GiB initialized with cuMemsetD8. It refuses allocation unless reported free
+memory leaves at least 2 GiB reserve. AllocationControlA recorded free memory
+15,908,995,072 bytes before and 3,024,093,184 afterward. This API reports allocation
+availability, not proof that every page remains physically resident. Each phase
+checks allocation endpoint sentinels as well as request values and guards.
+All nine phases passed, inputs remained unchanged, and cleanup succeeded.
+
+AllocationCaptureA completed 90 samples without API failure; 36 invalid startup
+formatted entries are retained. All nine phases are bracketed, with five wholly
+interior samples each. None of those 45 samples has System-positive,
+other-process-positive, invalid or above-100 events. Holding an initialized
+12 GiB allocation with tiny request launches does not reproduce model-run
+System activity; this is not a streaming model working-set test. Raw capture
+is losslessly compressed with hashes in archive.json.
+
+The next diagnostic uses capture_fine.py, which retains recovery/error records
+but sleeps 100 ms between collections. The generation companion writes an
+independent fine-capture-generation folder and retains the original correctness
+and execution checks. This tests whether one-second sampling conflates model
+setup/teardown activity with short native decode intervals. It changes no
+benchmark acceptance rules and does not make diagnostic timings acceptable.
+
+## FineShortA: completed 100 ms capture
+
+All 800 collections were retained. Formatted-array data failed at index 188
+with 0xc0000bba, while the raw read succeeded; subsequent formatted reads
+recovered. The diagnostic's persistent failure flag and failed sample remain
+in result.json and analysis.json. This exercises continuing observation after
+a failure, not clearing that failure or accepting a benchmark. Eighteen invalid
+formatted entries and all above-100 readings are preserved.
+
+The accompanying short C17 generation passed all twelve cases and all 923
+hashes verified. Every native decode interval is bracketed with no collection
+gaps. All twelve have System-positive overlaps. Interior-only classification
+uses previous.qpc_start >= decode.start AND current.qpc_end <= decode.end:
+System-positive samples remain inside round 0 serial-two and round 0 joint-three.
+Other System-positive overlaps cross a decode boundary. Above-100 readings also
+remain inside several decode intervals. Thus coarse one-second sampling explains
+some ambiguous overlap, but finer sampling does not remove all anomalies.
+interior-decode.json records the selection rule, input hashes and retained events.
+
+The collection cadence may perturb timing; no diagnostic timings are promoted.
+System causal attribution and GPU running-time accounting remain unresolved.
+The complete raw log is losslessly archived with hashes. No production changes
+or acceptance-policy relaxation follow from this experiment.
