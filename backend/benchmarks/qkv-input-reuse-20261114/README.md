@@ -21,7 +21,7 @@ for replay accounting. No new device code or public ABI is introduced.
 
 Separate C17/C23 lifecycle and generation binaries built with warnings treated
 as errors, from verified batched-graph inputs. Production dispatch/archive
-remain unchanged. Failure, generation, sanitizer and paired timing
+remain unchanged. Failure, long generation, sanitizer and paired timing
 validation remain pending; completed short lifecycle evidence is described below. The runner refuses GPU work
 until the currently running long-context profile has completed successfully.
 
@@ -80,3 +80,16 @@ requires positive QKV reuse and graph replay markers, records the explicit
 environment overrides and uses the existing continuous GPU activity collector.
 The missing-memcheck gate was exercised without launching another GPU job.
 Coverage alone cannot accept a benchmark; activity failures remain disqualifying.
+
+Both C17 and C23 short generation runs now pass all twelve ordered cases
+(ordinary, serial2, batch2, joint3), with 25 prompt tokens and 32 generated
+tokens. Each run retains exact generated-text parity, six graph-reusing
+verification plans, three positive integer-call markers and three QKV reuse
+markers of 88. All 682 hashes per result independently verified.
+
+C17 joint decode-loop diagnostics were 610.677, 620.885 and 599.6355 ms in
+round order. There was no continuous activity acceptance or paired baseline
+in these correctness runs, so they establish no speedup or updated score.
+The candidate full-model short Compute Sanitizer run started only after both
+standards passed generation. Long generation, sanitizer completion and
+controlled timing remain pending; production dispatch is unchanged.
