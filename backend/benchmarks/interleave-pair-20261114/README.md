@@ -1,4 +1,4 @@
-# Adjacent gate/up input conversion reuse (unvalidated experiment)
+# Adjacent gate/up input conversion reuse (experimental)
 
 The retained joint-base profile identifies matrix work as about 85% of recorded
 GPU kernel time. Its largest group is batch-four Q4 feed-forward expansion.
@@ -16,13 +16,13 @@ It checks the original build manifest before and after compilation. Production
 source, archive, dispatch and the currently running sanitizer inputs are intact.
 No new C++ dependency is introduced; this remains removable CUDA host C code.
 
-Both host builds pass (`build.json`). This is **not GPU correctness or performance
-validation**. No executable has been run with this change. It is not integrated
+Both host builds pass (`build.json`). Initial C17/C23 real-model lifecycle
+validation also passes, as recorded below; throughput remains unvalidated. It is not integrated
 or enabled by default. It saves one conversion launch per eligible FFN pair;
 it does not remove either projection or change their arithmetic. The whole-model
 benefit is unknown and must be measured after the current candidate finishes.
 
-Next gates: link isolated generation/lifecycle executables; validate short/long
+Remaining gates: validate long-context lifecycle and short/long generation
 logits, output parity, reset/rewind and failure recovery; run Compute Sanitizer;
 then compare end-to-end decode with and without reuse under clean monitoring.
 Do not replace accepted scores from a compile check or inferred launch savings.
