@@ -110,3 +110,31 @@ reuse. All 849 recorded input/output hashes verified after completion. Evidence
 is retained under model-q6-pair-20261114/raw-diagnostic-generation-long-c17.
 The bounded observer ended before generation; this is correctness and counter
 diagnostic evidence, not full-workload coverage or an accepted timing result.
+
+## Engine and clock audit
+
+`clock_audit.py` verifies the completed capture manifest and sample inventory
+before comparing raw denominator deltas, FILETIME timestamp deltas and QPC
+collection-start deltas. It retains per-engine positive/out-of-range counts;
+it does not change the collector or coverage policy. Four manual offline checks
+passed: 125% preservation with matching clocks, invalid-status exclusion,
+wrong-adapter exclusion, and nonmonotonic-clock rejection.
+
+All 424 NativeA readings above 100% belong to the owned native process PID 12144,
+CUDA engine 10. All 299 SanitizerA readings above 100% belong to the owned
+instrumented process PID 5364, also CUDA engine 10. System/PID 4 copy engine 13
+had no readings above 100%: NativeA had 17 positive samples, maximum 7.65145%;
+SanitizerA had 505, maximum 8.48787%. These counts cover each entire bounded
+capture, not just timed decode intervals.
+
+For matched valid target counters, denominator deltas exactly match raw
+FILETIME timestamp deltas. Maximum relative disagreement with QPC intervals
+was 0.13970% for NativeA and 0.12957% for SanitizerA. This evidence does not
+support a large collection-clock denominator error as the explanation for
+121.51%/145.21% CUDA readings. GPU running-time accounting and System causal
+attribution remain unresolved. No accepted performance scores change.
+
+Microsoft documents that PDH_FMT_NOCAP100 preserves values exceeding 100%;
+that flag is already used. This generic PDH behavior alone does not establish
+that these particular GPU engine values are valid utilization measurements:
+https://learn.microsoft.com/en-us/windows/win32/api/pdh/nf-pdh-pdhgetformattedcountervalue
