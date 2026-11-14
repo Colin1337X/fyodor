@@ -59,3 +59,13 @@ C17 and C23 builds, with exact output parity, graph reuse and paired-row
 markers [128,128,128]. All 766 hashes per generation result independently
 verified. Full-model memcheck, long generation and end-to-end performance
 remain pending. These are correctness results, not updated speed scores.
+
+`run_monitored.py short|long LABEL [enabled|disabled]` is prepared for the
+same-binary paired-row comparison. Only `NYA_CUDA_PAIR_ROWS` changes between
+variants; QKV input reuse remains enabled and requires its three positive
+markers in both. Paired-row mode requires exactly three positive markers
+when enabled and none when disabled, rejecting malformed markers either way.
+Six CPU tests pass. The pending-memcheck refusal was exercised without
+starting another GPU workload. The unchanged continuous activity collector
+can still reject or abort runs on invalid counters; no evidence requirement
+has been relaxed and no new timing has been measured with this wrapper.
