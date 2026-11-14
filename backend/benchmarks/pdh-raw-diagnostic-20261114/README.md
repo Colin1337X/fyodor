@@ -183,3 +183,17 @@ also overlapped the separate long C17 generation correctness run (PID 6664).
 That run uses the ordinary generation runner and writes generation-long-c17;
 its status must be checked independently. No timings from this diagnostic
 capture qualify as accepted benchmark results.
+
+## Decode-interval correlation
+
+correlate_decode.py accepts a completed capture folder, completed generation
+folder and adapter LUID. It verifies both manifests and their recorded hashes,
+parses native QPC decode endpoints with the existing strict duration parser,
+and checks the interval inventory against completed generation cases. It
+reports overlapping invalid entries, above-100 readings, System activity and
+other-process activity separately for each case. Missing endpoint coverage
+and collection gaps remain explicit. Collection-call start/end bounds are
+conservative; this report neither attributes System work causally nor accepts
+performance. Five offline tests cover interval boundaries, owned readings
+above 100, invalid zero-valued entries, gaps/incomplete bracketing and reordered
+samples. The active capture must finish before this report is generated.
