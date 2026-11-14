@@ -69,3 +69,14 @@ Input and output hashes were verified. This is output correctness evidence,
 without continuous contamination acceptance; wall times are not accepted scores.
 Long-context lifecycle, full-model sanitizer with this candidate and monitored
 short/long throughput remain pending.
+
+`run_model_memcheck.py` requires the completed short and 8K lifecycle proofs,
+matching generation parity and build hashes. It verifies external model identity,
+requires a successful child exit and exactly one zero-error sanitizer summary,
+and requires all twelve parity cases and three positive integer call counts.
+Seven offline validator tests cover failures and both context inventories.
+`run_monitored.py` additionally requires short and long generation correctness
+and the full-model short sanitizer, then uses the existing idle gate and continuous
+PDH collector. It records output parity and dispatch counts; it never declares
+performance acceptance on its own. These runners are prepared, not evidence that
+their pending GPU runs have passed.
