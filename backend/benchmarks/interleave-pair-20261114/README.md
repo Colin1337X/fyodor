@@ -63,3 +63,11 @@ proofs, retains all twelve forward/reverse/forward cases, verifies dispatch and
 output parity, and checks transitive build/evidence hashes before and after the
 child. This runner is prepared only; generation has not yet been executed with
 reuse. The active 8192-prefix lifecycle run retains exclusive GPU use first.
+
+## Long-context lifecycle validation
+
+`lifecycle-c17-8192/result.json` passes both reset cycles at prefix 8192 with
+four-token verification and ring KV. Each cycle reports max scaled error
+1.63989979e-05 against the unchanged 0.0005 bound. The child exited zero, reported
+568 integer calls, and all 33 recorded input/output hashes were independently
+verified. This validates lifecycle correctness, not throughput or launch savings.
