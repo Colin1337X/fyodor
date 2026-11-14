@@ -115,3 +115,17 @@ boundary sanitizers and comparison proof. These timings remain unaccepted.
 The full-model short-context Compute Sanitizer run has now started. Its completion
 is still required before the monitored joint-three/joint-one comparison; this
 long-generation result alone does not prove memory safety or performance.
+
+## Diagnostic coverage summaries
+
+summarize_coverage.py verifies a completed audit's input hashes and retains every
+case, its complete coverage outcome and its decode duration. Per-mode statistics
+include all three rounds, including the first round and rejected samples; they
+are explicitly descriptive and never emit acceptance or speedup ratios. Six
+tests cover complete inventories, retained failed coverage, missing rounds,
+invalid durations, incomplete audits and duplicate contexts.
+
+baseline-short-diagnostic.json exercises this on the earlier joint-three
+monitored-short-A capture. All twelve cases remain present and none has clear
+coverage. This is a summary of existing rejected evidence, not a rerun, a new
+baseline score or a comparison against joint-one.
