@@ -85,3 +85,19 @@ for unattributed System/PID 4 activity; the first interval in each run also
 had an invalid target counter. These results are diagnostic, not accepted
 performance. No llama.cpp score changes. Reverse-order measurement is next;
 the isolated kernel gain does not justify production integration.
+
+## Reverse-order attempt interrupted by collector failure
+
+DisabledB stopped after 13 completed PDH samples. The next formatted-array
+data call returned 0xc0000bba; the collector exited 1 and the runner terminated
+its owned benchmark (PID 22984). Only ordinary, serial-two and batch-two cases
+in round zero completed. No joint-decode comparison is available. The complete
+parity/execution inventory is false, inputs remained unchanged, and all 959
+recorded hashes verified. Evidence is retained as an incomplete rejected run.
+
+The reverse pair is incomplete and must not be presented as confirmation of
+the initial 4.6651% diagnostic regression. This candidate remains unpromoted:
+the existing evidence provides no model-level benefit, and the continuous
+coverage problem remains unresolved. Do not retry this measurement unchanged
+or claim the isolated kernel gain as an inference throughput gain. Production
+was never switched to this candidate, so no production rollback is required.
