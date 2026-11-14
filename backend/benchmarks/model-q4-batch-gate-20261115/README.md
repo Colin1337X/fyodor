@@ -52,3 +52,11 @@ monitored-preflight-refusal.json. It does not launch a GPU workload before the
 required completed lifecycle, generation and model memcheck evidence exists.
 Both variants keep Q4/Q6 paired rows and QKV reuse enabled; only fusion toggles.
 Existing PDH coverage rules are unchanged. No monitored fusion run is complete.
+
+
+The extracted host launch helper also passes C17/C23 checks using stubbed CUDA
+calls. These verify a fresh norm interleave before fusion, both tensor addresses,
+output/scratch pointers, row/column/stride/batch arguments, launch geometry,
+profile cleanup, and failure propagation for both conversion and fused launch.
+Only a successful fused launch increments its execution counter. This is host
+wiring evidence, not additional GPU numerical or sanitizer coverage.
