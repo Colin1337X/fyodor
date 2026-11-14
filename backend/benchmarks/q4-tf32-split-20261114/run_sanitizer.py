@@ -12,6 +12,7 @@ import time
 
 def validate_oracle(proof):
     shapes = [(256, r) for r in (1, 7, 9, 15, 16, 17, 63, 64, 65)]
+    shapes += [(k, 17) for k in (512, 768, 1024, 1280, 1792)]
     shapes += [(3840, r) for r in (512, 2048, 4096, 8192, 15360)]
     shapes += [(4096, 3840), (8192, 3840), (15360, 3840)]
     bits = [0, 0x8000, 1, 0x8001, 0x03ff, 0x83ff, 0x0400, 0x8400,
@@ -103,7 +104,7 @@ def main():
         result['elapsed_seconds'] = time.perf_counter() - start
         result['evidence_sha256'] = {p.name: digest(p) for p in (stdout_path, stderr_path, oracle_path) if p.exists()}
         result_path.write_text(json.dumps(result, indent=2))
-    print('219 numerical cases and eight rejections passed under', tool)
+    print('224 numerical cases and eight rejections passed under', tool)
 
 
 if __name__ == '__main__':

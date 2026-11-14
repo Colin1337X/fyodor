@@ -18,9 +18,10 @@ Six CPU sanitizer-evidence validator tests pass. These do not prove GPU
 correctness, synchronization safety, throughput or production readiness.
 
 The prepared GPU harness retains the independent C double oracle, unchanged
-`2e-6 * sum(abs(double products)) + 1e-6` bound, 219 cases, guards, and eight
+`2e-6 * sum(abs(double products)) + 1e-6` bound, 224 cases, guards, and eight
 unsupported-shape checks. Shapes include partial row tiles and widths not
-divisible by 1024. Memcheck, racecheck and synccheck gate the timing probe.
+divisible by 1024. Five additional 17-row cases at 512, 768, 1024, 1280
+and 1792 columns exercise two/three/four active warps and uneven chunk counts. Memcheck, racecheck and synccheck gate the timing probe.
 The probe retains synchronized uploads, alternating order, per-output double
 checks and the same eight shapes as the preceding experiment.
 
