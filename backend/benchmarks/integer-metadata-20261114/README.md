@@ -98,3 +98,11 @@ model sanitizer, lifecycle and generation proofs before GPU execution. It keeps
 the existing process/idle checks, continuous activity audit and input hashes,
 and additionally requires the metadata selection marker. Three input-integrity
 tests pass. This runner is prepared but has not executed a timing workload.
+
+Short-context generation now passes under both C17 and C23: twelve matching
+ordinary/serial2/batch2/joint3 cases per build, forward/reverse/forward order,
+25 prompt tokens and 32 generated tokens. Each joint round recorded 2556
+integer calls, the metadata selection marker was present, and each result's
+111 hashes verified after completion. Long-context C17 generation is running;
+its output and timing are not yet accepted. Full-model sanitizer and monitored
+performance validation remain outstanding for this candidate.
