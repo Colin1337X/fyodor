@@ -91,8 +91,8 @@ is introduced by this isolated integration.
 `run_model_memcheck.py` is prepared for the isolated model binary and requires
 completed lifecycle and generation proofs before launching Compute Sanitizer.
 Its validator additionally rejects a missing metadata-kernel selection marker;
-eight CPU-only evidence tests pass. The short-context full-model sanitizer is
-now running; no completed result is claimed yet.
+eight CPU-only evidence tests pass. The short-context full-model sanitizer
+completed successfully; its evidence is recorded below.
 
 `run_monitored.py` targets the isolated metadata binary and requires successful
 model sanitizer, lifecycle and generation proofs before GPU execution. It keeps
@@ -107,8 +107,16 @@ integer calls, the metadata selection marker was present, and each result's
 111 hashes verified after completion. Long-context C17 generation also passed
 all twelve cases at 8205 prompt tokens and 32 generated outputs, with the
 metadata marker, 2556 integer calls per joint round, and 111 hashes verified.
-These are correctness-only runs. Full-model sanitizer and monitored
-performance validation remain outstanding for this candidate.
+These are correctness-only runs. Monitored performance validation remains
+outstanding for this candidate.
+
+The short-context full-model Compute Sanitizer run exited zero after 2615.45
+seconds, with all twelve ordered generation cases passing parity and exactly one
+zero-error summary. The metadata selection marker was present and all three
+joint rounds recorded 2556 integer-kernel calls. All 118 recorded input/output
+hashes independently verified after completion. This is completed memory and
+output validation for the tested short workload, not an accepted timing result
+or a claim that long-context full-model sanitizer coverage has completed.
 
 ## Offline launch-bound follow-up
 
