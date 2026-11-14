@@ -82,7 +82,13 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
     const tui_sample *last=&s->history[s->samples-1];
     line(f,x+2,y+3,w-4,2,"Step %" PRIu64 "    Loss %.6g    %.2f tokens/s",last->step,last->loss,last->rate);
     line(f,x+2,y+4,w-4,0,"Compute: %s   History: %zu   Rejected rows: %zu",*last->compute?last->compute:"unspecified",s->samples,s->malformed);
-    if(h>6 && (last->optional&1U)) line(f,x+2,y+5,w-4,0,"Validation loss %.6g",last->validation);
+    if(h>6) for(size_t i=s->samples;i>0;--i) {
+        const tui_sample *evaluation=&s->history[i-1];
+        if((evaluation->optional&1U) && isfinite(evaluation->validation)) {
+            line(f,x+2,y+5,w-4,0,"Validation loss %.6g (step %" PRIu64 ")",evaluation->validation,evaluation->step);
+            break;
+        }
+    }
     if(h>7 && (last->optional&2U)) line(f,x+2,y+6,w-4,0,"Gradient norm %.6g",last->gradient);
     if(h>8 && (last->optional&4U)) line(f,x+2,y+7,w-4,0,"Device used %.1f MiB",last->used/1048576.0);
     if(h<14) return;

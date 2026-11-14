@@ -12,6 +12,16 @@ static int write_csv(const char *path,const char *contents)
 {
     FILE *f=fopen(path,"wb");if(!f) return -1;int failed=fputs(contents,f)<0;return fclose(f) || failed?-1:0;
 }
+static int frame_contains(const tui_frame *frame,const char *text)
+{
+    size_t length=strlen(text);
+    for(int y=0;y<frame->height;++y) for(int x=0;x+(int)length<=frame->width;++x) {
+        size_t i=0;
+        while(i<length && frame->cells[y*frame->width+x+(int)i].code==(unsigned char)text[i]) ++i;
+        if(i==length) return 1;
+    }
+    return 0;
+}
 typedef struct key_stream {const unsigned char *bytes;size_t length,position;} key_stream;
 static int read_key_byte(void *context)
 {
@@ -196,10 +206,20 @@ int main(int argc,char **argv)
     for(int y=14;y<24;++y) for(int x=4;x<76;++x)
         if(f->cells[y*80+x].code=='*') {++points;CHECK(x==4 || x==6);}
     CHECK(points==2 && f->cells[14*80+4].code=='*' && f->cells[23*80+6].code=='*');
+    CHECK(frame_contains(f,"Validation loss 1 (step 2)"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,validation_loss\n0,100,20,3\n1,200,20,\n2,300,20,1\n3,250,20,\n"));
+    CHECK(!tui_metrics(&s) && s.samples==4);tui_render(&s,f,80,30);
+    CHECK(frame_contains(f,"Step 3") && frame_contains(f,"Validation loss 1 (step 2)"));
+    CHECK(f->cells[23*80+6].code=='*');
+    for(int y=14;y<24;++y) CHECK(f->cells[y*80+7].code!='*');
     for(size_t i=0;i<s.samples;++i) s.history[i].optional=0;
     tui_render(&s,f,80,30);points=0;
     for(int y=14;y<24;++y) for(int x=4;x<76;++x) points+=f->cells[y*80+x].code=='*';
     CHECK(!points);
+    CHECK(!frame_contains(f,"Validation loss 1 (step 2)"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second\n0,4,20\n"));
+    CHECK(!tui_metrics(&s) && s.samples==1);tui_render(&s,f,80,30);
+    CHECK(!frame_contains(f,"(step 2)"));
     s.chart=0;
     tui_key(&s,':');
     for(int i=0;i<70;++i) tui_key(&s,0xac00);

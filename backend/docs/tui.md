@@ -17,7 +17,11 @@ inference. Inspection errors distinguish malformed/truncated containers,
 unsupported formats or versions, resource limits, and read failures; failed
 inspection clears the previous model details. The training view follows the CSV produced by `fyodor-train --metrics`:
 step, loss, tokens/s, compute provider, optional validation loss, gradient norm,
-and device memory. Press `g` to cycle loss, tokens/s, gradient norm, device memory, and validation-loss graphs, or
+and device memory. The validation readout retains the latest evaluation within
+the displayed history and labels its step, even when newer training rows have
+no evaluation. Restarting or replacing the metrics history clears the old value.
+The validation graph keeps missing evaluations as gaps rather than repeating
+the last value. Press `g` to cycle loss, tokens/s, gradient norm, device memory, and validation-loss graphs, or
 use `:chart loss|rate|gradient|memory|validation`. Each graph uses a labeled dynamic
 vertical scale; missing optional values remain gaps rather than zeroes. Only complete, finite rows are accepted. Refresh reads at most
 the last 64 KiB and retains at most 192 samples; malformed rows are counted.
