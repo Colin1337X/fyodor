@@ -46,3 +46,21 @@ The important 3840x15360 expansion shape improves only about 1.5%; larger
 column shapes regress. This rejects a blanket replacement. A separate reversed
 initial order and full-model validation would be required before adopting even
 the narrow expansion dispatch. No production integration or score update yet.
+
+## Reversed initial order
+
+The separate four/two, two/four, two/four, four/two run passed byte parity
+and the independent numerical bound on all eight shapes. Kernel latency
+changes relative to two-row reuse were:
+
+- K=3840, rows=512: +21.908%
+- K=3840, rows=2048: -6.553%
+- K=3840, rows=4096: -4.707%
+- K=3840, rows=8192: +0.528%
+- K=3840, rows=15360: -1.510%
+- K=4096, rows=3840: +6.565%
+- K=8192, rows=3840: +2.017%
+- K=15360, rows=3840: +2.676%
+
+This supports isolated model validation only for the 3840x15360 expansion
+shape already using two-row dispatch. It does not establish model speedup.
