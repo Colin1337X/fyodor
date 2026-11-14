@@ -46,15 +46,16 @@ All request-bearing ordinary/wide attention paths examined add a query offset;
 the tiled prefill entry lacks the request argument and is outside this prototype's
 two/four-token scope.
 
-Before enabling: actual changing-token graph replay and quantized-weight parity,
-reset/rewind/replacement and boundary tests, allocation/capture/launch failure
-cleanup, Compute Sanitizer, full-model parity and controlled end-to-end timing.
-Do not start GPU checks while the metadata full-model sanitizer remains active.
+The isolated changing-token gather checks below are complete. Before enabling
+full-model batched capture: reset/rewind/replacement and topology-boundary tests,
+allocation/capture/launch failure cleanup, full-model Compute Sanitizer/parity
+and controlled end-to-end timing. This prototype alone does not implement those
+host-side lifecycle changes.
 
 Accepted decode performance remains 85.61025294% short and 106.8707255% at 8K
 relative to llama.cpp; the 125% target on both is unmet.
 
-## Prepared device replay check
+## Device replay check
 
 `check_replay.py` captures the new gather once per dtype/width/batch and updates
 the device request outside capture for each of twelve replays. The 192-case
@@ -71,8 +72,7 @@ sanitizer evidence and source hashes, the host and compilation proofs, and a GPU
 process inventory check. Its refusal while the sanitizer remains live was
 exercised without creating a CUDA context. Six CPU prerequisite tests cover
 valid, missing, failed, nonzero-exit and changed-input evidence, plus refusal of
-optimized Python before CUDA import so parity assertions cannot be disabled. Device execution
-has not yet run; neither graph ordering nor quantized replay parity is claimed.
+optimized Python before CUDA import so parity assertions cannot be disabled.
 `--memcheck` selects a separate result filename for running under Compute
 Sanitizer; that filename alone is not proof of a successful sanitizer summary.
 
@@ -82,4 +82,11 @@ positions, parity/guards, a zero process exit and exactly one zero-error summary
 It also checks unchanged inputs and identical raw/sanitized compilation options
 and source hashes. Seven CPU validator tests pass, including missing/duplicate
 cases, incorrect replay fields, cleanup failure and invalid sanitizer summaries.
-The wrapper is prepared; no GPU replay or replay-sanitizer result exists yet.
+After the metadata full-model sanitizer and monitored run finished, ordinary
+execution and Compute Sanitizer each passed all 192 replays, using one capture
+per dtype/width/batch and twelve changing-token launches of each executable.
+Sanitizer exited zero with exactly one zero-error summary. All 126 raw-run hashes,
+128 sanitizer-run input hashes and the sanitizer output hashes verified after
+completion. The test confirms the isolated request/gather stream ordering and
+parity/guards for the tested cases. It does not establish full-model graph
+lifecycle correctness or a decode speed improvement.

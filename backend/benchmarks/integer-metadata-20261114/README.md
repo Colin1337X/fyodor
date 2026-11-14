@@ -98,7 +98,8 @@ completed successfully; its evidence is recorded below.
 model sanitizer, lifecycle and generation proofs before GPU execution. It keeps
 the existing process/idle checks, continuous activity audit and input hashes,
 and additionally requires the metadata selection marker. Three input-integrity
-tests pass. This runner is prepared but has not executed a timing workload.
+tests pass. The first monitored short run completed and its timing was rejected,
+as detailed below.
 
 Short-context generation now passes under both C17 and C23: twelve matching
 ordinary/serial2/batch2/joint3 cases per build, forward/reverse/forward order,
@@ -108,7 +109,8 @@ integer calls, the metadata selection marker was present, and each result's
 all twelve cases at 8205 prompt tokens and 32 generated outputs, with the
 metadata marker, 2556 integer calls per joint round, and 111 hashes verified.
 These are correctness-only runs. Monitored performance validation remains
-outstanding for this candidate.
+outstanding for this candidate: the first monitored run did not obtain clear
+activity coverage.
 
 The short-context full-model Compute Sanitizer run exited zero after 2615.45
 seconds, with all twelve ordered generation cases passing parity and exactly one
@@ -117,6 +119,18 @@ joint rounds recorded 2556 integer-kernel calls. All 118 recorded input/output
 hashes independently verified after completion. This is completed memory and
 output validation for the tested short workload, not an accepted timing result
 or a claim that long-context full-model sanitizer coverage has completed.
+
+## Rejected monitored short run
+
+`monitored-short-A` completed all twelve output-parity cases with the metadata
+marker and 2556 integer calls in each joint round. All 152 recorded hashes
+verified and no input changed. The activity collector exited zero and stopped
+cooperatively, but all twelve decode intervals contain unattributed GPU activity
+from PID 4 (Windows System); three also contain invalid target counters. Thus
+the timing runner exited one and no interval qualifies for performance acceptance.
+System is an essential process and was not terminated or silently allowlisted.
+Accepted decode scores remain unchanged. Retain this evidence; repeating the same
+run without resolving attribution is not evidence of a performance improvement.
 
 ## Offline launch-bound follow-up
 
