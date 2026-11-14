@@ -14,6 +14,12 @@ root using their full relative paths. The original small-buffer evidence is
 preserved. Whole-interval coverage and unknown-process activity rules are unchanged.
 This diagnostic cannot establish performance acceptance or prove System ownership.
 
-Syntax checks pass. The GPU exclusivity preflight rejected the currently active
-Gemma sanitizer before creating output. The residency control has not executed;
-no claim about its behavior on the GPU is made at this checkpoint.
+Syntax checks and four summarizer tests pass. The GPU exclusivity preflight
+initially rejected the active Gemma sanitizer before creating output. After
+that run completed, the control executed successfully with 13,958,643,712 bytes
+allocated and initialized, from 15,892,217,856 reported free bytes before the
+large allocation. Each of the seven phases had four complete sample intervals,
+no invalid counters and no positive System or other-process activity in those
+intervals. The collector stopped successfully. This did not reproduce Gemma's
+System activity. Allocation and initialization alone do not prove physical
+residency throughout every interval, nor attribute any earlier System work.
