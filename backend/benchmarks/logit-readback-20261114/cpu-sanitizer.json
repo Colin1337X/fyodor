@@ -1,0 +1,75 @@
+{
+  "passed": true,
+  "gpu_validated": false,
+  "accepted_benchmark": false,
+  "commands": [
+    [
+      "wsl",
+      "-d",
+      "Ubuntu-26.04",
+      "--",
+      "gcc",
+      "-std=c17",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/benchmarks/logit-readback-20261114/test_readback.c",
+      "-o",
+      "/home/colin/.cache/fyodor-logit-readback-20261114/test-c17"
+    ],
+    [
+      "wsl",
+      "-d",
+      "Ubuntu-26.04",
+      "--",
+      "env",
+      "ASAN_OPTIONS=detect_stack_use_after_return=1",
+      "UBSAN_OPTIONS=halt_on_error=1",
+      "/home/colin/.cache/fyodor-logit-readback-20261114/test-c17"
+    ],
+    [
+      "wsl",
+      "-d",
+      "Ubuntu-26.04",
+      "--",
+      "gcc",
+      "-std=c23",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/benchmarks/logit-readback-20261114/test_readback.c",
+      "-o",
+      "/home/colin/.cache/fyodor-logit-readback-20261114/test-c23"
+    ],
+    [
+      "wsl",
+      "-d",
+      "Ubuntu-26.04",
+      "--",
+      "env",
+      "ASAN_OPTIONS=detect_stack_use_after_return=1",
+      "UBSAN_OPTIONS=halt_on_error=1",
+      "/home/colin/.cache/fyodor-logit-readback-20261114/test-c23"
+    ]
+  ],
+  "sha256": {
+    "backend\\benchmarks\\logit-readback-20261114\\test_readback.c": "a0dc2fe4866ac241f091f87c1bab1c41be2a66591cc3fdea64ecf0aa054a20bb",
+    "backend\\benchmarks\\logit-readback-20261114\\readback.inc": "248accc8f56570e10b67579607d486b3670a920ad77d7100da4dfc3ae2fc83b6",
+    "backend\\benchmarks\\logit-readback-20261114\\cpu-sanitizer-c17.log": "7f5ac7865d862812ae1f22197fda12b810f6d9ab8aaa4c158b2b56c1024a8258",
+    "backend\\benchmarks\\logit-readback-20261114\\cpu-sanitizer-c23.log": "7f5ac7865d862812ae1f22197fda12b810f6d9ab8aaa4c158b2b56c1024a8258"
+  }
+}
