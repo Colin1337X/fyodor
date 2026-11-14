@@ -53,3 +53,9 @@ stale-suffix and output-guard checks remained enabled. All recorded input/output
 hashes were independently verified after completion. These are correctness and
 dispatch-count checks, not measured throughput gains. Long-context and full-model
 sanitizer coverage remain pending.
+
+`lifecycle-c17-8192` also passed both reset cycles with maximum scaled error
+1.63989979e-05 against the unchanged 0.0005 bound, exactly one download per
+four-row verification, and 568 integer calls. All 47 recorded hashes independently
+verified after exit zero. This extends the lifecycle evidence to prefix 8192;
+full-generation and sanitizer validation remain pending for this candidate.
