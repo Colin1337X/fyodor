@@ -118,3 +118,15 @@ capture/reuse and the existing Q4/Q6/QKV execution inventories validated.
 All 965 recorded file identities verify independently. This completes the
 planned long-context generation correctness gate, without performance acceptance.
 Monitored on/off comparisons now follow, retaining the existing coverage rules.
+
+
+## First monitored short comparison (rejected coverage)
+
+DisabledA and EnabledA both complete all twelve output-parity cases and required
+execution inventories. All 1003 file identities per result verify independently.
+The three joint decode-loop samples average 567.0631667 ms (sample SD 2.1766702)
+without fusion and 549.8707000 ms (SD 0.8012292) with fusion, per 32 output tokens.
+This is approximately 3.03% lower diagnostic latency. Every joint interval in
+both runs fails coverage for unattributed GPU activity. Thus neither result is
+accepted performance, and no llama.cpp score changes. Reverse-order comparison
+is the next check. Raw observations and failed coverage audits are preserved.
