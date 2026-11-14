@@ -124,3 +124,23 @@ comparison, model-memcheck admission and monitored-input integrity.
 This is prepared tooling, not a completed paired measurement. Its result remains
 `accepted_benchmark=false`; CPU/thermal equivalence and decode accounting still
 need review. It does not replace the older fixed-forward accepted scorecard.
+
+## Completed long-context generation correctness
+
+`generation-long-c17/result.json` now passes all twelve cases for an 8,205-token
+prompt and 32 generated outputs: ordinary, serial2, batch2 and joint3 across
+forward/reverse/forward rounds. Every output matches, the child exited zero,
+and all three joint rounds report 2556 integer calls. The runner's eight recorded
+input/output hashes were independently rechecked. These unmonitored wall times
+are not accepted throughput; the accepted fixed-forward scores remain unchanged.
+Short-context monitored run A is the next measurement gate.
+
+## Rejected monitored short run A
+
+`monitored-short-A` completed twelve matching generation cases, three joint
+rounds and 2556 integer calls per joint round. All snapshotted inputs stayed
+unchanged. The collector stopped cooperatively, but decode coverage reports
+invalid target counters and activity outside the benchmark process. Observed
+PIDs include Desktop Window Manager (1992), Codex (21464), and System (4).
+These are not nonessential GPU applications to terminate. The run is retained
+as rejected evidence; it does not update the accepted short/long scores.
