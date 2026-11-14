@@ -66,7 +66,8 @@ graphs (batch2: one capture/nine replays; joint3: two captures/ten replays).
 The run took 2741 seconds. A competing Roblox process was observed and stopped
 during this correctness run; `gpu-cleanup-roblox.json` records the cleanup.
 Sanitized call times are excluded from performance acceptance. Long-context
-generation, graph-specific recovery checks and controlled timing remain pending.
+generation was subsequently completed as described below. Graph-specific
+recovery checks and clean controlled timing remain pending.
 
 `boundaries.c` and its build/run scripts prepare additional F32 fixture coverage
 for head widths 256/512 and linear/ring KV. Within the same plan, tests advance
@@ -152,3 +153,10 @@ or score promotion is justified. Cross-engine execution order was not reversed.
 
 Evidence: `monitored-short-B` and `reference-short-A`. Accepted fixed-forward
 scores remain unchanged at 85.61025294% short and 106.8707255% at 8K.
+
+Long-context C17 generation passed all twelve ordered cases at 8205 prompt
+tokens and 32 generated tokens, with six graph-reusing verification plans and
+three integer-call counts of 2556. All 158 hashes independently verified.
+Roblox reopened during this correctness-only run and was stopped again
+(`gpu-cleanup-roblox-long.json`); none of these call durations is accepted
+performance evidence.

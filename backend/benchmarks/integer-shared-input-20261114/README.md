@@ -26,7 +26,10 @@ runtime JIT allocation, achieved occupancy and throughput remain unmeasured.
 oracle and the current metadata kernel, including 1/7/9-row tails and finite
 half-coefficient edge cases. It refuses to create a GPU context until the
 currently running long-generation proof is complete and the process gate
-passes. That pending-proof refusal was exercised.
+passes. That pending-proof refusal was exercised. After long-generation
+validation completed, all 207 raw cases passed byte-exact parity and guards.
+The same 207 cases passed Compute Sanitizer memcheck with zero errors and an
+identical case inventory. Race and synchronization checks remain pending.
 
 After raw parity, `run_sanitizer.py memcheck|racecheck|synccheck` retains separate
 logs and requires identical case inventories, zero errors (and zero race
