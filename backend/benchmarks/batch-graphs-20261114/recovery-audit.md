@@ -135,3 +135,10 @@ configuration identities, complete ordered parity/capture markers and recorded
 hashes before emitting a complete matrix report. Its incomplete-matrix check
 was exercised and rejected the pending C23 result without writing a report.
 The four existing boundary-validator tests still pass.
+
+Both C23 width-256 boundary runs now passed, bringing completed boundary
+coverage to 252 cases across six configurations. Each new run's 180 hashes
+independently verified. The two C23 width-512 configurations remain pending
+or running. Five aggregate-audit tests pass, covering a complete 336-case
+fixture and rejection of a missing configuration, wrong standard executable,
+modified raw evidence and omitted evidence hash.
