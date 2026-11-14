@@ -6,6 +6,8 @@ from pathlib import Path
 import statistics
 
 MODES = ('ordinary', 'mtp-serial2', 'mtp-batch2', 'mtp-batch4')
+MODE_SETS = {'baseline': MODES,
+             'joint-base': ('ordinary', 'mtp-serial2', 'mtp-batch2', 'mtp-joint3')}
 ORDER = [(r, mode) for r in range(3) for mode in (reversed(MODES) if r == 1 else MODES)]
 
 
@@ -24,8 +26,12 @@ def statistics_ms(values):
     return dict(observations_ms=values, mean_ms=statistics.mean(values), stdev_ms=statistics.stdev(values))
 
 
-def compare(native, reference, text):
-    if [(row['round'], row['mode']) for row in native] != ORDER:
+def compare(native, reference, text, mode_set='baseline'):
+    if mode_set not in MODE_SETS:
+        raise ValueError('Unsupported generation mode set')
+    modes = MODE_SETS[mode_set]
+    order = [(r, mode) for r in range(3) for mode in (reversed(modes) if r == 1 else modes)]
+    if [(row['round'], row['mode']) for row in native] != order:
         raise ValueError('Native round/mode inventory differs')
     if [row['round'] for row in reference] != [0, 1, 2]:
         raise ValueError('Reference round inventory differs')
@@ -39,11 +45,11 @@ def compare(native, reference, text):
         raise ValueError('Cross-engine greedy output bytes differ')
     llama = statistics_ms([row['decode_ms'] for row in reference if row['round'] in (1, 2)])
     cells = {}
-    for mode in MODES:
+    for mode in modes:
         cell = statistics_ms([row['interval']['milliseconds'] for row in native if row['mode'] == mode and row['round'] in (1, 2)])
         cell['diagnostic_speed_percent_of_llama'] = 100 * llama['mean_ms'] / cell['mean_ms']
         cells[mode] = cell
-    return dict(prompt_tokens=next(iter(prompts)), output_bytes_equal=True,
+    return dict(mode_set=mode_set, prompt_tokens=next(iter(prompts)), output_bytes_equal=True,
                 output_sha256=hashlib.sha256(text).hexdigest(), llama=llama, fyodor=cells)
 
 

@@ -98,3 +98,15 @@ content. model-identity-observation.json confirms both files still match during
 the active sanitizer run; it is not retroactive pre-launch evidence for that run.
 The native launchers should adopt this check after the live run completes, so
 its hash-bound source inputs remain unchanged while it is executing.
+
+## Comparison gate
+
+compare_monitored.py accepts native/reference evidence folders and a new output
+path. It verifies evidence hashes, both idle gates, per-case continuous coverage,
+matching contexts, the explicit joint-base case inventory and generated text.
+It emits no ratios when coverage is contaminated or incomplete. A successful
+comparison remains diagnostic: two warmed observations do not establish reversed
+cross-engine order or CPU/thermal equivalence, and cannot replace the accepted
+fixed-forward scores. Five shared comparison tests and two coverage-gate tests
+pass. comparison-rejected-short-A.json records the expected refusal of the
+existing contaminated native run before any reference comparison.
