@@ -44,3 +44,11 @@ The generation marker validator rejects missing/duplicate/malformed/zero
 markers, and thirteen sanitizer-evidence tests pass. These tests validate the
 admission logic; full-model sanitizer execution is still pending. Long-prefix
 lifecycle and generation correctness remain required before model timing.
+
+
+The fusion on/off monitored runner is prepared, with eight admission tests
+passing and an actual missing-sanitizer prerequisite refusal retained in
+monitored-preflight-refusal.json. It does not launch a GPU workload before the
+required completed lifecycle, generation and model memcheck evidence exists.
+Both variants keep Q4/Q6 paired rows and QKV reuse enabled; only fusion toggles.
+Existing PDH coverage rules are unchanged. No monitored fusion run is complete.
