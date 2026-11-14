@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "accepted_benchmark": false,
+  "command": [
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+    "--tool",
+    "memcheck",
+    "--error-exitcode",
+    "99",
+    "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\attention-query-cache-20261115\\check_kernel.py",
+    "memcheck-oracle.json"
+  ],
+  "exit_code": 0,
+  "input_sha256": {
+    "backend\\benchmarks\\attention-query-cache-20261115\\common.py": "4fcf699ee1dda7576bf304f0ad3ad1f1bc622de9cf7304f2c94de4806c3d2339",
+    "backend\\benchmarks\\attention-query-cache-20261115\\check_kernel.py": "230f8893b4ec55930de3a96faf4e0e56b84f49159d58fd133c689203bd0bcb2a",
+    "optcpp\\attention\\wide_batch_cached_query.cu": "c88893a368f461fa7fc849d1d90460d9f01a61742b4330607a7de0d4fc9c2c82",
+    "optcpp\\attention\\wide_batch_split16.cu": "eaf76e0031b2242f6cc84b42025b7eb47bfb25a0648d0382041bbb6a181d2e2c",
+    "optcpp\\attention\\wide_value16.cu": "6e12641629e783cf96a992305546a8bfbd79863cf94dd5fb4f62bc55b999e183",
+    "CUDA\\matvec.cu": "b0c5074bca38638825f01cd4fb385f583e83968d0b3b913d8b59eae121dde216",
+    "CUDA\\gemm.cu": "cb73bd0a52ae2229693d7a38e218724ad4c884a54d24e83105e2e0c59cf8c40e",
+    "CUDA\\resident.cu": "cbf898dc5a2948b3e9caf0aad828f4e1af5dbec5cb7f693576a40e310bf0d0b3"
+  },
+  "changed_inputs": [],
+  "evidence_sha256": {
+    "memcheck.log": "1e15dddce6d12928bf7253b4673a90d77291368a4f352738b4a65338edd86b15",
+    "memcheck.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "memcheck-oracle.json": "ab6a5fa56e24d0898ffe4ff8d46ab29c2861a128c2a36c5602a3bce7c3f20425"
+  }
+}
