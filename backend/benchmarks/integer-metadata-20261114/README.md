@@ -82,8 +82,9 @@ positive execution counts prevents silent fallback from passing this check.
 checks and requires the metadata marker. Both C17 and C23 at prefix 257 pass
 both reset paths with maximum scaled error 2.19546455e-5, 568 integer calls,
 and one contiguous download per four-row verification. Each result's 101 hashes
-independently verified. The C17 8192-prefix lifecycle is running; no result is
-claimed yet. `run_generation.py` requires these lifecycle proofs before testing
+independently verified. The C17 8192-prefix lifecycle also passed both reset
+paths with maximum scaled error 1.63989979e-5, 568 integer calls and single-download
+assertions. Its 101 hashes verified after completion. `run_generation.py` requires these lifecycle proofs before testing
 whole-model output parity. No accepted end-to-end speedup or production dispatch
 is introduced by this isolated integration.
 
