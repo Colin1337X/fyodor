@@ -24,9 +24,8 @@ readback call. C17/C23 host compilation and four generation/lifecycle links pass
 mode, adequate batch capacity, and exactly one download instead of four, while
 retaining its numerical, reset/rewind, guard and replacement assertions.
 
-C17/C23 short-context GPU lifecycle validation has passed (details below).
-Required next checks: long-context lifecycle/output parity, full generation,
-sanitizer validation and paired decode timing. This candidate is not production-integrated
+Short/long GPU lifecycle and generation validation have passed (details below).
+Required next checks: full-model sanitizer validation and paired decode timing. This candidate is not production-integrated
 and has no accepted performance claim. Accepted scores remain 85.61025294% short
 and 106.8707255% at 8K versus llama.cpp, below the requested 125% target.
 
@@ -51,14 +50,13 @@ verification passed both reset cycles at prefix 257 with maximum scaled error
 exactly one download per four-row verification; reset, rewind, replacement,
 stale-suffix and output-guard checks remained enabled. All recorded input/output
 hashes were independently verified after completion. These are correctness and
-dispatch-count checks, not measured throughput gains. Long-context and full-model
-sanitizer coverage remain pending.
+dispatch-count checks, not measured throughput gains.
 
 `lifecycle-c17-8192` also passed both reset cycles with maximum scaled error
 1.63989979e-05 against the unchanged 0.0005 bound, exactly one download per
 four-row verification, and 568 integer calls. All 47 recorded hashes independently
 verified after exit zero. This extends the lifecycle evidence to prefix 8192;
-full-generation and sanitizer validation remain pending for this candidate.
+full-generation checks also passed as recorded below; sanitizer validation remains pending.
 
 ## Completed short-context generation
 
@@ -69,8 +67,8 @@ each joint round recorded 2556 integer calls. All input/output hashes were
 independently verified. `run_generation.py` requires explicit successful build
 and short/long lifecycle proofs before execution, then verifies model identity,
 process ownership, output parity, mode selection and unchanged inputs.
-These correctness runs have no accepted timing claim. Long-context generation
-and GPU memory validation remain pending.
+These correctness runs have no accepted timing claim. GPU memory validation
+remains pending.
 
 ## Prepared full-model memory check
 
@@ -82,4 +80,14 @@ zero, exactly one zero-error summary, all twelve ordered matching cases and
 three actual integer-kernel execution counts. Seven existing sanitizer-evidence
 regression tests passed against this runner, covering failed exits, malformed
 summaries, missing/reordered/wrong-context cases and absent kernel execution.
-The runner is prepared; no readback full-model sanitizer run has started yet.
+The short-context full-model sanitizer is now running. No completed memory-safety
+result is available yet.
+
+## Completed long-context generation
+
+`generation-long-c17/result.json` records exit zero and all twelve matching
+ordinary/serial2/batch2/joint3 cases at 8205 prompt tokens and 32 generated
+outputs, in forward/reverse/forward order. Each joint round recorded 2556
+integer calls. All 60 recorded input/output hashes independently verified after
+completion. These unmonitored correctness timings do not update performance
+scores. The full-model short-context sanitizer is the next active check.
