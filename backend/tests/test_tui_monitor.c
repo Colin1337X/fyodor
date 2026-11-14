@@ -185,7 +185,7 @@ int main(int argc,char **argv)
     tui_frame *f=malloc(sizeof(*f));CHECK(f);
     CHECK(send(&s,"chart gradient")==TUI_NONE && s.chart==2 && s.view==2);
     CHECK(send(&s,"chart invalid")==TUI_NONE && s.chart==2);
-    tui_key(&s,'g');CHECK(s.chart==3);tui_key(&s,'g');CHECK(s.chart==4);tui_key(&s,'g');CHECK(s.chart==0);
+    tui_key(&s,'g');CHECK(s.chart==3);tui_key(&s,'g');CHECK(s.chart==4);tui_key(&s,'g');CHECK(s.chart==5);tui_key(&s,'g');CHECK(s.chart==0);
     s.samples=3;memset(s.history,0,3*sizeof(*s.history));
     s.history[0].optional=2;s.history[0].gradient=1;
     s.history[2].optional=2;s.history[2].gradient=3;
@@ -244,6 +244,20 @@ int main(int argc,char **argv)
     CHECK(frame_contains(f,"Learning rate 0"));
     CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,learning_rate\n9,2,20,\n"));
     CHECK(!tui_metrics(&s));tui_render(&s,f,80,30);CHECK(!frame_contains(f,"Learning rate"));
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,learning_rate\n0,2,20,0.002\n1,2,20,\n2,2,20,0\n"));
+    CHECK(!tui_metrics(&s) && s.samples==3);
+    tui_key(&s,':');const char *learning_command="chart lea";
+    while(*learning_command) tui_key(&s,(unsigned char)*learning_command++);
+    tui_key(&s,TUI_TAB);CHECK(!strcmp(s.command,"chart learning"));
+    tui_key(&s,TUI_ENTER);CHECK(s.chart==5 && s.view==2);
+    tui_render(&s,f,80,30);points=0;
+    for(int y=14;y<24;++y) for(int x=4;x<76;++x)
+        if(f->cells[y*80+x].code=='*') {++points;CHECK(x==4 || x==6);}
+    CHECK(points==2 && f->cells[14*80+4].code=='*' && f->cells[23*80+6].code=='*');
+    CHECK(frame_contains(f,"Learning rate / 0 .. 0.002"));
+    for(size_t i=0;i<s.samples;++i) s.history[i].optional=0;
+    tui_render(&s,f,80,30);
+    CHECK(frame_contains(f,"Learning rate / no samples available"));
     s.chart=0;
     tui_key(&s,':');
     for(int i=0;i<70;++i) tui_key(&s,0xac00);
