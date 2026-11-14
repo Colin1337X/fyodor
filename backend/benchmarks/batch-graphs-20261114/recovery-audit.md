@@ -79,3 +79,30 @@ they do not prove recovery from every real driver failure or accept any timing.
 Request update, kernel lowering during capture, readback/synchronization and
 explicit graph resource create/free accounting remain outstanding. Production
 admission and the 125% decode performance target remain unproven.
+
+## Extended injection and ownership accounting
+
+Separate v2 C17/C23 builds add request-update failure, failure after the first
+captured gather, and synchronization/readback error returns. The latter two
+perform the real operation before returning an injected failure, exercising
+rejection after work or output may already have completed. They do not emulate
+a hung device or every partial-copy behavior. Cached request, launch, sync and
+readback paths are selectable. Original evidence/builds remain unchanged.
+
+Test-only wrappers track individual graph and executable handles through
+creation and destruction, detecting unknown/duplicate handles, failed frees,
+registry exhaustion and resources still live at process exit. The runner
+requires positive balanced create/free counts, zero live handles and zero
+accounting errors, in addition to the existing numerical/recovery checks.
+
+All twelve configurations passed memcheck for C17, width 256, linear KV. The
+remaining C17/C23, width 256/512, linear/ring configurations are not yet claimed
+complete. See `recovery-v2-*` terminal results for the exact executed scope.
+The initial compilation caught a signedness warning in the test counter; an
+explicit unsigned conversion fixed it, and both standards then built with
+warnings treated as errors. No production dispatch or archive changed.
+
+The first context-boundary sanitizer (C17, width 256, linear KV) also passed all
+42 ordered cases, six captures and 42 replays; 180 hashes independently
+verified. The other seven boundary sanitizer configurations remain pending.
+None of this correctness evidence updates accepted throughput scores.
