@@ -1,6 +1,8 @@
 /* Instantiated for AVX2 and AVX-512. Each SIMD register dequantizes contiguous
    storage lanes and immediately consumes them in a dot product; no expanded
-   matrix or heap scratch is needed. Byte loads tolerate unaligned GGUF blocks. */
+   matrix or heap scratch is needed. Byte loads tolerate unaligned GGUF blocks.
+   Explicit scratch alignment also keeps GCC ASan fake-stack slots compatible
+   with vector stores selected inside target-attributed functions (PR120201). */
 NYA_TARGET static inline __attribute__((always_inline)) float NYA_DOT_IMPL(const unsigned char *w, const float *x, size_t columns, unsigned type, float *decoded)
 {
     VEC sum = ZERO();
@@ -14,7 +16,7 @@ NYA_TARGET static inline __attribute__((always_inline)) float NYA_DOT_IMPL(const
             else weights = BFLOAT(w + i * 2);
             ACCUMULATE(weights, i);
         }
-        float lanes[LANES]; STORE(lanes, sum);
+        _Alignas(LANES * sizeof(float)) float lanes[LANES]; STORE(lanes, sum);
         float out = 0; for (size_t j = 0; j < LANES; ++j) out += lanes[j];
         for (; i < columns; ++i) {
             float value;
@@ -68,7 +70,7 @@ NYA_TARGET static inline __attribute__((always_inline)) float NYA_DOT_IMPL(const
             }
         }
     }
-    float lanes[LANES]; STORE(lanes, sum);
+    _Alignas(LANES * sizeof(float)) float lanes[LANES]; STORE(lanes, sum);
     float out = 0; for (size_t j = 0; j < LANES; ++j) out += lanes[j];
     return out;
 }
@@ -131,7 +133,7 @@ NYA_TARGET static void NYA_GEMM_NAME(const float *w, const float *x, float *out,
             for (size_t r = 0; r < 2; ++r) sums[r][0] = ADD(sums[r][0],MUL(SET(w[r*columns+k]),a));
         }
         for (size_t r = 0; r < rows; ++r) {
-            float lanes[LANES]; STORE(lanes,ADD(ADD(sums[r][0],sums[r][1]),ADD(sums[r][2],sums[r][3])));
+            _Alignas(LANES * sizeof(float)) float lanes[LANES]; STORE(lanes,ADD(ADD(sums[r][0],sums[r][1]),ADD(sums[r][2],sums[r][3])));
             for (size_t t = 0; t < LANES && token+t < batch; ++t) out[(token+t)*output_stride+r] = lanes[t];
         }
     }

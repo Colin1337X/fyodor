@@ -1,0 +1,505 @@
+Test project /home/colin/.cache/fyodor-asan-20261114-c17
+      Start 22: generate-model-fixtures
+      Start 40: train-export-decoder
+ 1/58 Test #22: generate-model-fixtures .............   Passed    0.01 sec
+      Start  1: application-resource-identity
+ 2/58 Test  #1: application-resource-identity .......   Passed    0.01 sec
+      Start  2: application-resource-store
+ 3/58 Test #40: train-export-decoder ................***Failed    0.02 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29640==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x60412ea39fba bp 0x7ffefcc263c0 sp 0x7ffefcc26100 T0)
+==29640==The signal is caused by a READ memory access.
+==29640==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x60412ea39fba in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0x184fba) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #1 0x60412ea1b5e7 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0x1665e7) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #2 0x60412ea1db35 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0x168b35) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #3 0x60412e9b159a in nya_llm_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xfc59a) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #4 0x60412e9925c2 in nya_llm_forward_impl (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xdd5c2) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #5 0x60412e99a33d in nya_llm_forward (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xe533d) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #6 0x60412e99b407 in compare_logits (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xe6407) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #7 0x60412e9840a3 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xcf0a3) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+    #8 0x75b234c2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #9 0x75b234c2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #10 0x60412e986aa4 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0xd1aa4) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff)
+
+==29640==Register values:
+rax = 0x000071b232bd1220  rbx = 0x000075b2356d6e60  rcx = 0x0000000000000000  rdx = 0x00000e364657a234  
+rdi = 0x000071b232bd11a0  rsi = 0x0000000000000000  rbp = 0x00007ffefcc263c0  rsp = 0x00007ffefcc26100  
+ r8 = 0x0000000000000010   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x0000738233cea6b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000010  r15 = 0x0000721233ce0500  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-pretraining+0x184fba) (BuildId: e3919aeeaf48eee15806630d807b947370ceefff) in cpu_avx512
+==29640==ABORTING
+
+      Start  3: application-resource-packages
+ 4/58 Test  #3: application-resource-packages .......   Passed    0.97 sec
+      Start  4: application-context-index
+ 5/58 Test  #4: application-context-index ...........   Passed    0.69 sec
+      Start  5: application-context
+ 6/58 Test  #2: application-resource-store ..........   Passed    2.57 sec
+      Start  6: application-tui-parser
+ 7/58 Test  #6: application-tui-parser ..............   Passed    0.01 sec
+      Start  7: application-context-generation
+Failed test dependencies: train-export-decoder
+ 8/58 Test  #7: application-context-generation ......***Not Run   0.00 sec
+      Start  8: turboquant
+ 9/58 Test  #8: turboquant ..........................   Passed    1.08 sec
+      Start  9: turboquant-inference
+10/58 Test  #9: turboquant-inference ................***Failed    0.03 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29669==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x6030e41f009a bp 0x7ffe3ee5cd30 sp 0x7ffe3ee5ca80 T0)
+==29669==The signal is caused by a READ memory access.
+==29669==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x6030e41f009a in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0x13209a) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #1 0x6030e41d16d7 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0x1136d7) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #2 0x6030e41d3c25 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0x115c25) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #3 0x6030e420967a in nya_llm_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0x14b67a) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #4 0x6030e418bee2 in nya_llm_forward_impl (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0xcdee2) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #5 0x6030e4193c5d in nya_llm_forward (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0xd5c5d) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #6 0x6030e4197565 in nya_llm_session_run (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0xd9565) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #7 0x6030e417bed5 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0xbded5) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+    #8 0x7da0aa02a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #9 0x7da0aa02a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #10 0x6030e417e984 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0xc0984) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0)
+
+==29669==Register values:
+rax = 0x000079a0a7fd0f20  rbx = 0x000079a0a6edee80  rcx = 0x0000000000000000  rdx = 0x00000f3414ffa1d4  
+rdi = 0x000079a0a7fd0ea0  rsi = 0x0000000000000000  rbp = 0x00007ffe3ee5cd30  rsp = 0x00007ffe3ee5ca80  
+ r8 = 0x0000000000000080   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x00007b70a90e24b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000080  r15 = 0x00007af0a90e3a00  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-turboquant-inference+0x13209a) (BuildId: 433763cfb86fece643c5bd79d09a2a04d66bc7f0) in cpu_avx512
+==29669==ABORTING
+
+      Start 10: kv-precision
+11/58 Test #10: kv-precision ........................   Passed    0.01 sec
+      Start 11: quant-kernels-cpu-dot
+12/58 Test #11: quant-kernels-cpu-dot ...............***Failed    0.06 sec
+AddressSanitizerAddressSanitizer:DEADLYSIGNAL
+:DEADLYSIGNAL
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29675==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x631222e0171a bp 0x6d7ceb1fdab0 sp 0x6d7ceb1fd800 T2)
+==29675==The signal is caused by a READ memory access.
+==29675==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+AddressSanitizerAddressSanitizer:DEADLYSIGNAL
+:DEADLYSIGNAL
+AddressSanitizer:DEADLYSIGNAL
+    #0 0x631222e0171a in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x6971a) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #1 0x631222de2d47 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4ad47) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #2 0x631222de4f0a in cpu_worker (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4cf0a) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #3 0x631222e12b40 in nya_thread_entry (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x7ab40) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #4 0x717cef663a80 in asan_thread_start ../../../../src/libsanitizer/asan/asan_interceptors.cpp:246
+    #5 0x717ceeaa3db9  (/usr/lib/x86_64-linux-gnu/libc.so.6+0xa3db9) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #6 0x717ceeb3758b  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x13758b) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+
+==29675==Register values:
+rax = 0x00006d7ce5c90120  rbx = 0x0000717cefd5a800  rcx = 0x0000000000000000  rdx = 0x00000daf9cb92014  
+rdi = 0x00006d7ce5c900a0  rsi = 0x0000000000000000  rbp = 0x00006d7ceb1fdab0  rsp = 0x00006d7ceb1fd800  
+ r8 = 0x0000000000000400   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x00006f4cedae06b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000016  r14 = 0x0000000000000400  r15 = 0x00006d7ced1d06c0  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x6971a) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb) in cpu_avx512
+Thread T2 created by T0 here:
+    #0 0x717cef721f80 in pthread_create ../../../../src/libsanitizer/asan/asan_interceptors.cpp:257
+    #1 0x631222e12c24 in nya_thread_create (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x7ac24) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #2 0x631222de21ce in cpu_create (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4a1ce) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #3 0x631222de0402 in nya_compute_create_for (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x48402) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #4 0x631222dd6ee1 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x3eee1) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #5 0x717ceea2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #6 0x717ceea2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #7 0x631222ddca04 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x44a04) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+
+==29675==ABORTING
+
+      Start 12: quant-kernels-scalar
+13/58 Test  #5: application-context .................   Passed    2.48 sec
+      Start 13: attention-scalar
+14/58 Test #13: attention-scalar ....................   Passed    0.01 sec
+      Start 14: quant-kernels-avx2
+15/58 Test #12: quant-kernels-scalar ................   Passed    1.28 sec
+      Start 15: attention-avx2
+16/58 Test #15: attention-avx2 ......................   Passed    0.01 sec
+      Start 16: quant-kernels-avx512
+17/58 Test #16: quant-kernels-avx512 ................***Failed    0.01 sec
+AddressSanitizerAddressSanitizer:DEADLYSIGNAL
+:DEADLYSIGNAL
+AddressSanitizer:DEADLYSIGNAL
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29773==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x62238c10c71a bp 0x7ffc62300fa0 sp 0x7ffc62300cc0 T0)
+==29773==The signal is caused by a READ memory access.
+==29773==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x62238c10c71a in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x6971a) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #1 0x62238c0edd47 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4ad47) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #2 0x62238c0eeaeb in cpu_dispatch (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4baeb) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #3 0x62238c0f0295 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x4d295) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #4 0x62238c0e28a3 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x3f8a3) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+    #5 0x758b7b62a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #6 0x758b7b62a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #7 0x62238c0e7a04 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x44a04) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb)
+
+==29773==Register values:
+rax = 0x0000718b795d0120  rbx = 0x0000758b7c913800  rcx = 0x0000000000000000  rdx = 0x00000e316f2ba014  
+rdi = 0x0000718b795d00a0  rsi = 0x0000000000000000  rbp = 0x00007ffc62300fa0  rsp = 0x00007ffc62300cc0  
+ r8 = 0x0000000000000400   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x0000735b7a6e06b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000400  r15 = 0x0000718b79dd06c0  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-quant-kernels+0x6971a) (BuildId: 9eb335c28ffed6fcf3aa00ddeef5fc519f8a4adb) in cpu_avx512
+==29773==ABORTING
+
+      Start 17: attention-avx512
+18/58 Test #17: attention-avx512 ....................***Failed    0.01 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29779==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x5e3db35beea6 bp 0x7ffd0323b770 sp 0x7ffd0323b580 T0)
+==29779==The signal is caused by a READ memory access.
+==29779==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x5e3db35beea6 in cpu_attention_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x65ea6) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8)
+    #1 0x5e3db35c61f8 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x6d1f8) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8)
+    #2 0x5e3db35c8534 in cpu_attention (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x6f534) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8)
+    #3 0x5e3db359250b in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x3950b) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8)
+    #4 0x799649c2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #5 0x799649c2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #6 0x5e3db3594ee4 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x3bee4) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8)
+
+==29779==Register values:
+rax = 0x0000000000000000  rbx = 0x000075c648ce0040  rcx = 0x0000000000000000  rdx = 0x0000000000000001  
+rdi = 0x0000000000000020  rsi = 0x00005e3db369b8c0  rbp = 0x00007ffd0323b770  rsp = 0x00007ffd0323b580  
+ r8 = 0x00000eb2c8f7a006   r9 = 0x000075c648ce0040  r10 = 0x0000000000000025  r11 = 0x00005e3db36dc8e0  
+r12 = 0x0000000000000001  r13 = 0x0000000000000000  r14 = 0x0000759647bd0120  r15 = 0x0000000000000001  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-attention+0x65ea6) (BuildId: 8e5715f15749f2bf0249af9fdfaf5336734687f8) in cpu_attention_avx512
+==29779==ABORTING
+
+      Start 18: inference-verify-cpu
+Failed test dependencies: train-export-decoder
+19/58 Test #18: inference-verify-cpu ................***Not Run   0.00 sec
+      Start 19: inference-verify-cpu-empty-prefix
+Failed test dependencies: train-export-decoder
+20/58 Test #19: inference-verify-cpu-empty-prefix ...***Not Run   0.00 sec
+      Start 20: inference-session-parity
+Failed test dependencies: train-export-decoder
+21/58 Test #20: inference-session-parity ............***Not Run   0.00 sec
+      Start 21: inference-cpu-optimized
+Failed test dependencies: train-export-decoder
+22/58 Test #21: inference-cpu-optimized .............***Not Run   0.00 sec
+      Start 23: validate-server-config
+23/58 Test #23: validate-server-config ..............   Passed    0.01 sec
+      Start 24: inspect-model-formats
+24/58 Test #24: inspect-model-formats ...............   Passed    0.01 sec
+      Start 25: generate-native-gguf
+25/58 Test #25: generate-native-gguf ................***Failed    0.02 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29791==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x565a5b93f7da bp 0x7ffc2cb2c780 sp 0x7ffc2cb2c4c0 T0)
+==29791==The signal is caused by a READ memory access.
+==29791==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x565a5b93f7da in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xf47da) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #1 0x565a5b920e07 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xd5e07) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #2 0x565a5b923355 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xd8355) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #3 0x565a5b91c13a in nya_llm_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xd113a) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #4 0x565a5b8e1b62 in nya_llm_forward_impl (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0x96b62) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #5 0x565a5b8e98dd in nya_llm_forward (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0x9e8dd) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #6 0x565a5b8efc23 in nya_llm_generate (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xa4c23) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #7 0x565a5b8cc741 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0x81741) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+    #8 0x7772d4e2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #9 0x7772d4e2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #10 0x565a5b8d1194 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0x86194) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73)
+
+==29791==Register values:
+rax = 0x00007372d2df1020  rbx = 0x00007772d5853f00  rcx = 0x0000000000000000  rdx = 0x00000e6e5a5be1f4  
+rdi = 0x00007372d2df0fa0  rsi = 0x0000000000000000  rbp = 0x00007ffc2cb2c780  rsp = 0x00007ffc2cb2c4c0  
+ r8 = 0x0000000000000020   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x00007542d3f130b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000020  r15 = 0x00007432d3ee19c0  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-generation+0xf47da) (BuildId: f13d0f363099e33d44e6be24fa1e36d26d681f73) in cpu_avx512
+==29791==ABORTING
+
+      Start 26: validate-gemma-graphs
+26/58 Test #26: validate-gemma-graphs ...............***Failed    0.01 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==29797==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x59662706155a bp 0x7ffec9770040 sp 0x7ffec976fd80 T0)
+==29797==The signal is caused by a READ memory access.
+==29797==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x59662706155a in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x1a755a) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #1 0x596627042b87 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x188b87) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #2 0x5966270450d5 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x18b0d5) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #3 0x596626fd6f9a in nya_llm_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x11cf9a) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #4 0x596626ff92ff in nya_multimodal_run (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x13f2ff) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #5 0x596626f9b793 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0xe1793) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+    #6 0x792b7482a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #7 0x792b7482a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #8 0x596626fa1464 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0xe7464) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59)
+
+==29797==Register values:
+rax = 0x0000752b727d0920  rbx = 0x0000792b75b11600  rcx = 0x0000000000000000  rdx = 0x00000ea56e4fa114  
+rdi = 0x0000752b727d08a0  rsi = 0x0000000000000000  rbp = 0x00007ffec9770040  rsp = 0x00007ffec976fd80  
+ r8 = 0x000000000000000c   r9 = 0x00000000fffffff3  r10 = 0x0000000000000000  r11 = 0x000076fb738e24b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000000  r15 = 0x0000756b738e0350  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-architectures+0x1a755a) (BuildId: 81034f95e79036d11c1dd27fc74ddc65e186eb59) in cpu_avx512
+==29797==ABORTING
+
+      Start 27: training-device-interface
+27/58 Test #27: training-device-interface ...........   Passed    0.00 sec
+      Start 28: training-elementwise-interface
+28/58 Test #28: training-elementwise-interface ......   Passed    0.01 sec
+      Start 29: training-norm-interface
+29/58 Test #29: training-norm-interface .............   Passed    0.00 sec
+      Start 30: training-optimizer-interface
+30/58 Test #30: training-optimizer-interface ........   Passed    0.01 sec
+      Start 31: training-session-interface
+31/58 Test #31: training-session-interface ..........   Passed    0.01 sec
+      Start 32: training-graph-interface
+32/58 Test #32: training-graph-interface ............   Passed    0.01 sec
+      Start 33: training-loss-interface
+33/58 Test #33: training-loss-interface .............   Passed    0.01 sec
+      Start 34: training-attention-interface
+34/58 Test #34: training-attention-interface ........   Passed    0.01 sec
+      Start 35: training-rope-interface
+35/58 Test #35: training-rope-interface .............   Passed    0.01 sec
+      Start 36: training-embedding-interface
+36/58 Test #36: training-embedding-interface ........   Passed    0.01 sec
+      Start 37: validate-training
+37/58 Test #37: validate-training ...................***Failed    0.03 sec
+AddressSanitizerAddressSanitizer:DEADLYSIGNAL
+:DEADLYSIGNAL
+=================================================================
+==29843==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x599acb0c0b75 bp 0x77c36a3fde80 sp 0x77c36a3fdc40 T1)
+==29843==The signal is caused by a READ memory access.
+==29843==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x599acb0c0b75 in cpu_decode_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0xfcb75) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #1 0x599acb0680da in tr_mapped_forward (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0xa40da) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #2 0x599acb078073 in nya_train_linear_mapped (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0xb4073) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #3 0x599acb050470 in parallel_matrices (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x8c470) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #4 0x599acb052794 in independent_executor (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x8e794) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #5 0x599acb062640 in nya_thread_entry (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x9e640) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #6 0x7bc36e263a80 in asan_thread_start ../../../../src/libsanitizer/asan/asan_interceptors.cpp:246
+    #7 0x7bc36d6a3db9  (/usr/lib/x86_64-linux-gnu/libc.so.6+0xa3db9) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #8 0x7bc36d73758b  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x13758b) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+
+==29843==Register values:
+rax = 0x0000000000000001  rbx = 0x00007bc36ca3e800  rcx = 0x0000000000000000  rdx = 0x0000000000000000  
+rdi = 0x000077c3692f01a0  rsi = 0x000077c3695f0101  rbp = 0x000077c36a3fde80  rsp = 0x000077c36a3fdc40  
+ r8 = 0x0000000000000001   r9 = 0x0000000000000100  r10 = 0x000077c3692f0220  r11 = 0x0000000000000001  
+r12 = 0x000077c3695f01e0  r13 = 0x0000000000000100  r14 = 0x000077c3694f0270  r15 = 0x0000000000000001  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0xfcb75) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835) in cpu_decode_avx512
+Thread T1 created by T0 here:
+    #0 0x7bc36e321f80 in pthread_create ../../../../src/libsanitizer/asan/asan_interceptors.cpp:257
+    #1 0x599acb062724 in nya_thread_create (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x9e724) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #2 0x599acb049ced in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x85ced) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+    #3 0x7bc36d62a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #4 0x7bc36d62a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #5 0x599acb04e404 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-training+0x8a404) (BuildId: b387767982fd376f259f6fcc01b7536e8a6f3835)
+
+==29843==ABORTING
+
+      Start 38: train-accumulation
+38/58 Test #38: train-accumulation ..................   Passed    0.03 sec
+      Start 39: validate-training-scalar
+39/58 Test #14: quant-kernels-avx2 ..................   Passed    1.34 sec
+      Start 41: compatible-rest-apis
+Failed test dependencies: train-export-decoder
+40/58 Test #41: compatible-rest-apis ................***Not Run   0.00 sec
+      Start 42: benchmark-cli
+Failed test dependencies: train-export-decoder
+41/58 Test #42: benchmark-cli .......................***Not Run   0.00 sec
+      Start 43: train-cli-workflows
+42/58 Test #43: train-cli-workflows .................***Failed    0.17 sec
+-- step=1 loss=5.5928645 graph_bytes=86568 tokens_per_second=17437.400 microbatches=1 cpu_threads=6 compute=cpu
+step=10 loss=2.1709392 graph_bytes=76662 tokens_per_second=22344.336 microbatches=1 cpu_threads=6 compute=cpu
+step=20 loss=0.2151729 graph_bytes=76662 tokens_per_second=22369.756 microbatches=1 cpu_threads=6 compute=cpu
+step=30 loss=0.0161402 graph_bytes=76662 tokens_per_second=23770.110 microbatches=1 cpu_threads=6 compute=cpu
+exported=/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/first.gguf
+
+-- step=31 loss=0.0128879 graph_bytes=86568 tokens_per_second=16898.083 microbatches=1 cpu_threads=6 compute=cpu
+step=40 loss=0.0033762 graph_bytes=76662 tokens_per_second=25076.708 microbatches=1 cpu_threads=6 compute=cpu
+exported=/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/resumed.gguf
+
+-- step=1 loss=5.5928645 graph_bytes=86568 tokens_per_second=17138.915 microbatches=1 cpu_threads=6 compute=cpu
+step=10 loss=2.1709392 graph_bytes=76662 tokens_per_second=22688.636 microbatches=1 cpu_threads=6 compute=cpu
+step=20 loss=0.2151729 graph_bytes=76662 tokens_per_second=25187.013 microbatches=1 cpu_threads=6 compute=cpu
+step=30 loss=0.0161402 graph_bytes=76662 tokens_per_second=23489.973 microbatches=1 cpu_threads=6 compute=cpu
+step=40 loss=0.0033762 graph_bytes=76662 tokens_per_second=23326.452 microbatches=1 cpu_threads=6 compute=cpu
+exported=/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/continuous.gguf
+
+-- step=1 loss=0.0128879 graph_bytes=86568 tokens_per_second=16935.894 microbatches=1 cpu_threads=6 compute=cpu
+step=4 loss=0.0118464 graph_bytes=76662 tokens_per_second=24809.586 microbatches=1 cpu_threads=6 compute=cpu
+exported=/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/cpt.gguf
+
+CMake Error at /mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/TrainCli.cmake:14 (message):
+  Trainer failed:
+  --mode;sft;--base;/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/first.gguf;--rank;4;--data;/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/sft.tsv;--output;/home/colin/.cache/fyodor-asan-20261114-c17/test_models/train-cli-1191288c6273/sft.gguf;--context;16;--steps;4
+
+
+
+  AddressSanitizer:DEADLYSIGNAL
+
+  =================================================================
+
+  ==29906==ERROR: AddressSanitizer: SEGV on unknown address (pc
+  0x5c2490973735 bp 0x7fff3b573610 sp 0x7fff3b5733c0 T0)
+
+  ==29906==The signal is caused by a READ memory access.
+
+  ==29906==Hint: this fault was caused by a dereference of a high value
+  address (see register values below).  Disassemble the provided pc to learn
+  which register was used.
+
+      #0 0x5c2490973735 in cpu_decode_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #1 0x5c249090c28a in tr_mapped_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xe428a) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #2 0x5c249091c223 in nya_train_linear_mapped (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xf4223) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #3 0x5c249093e2a1 in decoder_linear (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x1162a1) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #4 0x5c2490949a58 in nya_train_decoder_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x121a58) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #5 0x5c24908fc1ae in sequence_loss (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd41ae) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #6 0x5c24909035f2 in train_main (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xdb5f2) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+      #7 0x7e4517c2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+      #8 0x7e4517c2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+      #9 0x5c24908fbf14 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd3f14) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)
+
+
+
+  ==29906==Register values:
+
+  rax = 0x0000000000000001 rbx = 0x00007e4518650e60 rcx = 0x0000000000000000
+  rdx = 0x0000000000000000
+
+  rdi = 0x00007a4515bd16a0 rsi = 0x00007a4515ed0101 rbp = 0x00007fff3b573610
+  rsp = 0x00007fff3b5733c0
+
+   r8 = 0x0000000000000001   r9 = 0x0000000000000010  r10 = 0x00007a4515bd1720  r11 = 0x0000000000000001  
+
+  r12 = 0x00007a4515ed01e0 r13 = 0x0000000000000010 r14 = 0x00007c1516ce1820
+  r15 = 0x0000000000000001
+
+  AddressSanitizer can not provide additional info.
+
+  SUMMARY: AddressSanitizer: SEGV
+  (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735)
+  (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be) in cpu_decode_avx512
+
+  ==29906==ABORTING
+
+Call Stack (most recent call first):
+  /mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/TrainCli.cmake:34 (run)
+
+
+
+      Start 44: application-resource-http
+Failed test dependencies: train-export-decoder
+43/58 Test #44: application-resource-http ...........***Not Run   0.00 sec
+      Start 45: application-theme-generated
+44/58 Test #45: application-theme-generated .........   Passed    0.27 sec
+      Start 46: application-tui-workflow
+45/58 Test #39: validate-training-scalar ............   Passed    1.18 sec
+      Start 47: application-resource-cli
+Failed test dependencies: train-export-decoder
+46/58 Test #47: application-resource-cli ............***Not Run   0.00 sec
+      Start 48: application-store-recovery
+47/58 Test #46: application-tui-workflow ............   Passed    0.76 sec
+      Start 49: train-stop-workflows
+48/58 Test #48: application-store-recovery ..........   Passed    0.35 sec
+      Start 50: train-unicode-paths
+49/58 Test #50: train-unicode-paths .................***Failed    0.41 sec
+Traceback (most recent call last):
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_paths.py", line 78, in <module>
+    first, checkpoint, _ = run(mode + "-\uccab", 2, settings)
+                           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_paths.py", line 58, in run
+    assert result.returncode == expected, (command, result.stdout, result.stderr)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (['/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train', '--data', '/tmp/fyodor-unicode-dnwhh34w/한글 🐾 café/자료 🐾.txt', '--output', '/tmp/fyodor-unicode-dnwhh34w/한글 🐾 café/cpt-첫.gguf', '--checkpoint', '/tmp/fyodor-unicode-dnwhh34w/한글 🐾 café/cpt-첫.ckpt', '--metrics', '/tmp/fyodor-unicode-dnwhh34w/한글 🐾 café/cpt-첫.csv', '--steps', '2', '--accumulate', '3', '--dimension', '16', '--ff', '32', '--layers', '1', '--heads', '2', '--kv-heads', '1', '--context', '32', '--mode', 'cpt', '--base', '/tmp/fyodor-unicode-dnwhh34w/한글 🐾 café/모델 🐾.gguf', '--rank', '4'], '', 'AddressSanitizer:DEADLYSIGNAL\n=================================================================\n==30175==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x632e69ffc735 bp 0x7ffcfc44f8d0 sp 0x7ffcfc44f680 T0)\n==30175==The signal is caused by a READ memory access.\n==30175==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.\n    #0 0x632e69ffc735 in cpu_decode_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #1 0x632e69f9528a in tr_mapped_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xe428a) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #2 0x632e69fa5223 in nya_train_linear_mapped (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xf4223) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #3 0x632e69fc72a1 in decoder_linear (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x1162a1) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #4 0x632e69fd2a58 in nya_train_decoder_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x121a58) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #5 0x632e69f851ae in sequence_loss (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd41ae) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #6 0x632e69f8c5f2 in train_main (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xdb5f2) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #7 0x7c819002a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)\n    #8 0x7c819002a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)\n    #9 0x632e69f84f14 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd3f14) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n\n==30175==Register values:\nrax = 0x0000000000000001  rbx = 0x00007c81902a8e60  rcx = 0x0000000000000000  rdx = 0x0000000000000000  \nrdi = 0x000078818dfd13a0  rsi = 0x000078818e2d0101  rbp = 0x00007ffcfc44f8d0  rsp = 0x00007ffcfc44f680  \n r8 = 0x0000000000000001   r9 = 0x0000000000000010  r10 = 0x000078818dfd1420  r11 = 0x0000000000000001  \nr12 = 0x000078818e2d01e0  r13 = 0x0000000000000010  r14 = 0x00007a518f0e1820  r15 = 0x0000000000000001  \nAddressSanitizer can not provide additional info.\nSUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be) in cpu_decode_avx512\n==30175==ABORTING\n')
+
+      Start 51: train-evaluation
+50/58 Test #49: train-stop-workflows ................***Failed    0.58 sec
+Traceback (most recent call last):
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_stop.py", line 118, in <module>
+    stopped, checkpoint, _ = run(name, 5000, settings, stop=control)
+                             ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_stop.py", line 73, in run
+    assert first.startswith("step=1 "), first
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError
+
+      Start 52: validate-http-protocol
+51/58 Test #51: train-evaluation ....................***Failed    0.45 sec
+Traceback (most recent call last):
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_eval.py", line 79, in <module>
+    plain, _, _ = run(mode+'-plain',5,settings)
+                  ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/Users/Colin/.codex/worktrees/resident-training/fyodor/backend/tests/train_eval.py", line 64, in run
+    assert code == 0, record
+           ^^^^^^^^^
+AssertionError: {'name': 'cpt-plain', 'command': ['/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train', '--compute', 'cpu', '--data', '/tmp/fyodor-eval-4vc8kjkz/corpus.txt', '--output', '/tmp/fyodor-eval-4vc8kjkz/cpt-plain.gguf', '--checkpoint', '/tmp/fyodor-eval-4vc8kjkz/cpt-plain.ckpt', '--metrics', '/tmp/fyodor-eval-4vc8kjkz/cpt-plain.csv', '--steps', '5', '--accumulate', '3', '--dimension', '16', '--ff', '32', '--layers', '1', '--heads', '2', '--kv-heads', '1', '--context', '16', '--mode', 'cpt', '--data', '/tmp/fyodor-eval-4vc8kjkz/corpus.txt', '--base', '/tmp/fyodor-eval-4vc8kjkz/base.gguf', '--rank', '2'], 'exit_code': 1, 'stdout': '', 'stderr': 'AddressSanitizer:DEADLYSIGNAL\n=================================================================\n==30297==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x61991d9f8735 bp 0x7ffc2432f090 sp 0x7ffc2432ee40 T0)\n==30297==The signal is caused by a READ memory access.\n==30297==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.\n    #0 0x61991d9f8735 in cpu_decode_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #1 0x61991d99128a in tr_mapped_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xe428a) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #2 0x61991d9a1223 in nya_train_linear_mapped (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xf4223) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #3 0x61991d9c32a1 in decoder_linear (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x1162a1) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #4 0x61991d9cea58 in nya_train_decoder_forward (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x121a58) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #5 0x61991d9811ae in sequence_loss (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd41ae) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #6 0x61991d9885f2 in train_main (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xdb5f2) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n    #7 0x7c159c62a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)\n    #8 0x7c159c62a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)\n    #9 0x61991d980f14 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0xd3f14) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be)\n\n==30297==Register values:\nrax = 0x0000000000000001  rbx = 0x00007c159d09ee60  rcx = 0x0000000000000000  rdx = 0x0000000000000000  \nrdi = 0x000078159a5d13a0  rsi = 0x000078159a8d0101  rbp = 0x00007ffc2432f090  rsp = 0x00007ffc2432ee40  \n r8 = 0x0000000000000001   r9 = 0x0000000000000010  r10 = 0x000078159a5d1420  r11 = 0x0000000000000001  \nr12 = 0x000078159a8d01e0  r13 = 0x0000000000000010  r14 = 0x000079e59b6e1820  r15 = 0x0000000000000001  \nAddressSanitizer can not provide additional info.\nSUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/fyodor-train+0x14b735) (BuildId: ba7d78890f7df37ed1ff17f6331c739f5f4b25be) in cpu_decode_avx512\n==30297==ABORTING\n'}
+
+      Start 53: validate-compute
+52/58 Test #53: validate-compute ....................***Failed    0.01 sec
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==30310==ERROR: AddressSanitizer: SEGV on unknown address (pc 0x56cc12de369a bp 0x7ffc65ce46e0 sp 0x7ffc65ce4400 T0)
+==30310==The signal is caused by a READ memory access.
+==30310==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 0x56cc12de369a in cpu_avx512 (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x5b69a) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #1 0x56cc12dc4cd7 in cpu_rows (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x3ccd7) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #2 0x56cc12dc7225 in cpu_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x3f225) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #3 0x56cc12dc2a38 in nya_compute_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x3aa38) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #4 0x56cc12dc0fd7 in check_matvec (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x38fd7) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #5 0x56cc12dbed03 in main (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x36d03) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+    #6 0x7affbac2a600  (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a600) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #7 0x7affbac2a717 in __libc_start_main (/usr/lib/x86_64-linux-gnu/libc.so.6+0x2a717) (BuildId: 9851d79b1f32e900a27f8d0a68e29d750303f0c6)
+    #8 0x56cc12dc02f4 in _start (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x382f4) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1)
+
+==30310==Register values:
+rax = 0x000076ffb8bd0120  rbx = 0x000078ffb9ce0080  rcx = 0x0000000000000000  rdx = 0x00000edff717a014  
+rdi = 0x000076ffb8bd00a0  rsi = 0x0000000000000000  rbp = 0x00007ffc65ce46e0  rsp = 0x00007ffc65ce4400  
+ r8 = 0x0000000000000081   r9 = 0x0000000000000001  r10 = 0x0000000000000000  r11 = 0x000078cfb9ce06b0  
+r12 = 0x0000000000000000  r13 = 0x0000000000000000  r14 = 0x0000000000000080  r15 = 0x0000798fb9ce0200  
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/home/colin/.cache/fyodor-asan-20261114-c17/nya-test-compute+0x5b69a) (BuildId: 6a3893814c864fb3b1cdabb696b6113de00e90b1) in cpu_avx512
+==30310==ABORTING
+
+      Start 54: tui-state-render
+53/58 Test #54: tui-state-render ....................   Passed    0.03 sec
+      Start 55: tui-snapshot
+54/58 Test #55: tui-snapshot ........................   Passed    0.01 sec
+      Start 56: tui-monitor-theme-cli
+55/58 Test #52: validate-http-protocol ..............   Passed    0.57 sec
+      Start 57: tui-monitor-posix-pty
+56/58 Test #56: tui-monitor-theme-cli ...............   Passed    0.24 sec
+      Start 58: cuda-host-kv-layout
+57/58 Test #58: cuda-host-kv-layout .................   Passed    0.06 sec
+58/58 Test #57: tui-monitor-posix-pty ...............   Passed    0.15 sec
+
+62% tests passed, 22 tests failed out of 58
+
+Total Test time (real) =   8.02 sec
+
+The following tests FAILED:
+	  7 - application-context-generation (Not Run)
+	  9 - turboquant-inference (Failed)
+	 11 - quant-kernels-cpu-dot (Failed)
+	 16 - quant-kernels-avx512 (Failed)
+	 17 - attention-avx512 (Failed)
+	 18 - inference-verify-cpu (Not Run)
+	 19 - inference-verify-cpu-empty-prefix (Not Run)
+	 20 - inference-session-parity (Not Run)
+	 21 - inference-cpu-optimized (Not Run)
+	 25 - generate-native-gguf (Failed)
+	 26 - validate-gemma-graphs (Failed)
+	 37 - validate-training (Failed)
+	 40 - train-export-decoder (Failed)
+	 41 - compatible-rest-apis (Not Run)
+	 42 - benchmark-cli (Not Run)
+	 43 - train-cli-workflows (Failed)
+	 44 - application-resource-http (Not Run)
+	 47 - application-resource-cli (Not Run)
+	 49 - train-stop-workflows (Failed)
+	 50 - train-unicode-paths (Failed)
+	 51 - train-evaluation (Failed)
+	 53 - validate-compute (Failed)
+Errors while running CTest
