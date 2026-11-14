@@ -130,3 +130,17 @@ This is approximately 3.03% lower diagnostic latency. Every joint interval in
 both runs fails coverage for unattributed GPU activity. Thus neither result is
 accepted performance, and no llama.cpp score changes. Reverse-order comparison
 is the next check. Raw observations and failed coverage audits are preserved.
+
+
+## Reverse-order short comparison: gain not confirmed
+
+EnabledB averages 580.0847667 ms (sample SD 11.7788401), while DisabledB averages
+570.6413667 ms (SD 9.3999213), per 32-token joint decode loop. Unlike the first
+pair, this order shows higher diagnostic latency with fusion. All twelve cases
+per run retain output parity; all 1003 recorded identities per result verify.
+Every joint interval across all four runs has unattributed System/PID 4 activity;
+DisabledB rounds zero and two also have invalid target counters. None passes
+coverage. short-comparison-diagnostic.json preserves all samples, both orders,
+variation and rejection reasons. The first pair's gain is not a robust measured
+model improvement, and fusion remains experimental. Long-context comparison is
+next; accepted scores are unchanged.
