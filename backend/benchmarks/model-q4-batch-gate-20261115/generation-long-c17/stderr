@@ -1,0 +1,180 @@
+CUDA native metadata Q4: selected
+CUDA native metadata Q4: selected
+CASE round=0 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+Generation profile: mode=ordinary prompt=8205 generated=32 decode_loop_ms=937.353500
+Generation interval: mode=ordinary prompt=8205 generated=32 clock=qpc start_seconds=32405.161787400 end_seconds=32406.099140900 valid=1
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=0 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1130.455700
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32502.284595300 end_seconds=32503.415051000 valid=1
+Generation assistant profile: calls=20 forward_ms=191.319500
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=0 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=957.943100
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32599.668679500 end_seconds=32600.626622600 valid=1
+Generation assistant profile: calls=20 forward_ms=111.195700
+CUDA batched graph captures: 1 replays: 9
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 1200
+CUDA batched split attention calls: 1200
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=0 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=784.212700
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32696.905834600 end_seconds=32697.690047300 valid=1
+Generation assistant profile: calls=28 forward_ms=152.235100
+CUDA batched graph captures: 2 replays: 10
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 112
+CUDA batched wide-value attention calls: 1248
+CUDA batched split attention calls: 888
+CUDA interleaved weight-reuse calls: 2097
+CUDA Q4 integer batch-four calls: 1692
+CUDA interleaved batch-two Q6 calls: 45
+CUDA Q4 batch gate capture/direct calls: 48
+CUDA Q6 paired rows capture/direct calls: 44
+CUDA paired rows capture/direct calls: 32
+CUDA QKV input reuse capture/direct hits: 88
+CUDA batched output projection calls: 10
+CASE round=1 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=786.413200
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32793.967401500 end_seconds=32794.753814700 valid=1
+Generation assistant profile: calls=28 forward_ms=154.138200
+CUDA batched graph captures: 2 replays: 10
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 112
+CUDA batched wide-value attention calls: 1248
+CUDA batched split attention calls: 888
+CUDA interleaved weight-reuse calls: 2097
+CUDA Q4 integer batch-four calls: 1692
+CUDA interleaved batch-two Q6 calls: 45
+CUDA Q4 batch gate capture/direct calls: 48
+CUDA Q6 paired rows capture/direct calls: 44
+CUDA paired rows capture/direct calls: 32
+CUDA QKV input reuse capture/direct hits: 88
+CUDA batched output projection calls: 10
+CASE round=1 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=954.960100
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32891.051582100 end_seconds=32892.006542200 valid=1
+Generation assistant profile: calls=20 forward_ms=109.800800
+CUDA batched graph captures: 1 replays: 9
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 1200
+CUDA batched split attention calls: 1200
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=1 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1051.236900
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=32988.319980000 end_seconds=32989.371216900 valid=1
+Generation assistant profile: calls=20 forward_ms=111.491300
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=1 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+Generation profile: mode=ordinary prompt=8205 generated=32 decode_loop_ms=938.262800
+Generation interval: mode=ordinary prompt=8205 generated=32 clock=qpc start_seconds=33085.818436400 end_seconds=33086.756699200 valid=1
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=2 mode=ordinary
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+Generation profile: mode=ordinary prompt=8205 generated=32 decode_loop_ms=938.593900
+Generation interval: mode=ordinary prompt=8205 generated=32 clock=qpc start_seconds=33183.034632600 end_seconds=33183.973226500 valid=1
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=2 mode=mtp-serial2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: serial; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=1048.851400
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=33280.246080300 end_seconds=33281.294931700 valid=1
+Generation assistant profile: calls=20 forward_ms=110.146500
+CUDA batched graph captures: 0 replays: 0
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 768
+CUDA batched split attention calls: 768
+CASE round=2 mode=mtp-batch2
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=2
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=954.602300
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=33377.589840800 end_seconds=33378.544443100 valid=1
+Generation assistant profile: calls=20 forward_ms=107.658100
+CUDA batched graph captures: 1 replays: 9
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 80
+CUDA batched wide-value attention calls: 1200
+CUDA batched split attention calls: 1200
+CUDA interleaved batch-two Q6 calls: 405
+CUDA batched output projection calls: 9
+CASE round=2 mode=mtp-joint3
+CUDA Q4 integer batch-four: enabled
+CUDA batched graphs: enabled
+MTP target: resident borrowed KV; assistant: host/assisted
+MTP verification: batched; proposal window=3
+MTP joint base: enabled; proposal window=3
+Generation profile: mode=mtp prompt=8205 generated=32 decode_loop_ms=784.059300
+Generation interval: mode=mtp prompt=8205 generated=32 clock=qpc start_seconds=33474.823213600 end_seconds=33475.607272900 valid=1
+Generation assistant profile: calls=28 forward_ms=153.616600
+CUDA batched graph captures: 2 replays: 10
+CUDA aligned prefix: partial_queries=512 FDPP_batch_calls=40
+CUDA borrowed wide-value attention calls: 112
+CUDA batched wide-value attention calls: 1248
+CUDA batched split attention calls: 888
+CUDA interleaved weight-reuse calls: 2097
+CUDA Q4 integer batch-four calls: 1692
+CUDA interleaved batch-two Q6 calls: 45
+CUDA Q4 batch gate capture/direct calls: 48
+CUDA Q6 paired rows capture/direct calls: 44
+CUDA paired rows capture/direct calls: 32
+CUDA QKV input reuse capture/direct hits: 88
+CUDA batched output projection calls: 10
+CUDA assisted feed-forward calls: 816
