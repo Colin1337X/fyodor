@@ -48,3 +48,22 @@ or reordered cases, absent bounds, NaN/exceeded bounds, absent byte parity,
 absent guards and wrong batch metadata in CPU negative checks. Unsupported
 launch rejection tests and non-random activation patterns remain additional
 coverage work; no real-model integration or speed claim has been made.
+
+Two isolated timing sweeps favor the candidate on all three tested shapes.
+Each captures ten interleave-plus-matvec operations per graph, warms 1000
+operations per order, and retains 40 samples per kernel/shape (100 operations
+per sample). Pageable uploads are synchronized before nonblocking graph use.
+The second sweep reverses shape and starting-kernel order. Every timed output
+passes the independent bound and is byte-exact across variants. Probe and
+oracle hashes verified for both results.
+
+| Columns x rows | First latency change | Reversed latency change |
+| --- | ---: | ---: |
+| 3840 x 2048 | -25.4512% | -25.5794% |
+| 8192 x 3840 | -20.2769% | -20.1733% |
+| 15360 x 3840 | -8.8645% | -9.0494% |
+
+These synthetic repeated-weight-bank timings include interleaving and retain
+environment snapshots, but lack continuous activity acceptance. They justify
+further isolated model testing, not a production promotion or end-to-end win.
+Accepted llama.cpp scores remain 85.6103% short / 106.8707% at 8K.

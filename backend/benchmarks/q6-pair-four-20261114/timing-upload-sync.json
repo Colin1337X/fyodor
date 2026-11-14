@@ -1,0 +1,1197 @@
+{
+  "accepted_benchmark": false,
+  "reason": "Synthetic repeated weight banks; not end-to-end decode and no interval contamination audit",
+  "source_sha256": "86fd95a552c88433de8d518f423c300046f76671a7b31349f55f7dfea3f01f7c",
+  "oracle_sha256": "ca2318f9b8db92e45dd9cb6429ddacb1c973e7ddc2ea3ae3d56c2e8f598b887f",
+  "harness_sha256": "7c3401e581bc5c64db573ba75e6e05a235e865d9f4b8661cf8f9d7c5b9038660",
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "compute_capability": [
+    12,
+    0
+  ],
+  "operations_per_sample": 100,
+  "warmup_operations_per_order": 1000,
+  "results": [
+    {
+      "dtype": 14,
+      "columns": 3840,
+      "rows": 2048,
+      "batch": 4,
+      "order": [
+        "integer",
+        "pair",
+        "pair",
+        "integer",
+        "pair",
+        "integer",
+        "integer",
+        "pair"
+      ],
+      "samples_ms": {
+        "integer": [
+          0.02604383945465088,
+          0.02602976083755493,
+          0.02615839958190918,
+          0.0261299204826355,
+          0.026137919425964357,
+          0.026136960983276367,
+          0.02613375902175903,
+          0.02615231990814209,
+          0.026137599945068358,
+          0.026262080669403075,
+          0.026187520027160644,
+          0.02615744113922119,
+          0.02617568016052246,
+          0.02615839958190918,
+          0.02615231990814209,
+          0.02615648031234741,
+          0.026152000427246094,
+          0.026150081157684326,
+          0.026131200790405273,
+          0.02612895965576172,
+          0.0260646390914917,
+          0.026079680919647217,
+          0.02603008031845093,
+          0.02600735902786255,
+          0.026028480529785156,
+          0.026073598861694337,
+          0.026116480827331544,
+          0.026160318851470948,
+          0.026151039600372315,
+          0.026132800579071046,
+          0.0260646390914917,
+          0.026213119029998778,
+          0.02615328073501587,
+          0.026150081157684326,
+          0.026137919425964357,
+          0.026139519214630126,
+          0.02613248109817505,
+          0.02614016056060791,
+          0.026192960739135743,
+          0.02653984069824219
+        ],
+        "pair": [
+          0.019439359903335573,
+          0.019569599628448488,
+          0.019430400133132936,
+          0.019608000516891478,
+          0.019551680088043213,
+          0.019529600143432618,
+          0.01951200008392334,
+          0.019544960260391236,
+          0.01945215940475464,
+          0.01943168044090271,
+          0.01948032021522522,
+          0.019592000246047972,
+          0.01961151957511902,
+          0.019471039772033693,
+          0.0194268798828125,
+          0.019567359685897828,
+          0.01944383978843689,
+          0.01949120044708252,
+          0.019512319564819337,
+          0.019486080408096313,
+          0.01948032021522522,
+          0.01957152009010315,
+          0.019302719831466676,
+          0.019423040151596068,
+          0.01944192051887512,
+          0.019431999921798705,
+          0.019423359632492067,
+          0.01942047953605652,
+          0.019413440227508544,
+          0.01934175968170166,
+          0.019500800371170045,
+          0.01954815983772278,
+          0.01945536017417908,
+          0.01962399959564209,
+          0.01965216040611267,
+          0.01955008029937744,
+          0.019421759843826294,
+          0.019431040287017823,
+          0.019431359767913818,
+          0.01945088028907776
+        ]
+      },
+      "means_ms": {
+        "integer": 0.0261395280957222,
+        "pair": 0.019486704021692277
+      },
+      "sample_stddev_ms": {
+        "integer": 8.366723609769037e-05,
+        "pair": 7.723371968281723e-05
+      },
+      "environment": [
+        {
+          "time": 1794662041.2494347,
+          "utilization": 0,
+          "memory": "129 MiB",
+          "temperature": "35 C",
+          "power": "3.26 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 35.63218390804598,
+            "idle_ticks": 433531562500,
+            "total_ticks": 594224375000
+          },
+          "pstate": "P8",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662041.4326806,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "46 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 34.84848484848485,
+            "idle_ticks": 433538281250,
+            "total_ticks": 594234687500
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662041.6156638,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "46 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 65.27777777777779,
+            "idle_ticks": 433542187500,
+            "total_ticks": 594245937500
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662041.820438,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "46 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.307692307692314,
+            "idle_ticks": 433549218750,
+            "total_ticks": 594258125000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662042.0012705,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "40 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 35.2112676056338,
+            "idle_ticks": 433556406250,
+            "total_ticks": 594269218750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662042.2118075,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "40 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 17.721518987341767,
+            "idle_ticks": 433566562500,
+            "total_ticks": 594281562500
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662042.4121315,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "54 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 24.35897435897436,
+            "idle_ticks": 433575781250,
+            "total_ticks": 594293750000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662042.5911114,
+          "utilization": 37,
+          "memory": "129 MiB",
+          "temperature": "54 C",
+          "power": "67.31 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 16.666666666666664,
+            "idle_ticks": 433584375000,
+            "total_ticks": 594304062500
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 14,
+      "columns": 8192,
+      "rows": 3840,
+      "batch": 4,
+      "order": [
+        "integer",
+        "pair",
+        "pair",
+        "integer",
+        "pair",
+        "integer",
+        "integer",
+        "pair"
+      ],
+      "samples_ms": {
+        "integer": [
+          0.08243583679199219,
+          0.08249440193176269,
+          0.08245823860168457,
+          0.08259391784667969,
+          0.08290687561035157,
+          0.0829081630706787,
+          0.08297344207763672,
+          0.08296544075012208,
+          0.08277695655822753,
+          0.08304384231567383,
+          0.08276351928710937,
+          0.08292287826538086,
+          0.0827990436553955,
+          0.08290271759033203,
+          0.08288576126098633,
+          0.08285920143127441,
+          0.08294624328613281,
+          0.08295071601867676,
+          0.08304800033569336,
+          0.08305120468139648,
+          0.0828758430480957,
+          0.08301055908203125,
+          0.0829263973236084,
+          0.08299039840698243,
+          0.0830675220489502,
+          0.08297375679016113,
+          0.08308511734008789,
+          0.08325759887695312,
+          0.08296383857727051,
+          0.08325247764587403,
+          0.08287903785705567,
+          0.08298303604125977,
+          0.08284416198730468,
+          0.08295040130615235,
+          0.08288064002990722,
+          0.08302687644958497,
+          0.08323360443115234,
+          0.08294848442077636,
+          0.08322879791259766,
+          0.08325568199157715
+        ],
+        "pair": [
+          0.06547840118408203,
+          0.0659161615371704,
+          0.06579487800598144,
+          0.06589312076568604,
+          0.06571199893951415,
+          0.06585311889648438,
+          0.06609983921051026,
+          0.06628575801849365,
+          0.06636832237243652,
+          0.06657023906707764,
+          0.0654579210281372,
+          0.06595615863800049,
+          0.06583263874053955,
+          0.0658796787261963,
+          0.06579487800598144,
+          0.06585152149200439,
+          0.06602367877960205,
+          0.06649151802062989,
+          0.06638559818267822,
+          0.0667199993133545,
+          0.06551936149597168,
+          0.0658784008026123,
+          0.06593311786651611,
+          0.06579967975616455,
+          0.06601568222045899,
+          0.0659548807144165,
+          0.06597951889038085,
+          0.0666428804397583,
+          0.0665664005279541,
+          0.06671487808227539,
+          0.06560128211975097,
+          0.06601920127868652,
+          0.06597631931304931,
+          0.06589312076568604,
+          0.06598336219787598,
+          0.06601952075958252,
+          0.066244797706604,
+          0.06714752197265625,
+          0.06709055900573731,
+          0.067325758934021
+        ]
+      },
+      "means_ms": {
+        "integer": 0.08293301582336426,
+        "pair": 0.06611679184436799
+      },
+      "sample_stddev_ms": {
+        "integer": 0.00019446679319832372,
+        "pair": 0.00044691262599944075
+      },
+      "environment": [
+        {
+          "time": 1794662043.1336517,
+          "utilization": 0,
+          "memory": "147 MiB",
+          "temperature": "38 C",
+          "power": "19.21 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 28.57142857142857,
+            "idle_ticks": 433607812500,
+            "total_ticks": 594336875000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662043.4131913,
+          "utilization": 80,
+          "memory": "147 MiB",
+          "temperature": "65 C",
+          "power": "19.21 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 26.851851851851848,
+            "idle_ticks": 433620156250,
+            "total_ticks": 594353750000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662043.6947823,
+          "utilization": 80,
+          "memory": "147 MiB",
+          "temperature": "65 C",
+          "power": "19.21 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 37.03703703703704,
+            "idle_ticks": 433630781250,
+            "total_ticks": 594370625000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662044.012486,
+          "utilization": 92,
+          "memory": "147 MiB",
+          "temperature": "62 C",
+          "power": "169.32 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 35.0,
+            "idle_ticks": 433642968750,
+            "total_ticks": 594389375000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662044.289266,
+          "utilization": 92,
+          "memory": "147 MiB",
+          "temperature": "62 C",
+          "power": "169.32 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 39.81481481481482,
+            "idle_ticks": 433653125000,
+            "total_ticks": 594406250000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662044.5974667,
+          "utilization": 0,
+          "memory": "147 MiB",
+          "temperature": "46 C",
+          "power": "169.32 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 39.16666666666667,
+            "idle_ticks": 433664531250,
+            "total_ticks": 594425000000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662044.9115007,
+          "utilization": 77,
+          "memory": "147 MiB",
+          "temperature": "67 C",
+          "power": "169.32 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 20.168067226890752,
+            "idle_ticks": 433679375000,
+            "total_ticks": 594443593750
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662045.189588,
+          "utilization": 77,
+          "memory": "147 MiB",
+          "temperature": "67 C",
+          "power": "169.32 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 22.018348623853214,
+            "idle_ticks": 433692656250,
+            "total_ticks": 594460625000
+          },
+          "pstate": "P1",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    },
+    {
+      "dtype": 14,
+      "columns": 15360,
+      "rows": 3840,
+      "batch": 4,
+      "order": [
+        "integer",
+        "pair",
+        "pair",
+        "integer",
+        "pair",
+        "integer",
+        "integer",
+        "pair"
+      ],
+      "samples_ms": {
+        "integer": [
+          0.18506111145019533,
+          0.18526559829711914,
+          0.18527999877929688,
+          0.1852601623535156,
+          0.18540767669677735,
+          0.1855936050415039,
+          0.1855289649963379,
+          0.18563743591308593,
+          0.18588159561157228,
+          0.1857980728149414,
+          0.18532735824584962,
+          0.18557024002075195,
+          0.18570655822753906,
+          0.1857369613647461,
+          0.18562719345092774,
+          0.18567007064819335,
+          0.18579551696777344,
+          0.18594432830810548,
+          0.18593887329101563,
+          0.18612703323364257,
+          0.1852659225463867,
+          0.18552352905273437,
+          0.1855913543701172,
+          0.18571359634399415,
+          0.18577247619628906,
+          0.1858358383178711,
+          0.18585567474365233,
+          0.1859993553161621,
+          0.18618528366088868,
+          0.18617792129516603,
+          0.18538976669311524,
+          0.1856707191467285,
+          0.18552799224853517,
+          0.18573984146118164,
+          0.18590368270874025,
+          0.1860259246826172,
+          0.1860588836669922,
+          0.18618431091308593,
+          0.18612384796142578,
+          0.18624160766601563
+        ],
+        "pair": [
+          0.169168643951416,
+          0.16936704635620117,
+          0.1690550422668457,
+          0.1692380714416504,
+          0.16922815322875975,
+          0.16918943405151368,
+          0.16926143646240235,
+          0.16915775299072267,
+          0.16915231704711914,
+          0.16938623428344726,
+          0.169168643951416,
+          0.16917215347290038,
+          0.16925695419311523,
+          0.16917215347290038,
+          0.16905536651611328,
+          0.16886720657348633,
+          0.16944320678710936,
+          0.16906688690185548,
+          0.16909664154052734,
+          0.16911359786987304,
+          0.1692403221130371,
+          0.16940479278564452,
+          0.16935583114624023,
+          0.16925216674804688,
+          0.16932256698608397,
+          0.16919551849365233,
+          0.16947776794433594,
+          0.16948640823364258,
+          0.1693391990661621,
+          0.16933183670043944,
+          0.16931167602539063,
+          0.16936351776123046,
+          0.16908735275268555,
+          0.16942495346069336,
+          0.16929920196533202,
+          0.1693129539489746,
+          0.16913600921630859,
+          0.16956607818603517,
+          0.16936223983764648,
+          0.16951904296875
+        ]
+      },
+      "means_ms": {
+        "integer": 0.18572364711761474,
+        "pair": 0.16926015949249268
+      },
+      "sample_stddev_ms": {
+        "integer": 0.0003010153114378179,
+        "pair": 0.0001480943116894343
+      },
+      "environment": [
+        {
+          "time": 1794662046.1492195,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "58 C",
+          "power": "187.15 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 33.060109289617486,
+            "idle_ticks": 433730937500,
+            "total_ticks": 594517812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662046.6354966,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "60 C",
+          "power": "184.74 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 25.806451612903224,
+            "idle_ticks": 433752500000,
+            "total_ticks": 594546875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662047.128959,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "61 C",
+          "power": "185.21 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 29.166666666666664,
+            "idle_ticks": 433773750000,
+            "total_ticks": 594576875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662047.6482186,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "62 C",
+          "power": "188.76 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 22.22222222222222,
+            "idle_ticks": 433797812500,
+            "total_ticks": 594607812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662048.117625,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "61 C",
+          "power": "185.15 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 31.666666666666664,
+            "idle_ticks": 433817031250,
+            "total_ticks": 594635937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662048.6157842,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "63 C",
+          "power": "188.83 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.145833333333336,
+            "idle_ticks": 433834687500,
+            "total_ticks": 594665937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662049.1287637,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "63 C",
+          "power": "189.19 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.464646464646464,
+            "idle_ticks": 433851250000,
+            "total_ticks": 594696875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794662049.6147416,
+          "utilization": 100,
+          "memory": "169 MiB",
+          "temperature": "63 C",
+          "power": "186.24 W",
+          "processes": [
+            {
+              "pid": "21136",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 26.344086021505376,
+            "idle_ticks": 433872656250,
+            "total_ticks": 594725937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2782 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ]
+    }
+  ]
+}
