@@ -32,3 +32,10 @@ result is fallback evidence only, not cached-query lifecycle validation.
 All 897 build identities, six control identities and 907 short-run identities
 verify independently. The eligible C17 prefix-8192 lifecycle is running; its
 result remains pending.
+
+check_lookup.py compiles the actual optional symbol-loading block with a fake
+CUDA lookup function. All 192 cases per C17/C23 standard pass: every combination
+of available linear/ring baseline and cached entries, reference mode, unset/empty
+and malformed flags, and the exact enabling value. Missing cached entries leave
+the original pointers intact and do not select an unavailable function. This
+is a host loading/fallback check; the live 8K lifecycle outcome is still pending.
