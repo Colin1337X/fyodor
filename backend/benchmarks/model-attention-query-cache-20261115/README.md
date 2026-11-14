@@ -48,3 +48,11 @@ remain in the original C lifecycle. All 907 result identities verify independent
 This is numerical/lifecycle evidence, not throughput. A separate fallback-only
 runner now requires absence of cached calls at prefix 257 and labels that scope
 explicitly. Its C23 run is pending.
+
+Both explicit prefix-257 fallback runs now pass in C17 and C23. Each retains
+the full numerical/reset/rewind/guard/download checks, confirms zero cached-query
+calls, and verifies 907 identities. These are deliberately labeled fallback-only.
+run_generation.py requires both fallback proofs and the positive C17 8K lifecycle.
+Short generation must report no cached-query calls; long generation requires
+six positive execution records across the three batched-two and joint rounds.
+The C17 short generation run has started; its result is not yet established.
