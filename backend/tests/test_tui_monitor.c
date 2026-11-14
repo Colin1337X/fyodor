@@ -12,9 +12,31 @@ static int write_csv(const char *path,const char *contents)
 {
     FILE *f=fopen(path,"wb");if(!f) return -1;int failed=fputs(contents,f)<0;return fclose(f) || failed?-1:0;
 }
+typedef struct key_stream {const unsigned char *bytes;size_t length,position;} key_stream;
+static int read_key_byte(void *context)
+{
+    key_stream *s=context;return s->position<s->length?s->bytes[s->position++]:-1;
+}
+static int input_test(void)
+{
+    const unsigned char bytes[]={27,':',0xe2,13,0xf0,0x9f,0x98,0x80,
+        27,'[','3','~','x',27,'[','1',';','5','A',27,'O','D',
+        0xed,0xa0,0x80,0xf4,0x90,0x80,0x80,0xc0,0x80,27};
+    const uint32_t expected[]={TUI_ESCAPE,':',0,TUI_ENTER,0x1f600,
+        0,'x',TUI_UP,TUI_LEFT,0,0,0,0,TUI_ESCAPE,0};
+    key_stream stream={bytes,sizeof(bytes),0};int pending=-1;
+    for(size_t i=0;i<sizeof(expected)/sizeof(expected[0]);++i)
+        CHECK(tui_read_key(read_key_byte,&stream,&pending)==expected[i]);
+    CHECK(stream.position==sizeof(bytes) && pending==-1);
+    const unsigned char interrupted[]={0xe2,0xc2,0xa3};
+    stream=(key_stream){interrupted,sizeof(interrupted),0};
+    CHECK(!tui_read_key(read_key_byte,&stream,&pending));
+    CHECK(tui_read_key(read_key_byte,&stream,&pending)==0xa3);
+    return 0;
+}
 int main(int argc,char **argv)
 {
-    CHECK(argc==2);tui_state s;tui_init(&s);
+    CHECK(argc==2);CHECK(!input_test());tui_state s;tui_init(&s);
     /* Input bursts cannot accelerate file polling; explicit refresh is immediate. */
     double refreshed=10.0;
     for(int i=0;i<1000;++i) CHECK(!tui_refresh_due(&refreshed,10.0+(double)i/10000.0,0));

@@ -36,20 +36,10 @@ static struct termios saved;static int active;
 static void restore(void) {if(active) {fputs("\033[0m\033[?25h\033[?1049l",stdout);fflush(stdout);tcsetattr(STDIN_FILENO,TCSANOW,&saved);active=0;}}
 static int terminal(void) {if(!isatty(0) || !isatty(1) || tcgetattr(0,&saved)) return -1;struct termios raw=saved;raw.c_lflag&=(tcflag_t)~(ICANON|ECHO|ISIG);raw.c_iflag&=(tcflag_t)~(IXON|ICRNL);raw.c_cc[VMIN]=0;raw.c_cc[VTIME]=0;if(tcsetattr(0,TCSANOW,&raw)) return -1;active=1;atexit(restore);return 0;}
 static void dimensions(int *w,int *h) {struct winsize size;if(!ioctl(1,TIOCGWINSZ,&size) && size.ws_col && size.ws_row) {*w=size.ws_col;*h=size.ws_row;}}
-static int byte(void) {fd_set set;FD_ZERO(&set);FD_SET(0,&set);struct timeval timeout={0,100000};unsigned char c;if(select(1,&set,NULL,NULL,&timeout)>0 && read(0,&c,1)==1) return c;return -1;}
+static int byte(void *context) {(void)context;fd_set set;FD_ZERO(&set);FD_SET(0,&set);struct timeval timeout={0,100000};unsigned char c;if(select(1,&set,NULL,NULL,&timeout)>0 && read(0,&c,1)==1) return c;return -1;}
 static uint32_t event(void) {
-    int c=byte();if(c<0) return 0;
-    if(c==27) {int next=byte();if(next=='[' || next=='O') {next=byte();if(next=='A') return TUI_UP;if(next=='B') return TUI_DOWN;if(next=='C') return TUI_RIGHT;if(next=='D') return TUI_LEFT;}return TUI_ESCAPE;}
-    if(c==13 || c==10) return TUI_ENTER;
-    if(c==127 || c==8) return TUI_BACKSPACE;
-    if(c==9) return TUI_TAB;
-    if(c<128) return (uint32_t)c;
-    unsigned need;uint32_t value,minimum;
-    if(c>=0xc2 && c<=0xdf) {need=1;value=(uint32_t)c&31;minimum=128;}
-    else if(c>=0xe0 && c<=0xef) {need=2;value=(uint32_t)c&15;minimum=2048;}
-    else if(c>=0xf0 && c<=0xf4) {need=3;value=(uint32_t)c&7;minimum=65536;}else return 0;
-    while(need--) {c=byte();if(c<0 || (c&0xc0)!=0x80) return 0;value=(value<<6)|((uint32_t)c&63);}
-    return value>=minimum && value<=0x10ffff && !(value>=0xd800 && value<=0xdfff)?value:0;
+    static int pending=-1;
+    return tui_read_key(byte,NULL,&pending);
 }
 #endif
 static volatile sig_atomic_t stopping;
