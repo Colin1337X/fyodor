@@ -37,3 +37,18 @@ Next requirements are long-context output parity, sanitizer validation, and a
 matched same-provider joint-three/joint-one comparison before any integration.
 No accepted llama.cpp or PyTorch score changes. Accepted llama.cpp ratios remain
 85.61025294% short and 106.8707255% at 8K; the requested 125% target is unmet.
+
+## Boundary memory checks completed
+
+Compute Sanitizer memcheck passed the architecture plus 22-case stopping-boundary
+suite in C17 and C23, for both ring and linear KV. Every run exited zero, had a
+unique zero-error summary, retained matched-error/EOS/context coverage, and
+required exact proposal-window-one markers. Inputs were rehashed after execution;
+recorded evidence hashes independently verified. Six validator tests reject
+wrong exits, missing/duplicate summaries, incomplete edge coverage, missing
+selection and wrong/malformed proposal-window markers.
+
+These four runs validate the fixture's memory handling, not full Gemma execution
+under the sanitizer. The unchanged real-model runner has started long-context
+correctness validation; completion and full-model sanitization remain pending.
+No performance score changes or production integration.
