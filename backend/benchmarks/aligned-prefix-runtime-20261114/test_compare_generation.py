@@ -31,5 +31,17 @@ class Comparison(unittest.TestCase):
         for values in ([1], [1,0], [1,float('nan')], [1,float('inf')], [1,True]):
             with self.assertRaises(ValueError): statistics_ms(values)
 
+    def test_joint_mode_requires_explicit_selection(self):
+        joint=copy.deepcopy(self.native)
+        for row in joint:
+            if row['mode']=='mtp-batch4':row['mode']='mtp-joint3'
+        result=compare(joint,self.reference,b'A\n',mode_set='joint-base')
+        self.assertEqual(result['mode_set'],'joint-base')
+        self.assertEqual(result['fyodor']['mtp-joint3']['diagnostic_speed_percent_of_llama'],125)
+        self.assertNotIn('mtp-batch4',result['fyodor'])
+        with self.assertRaises(ValueError):compare(joint,self.reference,b'A\n')
+        with self.assertRaises(ValueError):compare(self.native,self.reference,b'A\n',mode_set='joint-base')
+        with self.assertRaises(ValueError):compare(joint,self.reference,b'A\n',mode_set='unknown')
+
 
 if __name__ == '__main__': unittest.main()
