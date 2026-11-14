@@ -36,6 +36,16 @@ import environment
 if any(not environment.desktop_identity_allowed(p) for p in environment.snapshot()['processes']):
     raise SystemExit('Another GPU workload remains')
 
+# Snapshot every compiled source and prerequisite before creating a context.
+input_paths=[root/'CUDA'/name for name in ('matvec.cu','gemm.cu','resident.cu')]
+input_paths += [root/'optcpp/matvec'/name for name in
+    ('small_batch.cu','small_batch_reuse.cu','interleaved_reuse.cu','interleaved_integer.cu',
+     'integer_launch.cu','integer_metadata.cu','integer_metadata_unroll2.cu')]
+input_paths += [Path(__file__).resolve(),out/'common.py',out/'compile.json']
+input_paths += [out.parent/f'batch-graphs-20261114/boundary-memcheck-{standard}-{width}-ring{ring}/result.json'
+    for standard in ('c17','c23') for width in ('256','512') for ring in ('0','1')]
+input_hashes={str(path.relative_to(root)):hashlib.sha256(path.read_bytes()).hexdigest() for path in input_paths}
+
 # This module creates the GPU context. All pending-run checks precede its import.
 from common import *
 
@@ -102,6 +112,8 @@ try:
         owned.clear()
         if len(result['cases'])%20==0 or edge is None:
             print('Passed',len(result['cases']),'of',len(cases),flush=True)
+    for name,expected_hash in input_hashes.items():
+        assert hashlib.sha256((root/name).read_bytes()).hexdigest()==expected_hash, 'Input changed: '+name
     result['passed']=True
 except BaseException as error:
     result['failure']=str(error) or type(error).__name__
@@ -109,6 +121,7 @@ except BaseException as error:
 finally:
     for address in owned: check(free(address))
     check(unload(module)); check(release(device))
+    result['input_sha256']=input_hashes
     result['harness_sha256']={path.name:hashlib.sha256(path.read_bytes()).hexdigest()
         for path in (Path(__file__),out/'common.py')}
     with destination.open('x') as output: json.dump(result,output,indent=2)

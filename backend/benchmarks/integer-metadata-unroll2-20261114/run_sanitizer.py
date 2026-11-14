@@ -58,6 +58,8 @@ def main():
     paths += [root / 'optcpp/matvec' / name for name in
               ('small_batch.cu', 'small_batch_reuse.cu', 'interleaved_reuse.cu', 'interleaved_integer.cu', 'integer_launch.cu', 'integer_metadata.cu', 'integer_metadata_unroll2.cu')]
     assert hashlib.sha256(b'\n'.join(path.read_bytes() for path in paths)).hexdigest() == raw['source_sha256']
+    for name, expected in raw['input_sha256'].items():
+        assert digest(root/name)==expected,name
     for name, expected in raw['harness_sha256'].items():
         assert digest(out / name) == expected, name
     stdout_path, stderr_path = out / (tool+'.log'), out / (tool+'.stderr.log')

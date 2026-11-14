@@ -122,3 +122,8 @@ The seven remaining boundary sanitizer configurations are running separately;
 only the previously completed C17/256/linear boundary run is claimed here.
 These results do not replace full-model validation, prove recovery from all
 real driver errors, or establish a clean throughput improvement.
+
+The C17/256/ring boundary sanitizer has now also completed all 42 ordered
+cases with six captures and 42 replays. Its 180 hashes independently verified.
+C17/256 linear and ring are complete; the remaining six configurations are
+still pending or running and are not claimed here.

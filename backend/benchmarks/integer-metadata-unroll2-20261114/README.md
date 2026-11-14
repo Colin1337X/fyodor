@@ -24,3 +24,9 @@ unproven. The raw harness retains 207 cases (11 matrix shapes and 196 finite
 half-coefficient pairs), exact comparison against the serial and current
 metadata kernels, guard checks and the original small-shape float64 bound.
 GPU execution is gated behind completion of the boundary sanitizer matrix.
+
+The raw oracle snapshots all compiled sources, its harness and all eight
+boundary terminal records before GPU creation, verifies they remain unchanged
+after execution, and carries those hashes into sanitizer and timing gates.
+The probe labels the candidate `unroll2`. The pending-boundary gate was tested
+and stopped before creating a GPU context; no raw or timing result exists yet.

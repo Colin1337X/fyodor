@@ -15,6 +15,8 @@ if not oracle_path.exists():
 oracle = json.loads(oracle_path.read_text())
 assert oracle['passed'] is True and len(oracle['cases']) == 207
 assert all(case['byte_exact'] is True and case['guards_clear'] is True for case in oracle['cases'])
+for name, expected in oracle['input_sha256'].items():
+    assert hashlib.sha256((root/name).read_bytes()).hexdigest()==expected,name
 for name, expected in oracle['harness_sha256'].items():
     assert hashlib.sha256((out / name).read_bytes()).hexdigest() == expected, name
 paths = [root / 'CUDA' / name for name in ('matvec.cu', 'gemm.cu', 'resident.cu')]
@@ -62,7 +64,7 @@ try:
   weights=buffer(w);del w
   x=buffer(array.array('f',(random.uniform(-1,1) for _ in range(k*4))).tobytes());y=buffer(bytes(rows*4*4));packed_input=buffer(bytes(k*4*4))
   for batch in (4,):
-   names=['metadata','shared'];samples={n:[] for n in names};snapshots=[];expected_output=None
+   names=['metadata','unroll2'];samples={n:[] for n in names};snapshots=[];expected_output=None
    for order in [names,list(reversed(names))]:
     for name in order:
      count=4
