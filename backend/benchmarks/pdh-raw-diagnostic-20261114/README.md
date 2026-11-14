@@ -197,3 +197,32 @@ conservative; this report neither attributes System work causally nor accepts
 performance. Five offline tests cover interval boundaries, owned readings
 above 100, invalid zero-valued entries, gaps/incomplete bracketing and reordered
 samples. The active capture must finish before this report is generated.
+
+## FormattedFirstLoadedA completed
+
+All 900 samples completed without API failure, with unchanged capture inputs.
+There were 62,298 valid consecutive target pairs; maximum raw/formatted
+absolute difference was 1.4210854715202004e-14. All 36 invalid formatted entries
+were newly appearing instances; raw statuses were valid. Reading formatted
+values first therefore does not eliminate invalid startup entries.
+
+All 358 above-100 readings belonged to long-generation PID 6664, CUDA engine
+10, with maximum 117.12220970190256%. Short-generation PID 12236 had no
+above-100 readings. Raw denominator deltas matched FILETIME timestamp deltas
+exactly; maximum QPC relative discrepancy was 1.00549%. The counter-wide API
+failure did not reproduce. Read order is not a sufficient fix for the
+above-100 anomaly; its root cause remains unproven.
+
+The completed short workload's twelve native decode intervals are all
+bracketed by this capture with no collection gaps. Every interval overlaps
+positive System/PID 4 activity. None overlaps invalid entries, above-100
+readings or positive activity attributed to another non-System process.
+These are conservative sample-interval overlaps, not proof that System work
+ran during the exact decode subinterval or that an unrelated app caused it.
+System causal attribution remains unresolved; no accepted score changes.
+
+The raw 118,171,430-byte log is preserved losslessly as samples.jsonl.gz
+(3,817,650 bytes). archive.json records both hashes and verified decompression.
+The independent long generation was still live when this capture ended, so
+the capture cannot certify its complete workload. Long decode correlation
+must wait for completed generation evidence and retain uncovered intervals.
