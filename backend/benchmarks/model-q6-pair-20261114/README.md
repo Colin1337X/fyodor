@@ -28,3 +28,10 @@ lifecycle check is pending. The generation runner now requires three positive,
 well-formed Q6 markers as well as the existing twelve-case parity inventory,
 Q4/QKV and graph-reuse checks. Its missing-long-lifecycle refusal was exercised
 without launching a competing GPU workload. Model timings remain pending.
+
+The full-model memcheck runner is prepared with mandatory Q6 enablement and
+exactly three well-formed positive Q6 execution markers. Twelve CPU validator
+tests pass, including missing/extra/zero/malformed Q6 markers and the inherited
+parity, graph reuse, summary and workload checks. The runner refused absent
+generation evidence before launching GPU work. These are validator checks,
+not a completed full-model sanitizer run.
