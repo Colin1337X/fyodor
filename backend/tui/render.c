@@ -70,6 +70,7 @@ static int chart_value(const tui_sample *sample,int chart,double *value)
     if(chart==1) *value=sample->rate;
     else if(chart==2) {if(!(sample->optional&2U)) return 0;*value=sample->gradient;}
     else if(chart==3) {if(!(sample->optional&4U)) return 0;*value=sample->used/1048576.0;}
+    else if(chart==4) {if(!(sample->optional&1U)) return 0;*value=sample->validation;}
     else *value=sample->loss;
     return isfinite(*value);
 }
@@ -87,8 +88,8 @@ static void training(const tui_state *s,tui_frame *f,int x,int y,int w,int h)
     if(h<14) return;
     int gx=x+3,gy=y+10,gw=w-6,gh=h-12;
     size_t start=s->samples>(size_t)gw?s->samples-(size_t)gw:0;
-    const char *labels[]={"Loss","Tokens/s","Gradient norm","Device used (MiB)"};
-    int chart=s->chart>=0 && s->chart<4?s->chart:0,available=0;
+    const char *labels[]={"Loss","Tokens/s","Gradient norm","Device used (MiB)","Validation loss"};
+    int chart=s->chart>=0 && s->chart<5?s->chart:0,available=0;
     double low=0,high=0;
     for(size_t i=start;i<s->samples;++i) {
         double v;if(!chart_value(&s->history[i],chart,&v)) continue;
@@ -123,7 +124,7 @@ void tui_render(const tui_state *s,tui_frame *f,int width,int height)
     for(int i=0;i<3;++i) text(f,2+i*15,2,14,(unsigned char)(s->view==i?2:3),tabs[i]);
     if(s->help) {
         box(f,1,4,w-2,h-8," KEYS & COMMANDS ");
-        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze   r refresh   t theme   g graph   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","chart loss / rate / gradient / memory","Editing: Tab complete, Up/Down recall, Enter run, Esc cancel"};
+        const char *help[]={"1 / 2 / 3, Tab, arrows, h j k l   Switch view","? help   Esc back   q / Ctrl-C quit","Space freeze   r refresh   t theme   g graph   : command","open PATH       Inspect a model container","metrics PATH    Follow training CSV (no quotes needed)","theme ID / overview / model / training / pause / quit","chart loss / rate / gradient / memory / validation","Editing: Tab complete, Up/Down recall, Enter run, Esc cancel"};
         for(int i=0;i<8 && i<h-10;++i) text(f,3,6+i,w-6,0,help[i]);
     } else if(s->view==2) training(s,f,1,4,w-2,h-8);
     else if(s->view==1) {

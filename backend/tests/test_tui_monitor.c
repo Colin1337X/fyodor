@@ -175,7 +175,7 @@ int main(int argc,char **argv)
     tui_frame *f=malloc(sizeof(*f));CHECK(f);
     CHECK(send(&s,"chart gradient")==TUI_NONE && s.chart==2 && s.view==2);
     CHECK(send(&s,"chart invalid")==TUI_NONE && s.chart==2);
-    tui_key(&s,'g');CHECK(s.chart==3);tui_key(&s,'g');CHECK(s.chart==0);
+    tui_key(&s,'g');CHECK(s.chart==3);tui_key(&s,'g');CHECK(s.chart==4);tui_key(&s,'g');CHECK(s.chart==0);
     s.samples=3;memset(s.history,0,3*sizeof(*s.history));
     s.history[0].optional=2;s.history[0].gradient=1;
     s.history[2].optional=2;s.history[2].gradient=3;
@@ -185,6 +185,20 @@ int main(int argc,char **argv)
     CHECK(points==2);
     s.chart=3;tui_render(&s,f,80,30);
     points=0;for(int y=14;y<24;++y) for(int x=4;x<76;++x) points+=f->cells[y*80+x].code=='*';
+    CHECK(!points);
+    CHECK(!write_csv(argv[1],"step,loss,tokens_per_second,validation_loss\n0,100,20,3\n1,200,20,\n2,300,20,1\n"));
+    CHECK(!tui_metrics(&s) && s.samples==3);
+    tui_key(&s,':');const char *validation_command="chart v";
+    while(*validation_command) tui_key(&s,(unsigned char)*validation_command++);
+    tui_key(&s,TUI_TAB);CHECK(!strcmp(s.command,"chart validation") && s.chart==3);
+    tui_key(&s,TUI_ENTER);CHECK(s.chart==4 && s.view==2);
+    tui_render(&s,f,80,30);points=0;
+    for(int y=14;y<24;++y) for(int x=4;x<76;++x)
+        if(f->cells[y*80+x].code=='*') {++points;CHECK(x==4 || x==6);}
+    CHECK(points==2 && f->cells[14*80+4].code=='*' && f->cells[23*80+6].code=='*');
+    for(size_t i=0;i<s.samples;++i) s.history[i].optional=0;
+    tui_render(&s,f,80,30);points=0;
+    for(int y=14;y<24;++y) for(int x=4;x<76;++x) points+=f->cells[y*80+x].code=='*';
     CHECK(!points);
     s.chart=0;
     tui_key(&s,':');
