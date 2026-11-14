@@ -79,3 +79,10 @@ and after execution, and includes that manifest directly in the coverage
 result. The active-GPU refusal was exercised while the sanitizer was running;
 no new reference timing has been launched. Activity failures still reject
 acceptance, and this wrapper does not resolve the Windows PDH failures.
+
+Full-model short memcheck subsequently passed all twelve ordered generation
+cases with exact output parity, exit code zero and `ERROR SUMMARY: 0 errors`.
+Paired-row markers were [128,128,128]; all 773 recorded hashes independently
+verified. Elapsed instrumented runtime was 2594.1107 seconds, which is not
+a performance measurement. Long generation and controlled end-to-end timing
+remain pending. Accepted scores remain 85.6103% short / 106.8707% at 8K.
