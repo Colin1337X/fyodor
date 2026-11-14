@@ -39,3 +39,12 @@ of available linear/ring baseline and cached entries, reference mode, unset/empt
 and malformed flags, and the exact enabling value. Missing cached entries leave
 the original pointers intact and do not select an unavailable function. This
 is a host loading/fallback check; the live 8K lifecycle outcome is still pending.
+
+The C17 prefix-8192 lifecycle now passes. Both resets report maximum scaled
+error 1.63989979e-05 against the unchanged 0.0005 bound; capture/replay is 1/2.
+The trace records eight cached-query capture/direct calls, proving the candidate
+ran. Reset, rewind, invalid-input, replacement-token and download assertions
+remain in the original C lifecycle. All 907 result identities verify independently.
+This is numerical/lifecycle evidence, not throughput. A separate fallback-only
+runner now requires absence of cached calls at prefix 257 and labels that scope
+explicitly. Its C23 run is pending.
