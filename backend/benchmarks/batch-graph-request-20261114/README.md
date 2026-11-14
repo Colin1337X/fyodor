@@ -53,3 +53,24 @@ Do not start GPU checks while the metadata full-model sanitizer remains active.
 
 Accepted decode performance remains 85.61025294% short and 106.8707255% at 8K
 relative to llama.cpp; the 125% target on both is unmet.
+
+## Prepared device replay check
+
+`check_replay.py` captures the new gather once per dtype/width/batch and updates
+the device request outside capture for each of twelve replays. The 192-case
+inventory covers F32/F16/Q4_K/Q6_K, widths 256/3840 and batches two/four. Each
+replay compares bytes against the existing uncaptured batched gather, checks
+finite outputs, request/output guards and unchanged weights. The host oracle
+above supplies an independent F32 indexing check; the GPU comparison deliberately
+shares the production quantized weight decoder and does not independently prove
+that decoder. Both paths run on the same explicit nonblocking stream, with
+upload synchronization before capture and readback synchronization after replay.
+
+Before importing CUDA bindings, the runner requires successful full-model metadata
+sanitizer evidence and source hashes, the host and compilation proofs, and a GPU
+process inventory check. Its refusal while the sanitizer remains live was
+exercised without creating a CUDA context. Five CPU prerequisite tests cover
+valid, missing, failed, nonzero-exit and changed-input evidence. Device execution
+has not yet run; neither graph ordering nor quantized replay parity is claimed.
+`--memcheck` selects a separate result filename for running under Compute
+Sanitizer; that filename alone is not proof of a successful sanitizer summary.
