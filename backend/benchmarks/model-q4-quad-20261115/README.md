@@ -67,3 +67,21 @@ was zero, elapsed instrumented time 2590.5897336 seconds, and all 929 hashes
 verified after completion. This is correctness evidence, not throughput.
 Monitored short on/off timing is the next measurement; coverage policy remains
 unchanged and long generation is still pending.
+
+## First short model timing pair: diagnostic regression
+
+EnabledA and DisabledA each completed all twelve output-parity cases with
+unchanged inputs; all 960 hashes per run verified. Four-row markers were
+[96,96,96] when enabled and absent when disabled. Q6/Q4/QKV and graph reuse
+checks passed independently in both variants.
+
+Joint decode-loop durations for 32 output tokens:
+
+- EnabledA: 589.1529, 581.2256, 580.9656 ms; mean 583.7813667 ms, SD 4.6537004.
+- DisabledA: 557.5781, 551.8586, 563.8468 ms; mean 557.7611667 ms, SD 5.9961963.
+
+Enabled mean latency is 4.6651% higher. All joint intervals failed coverage
+for unattributed System/PID 4 activity; the first interval in each run also
+had an invalid target counter. These results are diagnostic, not accepted
+performance. No llama.cpp score changes. Reverse-order measurement is next;
+the isolated kernel gain does not justify production integration.

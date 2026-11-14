@@ -1,0 +1,1110 @@
+{
+  "revision": "32b081f98939ab91a11e7097f71a88dffbc5d018",
+  "environment": {
+    "NYA_COMPUTE": "cuda",
+    "NYA_CPU_THREADS": "6",
+    "NYA_CUDA_WIDE_SPLIT": "1",
+    "NYA_CUDA_BATCH": "512",
+    "NYA_CUDA_CUTLASS": "0",
+    "NYA_CUDA_BLAS_LIBRARY": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cuda\\cublas64_13.dll",
+    "NYA_CUDA_FLASH_DECODING_PP": "short",
+    "NYA_CUDA_GEMMA_QKV": "1",
+    "NYA_CUDA_FIXED_GATE": "1",
+    "NYA_CUDA_INTEGER_GATE": "1",
+    "NYA_CUDA_INTEGER_DOT": "1",
+    "NYA_CUDA_INTEGER_Q6": "1",
+    "NYA_CUDA_BYTE_GATE": "1",
+    "NYA_CUDA_BYTE_DOT": "1",
+    "NYA_CUDA_RING_KV": "1",
+    "NYA_CUDA_SMALL_BATCH": "1",
+    "NYA_CUDA_WIDE_VALUE": "1",
+    "NYA_CUDA_GEMMA_GATE": "1",
+    "NYA_CUDA_GEMMA_GATE_PARTIAL": "1",
+    "NYA_CUDA_BLAS": "1",
+    "NYA_MTP_RESIDENT_TARGET": "1",
+    "NYA_MTP_TRACE": "1",
+    "NYA_GENERATION_PROFILE": "1",
+    "NYA_CUDA_SMALL_BATCH_REUSE": "1",
+    "NYA_CUDA_MTP_WIDE_VALUE": "1",
+    "NYA_CUDA_WIDE_BATCH": "1",
+    "NYA_CUDA_WIDE_BATCH_SPLIT": "1",
+    "NYA_CUDA_ALIGNED_PREFIX": "1",
+    "NYA_SPECULATIVE_EARLY_REJECT": "1",
+    "NYA_CUDA_BATCH_LOGITS": "1",
+    "NYA_CUDA_ASSISTED_FFN": "1",
+    "NYA_CUDA_INTERLEAVED_REUSE": "1",
+    "NYA_CUDA_INTERLEAVED_TWO": "1",
+    "NYA_CUDA_INTERLEAVED_INTEGER": "1"
+  },
+  "gate_passed": true,
+  "binary_sha256": "67a04512db0ddcda3facccb7a9449acf74c7384ba19285fd7d0da8cac8d3d413",
+  "source_sha256": {
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\core\\llm_cpu.c": "d11261a18a47a2820c2a78e2f992142d6a59ee092bdfa4a8302dddb7b7dd0764",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-cost-20261113\\run.py": "845eb6c719d3b6433b363faa01c96d6850a80edc0f2caff3e07909dabfce28dc",
+    "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\mtp-cost-20261113\\model.c": "b768e4379d788ac2d344584baacf79724b82907514923226a6ef84a945f01935"
+  },
+  "runs": [
+    {
+      "context": "short",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe",
+        "short"
+      ],
+      "samples": [
+        {
+          "time": 1794672817.4112132,
+          "utilization": 0,
+          "memory": "0 MiB",
+          "temperature": "32 C",
+          "power": "3.22 W",
+          "processes": [],
+          "cpu": {
+            "busy_percent": 41.40127388535032,
+            "idle_ticks": 800300468750,
+            "total_ticks": 1240692500000
+          },
+          "pstate": "P8",
+          "sm_clock": "195 MHz",
+          "memory_clock": "405 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672818.5726516,
+          "utilization": 0,
+          "memory": "1245 MiB",
+          "temperature": "33 C",
+          "power": "17.41 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 60.36036036036037,
+            "idle_ticks": 800327968750,
+            "total_ticks": 1240761875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2287 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672819.72794,
+          "utilization": 15,
+          "memory": "4533 MiB",
+          "temperature": "34 C",
+          "power": "20.90 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 70.27027027027026,
+            "idle_ticks": 800348593750,
+            "total_ticks": 1240831250000
+          },
+          "pstate": "P1",
+          "sm_clock": "2610 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672820.8789303,
+          "utilization": 16,
+          "memory": "13337 MiB",
+          "temperature": "34 C",
+          "power": "21.60 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 68.01801801801801,
+            "idle_ticks": 800370781250,
+            "total_ticks": 1240900625000
+          },
+          "pstate": "P1",
+          "sm_clock": "2610 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672822.0345376,
+          "utilization": 20,
+          "memory": "13337 MiB",
+          "temperature": "34 C",
+          "power": "20.73 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 63.51351351351351,
+            "idle_ticks": 800396093750,
+            "total_ticks": 1240970000000
+          },
+          "pstate": "P1",
+          "sm_clock": "2580 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672823.1715412,
+          "utilization": 98,
+          "memory": "13337 MiB",
+          "temperature": "59 C",
+          "power": "180.75 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 56.48148148148149,
+            "idle_ticks": 800425468750,
+            "total_ticks": 1241037500000
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672824.3334882,
+          "utilization": 19,
+          "memory": "13337 MiB",
+          "temperature": "37 C",
+          "power": "25.92 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 66.22222222222223,
+            "idle_ticks": 800449218750,
+            "total_ticks": 1241107812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672825.4883993,
+          "utilization": 99,
+          "memory": "13601 MiB",
+          "temperature": "48 C",
+          "power": "97.48 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 61.261261261261254,
+            "idle_ticks": 800476093750,
+            "total_ticks": 1241177187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672826.6913416,
+          "utilization": 9,
+          "memory": "13601 MiB",
+          "temperature": "39 C",
+          "power": "24.85 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 71.21212121212122,
+            "idle_ticks": 800496875000,
+            "total_ticks": 1241249375000
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672827.8408988,
+          "utilization": 100,
+          "memory": "13601 MiB",
+          "temperature": "46 C",
+          "power": "96.69 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 64.61187214611871,
+            "idle_ticks": 800521093750,
+            "total_ticks": 1241317812500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672828.999159,
+          "utilization": 93,
+          "memory": "13605 MiB",
+          "temperature": "61 C",
+          "power": "174.47 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 61.48648648648649,
+            "idle_ticks": 800547812500,
+            "total_ticks": 1241387187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672830.1745374,
+          "utilization": 19,
+          "memory": "13605 MiB",
+          "temperature": "39 C",
+          "power": "72.16 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 64.25438596491229,
+            "idle_ticks": 800573281250,
+            "total_ticks": 1241458437500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672831.3209927,
+          "utilization": 52,
+          "memory": "13611 MiB",
+          "temperature": "49 C",
+          "power": "81.76 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 53.65296803652968,
+            "idle_ticks": 800605000000,
+            "total_ticks": 1241526875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2752 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672832.4562361,
+          "utilization": 21,
+          "memory": "13611 MiB",
+          "temperature": "39 C",
+          "power": "26.62 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.29223744292238,
+            "idle_ticks": 800643125000,
+            "total_ticks": 1241595312500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672833.6151545,
+          "utilization": 87,
+          "memory": "13611 MiB",
+          "temperature": "61 C",
+          "power": "167.09 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.91891891891891,
+            "idle_ticks": 800682031250,
+            "total_ticks": 1241664687500
+          },
+          "pstate": "P1",
+          "sm_clock": "2760 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672834.7629259,
+          "utilization": 98,
+          "memory": "13611 MiB",
+          "temperature": "47 C",
+          "power": "92.67 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.0958904109589,
+            "idle_ticks": 800722343750,
+            "total_ticks": 1241733125000
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672835.9158423,
+          "utilization": 93,
+          "memory": "13611 MiB",
+          "temperature": "64 C",
+          "power": "177.13 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 43.468468468468465,
+            "idle_ticks": 800761562500,
+            "total_ticks": 1241802500000
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672837.0724833,
+          "utilization": 20,
+          "memory": "13611 MiB",
+          "temperature": "40 C",
+          "power": "26.94 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.04504504504504,
+            "idle_ticks": 800799687500,
+            "total_ticks": 1241871875000
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672838.2202435,
+          "utilization": 92,
+          "memory": "13611 MiB",
+          "temperature": "63 C",
+          "power": "177.52 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.04308390022676,
+            "idle_ticks": 800840312500,
+            "total_ticks": 1241940781250
+          },
+          "pstate": "P1",
+          "sm_clock": "2805 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672839.3746893,
+          "utilization": 18,
+          "memory": "13611 MiB",
+          "temperature": "41 C",
+          "power": "26.80 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 45.80498866213152,
+            "idle_ticks": 800877656250,
+            "total_ticks": 1242009687500
+          },
+          "pstate": "P1",
+          "sm_clock": "2857 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672840.5191627,
+          "utilization": 98,
+          "memory": "13611 MiB",
+          "temperature": "62 C",
+          "power": "188.78 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 49.0990990990991,
+            "idle_ticks": 800912968750,
+            "total_ticks": 1242079062500
+          },
+          "pstate": "P1",
+          "sm_clock": "2797 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672841.6680777,
+          "utilization": 19,
+          "memory": "13611 MiB",
+          "temperature": "43 C",
+          "power": "28.04 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 59.58904109589041,
+            "idle_ticks": 800940625000,
+            "total_ticks": 1242147500000
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672842.8088722,
+          "utilization": 97,
+          "memory": "13611 MiB",
+          "temperature": "63 C",
+          "power": "185.63 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 47.71689497716894,
+            "idle_ticks": 800976406250,
+            "total_ticks": 1242215937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2775 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672843.9535565,
+          "utilization": 20,
+          "memory": "13611 MiB",
+          "temperature": "43 C",
+          "power": "28.30 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 44.74885844748858,
+            "idle_ticks": 801014218750,
+            "total_ticks": 1242284375000
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672845.1040885,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "52 C",
+          "power": "99.06 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 48.19819819819819,
+            "idle_ticks": 801050156250,
+            "total_ticks": 1242353750000
+          },
+          "pstate": "P1",
+          "sm_clock": "2850 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672846.2483928,
+          "utilization": 21,
+          "memory": "13611 MiB",
+          "temperature": "43 C",
+          "power": "28.51 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 40.6392694063927,
+            "idle_ticks": 801090781250,
+            "total_ticks": 1242422187500
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672847.3994236,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "51 C",
+          "power": "98.94 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 41.21621621621622,
+            "idle_ticks": 801131562500,
+            "total_ticks": 1242491562500
+          },
+          "pstate": "P1",
+          "sm_clock": "2850 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672848.55992,
+          "utilization": 55,
+          "memory": "13611 MiB",
+          "temperature": "56 C",
+          "power": "122.26 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 46.17117117117117,
+            "idle_ticks": 801168906250,
+            "total_ticks": 1242560937500
+          },
+          "pstate": "P1",
+          "sm_clock": "2745 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672849.7007663,
+          "utilization": 100,
+          "memory": "13611 MiB",
+          "temperature": "52 C",
+          "power": "98.99 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 42.23744292237443,
+            "idle_ticks": 801208437500,
+            "total_ticks": 1242629375000
+          },
+          "pstate": "P1",
+          "sm_clock": "2842 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        },
+        {
+          "time": 1794672850.85654,
+          "utilization": 0,
+          "memory": "463 MiB",
+          "temperature": "44 C",
+          "power": "26.62 W",
+          "processes": [
+            {
+              "pid": "21588",
+              "type": "C",
+              "name": "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-q4-quad-20261115\\generation-c17.exe"
+            }
+          ],
+          "cpu": {
+            "busy_percent": 40.990990990990994,
+            "idle_ticks": 801249375000,
+            "total_ticks": 1242698750000
+          },
+          "pstate": "P1",
+          "sm_clock": "2812 MHz",
+          "memory_clock": "13801 MHz",
+          "clock_event_reasons": {
+            "clocks_event_reason_gpu_idle": "Not Active",
+            "clocks_event_reason_applications_clocks_setting": "Not Active",
+            "clocks_event_reason_sw_power_cap": "Not Active",
+            "clocks_event_reason_hw_slowdown": "Not Active",
+            "clocks_event_reason_hw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_hw_power_brake_slowdown": "Not Active",
+            "clocks_event_reason_sync_boost": "Not Active",
+            "clocks_event_reason_sw_thermal_slowdown": "Not Active",
+            "clocks_event_reason_display_clocks_setting": "Not Active",
+            "clocks_event_reason_board_limit": "Not Active",
+            "clocks_event_reason_reliability": "Active"
+          }
+        }
+      ],
+      "observer_clock": "qpc",
+      "spawn_before_seconds": 20678.4156429,
+      "spawn_after_seconds": 20678.4189687,
+      "process_id": 21588,
+      "exit_observed_seconds": 20713.0126127,
+      "exit_code": 0
+    }
+  ],
+  "accepted_benchmark": false,
+  "mode_set": "joint-base",
+  "continuous_gpu_monitor": true
+}
