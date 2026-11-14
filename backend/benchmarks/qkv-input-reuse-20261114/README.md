@@ -111,3 +111,12 @@ and disappearance plus before/after GPU inventories were retained in
 `gpu-cleanup-20261114-1909.json`. The same sanitizer process remained live.
 Its elapsed times remain excluded from performance evidence; no restart was
 needed for this correctness-only workload.
+
+`run_reference.py` is prepared for fresh pinned llama.cpp generation runs in
+this candidate's evidence folder. It requires candidate build, full-model
+short sanitizer and context-specific generation evidence, verifies the existing
+identical prompt-token proof, and compares output bytes against the candidate's
+validated generation output. The token IDs read by the interval parser come
+from that same verified proof directory. It retains continuous GPU monitoring
+and checks source, prerequisite and reference-library hashes before and after
+the run. The active-GPU refusal was exercised; no new llama.cpp run has started.
