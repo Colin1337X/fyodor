@@ -1,4 +1,4 @@
-# Contiguous verification-logit readback (unvalidated GPU experiment)
+# Contiguous verification-logit readback (isolated experiment)
 
 Inspection of `CUDA/resident.inc` found that the two/four-row batched output
 projection synchronizes and downloads each contiguous vocabulary row separately.
@@ -24,10 +24,9 @@ readback call. C17/C23 host compilation and four generation/lifecycle links pass
 mode, adequate batch capacity, and exactly one download instead of four, while
 retaining its numerical, reset/rewind, guard and replacement assertions.
 
-No GPU executable from this experiment has run. The existing FFN-reuse long
-context generation job remains first in the GPU queue. Required next checks:
-real-model lifecycle/output parity, physical transfer-count evidence, sanitizer
-validation and paired decode timing. This candidate is not production-integrated
+C17/C23 short-context GPU lifecycle validation has passed (details below).
+Required next checks: long-context lifecycle/output parity, full generation,
+sanitizer validation and paired decode timing. This candidate is not production-integrated
 and has no accepted performance claim. Accepted scores remain 85.61025294% short
 and 106.8707255% at 8K versus llama.cpp, below the requested 125% target.
 
@@ -42,4 +41,15 @@ checks host memory handling in the mock harness, not CUDA execution safety.
 It validates model identity and build hashes, retains logs and verifies inputs
 again after exit. A passing run must satisfy the harness's exactly-one-download
 assertion for four-row verification as well as the original numerical/lifecycle
-checks. No real-model run from this experiment has started yet.
+checks. Short-context results are recorded below.
+
+## Completed real-model lifecycle checks
+
+`lifecycle-c17-257` and `lifecycle-c23-257` both exited zero. Four-token
+verification passed both reset cycles at prefix 257 with maximum scaled error
+2.19546455e-05 against the unchanged 0.0005 bound. Both harnesses required
+exactly one download per four-row verification; reset, rewind, replacement,
+stale-suffix and output-guard checks remained enabled. All recorded input/output
+hashes were independently verified after completion. These are correctness and
+dispatch-count checks, not measured throughput gains. Long-context and full-model
+sanitizer coverage remain pending.
