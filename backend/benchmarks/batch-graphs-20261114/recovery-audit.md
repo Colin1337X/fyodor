@@ -127,3 +127,11 @@ The C17/256/ring boundary sanitizer has now also completed all 42 ordered
 cases with six captures and 42 replays. Its 180 hashes independently verified.
 C17/256 linear and ring are complete; the remaining six configurations are
 still pending or running and are not claimed here.
+
+All four C17 boundary sanitizer configurations have now passed (168 ordered
+parity cases). Their 201 unique input/evidence hashes independently verified.
+C23 remains in progress. `audit_boundary_matrix.py` rechecks all eight
+configuration identities, complete ordered parity/capture markers and recorded
+hashes before emitting a complete matrix report. Its incomplete-matrix check
+was exercised and rejected the pending C23 result without writing a report.
+The four existing boundary-validator tests still pass.

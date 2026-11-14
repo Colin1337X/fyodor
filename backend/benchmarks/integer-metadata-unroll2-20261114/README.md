@@ -30,3 +30,8 @@ boundary terminal records before GPU creation, verifies they remain unchanged
 after execution, and carries those hashes into sanitizer and timing gates.
 The probe labels the candidate `unroll2`. The pending-boundary gate was tested
 and stopped before creating a GPU context; no raw or timing result exists yet.
+
+Before creating its GPU context, the raw harness also calls the independent
+boundary matrix auditor, checking all 336 ordered cases and the underlying
+evidence hashes. Those verified hashes join the raw run's before/after input
+snapshot. An incomplete C23 matrix currently prevents GPU execution.
