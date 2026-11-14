@@ -129,3 +129,15 @@ baseline-short-diagnostic.json exercises this on the earlier joint-three
 monitored-short-A capture. All twelve cases remain present and none has clear
 coverage. This is a summary of existing rejected evidence, not a rerun, a new
 baseline score or a comparison against joint-one.
+
+## Full-model short memory validation completed
+
+Compute Sanitizer memcheck completed in 2742.39 seconds with exit zero, one
+zero-error summary and all twelve ordered cases passing output parity. All
+three joint-one rounds selected the exact proposal-window-one marker. The
+validator independently rechecked the completed logs and all 44 recorded
+input/evidence hashes. This establishes the tested short-workload memory result,
+not a long-workload sanitizer pass or performance acceptance.
+
+The monitored same-provider comparison has started with baseline-short-A.
+Candidate timing and reversed order remain pending; no accepted score changes.
