@@ -1,0 +1,36 @@
+{
+  "accepted_benchmark": false,
+  "gpu_execution": false,
+  "compile_passed": true,
+  "options": [
+    "--gpu-architecture=compute_120",
+    "--std=c++11",
+    "--fmad=true",
+    "-DNYA_CUDA_FAST_MATH=1"
+  ],
+  "ptx_sha256": "5fb7a40ab1387831b2daa862461781ab6258b4d44db3e53365777885c4c06dcf",
+  "sha256": {
+    "CUDA\\matvec.cu": "b0c5074bca38638825f01cd4fb385f583e83968d0b3b913d8b59eae121dde216",
+    "CUDA\\gemm.cu": "cb73bd0a52ae2229693d7a38e218724ad4c884a54d24e83105e2e0c59cf8c40e",
+    "CUDA\\resident.cu": "cbf898dc5a2948b3e9caf0aad828f4e1af5dbec5cb7f693576a40e310bf0d0b3",
+    "optcpp\\matvec\\small_batch.cu": "785c0eafa6e84121fa728f6651f7b3e461d77c12d5feda5107de0723e7533982",
+    "optcpp\\matvec\\small_batch_reuse.cu": "06a855fc3e41183cf5bc49b910528cd320e521a585f400e8b5d0e7e351446d69",
+    "optcpp\\matvec\\interleaved_reuse.cu": "cf69d5498b9a4551ef1dccc650b917b498493ce5c57493ce1d53da5870769b68",
+    "optcpp\\matvec\\interleaved_integer.cu": "28a42e0d81cb2b042a2b7187ff4bad017dc8640a172d13288fcfc7aad7f6ebe4",
+    "optcpp\\matvec\\integer_launch.cu": "d4293c842bdef02a4752b39fe5dbc536f558d6941e2d8f91054bc06a5043dfa6",
+    "optcpp\\matvec\\integer_metadata.cu": "c910a0bde59f7583584f3a1ef0a44d2528a499189373d50a6e7af1d55b3f50b5",
+    "optcpp\\matvec\\q4_batch_gate.cu": "a6a10c64ac0b8a2f3671cf4114dc9cae4c7d22a3652e940e2cb8c17531688061",
+    "build-cuda\\q4-batch-gate-harness-20261115\\module.ptx": "5fb7a40ab1387831b2daa862461781ab6258b4d44db3e53365777885c4c06dcf",
+    "backend\\benchmarks\\q4-batch-gate-20261115\\harness-compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    ".tools\\cuda-sdk\\cuda_nvrtc-windows-x86_64-13.1.115-archive\\bin\\x64\\nvrtc64_130_0.dll": "3e2371db636d41af6ae4bfe73cd315b8415190b6129ce6d3416909e22802b4e7",
+    ".tools\\cuda-sdk\\cuda_nvrtc-windows-x86_64-13.1.115-archive\\bin\\x64\\nvrtc-builtins64_131.dll": "7869f703c1b22c41b21d9865105ea973b7d2c144c0c79364d3eb2ec051d4d8bc",
+    "backend\\benchmarks\\q4-batch-gate-20261115\\compile_harness.py": "316e989aff60ac3805fa97689b4625e443461e8e9b0d5c350c41490e6d460d41"
+  },
+  "pending": [
+    "independent numerical bounds and guards",
+    "memory sanitization",
+    "real-model parity",
+    "paired decode performance",
+    "runtime integration only after evidence"
+  ]
+}
