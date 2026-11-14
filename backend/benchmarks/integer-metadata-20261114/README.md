@@ -21,6 +21,15 @@ three metadata word-load sites, four quantized-byte load sites, eight float4
 load sites, 32 FMA sites and 20 shuffle sites. Static PTX is not SASS, dynamic
 instruction count, physical register pressure, occupancy or elapsed time.
 
+`assemble.py` reproduces that exact PTX hash and invokes CUDA 13.1 ptxas
+offline for SM120 at O3. The baseline uses 64 physical registers per thread;
+the metadata candidate uses 66. Both report zero stack frame and zero spill
+stores/loads. Thus fewer PTX metadata instructions do not establish a lower
+resource cost: the candidate increases register use. `assembly.json` records
+the compiler identity and source/tool/log hashes. This is not runtime driver-JIT
+allocation, measured occupancy or speed; raw parity and timing still decide
+whether to keep the candidate. No CUDA context was created by this check.
+
 No GPU execution, raw parity, memory checking or timing has occurred for this
 candidate. Those checks remain required before choosing or integrating it.
 Production dispatch is unchanged and removing this optional source leaves the
