@@ -26,5 +26,23 @@ operations and must not be interpreted as generated-token counts.
 
 The follow-up RMSNorm/interleave prototype targets a separate layout
 conversion after normalization, retaining row-major output for fallbacks.
-This is a new experiment, not an inferred throughput win. Long profiling
-has not run in this folder and accepted llama.cpp scores remain unchanged.
+The later corrected, upload-fenced norm/interleave diagnostic regressed on
+Gemma's 3840-column batch-four shape, so that fusion was not promoted.
+Layer-local Q/K/V reuse of the existing packed input is the next isolated
+candidate; it does not change normalization or matrix arithmetic.
+
+The long profile now also completed all twelve matching cases at 8205 prompt
+tokens and 32 outputs. All 651 input/evidence hashes independently verified.
+Joint rounds recorded matrix totals of 471.858, 464.495 and 479.628 ms;
+normalization 45.881, 47.958 and 49.191 ms; attention 235.588, 238.183 and
+239.279 ms. The target-only attention entries sum to 188.279, 189.538 and
+192.329 ms; the aggregate category also includes borrowed helper work.
+
+The same Q4 batch-four expansion remains the largest matrix group, at
+136.669, 135.365 and 137.816 ms, followed by serial fused Q4 gate/up at
+48.661, 47.694 and 49.202 ms and batch-four Q6 down projection at
+43.963, 42.723 and 43.922 ms. This supports retaining matrix work as the
+short-context priority while attention is a larger long-context cost.
+These are profiler costs, not accepted throughput. Accepted llama.cpp
+scores remain 85.61025294% short and 106.8707255% at 8K; neither this profile
+nor the provisional generation timings establish the requested 125% target.
