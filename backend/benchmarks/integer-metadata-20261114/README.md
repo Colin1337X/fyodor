@@ -91,3 +91,9 @@ is introduced by this isolated integration.
 completed lifecycle and generation proofs before launching Compute Sanitizer.
 Its validator additionally rejects a missing metadata-kernel selection marker;
 eight CPU-only evidence tests pass. It has not run on the GPU yet.
+
+`run_monitored.py` targets the isolated metadata binary and requires successful
+model sanitizer, lifecycle and generation proofs before GPU execution. It keeps
+the existing process/idle checks, continuous activity audit and input hashes,
+and additionally requires the metadata selection marker. Three input-integrity
+tests pass. This runner is prepared but has not executed a timing workload.
