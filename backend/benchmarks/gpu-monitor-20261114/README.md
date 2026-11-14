@@ -200,3 +200,16 @@ mode sets always report accepted_benchmark=false.
 Four added tests verify joint inventory and reject mismatched or unknown mode
 sets. All 41 offline monitor tests pass. Existing unmonitored correctness runs
 do not gain coverage or performance acceptance from this parser extension.
+
+## PID 4 paging attribution: API review
+
+The Windows process-segment statistics structure exposes an eviction-related
+member, but Microsoft explicitly marks it reserved for system use:
+https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/d3dkmthk/ns-d3dkmthk-d3dkmt_querystatistics_process_segment_information
+It is not being added as an assumed stable ABI or used to waive PDH activity.
+The supported IDXGIAdapter3::QueryVideoMemoryInfo reports current process budget
+and usage; those values do not identify the originating workload of an observed
+System/PID 4 copy-engine interval:
+https://learn.microsoft.com/en-us/windows/win32/api/dxgi1_4/nf-dxgi1_4-idxgiadapter3-queryvideomemoryinfo
+This review provides no causal attribution. Existing memory-budget observations
+remain diagnostic, and unknown positive engine activity remains rejected.
