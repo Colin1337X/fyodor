@@ -17,7 +17,14 @@ batched-graph model sanitizer to complete before checking for competing GPU
 contexts. It does not terminate System, change permissions or waive coverage.
 
 Five CPU summarizer tests pass, including rejection when the active phase did
-not execute or reports only a small working set. GPU execution is pending.
+not execute or reports only a small working set. GPU execution completed with
+exit zero and a healthy collector; 183 input hashes and six evidence hashes
+verified. Each of seven phases had four complete sampled intervals. System
+activity appeared during idle and active phases (two to four positive samples
+per phase). Fill and copy each had an invalid target counter. This run does
+not isolate System activity to active working-set access or establish its
+ownership. Raw counters remain retained; no clean timing or attribution proof
+is claimed.
 This is a causal-control experiment to narrow a hypothesis, not a throughput
 benchmark or proof that System activity belongs to the worker. Even if the
 activity appears only during sweeps, further attribution is needed before any

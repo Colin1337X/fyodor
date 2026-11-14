@@ -121,3 +121,11 @@ them with the matching llama.cpp generation harness, not the historical
 fixed-forward scorecard. New generation ratios must be reported separately,
 with contamination and repetition/order limitations, until acceptance is
 established. The sanitizer's overall call seconds are not decode scores.
+
+Monitored short attempt A was terminated by the observer when the PDH collector
+failed on sample 36: `PdhGetFormattedCounterArrayW(data)` returned
+`0xc0000bba` (invalid data). The collector recorded its error and failed end
+marker, and the observer stopped the model process. The case inventory is
+therefore incomplete. Inputs remained unchanged; this is rejected evidence,
+not a numerical parity failure or a performance score. A fresh uniquely named
+attempt may retry the transient counter collection, retaining this failure.
