@@ -1,0 +1,161 @@
+{
+  "accepted_benchmark": false,
+  "commands": [
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "backend/include",
+      "-I",
+      "backend/core",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\aligned-prefix-runtime-20261114\\tokenize_prompt.c",
+      "build-cpu/libnya-engine.a",
+      "-lbcrypt",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c17.exe"
+    ],
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c23",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "backend/include",
+      "-I",
+      "backend/core",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\aligned-prefix-runtime-20261114\\tokenize_prompt.c",
+      "build-cpu/libnya-engine.a",
+      "-lbcrypt",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c23.exe"
+    ],
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-DREFERENCE_TOKENIZER",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\include",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\ggml\\include",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\aligned-prefix-runtime-20261114\\tokenize_prompt.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cpu\\llama.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c17.exe"
+    ],
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c23",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-DREFERENCE_TOKENIZER",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\include",
+      "-I",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\reference-llama-b10809\\ggml\\include",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\aligned-prefix-runtime-20261114\\tokenize_prompt.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\llama-b10809-cpu\\llama.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c23.exe"
+    ]
+  ],
+  "runs": [
+    {
+      "context": "short",
+      "implementation": "fyodor",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c17.exe",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short.txt"
+      ],
+      "exit_code": 0
+    },
+    {
+      "context": "short",
+      "implementation": "llama",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c17.exe",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short.txt"
+      ],
+      "exit_code": 0
+    },
+    {
+      "context": "long",
+      "implementation": "fyodor",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c17.exe",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long.txt"
+      ],
+      "exit_code": 0
+    },
+    {
+      "context": "long",
+      "implementation": "llama",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c17.exe",
+        "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long.txt"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "cpu_only": true,
+  "model": "E:/models/Gemma4-12B-QAT-Uncensored-HauhauCS-Balanced-Q4_K_M.gguf",
+  "short": {
+    "prompt_tokens": 25,
+    "identical": true
+  },
+  "long": {
+    "prompt_tokens": 8205,
+    "identical": true
+  },
+  "sha256": {
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\tokenize_prompt.c": "c9b0d45b5227b9291b8bdb7da4d2566d76c87dca98a9450fba29ce36de10cff1",
+    "backend\\benchmarks\\batch-graphs-20261114\\compare_prompt_tokens.py": "0ff99adfc01518045b0c77bf59d26b062350c2f87d5818b70c9ca7b1dd7e0759",
+    "build-cpu\\libnya-engine.a": "25c0fef9aa70ccc8b9171ca3555b2bab6624d38ab2375628501f28320200a6d8",
+    ".tools\\llama-b10809-cpu\\llama.dll": "50e60280f97845b049b3d228f89b4eb233808c9b59926e5e9c6cdc686aabfc43",
+    ".tools\\llama-b10809-cpu\\ggml.dll": "ace83896f205f4bf2ecd3a31f9681867084d808ad847cd61da83efcbc6485cf8",
+    ".tools\\llama-b10809-cpu\\ggml-base.dll": "8d8fbcafd82ab958b5b7a08a6f13139fd35b16311f2c5ab923dd5e3592d1e059",
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\generation.c": "b768e4379d788ac2d344584baacf79724b82907514923226a6ef84a945f01935",
+    "backend\\benchmarks\\aligned-prefix-runtime-20261114\\llama_generation.c": "e41baca759ce72a4deed65bf000e4bf39079f44a82e0f1531607ee806a32d7e3",
+    "build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c17.exe": "f3771b019e892e7a2097034ec1ae16f873119ef1b137d38692952a206b7c9ee7",
+    "build-cuda\\batch-graph-tokenizers-20261114\\tokenize-fyodor-c23.exe": "f3771b019e892e7a2097034ec1ae16f873119ef1b137d38692952a206b7c9ee7",
+    "build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c17.exe": "37b915a5cb9da2702ef225cf781b2a21d9f6ce8966d193042cd113ae5d7935ad",
+    "build-cuda\\batch-graph-tokenizers-20261114\\tokenize-llama-c23.exe": "37b915a5cb9da2702ef225cf781b2a21d9f6ce8966d193042cd113ae5d7935ad",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short-fyodor.stdout": "d08ec3b927deb970b95ce09c61f2c4513c1966660d38e0a88623a6a371e75db0",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short-fyodor.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short-llama.stdout": "d08ec3b927deb970b95ce09c61f2c4513c1966660d38e0a88623a6a371e75db0",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short-llama.stderr": "4d96d6de857171818af2846a77df292fa2d73bb557242a00f83f74aaa136afc7",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\short.txt": "0c945421877095e3d63f04819e79f122b21530e7f9b589cc05b819a5d3701788",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long-fyodor.stdout": "8951be731ed604603178386dcf609ae779fb12ec026acc48783f406e066bd84d",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long-fyodor.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long-llama.stdout": "8951be731ed604603178386dcf609ae779fb12ec026acc48783f406e066bd84d",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long-llama.stderr": "4d96d6de857171818af2846a77df292fa2d73bb557242a00f83f74aaa136afc7",
+    "backend\\benchmarks\\batch-graphs-20261114\\prompt-token-parity\\long.txt": "98d4e7130afc3fd3b821ad6a2f534e97e257b7b96b2aab5d518e94c995c04bb2"
+  }
+}
