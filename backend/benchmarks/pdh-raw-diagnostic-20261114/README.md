@@ -286,3 +286,22 @@ to reproduce the model's System-copy observations. This does not exclude
 model-scale memory pressure or other runtime operations, and does not justify
 changing production buffer ownership. No throughput or causal attribution is
 claimed. Raw capture is losslessly compressed with hashes in archive.json.
+
+## Small upload control and corrected runtime assumption
+
+run_upload_control.py changes the transfer-only control to sixteen-byte
+host-to-device uploads from pageable or pinned buffers. A readback after each
+phase verifies all device bytes; that verification is outside the measured
+phase endpoints. UploadControlA passed all nine phases and cleanup. The
+90-sample UploadCaptureA has no whole-array API failure, 18 invalid startup
+formatted entries, and 5796 matched valid target pairs with maximum difference
+4.440892098500626e-16. All nine phases are bracketed. None of the 44 wholly
+interior samples has System-positive, other-process-positive, invalid or
+above-100 events. This control does not reproduce model-run System activity.
+
+Source inspection corrected the initial hypothesis: CUDA/resident.inc updates
+graph-decode token/position using plan_grid on nya_decode_request with kernel
+arguments, not an explicit host-to-device request copy. This upload control is
+therefore general transfer evidence, not a reproduction of the runtime request
+path. Testing the actual request-update kernel is the relevant next control.
+No production code, transfer policy or performance acceptance changed.
