@@ -260,3 +260,29 @@ about pinned versus pageable System activity or performance follows. The raw
 log is losslessly compressed with hashes in archive.json, and failure-detail.json
 retains API calls and all new raw entries. Existing benchmark coverage policy,
 production transfers and accepted performance scores remain unchanged.
+
+## Completed transfer comparison
+
+capture_recovery.py retains formatted failures and their sample indices, but
+continues diagnostic collection while raw reads succeed. Collection/raw API
+failure still stops it. It never clears a prior formatted_failure flag or
+certifies coverage. run_transfer_control.py adds a unique output label to the
+unchanged transfer workload. Earlier sources and hashed evidence are preserved.
+
+TransferCaptureB completed 90 samples without a whole-array API failure; the
+new recovery branch was therefore not exercised by this run. Eighteen invalid
+formatted statuses remain in its log. TransferControlB passed all nine phases,
+byte-for-byte transfer checks, source hashes and cleanup. correlate_transfer.py
+verifies both manifests, retains all boundary overlaps, and separately lists
+samples wholly inside each phase. Each phase has five interior samples, and
+all nine phases are bracketed by capture.
+
+All 45 interior samples contain no System-positive, other-process-positive,
+invalid or above-100 events. Each of the six download phases has five positive
+owned-process counter readings (maxima 11.1765-11.4232%); all three idle phases
+have zero positive owned readings. Thus the observation was not merely a
+missing transfer counter. Plain 4 MiB pageable and pinned downloads both fail
+to reproduce the model's System-copy observations. This does not exclude
+model-scale memory pressure or other runtime operations, and does not justify
+changing production buffer ownership. No throughput or causal attribution is
+claimed. Raw capture is losslessly compressed with hashes in archive.json.
