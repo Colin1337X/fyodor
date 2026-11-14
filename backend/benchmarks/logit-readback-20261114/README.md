@@ -71,3 +71,15 @@ and short/long lifecycle proofs before execution, then verifies model identity,
 process ownership, output parity, mode selection and unchanged inputs.
 These correctness runs have no accepted timing claim. Long-context generation
 and GPU memory validation remain pending.
+
+## Prepared full-model memory check
+
+`run_model_memcheck.py short|long` runs the isolated generation executable under
+Compute Sanitizer. It requires explicitly successful build, context-generation,
+C23 short-generation and short/long lifecycle proofs, including the single-bank
+download assertions. It retains transitive input/output hashes and requires exit
+zero, exactly one zero-error summary, all twelve ordered matching cases and
+three actual integer-kernel execution counts. Seven existing sanitizer-evidence
+regression tests passed against this runner, covering failed exits, malformed
+summaries, missing/reordered/wrong-context cases and absent kernel execution.
+The runner is prepared; no readback full-model sanitizer run has started yet.
