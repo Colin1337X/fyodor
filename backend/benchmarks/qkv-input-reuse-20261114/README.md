@@ -24,3 +24,17 @@ as errors, from verified batched-graph inputs. Production dispatch/archive
 remain unchanged. GPU lifecycle, reset/rewind, failure, generation, sanitizer
 and paired timing validation remain pending. The runner refuses GPU work
 until the currently running long-context profile has completed successfully.
+
+`run_control.py` extracts the actual generated C helper and compiles it with
+controlled dispatch stubs. C17 and C23 each pass 384 combinations of opt-in,
+batch, dtype, kernel availability, vendor selection, ready state and injected
+projection failure. It checks observed reuse, unchanged argument forwarding,
+readiness only after eligible success and clearing the flag on every return.
+Two fresh-layer Q/K/V sequences independently require one initial conversion
+then two reuse hits. These are control-contract tests, not GPU correctness or
+performance evidence.
+
+The generation runner is prepared behind successful C17/C23 short and C17
+long lifecycle evidence. It requires the existing twelve-case output parity,
+positive QKV reuse markers, metadata/integer selection and graph replay checks.
+No candidate GPU validation has run while the long profile owns the GPU.
