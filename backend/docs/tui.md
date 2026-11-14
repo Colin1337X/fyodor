@@ -56,8 +56,8 @@ cancel, or resume training, or run interactive generation. Those controls requir
 engine lifecycle integration. Model inspection is synchronous. Unicode input is
 supported; display width is a conservative CJK/emoji approximation, not full
 Unicode grapheme segmentation. Combining marks are shown as placeholders.
-Windows interaction has been exercised through ConPTY; the POSIX adapter still
-needs Linux/macOS terminal validation. Terminals smaller than 48 x 16 show a
+Windows interaction has been exercised through console tests and Linux through
+private PTY tests; macOS terminal validation remains pending. Terminals smaller than 48 x 16 show a
 compact resize message. Rendering is capped at 240 x 80 cells.
 
 ## Design provenance
@@ -113,3 +113,10 @@ command editing, rapid Escape recovery, and terminal restoration. It reproduced
 wrong-resource selection in the original executable and passes with the fix
 under Linux C17/C23. The parser, workflow and Windows ConPTY checks also pass.
 This does not add training start/cancel/resume or asynchronous generation.
+
+The resource browser's Windows console adapter combines valid UTF-16 surrogate
+pairs before UTF-8 encoding, so supplementary characters can be entered in
+commands. Cancellation, navigation, and ordinary intervening characters clear
+incomplete pairs; orphaned low surrogates are ignored. The private Windows
+console regression covers emoji entry, cancellation and arrow interruption.
+Display remains ASCII-escaped as documented for the resource browser.
