@@ -51,7 +51,7 @@ check. It has no CUDA dependency and uses none of the device metadata helpers.
 `check_kernel.py` is prepared for 219 cases: 17 shapes including row-tile
 tails, all 196 finite-half coefficient pairs at 17 rows, and six additional
 bounded input patterns (zero, one, alternating, subnormal, large, impulse).
-Both the native oracle kernel and tensor-core candidate must satisfy the
+The native oracle kernel and both tensor-core candidates must satisfy the
 existing `2e-6 * sum(abs(double products)) + 1e-6` bound on every output,
 including the large shapes. Input/weight/output guards and independent
 interleave layout checks remain required. Eight unsupported-shape calls use
@@ -66,7 +66,7 @@ GPU correctness evidence. No numerical tolerance was relaxed.
 
 `run_sanitizer.py` is prepared for memcheck, racecheck and synccheck after
 raw GPU numerical validation. It requires the exact 219-case/eight-rejection
-inventory, finite bound fractions in [0,1] for both kernels, guards, matching
+inventory, finite bound fractions in [0,1] for all three kernels, guards, matching
 source/input hashes and a unique zero-error tool summary. It records the
 actual child PID and preserves terminal failure evidence. Six CPU validator
 tests pass, including missing/reordered cases, malformed numerical evidence,
@@ -78,3 +78,21 @@ Offline disassembly of the verified SM120 cubin contains three
 function disassembly, tool identities and hashes are retained. This confirms
 intended tensor-core code generation only; static sites do not prove dynamic
 execution, numerical correctness, achieved occupancy or performance.
+
+A second original variant, `q4_tf32_three_hoisted.cu`, loads each native Q4_K
+block's scale/minimum metadata once per 256 input columns instead of inside
+every eight-column step. It retains the same increasing-column traversal and
+three-product MMA order. Invalid tail rows use a valid dummy block with zero
+coefficients so every participating warp retains all lanes. It shares only
+the conversion/MMA helpers from the first prototype and has no production use.
+
+Separate compile/assembly/disassembly records preserve the first prototype's
+evidence. The hoisted variant assembles for SM120 with 52 registers and no
+spills, versus 40 registers for the first. Eight unrolled Q4 groups produce
+24 static HMMA sites; each group still loops over four eight-column steps,
+so this is not an increase in the algorithm's three products per step.
+These resource/code observations do not establish a speedup. Both variants
+are now included in all 219 numerical cases and eight unsupported-shape
+checks; the numerical/sanitizer validators require all three kernel results.
+The six validator tests pass, and the pending-sanitizer launch gate was
+rechecked. Neither tensor-core variant has executed on the GPU yet.

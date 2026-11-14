@@ -15,7 +15,8 @@ if destination.exists():
     raise SystemExit('Refusing to overwrite numerical evidence')
 pending = out.parent / 'qkv-input-reuse-20261114/model-memcheck-short/result.json'
 proofs = [(pending, 'passed'), (out / 'compile.json', 'compile_passed'),
-          (out / 'assembly.json', 'assembled'), (out / 'oracle-control.json', 'passed')]
+          (out / 'assembly.json', 'assembled'), (out / 'compile-hoisted.json', 'compile_passed'),
+          (out / 'assembly-hoisted.json', 'assembled'), (out / 'oracle-control.json', 'passed')]
 input_hashes = {}
 for path, key in proofs:
     if not path.exists():
@@ -35,7 +36,7 @@ if any(not environment.desktop_identity_allowed(p) for p in environment.snapshot
 paths = [root / 'CUDA' / n for n in ('matvec.cu', 'gemm.cu', 'resident.cu')]
 paths += [root / 'optcpp/matvec' / n for n in ('small_batch.cu', 'small_batch_reuse.cu',
     'interleaved_reuse.cu', 'interleaved_integer.cu', 'integer_launch.cu',
-    'integer_metadata.cu', 'q4_tf32_three.cu')]
+    'integer_metadata.cu', 'q4_tf32_three.cu', 'q4_tf32_three_hoisted.cu')]
 paths += [Path(__file__), out / 'common.py', Path(environment.__file__)]
 input_hashes.update({str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths})
 
@@ -90,7 +91,7 @@ try:
         assert read(packed, len(packed_bytes)) == packed_expected, 'Interleave or packed guards failed'
         guard = array.array('f', [12345.] * (rows * 4 + 2)).tobytes()
         fractions = {}
-        for name in ('nya_small_batch_12', 'nya_q4_tf32_three'):
+        for name in ('nya_small_batch_12', 'nya_q4_tf32_three', 'nya_q4_tf32_three_hoisted'):
             output = buffer(guard)
             native = name == 'nya_small_batch_12'
             tile = 8 if native else 64
@@ -120,9 +121,10 @@ try:
     for columns, batch in ((0, 4), (1, 4), (255, 4), (257, 4), (256, 0), (256, 1), (256, 2), (256, 8)):
         guard = array.array('f', [12345.] * 6).tobytes()
         output = buffer(guard)
-        call('nya_q4_tf32_three', 1, 1, [Q(0), Q(0), Q(output + 4), Q(columns), Q(144), U(1), U(batch)])
-        check(sync())
-        assert read(output, len(guard)) == guard, 'Unsupported shape touched output'
+        for name in ('nya_q4_tf32_three', 'nya_q4_tf32_three_hoisted'):
+            call(name, 1, 1, [Q(0), Q(0), Q(output + 4), Q(columns), Q(144), U(1), U(batch)])
+            check(sync())
+            assert read(output, len(guard)) == guard, 'Unsupported shape touched output'
         result['rejection_cases'].append(dict(columns=columns, batch=batch, output_unchanged=True))
         for address in owned: check(free(address))
         owned.clear()
