@@ -34,3 +34,10 @@ sample implementation:
 
 The two-call sizing pattern is used, with bounded re-sizing on MORE_DATA.
 The diagnostic does not read failed array buffers as valid measurements.
+
+`analyze.py COMPLETED_FOLDER TARGET_LUID` verifies a completed capture's hashes
+and sample inventory before retaining raw-delta/formatted agreement, out-of-range
+values, instance churn and API/status failures. It refuses live/incomplete logs.
+Four manual CPU checks covered a 150% raw/format match, invalid status exclusion,
+API failure with disappearing instance, and malformed adapter identity. Its
+incomplete-capture refusal was also exercised. Agreement alone is not acceptance.
