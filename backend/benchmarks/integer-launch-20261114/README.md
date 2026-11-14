@@ -80,3 +80,10 @@ and the full-model short sanitizer, then uses the existing idle gate and continu
 PDH collector. It records output parity and dispatch counts; it never declares
 performance acceptance on its own. These runners are prepared, not evidence that
 their pending GPU runs have passed.
+
+The completed 8192-prefix ring-KV lifecycle now passes both resets, with maximum
+scaled logit error 0.0000163989979 in each. Integer execution reports 568 calls;
+rewind, replacement-token, stale-suffix, output-guard and original 0.0005-bound
+assertions all pass. The child exited zero and all recorded input hashes match.
+This is long-context numerical evidence, not long-context generation throughput.
+Full-model sanitizer and long joint-base generation remain pending.
