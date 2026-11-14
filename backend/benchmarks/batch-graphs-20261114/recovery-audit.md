@@ -40,3 +40,12 @@ dispatch or alter the inputs of the currently running model sanitizer.
 None of these graph-specific failure injections has run yet. Successful
 ordinary boundary fixtures and full-model generation must not be cited as
 evidence for this recovery matrix.
+
+`build_faults.py` now builds separate C17/C23 lifecycle and generation binaries
+under `build-cuda/batch-graph-faults-20261114`. `fault_hooks.h` wraps capture
+begin/end, instantiation and launch. The end hook completes the real capture
+before returning an injected error, exercising cleanup of a returned graph.
+The launch hook can be armed after warming a cached executable. All four
+binaries compiled; input hashes were unchanged. No GPU recovery execution is
+claimed. Request/update, readback and resource-count wrappers remain to be
+implemented alongside the recovery fixture.
