@@ -74,9 +74,9 @@ artifacts certify coverage or performance. This arrangement is for capturing
 raw values on the collection where formatted data fails, not replacing the
 benchmark collector or retrying failed measurements into acceptance.
 
-Both scripts passed syntax compilation. The NativeA experiment is running;
-results are pending. Existing accepted benchmark rules and prior manifests are
-unchanged. The observer launches no GPU kernels.
+Both scripts passed syntax compilation. NativeA and its native-generation
+workload have now completed; results follow below. Existing accepted benchmark
+rules and prior manifests are unchanged. The observer launches no GPU kernels.
 
 ## NativeA completed counter capture
 
@@ -100,3 +100,13 @@ The full 118,841,104-byte raw log is retained losslessly as NativeA/samples.json
 (3,965,869 bytes); archive.json records both hashes and sizes, and byte-for-byte
 decompression was verified. Generation continued after the bounded capture;
 the capture cannot certify full-workload coverage or performance.
+
+## Completed native-generation workload
+
+The independent C17 long-context workload exited successfully and passed all
+twelve ordered generation cases with 8205-token prompts and 32 output tokens.
+Q6 paired-row execution markers were [44,44,44], and six graph plans recorded
+reuse. All 849 recorded input/output hashes verified after completion. Evidence
+is retained under model-q6-pair-20261114/raw-diagnostic-generation-long-c17.
+The bounded observer ended before generation; this is correctness and counter
+diagnostic evidence, not full-workload coverage or an accepted timing result.

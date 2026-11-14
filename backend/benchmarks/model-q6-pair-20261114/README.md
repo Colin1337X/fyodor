@@ -114,3 +114,9 @@ false and no joint-decode timing comparison is available. All 888 recorded
 hashes verified and inputs remained unchanged. The result is retained as an
 incomplete, rejected timing attempt. This reproduces the earlier collector
 failure; restarting the same measurement does not resolve its cause.
+
+The native workload used for independent raw/formatted PDH diagnosis also
+completed successfully: all twelve long-context generation cases passed, Q6
+markers were [44,44,44], six graph plans were reused, and all 849 hashes verified.
+Evidence is retained in raw-diagnostic-generation-long-c17. The observer ended
+before this workload, so it cannot certify full coverage or update scores.
