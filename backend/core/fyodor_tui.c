@@ -73,6 +73,8 @@ static void inspect(tui_state *state)
 }
 static void command(tui_state *state,char *line)
 {
+    /* Every command result, including early errors, starts at its first line. */
+    state->detail=1; state->scroll=0;
     char *args[96]={"fyodor","--store",state->path,"--namespace",state->name_space};
     int count=fyodor_tui_split(line,args+5,91);
     if(count<1) { strcpy(state->log,"Command syntax error: use matching quotes and at most 91 arguments."); return; }

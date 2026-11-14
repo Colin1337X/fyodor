@@ -104,6 +104,12 @@ try:
                 key(hin, "t")
                 wait_for(lambda: "Theme: Fyodor Dark" in visible())
                 if color == "none" and quit_key == "q":
+                    for char in "?jjj:resource 'unterminated\r":
+                        key(hin, char)
+                    wait_for(lambda: "Command syntax error:" in visible())
+                    for char in "?jjj:resource import\r":
+                        key(hin, char)
+                    wait_for(lambda: "Import packages through the CLI." in visible())
                     for char in ":\ud83d\ude00":
                         key(hin, char)
                     wait_for(lambda: r"\xf0\x9f\x98\x80" in visible())
