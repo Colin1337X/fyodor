@@ -103,3 +103,11 @@ missing/extra or malformed markers, zero hits and unexpected reuse in the disabl
 Use distinct labels in enabled/disabled/disabled/enabled order for a paired
 short diagnostic before attributing any timing change to this optimization.
 This comparison is still pending and does not substitute for llama.cpp runs.
+
+During the full-model short sanitizer, Roblox PID 31664 appeared as a new
+competing GPU process. Its executable identity was verified against the known
+Bloxstrap Roblox path, it was stopped under the user's existing authorization,
+and disappearance plus before/after GPU inventories were retained in
+`gpu-cleanup-20261114-1909.json`. The same sanitizer process remained live.
+Its elapsed times remain excluded from performance evidence; no restart was
+needed for this correctness-only workload.
