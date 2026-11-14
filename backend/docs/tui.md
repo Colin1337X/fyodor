@@ -94,4 +94,11 @@ CSI/SS3 key sequences are consumed through their final byte (bounded to 64 bytes
 unsupported Delete/Home/function-key suffixes are not inserted as command text.
 The plain C decoder has byte-stream regression coverage under C17 and C23,
 including Unicode bounds, malformed input recovery and modified arrow keys.
-These checks run on Windows too; they do not replace a live POSIX terminal test.
+The byte-stream checks run on Windows too. On Unix, CTest also registers
+`tui-monitor-posix-pty`: it launches the actual monitor in a private PTY, sends
+rapid Escape/command input, malformed UTF-8 before Enter, an unsupported Delete
+sequence and a Unicode path, then verifies successful exit and exact terminal
+mode restoration. Both C17 and C23 builds passed this PTY test and the state,
+snapshot and CLI checks on Ubuntu 26.04 WSL with GCC 15.2.0, optional C++ and all
+GPU backends disabled. The vendored SQLite build emitted a GCC string-overread
+warning; the builds completed and Fyodor's strict-warning targets passed.

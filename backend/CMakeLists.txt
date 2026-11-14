@@ -920,6 +920,11 @@ if(BUILD_TESTING)
         add_test(NAME tui-monitor-theme-cli COMMAND "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tui_monitor_cli.py" "$<TARGET_FILE:fyodor-tui>")
         set_tests_properties(tui-monitor-theme-cli PROPERTIES TIMEOUT 60)
+        if(UNIX)
+            add_test(NAME tui-monitor-posix-pty COMMAND "${Python3_EXECUTABLE}"
+                "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_tui_monitor_pty.py" "$<TARGET_FILE:fyodor-tui>")
+            set_tests_properties(tui-monitor-posix-pty PROPERTIES TIMEOUT 45)
+        endif()
     endif()
 endif()
 
