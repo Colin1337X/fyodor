@@ -82,3 +82,21 @@ comparability, not certification of unrecorded compiler/header history or of
 runtime conditions. It does not authorize comparing historical unmonitored
 times or using a different provider pipeline as the baseline. Long correctness,
 full-model sanitization and matched monitored ordering remain required.
+
+## Monitored comparison runner prepared
+
+run_monitored_generation.py requires both candidates' completed full-model short
+sanitizer results, the joint-one long correctness result and the comparison build
+proof before creating an output directory. It verifies recorded hashes and GGUF
+identities, requires continuous monitoring, and restricts each mode inventory to
+its verified executable. An existing output directory is never reused. Inherited
+NYA flags are removed from the child environment; only recorded settings and the
+runner's explicit overrides are applied. Monitor sources are hashed along with
+prerequisites and checked again after a successful audit.
+
+audit_joint_one.py adds the joint-one case inventory to the unchanged coverage
+auditor. Seven adapter tests and the existing fifteen generation-audit tests pass;
+System activity, invalid counters and incomplete capture still reject coverage.
+monitor-preflight-refusal.json records refusal on the still-missing candidate
+model sanitizer result, before output creation or GPU launch. This prepares the
+comparison; it does not supply a completed timing result or change accepted scores.
