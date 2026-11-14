@@ -91,3 +91,15 @@ outputs, in forward/reverse/forward order. Each joint round recorded 2556
 integer calls. All 60 recorded input/output hashes independently verified after
 completion. These unmonitored correctness timings do not update performance
 scores. The full-model short-context sanitizer is the next active check.
+
+## Prepared monitored comparison runner
+
+`run_monitored.py short|long UNIQUE_LABEL` targets this exact readback binary.
+Before GPU execution it requires successful build, completed short-context
+full-model sanitizer, short/long lifecycle and short/long generation proofs,
+including their transitive hashes. It retains model identity, process/idle gates,
+continuous GPU coverage, output parity, actual integer dispatch and post-run
+input-integrity checks. Three existing input-integrity regressions passed against
+this runner, covering changed/deleted inputs and output inventory separation.
+It has not run; the sanitizer prerequisite remains active. Neither successful
+monitoring nor generation timing alone updates accepted decode scores.
