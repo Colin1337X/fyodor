@@ -1,4 +1,4 @@
-# Adjacent gate/up input conversion reuse (unvalidated experiment)
+# Adjacent gate/up input conversion reuse (experimental)
 
 The retained joint-base profile identifies matrix work as about 85% of recorded
 GPU kernel time. Its largest group is batch-four Q4 feed-forward expansion.
@@ -16,13 +16,13 @@ It checks the original build manifest before and after compilation. Production
 source, archive, dispatch and the currently running sanitizer inputs are intact.
 No new C++ dependency is introduced; this remains removable CUDA host C code.
 
-Both host builds pass (`build.json`). This is **not GPU correctness or performance
-validation**. No executable has been run with this change. It is not integrated
+Both host builds pass (`build.json`). Initial C17/C23 real-model lifecycle
+validation also passes, as recorded below; throughput remains unvalidated. It is not integrated
 or enabled by default. It saves one conversion launch per eligible FFN pair;
 it does not remove either projection or change their arithmetic. The whole-model
 benefit is unknown and must be measured after the current candidate finishes.
 
-Next gates: link isolated generation/lifecycle executables; validate short/long
+Remaining gates: validate long-context lifecycle and short/long generation
 logits, output parity, reset/rewind and failure recovery; run Compute Sanitizer;
 then compare end-to-end decode with and without reuse under clean monitoring.
 Do not replace accepted scores from a compile check or inferred launch savings.
@@ -34,3 +34,14 @@ are recorded in `executables.json`, with `gpu_validated=false`. Linking is not
 admission: the current launch-bound candidate remains first in the GPU queue.
 Before throughput acceptance, confirm the reuse branch is exercised and compare
 its launch inventory with the original; parity alone does not prove selection.
+
+## Initial real-model lifecycle validation
+
+`run_lifecycle.py` now checks all linked-input hashes before execution and again
+at exit, verifies model identity, and retains the original lifecycle assertions.
+C17 and C23 at prefix 257 / ring KV / four-token verification both pass: both
+reset cycles report max scaled error 2.19546455e-05 against the unchanged 0.0005
+bound, with positive integer execution counts and unchanged inputs. These checks
+cover reset, rewind, replacement and stale-suffix behavior from `test_verify.c`.
+They do not yet prove the reuse branch's launch savings or whole-model speed.
+The 8192-prefix C17 lifecycle check is next. Production dispatch remains unchanged.
