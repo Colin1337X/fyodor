@@ -55,3 +55,20 @@ enabled on the basis of host tests or compiler evidence alone.
 
 Accepted decode scores remain 85.61025294% short and 106.8707255% at 8K
 relative to llama.cpp. Neither score is changed by this experiment.
+
+## Prepared GPU checks
+
+`check_kernel.py` compares both the adapted kernel and native eight-row kernel
+to the existing projection oracle in 207 cases, including 196 finite-half
+coefficient combinations, output/input guards and independent float64 bounds
+for the small shapes. It verifies the compilation and actual-host-decoder
+evidence before loading the CUDA module. The pending-readback-sanitizer refusal
+was exercised successfully; no GPU work was started.
+
+`run_memcheck.py` repeats that sweep under Compute Sanitizer and requires a
+successful process exit, exactly one zero-error summary, the exact ordered
+shape/coefficient inventory, parity/guards and small-shape float64 checks.
+Six CPU-only `test_memcheck.py` tests pass, including rejection of duplicate
+cases, invalid/missing/duplicate summaries and missing/NaN/failed bounds.
+`probe.py` requires raw and sanitizer evidence before measuring eight shapes
+in forward/reverse order. These harnesses are prepared, not GPU-validated.
