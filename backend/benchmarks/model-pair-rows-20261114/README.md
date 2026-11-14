@@ -41,3 +41,13 @@ direct calls, retained the graph/readback and reset/rewind guards, and reported
 maximum scaled logit error 0.0000219546455. All 754 hashes per result were
 independently verified. Long lifecycle, generation, full-model sanitizer and
 paired end-to-end performance are still pending; selection is not a speed claim.
+
+Generation and full-model memcheck runners are prepared for this isolated
+binary. Both require exactly three well-formed, positive paired-row execution
+markers, along with the existing twelve-case output inventory, graph reuse,
+integer-path markers and QKV reuse. The sanitizer validator has eleven passing
+CPU tests, including missing/extra/zero/malformed paired-row markers. These
+are validator tests, not a completed model sanitizer run. The generation
+runner refused the missing long-lifecycle prerequisite, and the sanitizer
+runner refused missing generation evidence without launching a GPU job.
+The current 8K lifecycle process remains active; it has not been restarted.
