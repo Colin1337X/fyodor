@@ -120,3 +120,33 @@ validated generation output. The token IDs read by the interval parser come
 from that same verified proof directory. It retains continuous GPU monitoring
 and checks source, prerequisite and reference-library hashes before and after
 the run. The active-GPU refusal was exercised; no new llama.cpp run has started.
+
+### Completed sanitizer and post-reboot diagnostics
+
+The full-model short memcheck subsequently passed all twelve generation cases
+with zero reported errors, exit code zero, and unchanged output parity.
+All 689 evidence hashes were independently verified. Its 2814.43-second
+instrumented duration is not performance evidence. Long generation and
+long-model sanitizer coverage remain pending.
+
+The enabled and disabled short diagnostics both completed but failed GPU
+activity coverage. Enabled joint rounds took 588.2383, 603.2558, 580.9279 ms;
+disabled rounds took 585.532, 584.6138, 615.6119 ms. Both retain output and
+graph validation. These are not an accepted speedup comparison.
+
+After the user's reboot and display move, verified Steam, Epic launcher and
+EOS overlay processes were stopped; the two 1934 cleanup records preserve
+their identities. NVIDIA then reported display inactive, no processes, zero
+MiB allocated and zero utilization. Fresh llama.cpp short rounds took
+690.4289, 671.1438, 666.2733 ms. Fresh enabled Fyodor joint rounds in
+`monitored-short-CleanEnabledA` took 583.2109, 583.4997, 581.3766 ms.
+The label does not signify acceptance: continuous coverage still failed
+with unattributed System PID 4 activity and an invalid target counter.
+Do not combine pre-reboot and post-reboot timings as a controlled pair.
+
+All 1433 hash checks per monitored result passed independent verification;
+the reference input manifest and ten output hashes also verified. No new
+timing is accepted. Historical accepted fixed-forward scores remain
+85.61025294% short and 106.8707255% at 8K versus llama.cpp, below the 125%
+target. The generation diagnostics use a different workload contract and
+cannot replace those fixed-forward scores.
