@@ -80,3 +80,12 @@ Baseline: 658 conversions, zero reuse, 658 projections. Candidate: 562 conversio
 dispatches (14.59%) while preserving projection count and lifecycle correctness.
 All 47 recorded hashes independently verify. These host counts include graph
 construction; they do not establish a GPU replay count or throughput speedup.
+
+## Short-context generation correctness
+
+`generation-short-c17/result.json` passes all twelve ordinary/serial2/batch2/
+joint3 generation cases in forward/reverse/forward order, with 25 prompt tokens
+and 32 generated outputs. All outputs match and all three joint rounds select
+the integer kernel. Transitive input/output hashes verify. These unmonitored
+wall times do not update accepted llama.cpp scores. Long-context generation is
+the next check; production dispatch remains unchanged.
