@@ -95,3 +95,16 @@ except the intentional fusion toggle; monitoring controls are also required.
 Injected inherited NYA flags are filtered. settings-audit.json retains both full
 effective environments and source identities. This audits configuration only;
 it does not imply completed monitoring or sanitizer execution.
+
+
+## Completed full-model short memcheck
+
+Compute Sanitizer memcheck exits zero after all twelve generation cases,
+including three joint rounds with fusion execution evidence. The unique error
+summary reports zero errors. All output parity, graph reuse, execution inventory
+and unchanged-input requirements pass. Independent validation rechecked all 972
+recorded file identities. Elapsed instrumented time was 2599.1669611 seconds;
+none of these instrumented timings is a performance result.
+
+Long-context generation validation now follows. The kernel remains experimental,
+and accepted llama.cpp scores stay 85.6103% short / 106.8707% at 8K.
