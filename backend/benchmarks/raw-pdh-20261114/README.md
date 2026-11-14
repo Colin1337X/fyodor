@@ -33,3 +33,18 @@ System work. It does not establish clean decode coverage or change any score.
 The generation process was already running before this observer started. A
 future diagnostic spanning context creation/destruction is needed to investigate
 whether counter transitions explain the intermittent invalid-data records.
+
+## Extended observation
+
+`readback-transition.jsonl` extends observation to 120 samples during the same
+long-generation process, spanning more than its approximately 102-second case
+duration. The collector exited zero with unchanged inputs. `analyze.py` verifies
+completion and capture-source hashes, preserves invalid formatted records and
+checks valid raw values only across consecutive instances. Five offline tests
+cover increasing/decreasing values, missing/invalid instances, retained invalid
+formatted values and rejection of incomplete/failed/changed captures.
+
+`transition-analysis.json` contains zero invalid formatted records and zero raw
+decreases. This extended observation did not reproduce the short-run counter
+failure. It does not establish why that failure occurred, identify the cause of
+System copy work, or change benchmark acceptance.
