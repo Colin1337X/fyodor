@@ -27,3 +27,20 @@ Production dispatch is unchanged and removing this optional source leaves the
 production build unchanged. The active contiguous-readback sanitizer retains
 exclusive use of the GPU. Accepted decode scores remain 85.61025294% short and
 106.8707255% at 8K versus llama.cpp; the requested 125% on both is not achieved.
+
+## Prepared GPU validation
+
+`check_kernel.py` compares the candidate and native eight-row/bound-three kernel
+against the existing Q4 oracle across 207 shapes/coefficient-edge cases, with
+guarded interleaved inputs/outputs and independent float64 bounds on small cases.
+It requires the completed readback sanitizer, validates compile/algebra proof
+hashes and checks for another GPU workload before importing the context-creating
+module. Its current prerequisite refusal was exercised without GPU execution.
+
+`run_memcheck.py` repeats the same sweep under Compute Sanitizer, preserving
+terminal evidence and requiring zero errors plus complete parity. `probe.py`
+requires both raw and sanitizer evidence before comparing native/metadata kernels
+on eight shapes in forward/reverse order. It includes the same interleave call
+in each path, warmup and ten event observations per kernel/shape. This remains
+a synthetic diagnostic without continuous contamination coverage, not accepted
+end-to-end timing. All four harnesses parsed; none has executed GPU work yet.
