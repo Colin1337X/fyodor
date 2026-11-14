@@ -86,3 +86,8 @@ independently verified. The C17 8192-prefix lifecycle is running; no result is
 claimed yet. `run_generation.py` requires these lifecycle proofs before testing
 whole-model output parity. No accepted end-to-end speedup or production dispatch
 is introduced by this isolated integration.
+
+`run_model_memcheck.py` is prepared for the isolated model binary and requires
+completed lifecycle and generation proofs before launching Compute Sanitizer.
+Its validator additionally rejects a missing metadata-kernel selection marker;
+eight CPU-only evidence tests pass. It has not run on the GPU yet.
