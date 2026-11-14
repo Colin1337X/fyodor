@@ -91,7 +91,8 @@ is introduced by this isolated integration.
 `run_model_memcheck.py` is prepared for the isolated model binary and requires
 completed lifecycle and generation proofs before launching Compute Sanitizer.
 Its validator additionally rejects a missing metadata-kernel selection marker;
-eight CPU-only evidence tests pass. It has not run on the GPU yet.
+eight CPU-only evidence tests pass. The short-context full-model sanitizer is
+now running; no completed result is claimed yet.
 
 `run_monitored.py` targets the isolated metadata binary and requires successful
 model sanitizer, lifecycle and generation proofs before GPU execution. It keeps
@@ -103,8 +104,10 @@ Short-context generation now passes under both C17 and C23: twelve matching
 ordinary/serial2/batch2/joint3 cases per build, forward/reverse/forward order,
 25 prompt tokens and 32 generated tokens. Each joint round recorded 2556
 integer calls, the metadata selection marker was present, and each result's
-111 hashes verified after completion. Long-context C17 generation is running;
-its output and timing are not yet accepted. Full-model sanitizer and monitored
+111 hashes verified after completion. Long-context C17 generation also passed
+all twelve cases at 8205 prompt tokens and 32 generated outputs, with the
+metadata marker, 2556 integer calls per joint round, and 111 hashes verified.
+These are correctness-only runs. Full-model sanitizer and monitored
 performance validation remain outstanding for this candidate.
 
 ## Offline launch-bound follow-up
@@ -118,3 +121,6 @@ transformation, tool identity and input hashes are recorded in
 `launch-bound-assembly.json`. This does not establish runtime JIT resources,
 occupancy, parity or speed. It justifies testing this launch bound after the
 current GPU run finishes. No running input or production dispatch was changed.
+The subsequent three-way raw/memory checks passed, but the bound-four diagnostic
+regressed on seven of eight shapes versus this bound-three candidate. See
+`../integer-metadata-bound4-20261114/README.md`; no global replacement is planned.
