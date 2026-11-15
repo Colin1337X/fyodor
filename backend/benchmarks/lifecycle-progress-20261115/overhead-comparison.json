@@ -1,0 +1,186 @@
+{
+  "passed": true,
+  "accepted_benchmark": false,
+  "prefix": 5,
+  "standard": "c23",
+  "repetitions": 1,
+  "records": [
+    {
+      "label": "OverheadBase5",
+      "elapsed_s": 8.11774040000455,
+      "memcheck": false,
+      "kernel_filter": null,
+      "stream_races": null,
+      "prefill_summaries": [
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "0.163",
+          "tokens_per_s": "30.678780"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "0.136",
+          "tokens_per_s": "36.829076"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "0.136",
+          "tokens_per_s": "36.792165"
+        }
+      ],
+      "result_sha256": "2194454a852307d45d44b5996b0aff8239a15e02620d1c7dfa6b1c7b71bf1f79",
+      "elapsed_ratio_to_baseline": 1.0
+    },
+    {
+      "label": "OverheadNoMatch5",
+      "elapsed_s": 168.46203080000123,
+      "memcheck": true,
+      "kernel_filter": "none-matching",
+      "stream_races": "all",
+      "prefill_summaries": [
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.470",
+          "tokens_per_s": "0.244264"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.459",
+          "tokens_per_s": "0.244395"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.439",
+          "tokens_per_s": "0.244634"
+        }
+      ],
+      "result_sha256": "2e8067b6516dbb2940175b5426d232434ee65276adbe34fa34d3189c9ba1d27d",
+      "elapsed_ratio_to_baseline": 20.75233038985908
+    },
+    {
+      "label": "OverheadCandidate5",
+      "elapsed_s": 168.68065340000612,
+      "memcheck": true,
+      "kernel_filter": "candidate",
+      "stream_races": "all",
+      "prefill_summaries": [
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.432",
+          "tokens_per_s": "0.244717"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.506",
+          "tokens_per_s": "0.243832"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.486",
+          "tokens_per_s": "0.244072"
+        }
+      ],
+      "result_sha256": "b8d9ef4bcf6377cc7095e4cfda52bf948060e54505d500f54c4105a1fb443e2a",
+      "elapsed_ratio_to_baseline": 20.779261849752128
+    },
+    {
+      "label": "OverheadNoStreamRaces5",
+      "elapsed_s": 168.78429719999986,
+      "memcheck": true,
+      "kernel_filter": "none-matching",
+      "stream_races": "no",
+      "prefill_summaries": [
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.466",
+          "tokens_per_s": "0.244313"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "21.018",
+          "tokens_per_s": "0.237888"
+        },
+        {
+          "event": "prefill_complete",
+          "position": "0",
+          "completed": "5",
+          "total": "5",
+          "percent": "100.000",
+          "layer": "0",
+          "layers": "0",
+          "elapsed_s": "20.483",
+          "tokens_per_s": "0.244107"
+        }
+      ],
+      "result_sha256": "56bb8c3e2bc94187a89d4c56952c14c1f5e9a1511f01166cff1b5a995b8235f9",
+      "elapsed_ratio_to_baseline": 20.79202941743558
+    }
+  ],
+  "conclusion": "Short fallback diagnostic only. Neither no-match filtering nor disabling stream-ordered race checks constitutes candidate safety evidence. Exact overhead mechanism remains unresolved."
+}
