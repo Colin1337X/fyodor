@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "numerical_statements_unchanged": true,
+  "scope": "Transformation equivalence and early loader failure only; no model/GPU validation",
+  "records": [
+    {
+      "standard": "c17",
+      "exit_code": 1,
+      "stderr": "LIFECYCLE unix_seconds=1794706055 source_line=64 operation=nya_llm_load event=begin\nline 74: !nya_llm_load(path,bytes,&m,error,sizeof(error))\nthe model is empty or too large for this process\nLIFECYCLE unix_seconds=1794706055 source_line=219 operation=nya_llm_session_free event=begin\n"
+    },
+    {
+      "standard": "c23",
+      "exit_code": 1,
+      "stderr": "LIFECYCLE unix_seconds=1794706055 source_line=64 operation=nya_llm_load event=begin\nline 74: !nya_llm_load(path,bytes,&m,error,sizeof(error))\nthe model is empty or too large for this process\nLIFECYCLE unix_seconds=1794706055 source_line=219 operation=nya_llm_session_free event=begin\n"
+    }
+  ],
+  "sha256": {
+    "backend\\benchmarks\\lifecycle-verbose-20261115\\check.py": "95de184587bc282047d155b81c22c8d5db268ab23e22abc1859f55c93a7d4931",
+    "backend\\benchmarks\\lifecycle-verbose-20261115\\build.json": "b3be4839b3760cfe149e88b3bf17fbebe60ba8613adcff0d4bae94b1be1c004a",
+    "backend\\benchmarks\\lifecycle-verbose-20261115\\empty.gguf": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
