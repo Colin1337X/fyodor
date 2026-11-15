@@ -1,0 +1,135 @@
+{
+  "passed": true,
+  "accepted_benchmark": false,
+  "records": [
+    {
+      "label": "selected",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "--kernel-name",
+        "regex=nya_attention_cached_query",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py",
+        "nya_attention_cached_query_probe"
+      ],
+      "exit_code": 99,
+      "expected_error": true,
+      "passed": true,
+      "elapsed_s": 4.214659099998244,
+      "summaries": [
+        "4"
+      ]
+    },
+    {
+      "label": "excluded",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "--kernel-name",
+        "regex=nya_attention_cached_query",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py",
+        "unrelated_probe"
+      ],
+      "exit_code": 0,
+      "expected_error": false,
+      "passed": true,
+      "elapsed_s": 2.2490772000019206,
+      "summaries": [
+        "0"
+      ]
+    },
+    {
+      "label": "unfiltered",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py",
+        "unrelated_probe"
+      ],
+      "exit_code": 99,
+      "expected_error": true,
+      "passed": true,
+      "elapsed_s": 4.039678399996774,
+      "summaries": [
+        "4"
+      ]
+    },
+    {
+      "label": "no_match",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "--kernel-name",
+        "regex=never_matches_fixture",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py",
+        "nya_attention_cached_query_probe"
+      ],
+      "exit_code": 0,
+      "expected_error": false,
+      "passed": true,
+      "elapsed_s": 2.200807799999893,
+      "summaries": [
+        "0"
+      ]
+    },
+    {
+      "label": "substring",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "--kernel-name",
+        "kns=nya_attention_cached_query",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py",
+        "unrelated_probe"
+      ],
+      "exit_code": 0,
+      "expected_error": false,
+      "passed": true,
+      "elapsed_s": 2.204403399999137,
+      "summaries": [
+        "0"
+      ]
+    }
+  ],
+  "sha256": {
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\run.py": "03bd1c9b37e3a9e0b6667aac694ff3454eff4e9783fa220acdaa68d9bc26f0bd",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.py": "450b6953f141dc79744476f5fed2c350529cbd8b34974c8535d22b0df527b17f",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\probe.ptx": "02bffad5fb077bccccc53207c1bc066f6fd7eecef8830c7c54ea5751f21ca5f9",
+    ".tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe": "06f8a1452e9f263737dcd935f916eb369d2002cb1562042ca557b61fd3fbedd3",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\excluded.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\excluded.stdout": "121996bf8fbd0bc1f8eafc4aa65739a9159a9d5d561fb14b268f809ae3b06861",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\no_match.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\no_match.stdout": "10d23821384b368a771bde4244bafbafc15951e4149308bb61b4d9d537ef9a4f",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\selected.stderr": "d13f36cd28d0613eef9a5174ecff64e3c69e2c2f05e58880529037da2ce7f962",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\selected.stdout": "692196acacd9e1399738b649a9eeb33765f63cb163703b02177f7a32f0537b89",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\substring.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\substring.stdout": "121996bf8fbd0bc1f8eafc4aa65739a9159a9d5d561fb14b268f809ae3b06861",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\unfiltered.stderr": "d13f36cd28d0613eef9a5174ecff64e3c69e2c2f05e58880529037da2ce7f962",
+    "backend\\benchmarks\\sanitizer-filter-probe-20261115\\results\\unfiltered.stdout": "e385b4891a8f54fde0ddc5dd10680478c704eaa4ffc9ad400022b5607c18aed0"
+  }
+}
