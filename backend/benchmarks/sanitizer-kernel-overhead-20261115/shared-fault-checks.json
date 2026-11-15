@@ -1,0 +1,109 @@
+{
+  "coverage_equivalent": true,
+  "records": [
+    {
+      "label": "RuntimeStaticFault",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\probe_shared_oob.py",
+        "nya_attention_cached_query_probe"
+      ],
+      "environment_override": {
+        "FYODOR_SHARED_FIXTURE": "shared-oob.cubin"
+      },
+      "exit_code": 99,
+      "detected": true,
+      "summaries": [
+        "4"
+      ]
+    },
+    {
+      "label": "RuntimeDynamicFault",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\probe_shared_oob.py",
+        "unrelated_probe"
+      ],
+      "environment_override": {
+        "FYODOR_SHARED_FIXTURE": "shared-oob.cubin"
+      },
+      "exit_code": 99,
+      "detected": true,
+      "summaries": [
+        "4"
+      ]
+    },
+    {
+      "label": "CompileTimeStaticFault",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\probe_shared_oob.py",
+        "nya_attention_cached_query_probe"
+      ],
+      "environment_override": {
+        "FYODOR_SHARED_FIXTURE": "shared-oob.memcheck.cubin"
+      },
+      "exit_code": 99,
+      "detected": true,
+      "summaries": [
+        "4"
+      ]
+    },
+    {
+      "label": "CompileTimeDynamicFault",
+      "command": [
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe",
+        "--tool",
+        "memcheck",
+        "--error-exitcode",
+        "99",
+        "C:\\Users\\Colin\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+        "-B",
+        "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\probe_shared_oob.py",
+        "unrelated_probe"
+      ],
+      "environment_override": {
+        "FYODOR_SHARED_FIXTURE": "shared-oob.memcheck.cubin"
+      },
+      "exit_code": 99,
+      "detected": true,
+      "summaries": [
+        "4"
+      ]
+    }
+  ],
+  "sha256": {
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\run_shared_faults.py": "36cf638eb677a1bbb32fc6a1988fb7cc032d173794d03214506a6171a39099f7",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\shared-oob.ptx": "15dc7643628a9639c8ddc2689962fcc771ce7052375c7cce075f7f162f510e2a",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\probe_shared_oob.py": "17492fcd2d53e51fc15a93a83c2b47b286980a84f7183b167798f77333c4c420",
+    ".tools\\cuda-sanitizer\\cuda_sanitizer_api-windows-x86_64-13.1.118-archive\\compute-sanitizer\\compute-sanitizer.exe": "06f8a1452e9f263737dcd935f916eb369d2002cb1562042ca557b61fd3fbedd3",
+    "build-cuda\\sanitizer-kernel-overhead-20261115\\shared-oob.cubin": "d03769cc012639112ef185aab8c824af36ee38a48f30477884a376b558c4e91b",
+    "build-cuda\\sanitizer-kernel-overhead-20261115\\shared-oob.memcheck.cubin": "a5a18f3f7a852fc08a2f7d424e4b16eff195db6575e516e8e375bc7674d8005d",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\RuntimeStaticFault.stdout": "aa3bbc725b862e8c61b015b0eb12986ae62a4528c7b8c8c004ce77f6c7e32342",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\RuntimeStaticFault.stderr": "33e47486a3245412a0e44cb4433efb509f604fe5ece8b344e7a39b502e38e000",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\RuntimeDynamicFault.stdout": "b9ded9b1a05a18307b511c5da9cb9352995050acf30a5e58c5c67dd6fec2d247",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\RuntimeDynamicFault.stderr": "33e47486a3245412a0e44cb4433efb509f604fe5ece8b344e7a39b502e38e000",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\CompileTimeStaticFault.stdout": "54bf3c487f0e18d1d1c217da2c36b07250fdd92d3d6719e3c815421ff116cd6d",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\CompileTimeStaticFault.stderr": "33e47486a3245412a0e44cb4433efb509f604fe5ece8b344e7a39b502e38e000",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\CompileTimeDynamicFault.stdout": "1a1ad395fe209e8435ded73f09b64ddca9029c220b8d95aa1cb641faf77e608b",
+    "backend\\benchmarks\\sanitizer-kernel-overhead-20261115\\CompileTimeDynamicFault.stderr": "33e47486a3245412a0e44cb4433efb509f604fe5ece8b344e7a39b502e38e000"
+  }
+}
