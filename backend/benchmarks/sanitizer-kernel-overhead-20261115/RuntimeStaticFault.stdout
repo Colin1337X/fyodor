@@ -1,0 +1,15 @@
+========= COMPUTE-SANITIZER
+FIXTURE kernel=nya_attention_cached_query_probe allocation_bytes=4 shared_write_offset=4096 dynamic_shared_bytes=4
+========= Invalid __shared__ write of size 4 bytes
+=========     at nya_attention_cached_query_probe+0x50
+=========     by thread (0,0,0) in block (0,0,0)
+=========     Access to 0x1400 is out of bounds
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuCtxSynchronize.
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuMemFree_v2.
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuModuleUnload.
+========= 
+========= Target application returned an error
+========= ERROR SUMMARY: 4 errors

@@ -1,0 +1,16 @@
+========= COMPUTE-SANITIZER
+FIXTURE kernel=unrelated_probe allocation_bytes=4 write_offset=16
+========= Invalid __global__ write of size 4 bytes
+=========     at unrelated_probe+0x80
+=========     by thread (0,0,0) in block (0,0,0)
+=========     Access to 0xb0a800010 is out of bounds
+=========     and is 13 bytes after the nearest allocation at 0xb0a800000 of size 4 bytes
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuCtxSynchronize.
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuMemFree_v2.
+========= 
+========= Program hit CUDA_ERROR_LAUNCH_FAILED (error 719) due to "unspecified launch failure" on CUDA API call to cuModuleUnload.
+========= 
+========= Target application returned an error
+========= ERROR SUMMARY: 4 errors

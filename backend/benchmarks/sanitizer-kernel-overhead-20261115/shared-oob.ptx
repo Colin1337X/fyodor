@@ -1,0 +1,19 @@
+.version 8.7
+.target sm_120
+.address_size 64
+.extern .shared .align 4 .b8 dynamic[];
+.visible .entry nya_attention_cached_query_probe(.param .u64 pointer)
+{
+ .shared .align 4 .b8 scratch[4];
+ .reg .u32 %address;
+ mov.u32 %address, scratch;
+ st.volatile.shared.u32 [%address+4096], 7;
+ ret;
+}
+.visible .entry unrelated_probe(.param .u64 pointer)
+{
+ .reg .u32 %address;
+ mov.u32 %address, dynamic;
+ st.volatile.shared.u32 [%address+4096], 7;
+ ret;
+}
