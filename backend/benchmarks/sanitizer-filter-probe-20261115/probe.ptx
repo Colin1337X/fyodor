@@ -1,0 +1,18 @@
+.version 8.7
+.target sm_120
+.address_size 64
+
+.visible .entry nya_attention_cached_query_probe(.param .u64 pointer)
+{
+ .reg .u64 %address;
+ ld.param.u64 %address, [pointer];
+ st.global.u32 [%address+16], 7;
+ ret;
+}
+.visible .entry unrelated_probe(.param .u64 pointer)
+{
+ .reg .u64 %address;
+ ld.param.u64 %address, [pointer];
+ st.global.u32 [%address+16], 7;
+ ret;
+}
