@@ -1,0 +1,236 @@
+{
+  "build_passed": true,
+  "gpu_validated": false,
+  "accepted_benchmark": false,
+  "commands": [
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c17",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "backend/include",
+      "-I",
+      "backend/core",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-attention-query-cache-v2-20261115\\cuda-c17.o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\libnya-engine.a",
+      "-lbcrypt",
+      "C:/Windows/System32/vulkan-1.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle-c17.exe"
+    ],
+    [
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\.tools\\w64devkit\\bin\\gcc.exe",
+      "-std=c23",
+      "-O3",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Wconversion",
+      "-Wshadow",
+      "-Werror",
+      "-I",
+      "backend/include",
+      "-I",
+      "backend/core",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle.c",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\model-attention-query-cache-v2-20261115\\cuda-c23.o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\libnya-engine.a",
+      "-lbcrypt",
+      "C:/Windows/System32/vulkan-1.dll",
+      "-o",
+      "C:\\Users\\Colin\\.codex\\worktrees\\resident-training\\fyodor\\build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle-c23.exe"
+    ]
+  ],
+  "stages": [
+    {
+      "source_line": 64,
+      "operation": "nya_llm_load",
+      "statement": "CHECK(!nya_llm_load(path,bytes,&m,error,sizeof(error)));"
+    },
+    {
+      "source_line": 80,
+      "operation": "nya_llm_session_create",
+      "statement": "s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);"
+    },
+    {
+      "source_line": 82,
+      "operation": "nya_llm_session_run",
+      "statement": "if(prefix) CHECK(!nya_llm_session_run(s,tokens,prefix,0));"
+    },
+    {
+      "source_line": 83,
+      "operation": "nya_llm_session_run",
+      "statement": "for(size_t i=0;i<=count;++i) {CHECK(!nya_llm_session_run(s,tokens+prefix+i,1,1));memcpy(reference+i*v,nya_llm_session_logits(s),v*sizeof(float));}"
+    },
+    {
+      "source_line": 85,
+      "operation": "nya_llm_session_reset",
+      "statement": "nya_llm_session_reset(s);"
+    },
+    {
+      "source_line": 86,
+      "operation": "nya_llm_session_run",
+      "statement": "CHECK(!nya_llm_session_run(s,tokens,total-1,1));"
+    },
+    {
+      "source_line": 87,
+      "operation": "nya_llm_session_run",
+      "statement": "CHECK(!nya_llm_session_run(s,&replacement,1,1));"
+    },
+    {
+      "source_line": 89,
+      "operation": "nya_llm_session_free",
+      "statement": "nya_llm_session_free(s);s=NULL;"
+    },
+    {
+      "source_line": 95,
+      "operation": "nya_llm_session_create",
+      "statement": "s=nya_llm_session_create(m,total,error,sizeof(error));CHECK(s);"
+    },
+    {
+      "source_line": 136,
+      "operation": "nya_llm_session_run",
+      "statement": "CHECK(!nya_llm_session_run(s,tokens,prefix,0));"
+    },
+    {
+      "source_line": 137,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v)<0);"
+    },
+    {
+      "source_line": 139,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(nya_llm_session_rewind(s,0)<0);"
+    },
+    {
+      "source_line": 140,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,1,actual+1,v)<0);"
+    },
+    {
+      "source_line": 141,
+      "operation": "nya_llm_session_reset",
+      "statement": "nya_llm_session_reset(s);"
+    },
+    {
+      "source_line": 145,
+      "operation": "nya_llm_session_reset",
+      "statement": "nya_llm_session_reset(s);"
+    },
+    {
+      "source_line": 146,
+      "operation": "nya_llm_session_run",
+      "statement": "if(prefix) CHECK(!nya_llm_session_run(s,tokens,prefix,0));"
+    },
+    {
+      "source_line": 149,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v-1)<0);"
+    },
+    {
+      "source_line": 150,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,0,actual+1,count*v)<0);"
+    },
+    {
+      "source_line": 151,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,SIZE_MAX,actual+1,SIZE_MAX)<0);"
+    },
+    {
+      "source_line": 152,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,NULL,count,actual+1,count*v)<0);"
+    },
+    {
+      "source_line": 153,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,count,NULL,count*v)<0);"
+    },
+    {
+      "source_line": 155,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v)<0);tokens[prefix+count-1]=saved;"
+    },
+    {
+      "source_line": 158,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(!nya_llm_session_verify(s,tokens+prefix,count,actual+1,count*v));"
+    },
+    {
+      "source_line": 184,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(nya_llm_session_rewind(s,SIZE_MAX)<0);"
+    },
+    {
+      "source_line": 186,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(!nya_llm_session_rewind(s,prefix+count));"
+    },
+    {
+      "source_line": 188,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(!nya_llm_session_rewind(s,prefix+count-1));"
+    },
+    {
+      "source_line": 190,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(nya_llm_session_rewind(s,prefix+count)<0); /* cannot resurrect suffix */"
+    },
+    {
+      "source_line": 194,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(nya_llm_session_rewind(s,1)<0); /* evicted prefix */"
+    },
+    {
+      "source_line": 196,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(!nya_llm_session_verify(s,tokens+prefix+count-1,1,actual+1,v));"
+    },
+    {
+      "source_line": 201,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(!nya_llm_session_verify(s,tokens+prefix+count,1,actual+1,v));"
+    },
+    {
+      "source_line": 206,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(!nya_llm_session_rewind(s,total-1));"
+    },
+    {
+      "source_line": 207,
+      "operation": "nya_llm_session_verify",
+      "statement": "CHECK(!nya_llm_session_verify(s,&replacement,1,actual+1,v));"
+    },
+    {
+      "source_line": 212,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(!nya_llm_session_rewind(s,0));"
+    },
+    {
+      "source_line": 214,
+      "operation": "nya_llm_session_rewind",
+      "statement": "CHECK(nya_llm_session_rewind(s,1)<0);"
+    },
+    {
+      "source_line": 219,
+      "operation": "nya_llm_session_free",
+      "statement": "nya_llm_session_free(s);nya_llm_free(m);free(reference);free(actual);free(last);free(tokens);return result;"
+    }
+  ],
+  "sha256": {
+    "backend\\benchmarks\\lifecycle-verbose-20261115\\build.py": "c521e54e2048c955dc5f1b84a276c22cce7353508dd5095318cd313fca6149f8",
+    "backend\\benchmarks\\model-attention-query-cache-20261115\\build.json": "7c4ba41b996e96979f5f18cdfbb221a3b0757b3deb7d440c3e29559a27798666",
+    "build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle-c17.exe": "fe3a4c0b28adc83115064bf3a697a7998ee96e115e21e7477735ef4985283452",
+    "build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle-c23.exe": "d1e391abda6b882493ed58255dd3f12667220adfb17534dfc293bf2b0c391891",
+    "build-cuda\\lifecycle-verbose-v2-20261115\\lifecycle.c": "e6f7c22f463a423d99ff3e43b8cec55416bb8d8643c9419944af686bd3c814e2"
+  },
+  "note": "Phase logs are for diagnostics, not performance timing; existing active binaries unchanged."
+}
